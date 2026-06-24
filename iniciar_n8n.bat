@@ -54,6 +54,13 @@ echo   Editor local:  http://localhost:5678
 echo   Editor remoto: %CF_URL%
 echo.
 
+:: Matar instancia anterior de n8n si existe (para que la nueva herede WEBHOOK_URL correcto)
+for /f "tokens=2" %%P in ('tasklist /FI "IMAGENAME eq node.exe" /FO CSV /NH 2^>nul') do (
+    wmic process where "ProcessId=%%~P" get CommandLine 2>nul | findstr /i "n8n" >nul 2>&1
+    if not errorlevel 1 taskkill /PID %%~P /F >nul 2>&1
+)
+timeout /t 2 /nobreak >nul
+
 start /B "" "C:\nvm4w\nodejs\n8n.cmd" start
 
 :: Esperar a que n8n este listo (healthcheck)
