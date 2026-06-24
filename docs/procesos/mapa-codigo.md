@@ -142,9 +142,46 @@ python setup_headers.py --pestaña h2test --confirmar  # escribe
 
 ---
 
+## `organizador/organizador_headless.py`
+
+**Propósito:** Versión sin GUI del organizador — para uso en n8n y automatizaciones. Lee H1Test, ordena por curso, escribe h2test en formato de bloques horizontales + pestañas Observaciones y Estadisticas.
+
+**Servicios:** Google Sheets API (read H1Test + write h2test, Observaciones, Estadisticas)
+
+**Sheets:**
+- Origen: H1Test — ID `1d3S41J9nlVI3qCy-WF_D3ZezTwRCW17vnL7u284XDG0`
+- Destino: h2test — ID `1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs`
+
+**Comando:**
+```bash
+python organizador/organizador_headless.py
+```
+
+**Funciones principales:**
+
+| Función | Retorna | Descripción |
+|---|---|---|
+| `leer_h1test(gc)` | `pd.DataFrame` | Lee H1Test, normaliza columnas (flexible al casing) |
+| `calcular_observaciones(df)` | `pd.DataFrame` | Detecta SIN MATCH, SIN CURSO, AVANCE 0%, AVANCE IRREGULAR |
+| `calcular_estadisticas(df)` | `dict` | Promedio/min/max por curso, totales, anomalías |
+| `escribir_h2test(gc, df)` | `(cursos, sin_curso)` | Escribe bloques horizontales por curso (5 cols + 2 sep) |
+| `escribir_observaciones(gc, df)` | `int` | Escribe pestaña Observaciones con los casos anómalos |
+| `escribir_estadisticas(gc, df)` | `dict` | Escribe pestaña Estadisticas con resumen general y por curso |
+
+**Output parseable para n8n:**
+```
+RESUMEN: cursos=N estudiantes=M promedio=P estado=exito
+```
+
+**Formato h2test:** cada curso es un bloque de 5 columnas (`Identificacion, Nombre, Celular, Email, Avance`) con fila 0 = nombre del curso en mayúsculas. Los bloques se concatenan horizontalmente con 2 columnas vacías de separación. Esta estructura es la que leen `detectar_grupos()` en `export_stats.py`.
+
+---
+
 ## `organizador/organizador_Q10.py`
 
-**Propósito:** App GUI (CustomTkinter, dark mode) para operadores no técnicos. Lee datos de H1Test y los copia a h2test con validaciones visuales. Se distribuye como `.exe` compilado con PyInstaller.
+**Propósito:** App GUI (CustomTkinter, dark mode) para operadores no técnicos. Interfaz visual para revisar y aprobar la carga de H1Test → h2test antes de automatizar. Se distribuye como `.exe` compilado con PyInstaller.
+
+**Estado:** Secundario — la automatización usa `organizador_headless.py`. El `.exe` sigue disponible para revisión manual con interfaz gráfica.
 
 **Servicios:** Google Sheets API (read H1Test + write h2test)
 
@@ -196,7 +233,7 @@ python tools/panel_riesgo.py --umbral 50        # umbral de atención (default 6
 | `cruzar(q10, asist, umbral)` | `(casos, total_ses, total)` | Join por email, clasifica en atencion/sin_match/avance_0/ok |
 | `exportar_csv(casos, segmento, umbral)` | — | Escribe 3 CSVs en `tools/reportes/` |
 
-**Nota pendiente:** `leer_asistencias()` actualmente apunta a pestaña `asistencias` — debería actualizarse a pestaña `Avance` para ser consistente con `export_avance.py`.
+**Nota:** `leer_avance()` lee la pestaña `Avance` del Sheet manual (no la pestaña `asistencias`).
 
 ---
 

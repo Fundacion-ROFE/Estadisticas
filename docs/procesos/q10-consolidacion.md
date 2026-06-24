@@ -11,27 +11,49 @@ Extrae automáticamente los datos de estudiantes y progreso de cursos desde la A
 - **H1Test** — revisión interna del equipo, fórmulas/filtros en el mismo Sheet.
 - **h2test** — fuente para el dashboard en GitHub Pages (via `export_stats.py`).
 
-Se ejecuta vía bot de Telegram (`/actualizar <grupo>`) desde n8n corriendo en el PC de Samuel.
+Se ejecuta vía bot de Telegram (`/actualizar h2test`) desde n8n corriendo en el PC de Samuel.
 
 ## Disparador (Trigger)
 
 Bot de Telegram — comando `/actualizar <grupo>`. El equipo decide cuándo ejecutar.
 No hay Schedule; la actualización es manual/bajo demanda.
 
-Grupos disponibles: `h1test` (revisión interna), `h2test` (fuente Power BI). Para agregar nuevos grupos: editar `MAPEO_GRUPOS`, `MAPEO_SHEET_IDS` en `q10_to_sheets.py` y `SHEET_IDS_POR_PESTANA`, `HEADERS_POR_PESTANA` en `setup_headers.py`.
+| Comando | Qué hace |
+|---|---|
+| `/actualizar h1test` | Solo extrae Q10 → H1Test (revisión interna, sin publicar al dashboard) |
+| `/actualizar h2test` | Pipeline completo: Q10 → H1Test → organizar → h2test → GitHub Pages |
+
+Para agregar nuevos grupos: editar `MAPEO_GRUPOS`, `MAPEO_SHEET_IDS` en `q10_to_sheets.py`.
 
 ## Flujo resumido
 
-1. Login Q10 multi-paso (7 solicitudes AJAX encadenadas — ver [[convenciones#Q10 Login multi-paso]])
-2. POST endpoint Estudiantes → URL Azure Blob → GET Excel inmediato → `df_estudiantes` (4,559 registros)
-3. POST endpoint Consolidado para cada periodo `[21, 22, 23, 1]` → GET Excel → DataFrame por periodo
-4. Concatenar periodos → `df_consolidado` (5,402 filas)
-5. LEFT JOIN por email (`df_estudiantes.Correo ↔ df_consolidado.Email`) → 8,818 filas
-6. Renombrar y ordenar columnas: `Identificacion, Nombre, Celular, Email, Curso, Avance`
-7. Limpiar H1Test desde fila 2 (sin tocar fila 1) y subir en lotes de 500 con pausa 1.2s
-8. Imprimir línea parseable `RESUMEN: grupo=h1test filas=8818 estado=exito` → n8n la extrae para responder por Telegram
+**Fase 1 — Extracción Q10 → H1Test** (`q10_to_sheets.py --grupo h1test`):
 
-**Tiempo estimado de ejecución:** ~1.5 a 2 minutos.
+1. Login Q10 multi-paso (7 solicitudes AJAX encadenadas — ver [[convenciones#Q10 Login multi-paso]])
+2. POST endpoint Estudiantes → URL Azure Blob → GET Excel inmediato → `df_estudiantes`
+3. POST endpoint Consolidado para cada periodo `[21, 22, 23, 1]` → GET Excel → DataFrame por periodo
+4. Concatenar periodos → `df_consolidado`
+5. LEFT JOIN por email (`df_estudiantes.Correo ↔ df_consolidado.Email`)
+6. Renombrar columnas: `Identificacion, Nombre, Celular, Email, Curso, Avance`
+7. Filtrar archivados: solo `Estado = A` (activos)
+8. Limpiar H1Test desde fila 2 y subir en lotes de 500 con pausa 1.2s
+9. Imprimir `RESUMEN: grupo=h1test filas=N estado=exito`
+
+**Fase 2 — Organizar H1Test → h2test** (`organizador_headless.py`): *(solo para `/actualizar h2test`)*
+
+10. Leer H1Test (formato plano: una fila por estudiante × curso)
+11. Detectar cursos, ordenar estudiantes por Nombre dentro de cada curso
+12. Construir bloques horizontales: 5 cols por curso + 2 cols separador
+13. Escribir h2test (fila 1 = nombres de cursos, fila 2 = sub-headers, filas 3+ = datos)
+14. Calcular y escribir pestaña Observaciones (SIN MATCH, SIN CURSO, AVANCE 0%, AVANCE IRREGULAR)
+15. Calcular y escribir pestaña Estadisticas (resumen por curso + totales)
+
+**Fase 3 — Publicar al dashboard** (`export_stats.py` + `export_avance.py`): *(solo para `/actualizar h2test`)*
+
+16. `export_stats.py`: lee h2test → agrega en Python → escribe `docs/dashboard/data.json` → git push
+17. `export_avance.py`: lee pestaña Avance (Sheet manual) → agrega → escribe `docs/avance/data.json` → git push
+
+**Tiempo estimado total (`/actualizar h2test`):** ~3-4 minutos.
 
 ## Fuentes de datos / APIs usadas
 
@@ -92,15 +114,17 @@ El equipo clasifica los registros bajo 4 categorías tras la carga:
 
 | Archivo | Ubicación | Descripción |
 |---|---|---|
-| `q10_to_sheets.py` | `scripts/q10-consolidacion/` | Script principal — acepta `--grupo` |
-| `export_stats.py` | `scripts/q10-consolidacion/` | Lee pestaña `h2test` (doble encabezado) → genera `docs/dashboard/data.json` |
-| `export_avance.py` | `scripts/q10-consolidacion/` | Lee pestaña `Avance` (Sheet manual) → genera `docs/avance/data.json` |
-| `setup_headers.py` | `scripts/q10-consolidacion/` | Escribe headers fila 1 (uso único) |
+| `q10_to_sheets.py` | `scripts/q10-consolidacion/` | Fase 1 — extracción Q10 → H1Test |
+| `organizador_headless.py` | `scripts/q10-consolidacion/organizador/` | Fase 2 — H1Test → h2test + Observaciones + Estadisticas (sin GUI) |
+| `organizador_Q10.py` | `scripts/q10-consolidacion/organizador/` | Versión GUI del organizador (revisión manual / .exe) |
+| `export_stats.py` | `scripts/q10-consolidacion/` | Fase 3a — h2test → `docs/dashboard/data.json` → git push |
+| `export_avance.py` | `scripts/q10-consolidacion/` | Fase 3b — pestaña Avance → `docs/avance/data.json` → git push |
+| `setup_headers.py` | `scripts/q10-consolidacion/` | Escribe headers fila 1 en H1Test/h2test (uso único) |
 | `requirements.txt` | `scripts/q10-consolidacion/` | Dependencias Python |
 | `q10-consolidacion.json` | `n8n-workflows/` | Workflow n8n (ID en producción: `Rblg81qifVshsRae`) |
 | `credenciales_service_account.json` | `scripts/q10-consolidacion/` | NO subir a git |
 | `.env` | `scripts/q10-consolidacion/` | `TELEGRAM_BOT_TOKEN`, `N8N_API_KEY` — NO subir a git |
-| `docs/dashboard/index.html` | `docs/dashboard/` | Sitio GitHub Pages (diseño pendiente con 21.dev) |
+| `docs/dashboard/index.html` | `docs/dashboard/` | Sitio GitHub Pages — Tab 1 (Stats Q10) |
 | `docs/dashboard/data.json` | `docs/dashboard/` | Generado por `export_stats.py` — no editar a mano |
 
 **Para reiniciar el sistema:** doble clic en `iniciar_n8n.bat` (en el PC de Samuel). cloudflared + n8n activos en ~45 segundos.
@@ -157,12 +181,25 @@ Si el bot de Telegram falla o n8n no está corriendo:
 
 1. Abrir terminal en el PC de Samuel.
 2. Activar el entorno virtual si aplica.
-3. Correr directamente:
+3. Fase 1 — extraer Q10 a H1Test:
    ```bash
-   python scripts/q10-consolidacion/q10_to_sheets.py --grupo h2test
+   python scripts/q10-consolidacion/q10_to_sheets.py --grupo h1test
    ```
-4. Si Q10 da error de login: verificar que credenciales en el script están vigentes y que la red corporativa no bloquea `site6.q10.com`.
-5. Si el Sheet no se actualiza: verificar que el Service Account tiene rol Editor en el Sheet destino.
+4. Fase 2 — organizar H1Test → h2test (headless):
+   ```bash
+   python scripts/q10-consolidacion/organizador/organizador_headless.py
+   ```
+   Alternativa con GUI (si se prefiere revisión visual antes de subir):
+   ```bash
+   python scripts/q10-consolidacion/organizador/organizador_Q10.py
+   ```
+5. Fase 3 — publicar al dashboard:
+   ```bash
+   python scripts/q10-consolidacion/export_stats.py
+   python scripts/q10-consolidacion/export_avance.py
+   ```
+6. Si Q10 da error de login: verificar que credenciales en el script están vigentes y que la red corporativa no bloquea `site6.q10.com`.
+7. Si el Sheet no se actualiza: verificar que el Service Account tiene rol Editor en el Sheet destino.
 
 Ver runbook [[q10-actualizar]] para pasos detallados sin terminal (operadores no técnicos).
 

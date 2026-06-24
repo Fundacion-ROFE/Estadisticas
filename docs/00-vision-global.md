@@ -17,9 +17,16 @@ n8n (local, PC Samuel)
     ▼
 q10_to_sheets.py ──► Q10 (site6.q10.com) ──► Excel/xlsx
     │                 Login 7 pasos AJAX
-    │  escribe
+    │  escribe (activos solamente)
     ▼
-Google Sheets (h2test)          Google Sheets (Avance — manual)
+Google Sheets H1Test (datos crudos planos)
+    │
+    │ organizador_headless.py
+    │  - ordena por curso
+    │  - bloques horizontales
+    │  - Observaciones + Estadisticas
+    ▼
+Google Sheets h2test            Google Sheets (Avance — manual)
     │                                   │
     │ export_stats.py                   │ export_avance.py
     ▼                                   ▼
@@ -38,9 +45,9 @@ Tab 1 Q10    Tab 2 Avance    Tab 3 Comparativo
 
 ```
 (solo local, nunca GitHub)
-Google Sheets (h2test) ──┐
+Google Sheets h2test   ──┐
                           ├──► panel_riesgo.py ──► consola + tools/reportes/*.csv
-Google Sheets (Avance)  ──┘     cruce por email
+Google Sheets (Avance) ──┘     cruce por email
 ```
 
 ---

@@ -21,7 +21,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Parsear comando /actualizar <grupo>\nconst msg = $input.item.json.message || {};\nconst text = (msg.text || '').trim();\nconst chatId = msg.chat?.id;\nconst gruposValidos = ['h1test', 'h2test'];\n\nconst match = text.match(/^\\/actualizar\\s+(\\S+)/i);\n\nif (!match) {\n  return [{ json: {\n    valido: false,\n    grupo: null,\n    grupo_pedido: null,\n    chat_id: chatId,\n    texto_original: text\n  }}];\n}\n\nconst grupoPedido = match[1].toLowerCase();\nconst esValido = gruposValidos.includes(grupoPedido);\n\nreturn [{ json: {\n  valido: esValido,\n  grupo: esValido ? grupoPedido : null,\n  grupo_pedido: grupoPedido,\n  chat_id: chatId,\n  grupos_disponibles: gruposValidos.join(', '),\n  texto_original: text\n}}];"
+        "jsCode": "// Parsear comando /actualizar <grupo>\n// Flujo real: h1test = solo Q10→H1Test; h2test = pipeline completo\nconst msg = $input.item.json.message || {};\nconst text = (msg.text || '').trim();\nconst chatId = msg.chat?.id;\nconst gruposValidos = ['h1test', 'h2test'];\n\nconst match = text.match(/^\\/actualizar\\s+(\\S+)/i);\n\nif (!match) {\n  return [{ json: {\n    valido: false,\n    grupo: null,\n    grupo_pedido: null,\n    chat_id: chatId,\n    texto_original: text\n  }}];\n}\n\nconst grupoPedido = match[1].toLowerCase();\nconst esValido = gruposValidos.includes(grupoPedido);\n\nreturn [{ json: {\n  valido: esValido,\n  grupo: esValido ? grupoPedido : null,\n  grupo_pedido: grupoPedido,\n  chat_id: chatId,\n  grupos_disponibles: gruposValidos.join(', '),\n  texto_original: text\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -54,7 +54,7 @@
     {
       "parameters": {
         "chatId": "={{ $json.chat_id }}",
-        "text": "={{ 'No entendi el comando.\\n\\nUsa:\\n/actualizar <grupo>\\n\\nGrupos disponibles: ' + $json.grupos_disponibles }}",
+        "text": "={{ 'No entendi el comando.\\n\\nUsa:\\n/actualizar h1test — extrae Q10 a hoja de revisión\\n/actualizar h2test — pipeline completo (Q10 → organizar → dashboard)' }}",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
@@ -68,7 +68,7 @@
     },
     {
       "parameters": {
-        "command": "={{ 'cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python q10_to_sheets.py --grupo ' + $('Parsear Comando').first().json.grupo }}"
+        "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python q10_to_sheets.py --grupo h1test"
       },
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
@@ -122,11 +122,58 @@
     },
     {
       "parameters": {
-        "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python export_stats.py"
+        "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion/organizador && python organizador_headless.py"
       },
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [1340, -80],
+      "id": "a1b2c3d4-0001-0001-0001-000000000013",
+      "name": "Ejecutar organizador"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "cond-org-001",
+              "leftValue": "={{ $json.exitCode }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1560, -80],
+      "id": "a1b2c3d4-0001-0001-0001-000000000014",
+      "name": "Exito Organizador?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
+        "text": "={{ (() => {\n  const stderr = $('Ejecutar organizador').first().json.stderr || $('Ejecutar organizador').first().json.stdout || 'Sin detalle disponible.';\n  return '\\u274C Error en el organizador\\n\\n' + stderr.slice(0, 400);\n})() }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1780, 100],
+      "id": "a1b2c3d4-0001-0001-0001-000000000015",
+      "name": "Responder Error Organizador",
+      "credentials": {
+        "telegramApi": { "id": "kGTAfWTTp4FATF66", "name": "Telegram Q10 Bot" }
+      }
+    },
+    {
+      "parameters": {
+        "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python export_stats.py"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1780, -200],
       "id": "a1b2c3d4-0001-0001-0001-000000000010",
       "name": "Ejecutar export_stats"
     },
@@ -136,19 +183,19 @@
       },
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [1560, -80],
+      "position": [2000, -200],
       "id": "a1b2c3d4-0001-0001-0001-000000000011",
       "name": "Ejecutar export_avance"
     },
     {
       "parameters": {
         "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
-        "text": "={{ (() => {\n  const stdoutQ10 = $('Ejecutar q10_to_sheets').first().json.stdout || '';\n  const mQ10 = stdoutQ10.match(/RESUMEN: grupo=\\S+ filas=(\\d+) estado=exito/);\n  const filas = mQ10 ? mQ10[1] : '?';\n  const statsOk = $('Ejecutar export_stats').first().json.exitCode === 0;\n  const avanceOk = $json.exitCode === 0;\n  const ok = (v) => v ? '\\u2705' : '\\u26A0\\uFE0F';\n  return '\\u2705 h2test actualizado \\u2014 ' + filas + ' filas cargadas.\\n' +\n    ok(statsOk) + ' Stats Q10 \\u2192 GitHub Pages.\\n' +\n    ok(avanceOk) + ' Avance Manual \\u2192 GitHub Pages.\\n' +\n    '\\n\\ud83d\\udcca Dashboard: fundacion-rofe.github.io/Estadisticas/dashboard/';\n})() }}",
+        "text": "={{ (() => {\n  const stdoutQ10  = $('Ejecutar q10_to_sheets').first().json.stdout || '';\n  const stdoutOrg  = $('Ejecutar organizador').first().json.stdout || '';\n  const mQ10  = stdoutQ10.match(/RESUMEN: grupo=\\S+ filas=(\\d+) estado=exito/);\n  const mOrg  = stdoutOrg.match(/RESUMEN: cursos=(\\d+) estudiantes=(\\d+) promedio=([\\d.]+)/);\n  const filasQ10   = mQ10 ? mQ10[1] : '?';\n  const cursos     = mOrg ? mOrg[1] : '?';\n  const estudiantes = mOrg ? mOrg[2] : '?';\n  const promedio   = mOrg ? mOrg[3] : '?';\n  const statsOk  = $('Ejecutar export_stats').first().json.exitCode === 0;\n  const avanceOk = $json.exitCode === 0;\n  const ok = (v) => v ? '\\u2705' : '\\u26A0\\uFE0F';\n  return '\\u2705 Pipeline completo\\n\\n' +\n    '\\ud83d\\udce5 Q10 \\u2192 H1Test: ' + filasQ10 + ' filas\\n' +\n    '\\ud83d\\udcca Organizador: ' + cursos + ' cursos | ' + estudiantes + ' estudiantes | ' + promedio + '% prom.\\n' +\n    ok(statsOk) + ' Stats \\u2192 GitHub Pages\\n' +\n    ok(avanceOk) + ' Avance \\u2192 GitHub Pages\\n' +\n    '\\n\\ud83c\\udf10 Dashboard: fundacion-rofe.github.io/Estadisticas/dashboard/';\n})() }}",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1780, -80],
+      "position": [2220, -200],
       "id": "a1b2c3d4-0001-0001-0001-000000000012",
       "name": "Responder OK Dashboard",
       "credentials": {
@@ -158,14 +205,14 @@
     {
       "parameters": {
         "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
-        "text": "={{ (() => {\n  const stdout = $('Ejecutar q10_to_sheets').first().json.stdout || '';\n  const m = stdout.match(/RESUMEN: grupo=(\\S+) filas=(\\d+) estado=exito/);\n  const filas = m ? m[2] : '?';\n  const grupo = $('Parsear Comando').first().json.grupo.toUpperCase();\n  return '\\u2705 ' + grupo + ' actualizado \\u2014 ' + filas + ' filas cargadas.';\n})() }}",
+        "text": "={{ (() => {\n  const stdout = $('Ejecutar q10_to_sheets').first().json.stdout || '';\n  const m = stdout.match(/RESUMEN: grupo=\\S+ filas=(\\d+) estado=exito/);\n  const filas = m ? m[1] : '?';\n  return '\\u2705 H1Test actualizado \\u2014 ' + filas + ' filas cargadas.\\n(Para publicar en dashboard: /actualizar h2test)';\n})() }}",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [1340, 200],
       "id": "a1b2c3d4-0001-0001-0001-000000000007",
-      "name": "Responder OK",
+      "name": "Responder OK H1Test",
       "credentials": {
         "telegramApi": { "id": "kGTAfWTTp4FATF66", "name": "Telegram Q10 Bot" }
       }
@@ -173,14 +220,14 @@
     {
       "parameters": {
         "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
-        "text": "={{ (() => {\n  const stderr = $('Ejecutar q10_to_sheets').first().json.stderr || $('Ejecutar q10_to_sheets').first().json.stdout || 'Sin detalle disponible.';\n  const grupo = $('Parsear Comando').first().json.grupo.toUpperCase();\n  return '\\u274C Error actualizando ' + grupo + '\\n\\n' + stderr.slice(0, 300);\n})() }}",
+        "text": "={{ (() => {\n  const stderr = $('Ejecutar q10_to_sheets').first().json.stderr || $('Ejecutar q10_to_sheets').first().json.stdout || 'Sin detalle disponible.';\n  return '\\u274C Error extrayendo datos de Q10\\n\\n' + stderr.slice(0, 400);\n})() }}",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [1120, 320],
       "id": "a1b2c3d4-0001-0001-0001-000000000008",
-      "name": "Responder Error",
+      "name": "Responder Error Q10",
       "credentials": {
         "telegramApi": { "id": "kGTAfWTTp4FATF66", "name": "Telegram Q10 Bot" }
       }
@@ -204,14 +251,23 @@
     },
     "Exito Q10?": {
       "main": [
-        [{ "node": "Es h2test?",     "type": "main", "index": 0 }],
-        [{ "node": "Responder Error", "type": "main", "index": 0 }]
+        [{ "node": "Es h2test?",       "type": "main", "index": 0 }],
+        [{ "node": "Responder Error Q10", "type": "main", "index": 0 }]
       ]
     },
     "Es h2test?": {
       "main": [
-        [{ "node": "Ejecutar export_stats", "type": "main", "index": 0 }],
-        [{ "node": "Responder OK",          "type": "main", "index": 0 }]
+        [{ "node": "Ejecutar organizador", "type": "main", "index": 0 }],
+        [{ "node": "Responder OK H1Test",  "type": "main", "index": 0 }]
+      ]
+    },
+    "Ejecutar organizador": {
+      "main": [[{ "node": "Exito Organizador?", "type": "main", "index": 0 }]]
+    },
+    "Exito Organizador?": {
+      "main": [
+        [{ "node": "Ejecutar export_stats",        "type": "main", "index": 0 }],
+        [{ "node": "Responder Error Organizador",   "type": "main", "index": 0 }]
       ]
     },
     "Ejecutar export_stats": {
@@ -226,6 +282,6 @@
   "id": "wf-q10-bot-001",
   "meta": {
     "instanceId": "local",
-    "notes": "Workflow ID en producción (n8n local): Rblg81qifVshsRae. Reimportar y reactivar si se reinstala n8n. CAMBIOS 2026-06-24: path corregido a Admin-usable, gruposValidos incluye h2test, agregados nodos export_stats y export_avance para pipeline completo."
+    "notes": "Workflow ID en producción (n8n local): Rblg81qifVshsRae. Reimportar y reactivar si se reinstala n8n. CAMBIOS 2026-06-24: pipeline completo implementado — q10_to_sheets siempre escribe a h1test; organizador_headless.py procesa H1Test→h2test+Observaciones+Estadisticas; export_stats y export_avance publican a GitHub Pages. /actualizar h1test = solo extracción; /actualizar h2test = pipeline completo."
   }
 }
