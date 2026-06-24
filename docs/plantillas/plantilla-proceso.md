@@ -2,7 +2,7 @@
 
 **Estado:** Idea / En progreso / Completado / Pausado
 **Última actualización:** YYYY-MM-DD
-**Procesos relacionados:** [[otro-proceso-si-aplica]]
+**Procesos relacionados:** —
 
 ## Qué hace
 Descripción breve (2-3 líneas) de qué automatiza este proceso y por qué existe.
