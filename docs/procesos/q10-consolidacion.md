@@ -2,14 +2,14 @@
 
 **Estado:** Completado
 **Última actualización:** 2026-06-24
-**Procesos relacionados:** —
+**Procesos relacionados:** [[dashboard-web]]
 
 ## Qué hace
 
 Extrae automáticamente los datos de estudiantes y progreso de cursos desde la API interna de Q10, hace un JOIN por email y sube el resultado crudo (una fila por estudiante × curso) a Google Sheets. Dos pestañas operativas:
 
 - **H1Test** — revisión interna del equipo, fórmulas/filtros en el mismo Sheet.
-- **h2test** — fuente para visualización externa en Looker Studio (datastudio.google.com).
+- **h2test** — fuente para el dashboard en GitHub Pages (via `export_stats.py`).
 
 Se ejecuta vía bot de Telegram (`/actualizar <grupo>`) desde n8n corriendo en el PC de Samuel.
 
@@ -51,7 +51,7 @@ Periodos con datos confirmados: `21, 22, 23`. Periodo `1` incluido sin garantía
 | Grupo (bot) | Sheet ID | Pestaña | Uso |
 |---|---|---|---|
 | `h1test` | `1d3S41J9nlVI3qCy-WF_D3ZezTwRCW17vnL7u284XDG0` | `H1Test` | Revisión interna del equipo |
-| `h2test` | `1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs` | `h2test` | Fuente para Power BI |
+| `h2test` | `1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs` | `h2test` | Fuente para dashboard GitHub Pages |
 
 - **Service Account:** `q10-automatizacion@n8n-automatizacion-q10.iam.gserviceaccount.com`
 - **Columnas (A→F, ambas pestañas):** `Identificacion | Nombre | Celular | Email | Curso | Avance`
@@ -93,7 +93,8 @@ El equipo clasifica los registros bajo 4 categorías tras la carga:
 | Archivo | Ubicación | Descripción |
 |---|---|---|
 | `q10_to_sheets.py` | `scripts/q10-consolidacion/` | Script principal — acepta `--grupo` |
-| `export_stats.py` | `scripts/q10-consolidacion/` | Lee pestaña `estadísticas` → genera `docs/dashboard/data.json` |
+| `export_stats.py` | `scripts/q10-consolidacion/` | Lee pestaña `h2test` (doble encabezado) → genera `docs/dashboard/data.json` |
+| `export_avance.py` | `scripts/q10-consolidacion/` | Lee pestaña `Avance` (Sheet manual) → genera `docs/avance/data.json` |
 | `setup_headers.py` | `scripts/q10-consolidacion/` | Escribe headers fila 1 (uso único) |
 | `requirements.txt` | `scripts/q10-consolidacion/` | Dependencias Python |
 | `q10-consolidacion.json` | `n8n-workflows/` | Workflow n8n (ID en producción: `Rblg81qifVshsRae`) |
@@ -149,3 +150,26 @@ indistinguibles en h2test. Número esperado: ~3,415.
 
 ### Escalabilidad futura
 - [ ] Agregar nuevas pestañas/grupos: editar `MAPEO_GRUPOS` + `MAPEO_SHEET_IDS` en `q10_to_sheets.py` y `SHEET_IDS_POR_PESTANA` + `HEADERS_POR_PESTANA` en `setup_headers.py`
+
+## Contingencia manual
+
+Si el bot de Telegram falla o n8n no está corriendo:
+
+1. Abrir terminal en el PC de Samuel.
+2. Activar el entorno virtual si aplica.
+3. Correr directamente:
+   ```bash
+   python scripts/q10-consolidacion/q10_to_sheets.py --grupo h2test
+   ```
+4. Si Q10 da error de login: verificar que credenciales en el script están vigentes y que la red corporativa no bloquea `site6.q10.com`.
+5. Si el Sheet no se actualiza: verificar que el Service Account tiene rol Editor en el Sheet destino.
+
+Ver runbook [[q10-actualizar]] para pasos detallados sin terminal (operadores no técnicos).
+
+## Conexiones del sistema
+
+- [[mapa-codigo]] — detalle técnico de `q10_to_sheets.py`, `export_stats.py`, `export_avance.py`
+- [[dashboard-web]] — consume la pestaña `h2test` producida por este proceso
+- [[convenciones]] — Q10 login multi-paso, SSL corporativo, doble encabezado en Sheets
+- Runbook: [q10-actualizar](../../runbooks/q10-actualizar.md)
+- Workflow n8n: `n8n-workflows/q10-consolidacion.json` (ID producción: `Rblg81qifVshsRae`)

@@ -11,7 +11,6 @@ import json
 import os
 import subprocess
 import sys
-from collections import defaultdict
 from datetime import datetime
 
 # truststore: en Windows con interceptación SSL corporativa, usa el cert store del SO
@@ -82,74 +81,92 @@ def conectar_hoja() -> gspread.Worksheet:
 
 
 # ── Procesamiento de h2test ───────────────────────────────────────────────────
+def detectar_grupos(row0: list, row1: list) -> list:
+    """
+    h2test tiene doble encabezado con celdas fusionadas:
+      Fila 1: nombre del curso (solo en la primera columna del grupo; el resto vacío)
+      Fila 2: sub-headers por grupo — Identificacion, Nombre, Celular, Email, Avance, [sep], [sep]
+
+    Retorna lista de dicts con la info de cada grupo de columnas.
+    """
+    posiciones = [(i, v.strip()) for i, v in enumerate(row0) if v.strip()]
+    grupos = []
+    for j, (col_inicio, nombre) in enumerate(posiciones):
+        col_fin = posiciones[j + 1][0] if j + 1 < len(posiciones) else len(row0)
+        sub = [
+            (i - col_inicio, row1[i].strip().lower())
+            for i in range(col_inicio, min(col_fin, len(row1)))
+        ]
+        offset_id     = next((o for o, h in sub if "identificac" in h), None)
+        offset_avance = next((o for o, h in sub if "avance" in h), None)
+        grupos.append({
+            "nombre":         nombre,
+            "col_inicio":     col_inicio,
+            "col_fin":        col_fin,
+            "offset_id":      offset_id,
+            "offset_avance":  offset_avance,
+        })
+    return grupos
+
+
+def _cel_grupo(row: list, col_inicio: int, offset) -> str:
+    if offset is None:
+        return ""
+    idx = col_inicio + offset
+    return row[idx].strip() if idx < len(row) else ""
+
+
 def procesar_h2test(all_values: list) -> tuple:
     """
-    Lee los datos crudos de h2test (fila 1 = headers, fila 2+ = datos).
-    Columnas A-F: Identificacion, Nombre, Celular, Email, Curso, Avance
+    h2test tiene estructura de doble encabezado:
+      Fila 0: nombres de cursos (celdas fusionadas → valor solo en col inicial)
+      Fila 1: sub-headers por grupo (Identificacion, Nombre, Celular, Email, Avance, [sep x2])
+      Fila 2+: datos — cada fila es un estudiante × curso (grupos paralelos independientes)
 
-    Retorna (por_curso, anomalias, total_estudiantes_unicos).
-
-    Categoría "SIN MATCH" agrupa todas las filas con Curso vacío —
-    incluye tanto "sin matrícula virtual" como "email sin correspondencia en
-    Consolidado", que son indistinguibles en h2test al venir del LEFT JOIN.
+    El grupo "SIN CURSO ASIGNADO" no tiene columna Avance → sus filas = SIN MATCH.
     """
-    if not all_values:
-        raise ValueError("La hoja h2test está vacía.")
+    if len(all_values) < 2:
+        raise ValueError("La hoja h2test está vacía o tiene menos de 2 filas.")
 
-    headers = [h.strip() for h in all_values[0]]
-    col_map = {h.lower(): i for i, h in enumerate(headers)}
+    grupos = detectar_grupos(all_values[0], all_values[1])
+    filas  = all_values[2:]
 
-    col_identificacion = col_map.get("identificacion")
-    col_curso          = col_map.get("curso")
-    col_avance         = col_map.get("avance")
+    cursos_normales = [g for g in grupos if "sin curso" not in g["nombre"].lower()]
+    grupo_sin_curso = next((g for g in grupos if "sin curso" in g["nombre"].lower()), None)
 
-    if col_curso is None:
-        raise ValueError(f"No se encontró la columna 'Curso' en h2test. Columnas detectadas: {headers}")
-    if col_avance is None:
-        raise ValueError(f"No se encontró la columna 'Avance' en h2test. Columnas detectadas: {headers}")
+    por_curso  = []
+    ids_unicos = set()
+    avance_0   = 0
+    avance_irr = 0
 
-    cursos_data   = defaultdict(list)
-    sin_match     = 0
-    avance_0      = 0
-    avance_irr    = 0
-    ids_unicos    = set()
+    for g in cursos_normales:
+        avances = []
+        for row in filas:
+            id_val = _cel_grupo(row, g["col_inicio"], g["offset_id"])
+            if not id_val:
+                continue
+            ids_unicos.add(id_val)
+            av = _limpiar_porcentaje(_cel_grupo(row, g["col_inicio"], g["offset_avance"]))
+            avances.append(av)
+            if av == 0.0:
+                avance_0 += 1
+            if av > 100.0:
+                avance_irr += 1
 
-    for row in all_values[1:]:
-        if _es_fila_vacia(row):
-            continue
-
-        def cel(idx):
-            return row[idx].strip() if idx is not None and idx < len(row) else ""
-
-        curso  = cel(col_curso)
-        avance = _limpiar_porcentaje(cel(col_avance))
-
-        if col_identificacion is not None:
-            ide = cel(col_identificacion)
-            if ide:
-                ids_unicos.add(ide)
-
-        if not curso:
-            sin_match += 1
-            continue
-
-        cursos_data[curso].append(avance)
-
-        if avance == 0.0:
-            avance_0 += 1
-        if avance > 100.0:
-            avance_irr += 1
-
-    por_curso = []
-    for nombre_curso, avances in sorted(cursos_data.items()):
         n = len(avances)
         por_curso.append({
-            "curso":       nombre_curso,
+            "curso":       g["nombre"],
             "estudiantes": n,
             "promedio":    round(sum(avances) / n, 2) if n else 0.0,
             "min":         round(min(avances), 2) if avances else 0.0,
             "max":         round(max(avances), 2) if avances else 0.0,
         })
+
+    sin_match = 0
+    if grupo_sin_curso and grupo_sin_curso["offset_id"] is not None:
+        for row in filas:
+            if _cel_grupo(row, grupo_sin_curso["col_inicio"], grupo_sin_curso["offset_id"]):
+                sin_match += 1
 
     anomalias = [
         {"categoria": "SIN MATCH",        "cantidad": sin_match},

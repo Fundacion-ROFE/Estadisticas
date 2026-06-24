@@ -49,8 +49,19 @@ necesita calcular "Validar" — solo alimentar las 4 columnas crudas.
 - Meeting IDs no son fijos — hay que resolverlos dinámicamente, no se puede hardcodear.
 - El reporte de participantes de Zoom puede no estar disponible inmediatamente al
   terminar la reunión — necesita margen de espera o reintento.
-- Infraestructura: n8n corre en Docker en portátil personal; decisión pendiente sobre
-  mover a Raspberry Pi para estabilidad en horario laboral.
+- Infraestructura: n8n corre local en PC de Samuel (EstudiantesJC) + cloudflared para tunnel; decisión pendiente sobre mover a máquina dedicada para estabilidad en horario laboral.
+
+## Contingencia manual
+
+Proceso en diseño — no hay contingencia definida aún. Al implementar, documentar aquí:
+el paso manual equivalente si n8n falla durante una sesión Zoom.
+
+## Conexiones del sistema
+
+- [[mapa-codigo]] — al implementar, los scripts asociados quedarán documentados ahí
+- [[convenciones]] — Server-to-Server OAuth (Zoom), SSL corporativo
+- [[q10-consolidacion]] — patrón de trigger Telegram + n8n reutilizable
+- [[dashboard-web]] — si se decide publicar estadísticas de asistencia, este proceso alimentaría un tab adicional
 
 ## Pendiente / Próximos pasos
 - [ ] Confirmar cómo se captura hoy Email/ID en la sesión real (revisar un CSV de

@@ -3,6 +3,7 @@
 > Estándares reutilizables para todas las automatizaciones. Si una decisión técnica se
 > repite en 2+ procesos, documéntala aquí y referencia desde la nota del proceso en
 > lugar de repetir la explicación completa.
+> **Conexiones:** [[00-vision-global]] · [CLAUDE.md](../CLAUDE.md) · [[mapa-codigo]]
 
 ## Naming
 - Workflows de n8n: `[area]-[accion]` en minúsculas, con guiones.
@@ -72,6 +73,24 @@ Reglas críticas — los errores aquí son silenciosos y difíciles de debuggear
 | Habilitar nodo Execute Command | `NODES_EXCLUDE=[]` en env | `N8N_ALLOW_EXEC=true` (era n8n 1.x, no existe en 2.x) |
 
 **Webhook con espacios en nombre de nodo:** agregar `"webhookId": "<uuid-v4-fijo>"` al nodo Trigger. Sin él, n8n codifica el nombre con `%20` → Express lo decodifica al recibir → path mismatch → 404.
+
+## Doble encabezado en Google Sheets
+
+Patrón presente en **h2test** y en la pestaña **Avance** del Sheet manual. La Sheets API devuelve el valor de celda fusionada solo en la primera columna del grupo; las siguientes vienen como cadena vacía.
+
+```
+Fila 1 (row0): "NOMBRE CURSO"  ""  ""  ""  ""  ""  ""   "OTRO CURSO"  ...
+Fila 2 (row1): "Identificacion" "Nombre" "Celular" "Email" "Avance" "" ""   "Identificacion" ...
+Fila 3+:        datos
+```
+
+**Patrón de detección (`detectar_grupos`):**
+1. Escanear `row1` buscando "identificac" o "número id" → cada posición es el inicio de un grupo.
+2. El nombre del curso = `row0[col_inicio].strip()` (puede ser vacío si el grupo no tiene nombre).
+3. El final del grupo = inicio del siguiente grupo (o fin de `row0`).
+4. Dentro del grupo, encontrar el offset del campo de avance/progreso escaneando `row1`.
+
+Ya implementado en `export_stats.py` y `export_avance.py`. Al crear un script para una hoja nueva con este patrón, reutilizar `detectar_grupos()`.
 
 ## Subida a Google Sheets (estándar)
 

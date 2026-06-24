@@ -1,46 +1,117 @@
-# Visión Global de Automatizaciones
+# Visión Global — Fundación ROFÉ / Jóvenes creaTIvos
 
-> Mapa de todo lo que se ha automatizado, lo que está en progreso, y lo pendiente.
-> Se actualiza cada vez que se completa o inicia un proceso nuevo.
-> Punto de entrada para entender el estado del proyecto completo de un vistazo.
+> Home de Obsidian y punto de entrada para Claude Code.
+> **Leer esto primero** antes de cualquier tarea nueva.
+> Conexiones: [[convenciones]] · [[mapa-codigo]] · [CLAUDE.md](../CLAUDE.md)
 
-## Stack general
-- **Orquestador:** n8n 2.8.4 (self-hosted, corriendo localmente en el PC de Samuel / EstudiantesJC)
-- **Tunnel externo:** Cloudflare Tunnel (`cloudflared`) — expone n8n al webhook de Telegram sin ngrok
-- **Identidad/Datos:** Google Workspace (Sheets, Drive) — Service Account por proceso
-- **Asistente de desarrollo:** Claude Code + Claude API para tareas puntuales dentro de flujos
-- **Red:** proxy/firewall corporativo con interceptación SSL — ver [[convenciones#SSL corporativo]]
+---
+
+## Flujo general del sistema
+
+```
+Telegram bot
+    │  /actualizar h2test
+    ▼
+n8n (local, PC Samuel)
+    │  ejecuta
+    ▼
+q10_to_sheets.py ──► Q10 (site6.q10.com) ──► Excel/xlsx
+    │                 Login 7 pasos AJAX
+    │  escribe
+    ▼
+Google Sheets (h2test)          Google Sheets (Avance — manual)
+    │                                   │
+    │ export_stats.py                   │ export_avance.py
+    ▼                                   ▼
+docs/dashboard/data.json        docs/avance/data.json
+    │                                   │
+    └──────────────┬────────────────────┘
+                   │ git push
+                   ▼
+           GitHub Pages
+    fundacion-rofe.github.io/Estadisticas/dashboard/
+                   │
+    ┌──────────────┼─────────────────┐
+    ▼              ▼                 ▼
+Tab 1 Q10    Tab 2 Avance    Tab 3 Comparativo
+```
+
+```
+(solo local, nunca GitHub)
+Google Sheets (h2test) ──┐
+                          ├──► panel_riesgo.py ──► consola + tools/reportes/*.csv
+Google Sheets (Avance)  ──┘     cruce por email
+```
+
+---
+
+## Stack
+
+| Componente | Detalle |
+|---|---|
+| Orquestador | n8n 2.8.4 self-hosted, local en PC Samuel (EstudiantesJC) |
+| Tunnel | Cloudflare Tunnel (`cloudflared`) — expone n8n al webhook de Telegram |
+| Identidad | Google Workspace — Service Account por proceso |
+| Dashboard | GitHub Pages → `fundacion-rofe.github.io/Estadisticas/dashboard/` |
+| Red | Proxy corporativo con SSL MITM — ver [[convenciones#SSL corporativo]] |
+
+---
 
 ## Procesos completados
 
-| Proceso | Nota | Completado | Resultado |
+| Proceso | Nota | Completado | Estado |
 |---|---|---|---|
-| Consolidación Q10 | [[q10-consolidacion]] | 2026-06-24 | 8,818 filas · H1Test + h2test operativas · bot Telegram activo |
+| Consolidación Q10 | [[q10-consolidacion]] | 2026-06-24 | Bot Telegram activo · 8,845 filas · h2test operativa |
+| Dashboard web | [[dashboard-web]] | 2026-06-24 | GitHub Pages live · 3 tabs · export_stats + export_avance funcionando |
+
+---
 
 ## Procesos en progreso
 
-| Proceso | Nota | Prioridad | Notas rápidas |
-|---|---|---|---|
-| Asistencia Zoom | [[zoom-asistencia]] | Alta | Bloqueado — pendiente confirmar captura de Email/ID en sesiones |
-
-## Procesos en construcción (iniciados, no en producción aún)
-
-| Proceso | Nota | Estado | Notas rápidas |
-|---|---|---|---|
-| Dashboard web (3 pestañas) | [[dashboard-web]] | Fase 2 lista — pendiente activar Pages y validar con datos reales (Fase 3) | `export_stats.py` + `export_asistencia.py` + `index.html` unificado + `panel_riesgo.py` completos; falta: setup Pages + primera corrida real |
-
-## Procesos identificados (pendientes de iniciar)
-
-| Proceso | Descripción breve | Por qué importa |
+| Proceso | Nota | Bloqueado por |
 |---|---|---|
-| Creación de reuniones Meet | Hoy lo hacen manualmente 2 asistentes | Ahorro de tiempo humano directo |
+| Asistencia Zoom | [[zoom-asistencia]] | Confirmar cómo se captura Email/ID en sesiones reales |
+
+---
+
+## Procesos identificados (pendientes)
+
+| Proceso | Por qué importa |
+|---|---|
+| Creación reuniones Meet | 2 asistentes lo hacen manualmente hoy |
+| Panel de riesgo real | `panel_riesgo.py` listo — pendiente validar con datos reales y corregir apuntador a pestaña Avance |
+
+---
+
+## Archivos clave
+
+| Archivo | Propósito |
+|---|---|
+| [CLAUDE.md](../CLAUDE.md) | Instrucciones para Claude Code |
+| [[convenciones]] | Estándares técnicos (SSL, Q10, n8n, Sheets) |
+| [[mapa-codigo]] | Índice esquemático de todos los scripts |
+| [claude_sessions.md](../claude_sessions.md) | Bitácora cronológica de sesiones |
+| [[plantillas/plantilla-proceso]] | Plantilla para notas nuevas de proceso |
+
+---
+
+## Runbooks para operadores
+
+| Runbook | Para quién |
+|---|---|
+| [q10-actualizar](../runbooks/q10-actualizar.md) | Equipo no técnico — actualizar H1Test vía bot Telegram |
+
+---
 
 ## Patrones recurrentes detectados
 
-- **SSL corporativo:** todos los procesos que hagan HTTP desde Python o n8n en esta red necesitan el mismo fix. Ver [[convenciones#SSL corporativo]].
-- **Trigger Telegram + n8n local:** patrón establecido en Q10, reutilizable para otros procesos bajo demanda.
+- **SSL corporativo:** aplica a Python, n8n y git. Ver [[convenciones#SSL corporativo]].
+- **Doble encabezado en Sheets:** h2test y pestaña Avance usan el mismo patrón (fila 1 = nombres fusionados, fila 2 = sub-headers). Ver [[convenciones#Doble encabezado en Google Sheets]].
+- **Trigger Telegram + n8n local:** patrón establecido en Q10, reutilizable para otros procesos.
+- **JSON sin PII:** toda salida pública es JSON agregado. Datos individuales solo en `tools/`.
+
+---
 
 ## Próxima gran decisión
-Una vez completados 3-4 procesos individuales, evaluar unificación: ¿conviene un
-workflow maestro en n8n que orqueste sub-flujos, o mantenerlos independientes?
-Decisión pendiente — no tomar todavía, falta visión suficiente del entorno completo.
+
+Una vez completados 3-4 procesos, evaluar si conviene un workflow maestro n8n que orqueste sub-flujos o mantenerlos independientes. No tomar antes de tener visión completa.

@@ -132,3 +132,31 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
 - `tools/panel_riesgo.py` creado: script local que cruza hoja manual × h2test por email, genera 4 secciones de reporte y exporta CSVs con `--csv`. Detecta automáticamente SIN MATCH, avance 0% vs presencia física, y casos de atención.
 - Decisión de cruce: por email (correo electrónico), no por ID — los IDs son incompatibles entre sistemas.
 - Pendiente Fase 3: (1) compartir Sheet asistencias con Service Account, (2) correr export_asistencia.py con datos reales, (3) validar cruce panel_riesgo.py, (4) activar GitHub Pages en Settings → Pages → main → /docs.
+
+---
+
+## 2026-06-24 — [Dashboard] Fase 3: datos reales + pestaña Avance + dashboard en producción
+
+**Estado:** Completado
+**Proceso relacionado:** [[dashboard-web]]
+
+- Descubierto y corregido doble encabezado en h2test: `export_stats.py` reescrito con `detectar_grupos()`.
+- Corrección crítica de fuente: la "hoja manual" es la pestaña **Avance** (% progreso por curso), no la de sesiones presenciales. Creado `export_avance.py` desde cero.
+- Tab 2 del dashboard renombrado "Avance Manual"; Tab 3 Comparativo reescrito con mapeo `ALIAS_Q10` (nombres cortos Avance ↔ nombres largos Q10).
+- SSL corporativo bloqueaba git push → resuelto con `git config --local http.sslBackend schannel`; documentado en `convenciones.md`.
+- Dashboard publicado en producción: `fundacion-rofe.github.io/Estadisticas/dashboard/`.
+- Datos reales: 863 estudiantes únicos, 94.06% promedio general Avance; 4,563 únicos Q10.
+
+---
+
+## 2026-06-24 — [Sistema] Plan Maestro — Cerebro de Conocimiento completado
+
+**Estado:** Completado
+**Proceso relacionado:** transversal
+
+- PASO 1: Eliminado `automatizaciones-empresa/` (copia huérfana, nunca en git). Borrado `docs/otro-proceso-si-aplica.md` y `docs/Untitled.base`.
+- PASO 2: Creado `docs/procesos/mapa-codigo.md` — índice esquemático de los 7 scripts (propósito, servicios, funciones, variables, gotchas).
+- PASO 3: `CLAUDE.md` reescrito (arquitectura real, tabla de componentes, convenciones actualizadas). `docs/00-vision-global.md` reescrito como Home de Obsidian con diagrama ASCII y tabla de estado por proceso.
+- PASO 3.3: Sección "## Conexiones del sistema" añadida a los 3 archivos de proceso. Sección "## Contingencia manual" añadida donde faltaba.
+- PASO 4: `convenciones.md` actualizado con sección "Doble encabezado en Google Sheets" y enlace bidireccional. Stale refs corregidos (Looker Studio → GitHub Pages, Docker → cloudflared, estadísticas tab → h2test).
+- Sin huérfanos: todos los `.md` en `docs/` tienen enlace de entrada desde `00-vision-global.md`.
