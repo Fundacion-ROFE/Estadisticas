@@ -269,7 +269,7 @@ def descargar_estudiantes(session: requests.Session) -> pd.DataFrame:
         ("Programa", ""),
         ("Filtros[3].Name", "Estado"),
         ("Filtros[3].PartialName", "_RadioFilter"),
-        ("Estado", "T"),
+        ("Estado", "A"),
         ("Filtros[4].Name", "informacionAdicional"),
         ("Filtros[4].PartialName", "_SelectFilter"),
         ("informacionAdicional", ""),

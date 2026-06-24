@@ -21,7 +21,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Parsear comando /actualizar <grupo>\nconst msg = $input.item.json.message || {};\nconst text = (msg.text || '').trim();\nconst chatId = msg.chat?.id;\nconst gruposValidos = Object.keys({ h1test: 'H1Test' });\n\nconst match = text.match(/^\\/actualizar\\s+(\\S+)/i);\n\nif (!match) {\n  return [{ json: {\n    valido: false,\n    grupo: null,\n    grupo_pedido: null,\n    chat_id: chatId,\n    texto_original: text\n  }}];\n}\n\nconst grupoPedido = match[1].toLowerCase();\nconst esValido = gruposValidos.includes(grupoPedido);\n\nreturn [{ json: {\n  valido: esValido,\n  grupo: esValido ? grupoPedido : null,\n  grupo_pedido: grupoPedido,\n  chat_id: chatId,\n  grupos_disponibles: gruposValidos.join(', '),\n  texto_original: text\n}}];"
+        "jsCode": "// Parsear comando /actualizar <grupo>\nconst msg = $input.item.json.message || {};\nconst text = (msg.text || '').trim();\nconst chatId = msg.chat?.id;\nconst gruposValidos = ['h1test', 'h2test'];\n\nconst match = text.match(/^\\/actualizar\\s+(\\S+)/i);\n\nif (!match) {\n  return [{ json: {\n    valido: false,\n    grupo: null,\n    grupo_pedido: null,\n    chat_id: chatId,\n    texto_original: text\n  }}];\n}\n\nconst grupoPedido = match[1].toLowerCase();\nconst esValido = gruposValidos.includes(grupoPedido);\n\nreturn [{ json: {\n  valido: esValido,\n  grupo: esValido ? grupoPedido : null,\n  grupo_pedido: grupoPedido,\n  chat_id: chatId,\n  grupos_disponibles: gruposValidos.join(', '),\n  texto_original: text\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -32,21 +32,13 @@
     {
       "parameters": {
         "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
           "conditions": [
             {
               "id": "cond-valido-001",
               "leftValue": "={{ $json.valido }}",
               "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals",
-                "rightType": "any"
-              }
+              "operator": { "type": "boolean", "operation": "equals", "rightType": "any" }
             }
           ],
           "combinator": "and"
@@ -71,39 +63,29 @@
       "id": "a1b2c3d4-0001-0001-0001-000000000004",
       "name": "Enviar Ayuda",
       "credentials": {
-        "telegramApi": {
-          "id": "kGTAfWTTp4FATF66",
-          "name": "Telegram Q10 Bot"
-        }
+        "telegramApi": { "id": "kGTAfWTTp4FATF66", "name": "Telegram Q10 Bot" }
       }
     },
     {
       "parameters": {
-        "command": "={{ 'cd C:/Users/EstudiantesJC/Downloads/automatizaciones-empresa/scripts/q10-consolidacion && python q10_to_sheets.py --grupo ' + $json.grupo }}"
+        "command": "={{ 'cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python q10_to_sheets.py --grupo ' + $('Parsear Comando').first().json.grupo }}"
       },
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [660, 160],
+      "position": [660, 140],
       "id": "a1b2c3d4-0001-0001-0001-000000000005",
-      "name": "Ejecutar Script"
+      "name": "Ejecutar q10_to_sheets"
     },
     {
       "parameters": {
         "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
           "conditions": [
             {
               "id": "cond-exito-001",
               "leftValue": "={{ $json.exitCode }}",
               "rightValue": 0,
-              "operator": {
-                "type": "number",
-                "operation": "equals"
-              }
+              "operator": { "type": "number", "operation": "equals" }
             }
           ],
           "combinator": "and"
@@ -112,83 +94,138 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [880, 160],
+      "position": [900, 140],
       "id": "a1b2c3d4-0001-0001-0001-000000000006",
-      "name": "Exito?"
+      "name": "Exito Q10?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "cond-h2test-001",
+              "leftValue": "={{ $('Parsear Comando').first().json.grupo }}",
+              "rightValue": "h2test",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 40],
+      "id": "a1b2c3d4-0001-0001-0001-000000000009",
+      "name": "Es h2test?"
+    },
+    {
+      "parameters": {
+        "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python export_stats.py"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1340, -80],
+      "id": "a1b2c3d4-0001-0001-0001-000000000010",
+      "name": "Ejecutar export_stats"
+    },
+    {
+      "parameters": {
+        "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python export_avance.py"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1560, -80],
+      "id": "a1b2c3d4-0001-0001-0001-000000000011",
+      "name": "Ejecutar export_avance"
     },
     {
       "parameters": {
         "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
-        "text": "={{ (() => {\n  const stdout = $json.stdout || '';\n  const m = stdout.match(/RESUMEN: grupo=(\\S+) filas=(\\d+) estado=exito/);\n  const filas = m ? m[2] : '?';\n  const grupo = $('Parsear Comando').first().json.grupo.toUpperCase();\n  return '\\u2705 ' + grupo + ' actualizado\\u2014' + filas + ' filas cargadas.';\n})() }}",
+        "text": "={{ (() => {\n  const stdoutQ10 = $('Ejecutar q10_to_sheets').first().json.stdout || '';\n  const mQ10 = stdoutQ10.match(/RESUMEN: grupo=\\S+ filas=(\\d+) estado=exito/);\n  const filas = mQ10 ? mQ10[1] : '?';\n  const statsOk = $('Ejecutar export_stats').first().json.exitCode === 0;\n  const avanceOk = $json.exitCode === 0;\n  const ok = (v) => v ? '\\u2705' : '\\u26A0\\uFE0F';\n  return '\\u2705 h2test actualizado \\u2014 ' + filas + ' filas cargadas.\\n' +\n    ok(statsOk) + ' Stats Q10 \\u2192 GitHub Pages.\\n' +\n    ok(avanceOk) + ' Avance Manual \\u2192 GitHub Pages.\\n' +\n    '\\n\\ud83d\\udcca Dashboard: fundacion-rofe.github.io/Estadisticas/dashboard/';\n})() }}",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1100, 60],
-      "id": "a1b2c3d4-0001-0001-0001-000000000007",
-      "name": "Responder OK",
+      "position": [1780, -80],
+      "id": "a1b2c3d4-0001-0001-0001-000000000012",
+      "name": "Responder OK Dashboard",
       "credentials": {
-        "telegramApi": {
-          "id": "kGTAfWTTp4FATF66",
-          "name": "Telegram Q10 Bot"
-        }
+        "telegramApi": { "id": "kGTAfWTTp4FATF66", "name": "Telegram Q10 Bot" }
       }
     },
     {
       "parameters": {
         "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
-        "text": "={{ (() => {\n  const stderr = $json.stderr || $json.stdout || 'Sin detalle disponible.';\n  const grupo = $('Parsear Comando').first().json.grupo.toUpperCase();\n  return '\\u274C Error actualizando ' + grupo + '\\n\\n' + stderr.slice(0, 300);\n})() }}",
+        "text": "={{ (() => {\n  const stdout = $('Ejecutar q10_to_sheets').first().json.stdout || '';\n  const m = stdout.match(/RESUMEN: grupo=(\\S+) filas=(\\d+) estado=exito/);\n  const filas = m ? m[2] : '?';\n  const grupo = $('Parsear Comando').first().json.grupo.toUpperCase();\n  return '\\u2705 ' + grupo + ' actualizado \\u2014 ' + filas + ' filas cargadas.';\n})() }}",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1100, 260],
+      "position": [1340, 200],
+      "id": "a1b2c3d4-0001-0001-0001-000000000007",
+      "name": "Responder OK",
+      "credentials": {
+        "telegramApi": { "id": "kGTAfWTTp4FATF66", "name": "Telegram Q10 Bot" }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
+        "text": "={{ (() => {\n  const stderr = $('Ejecutar q10_to_sheets').first().json.stderr || $('Ejecutar q10_to_sheets').first().json.stdout || 'Sin detalle disponible.';\n  const grupo = $('Parsear Comando').first().json.grupo.toUpperCase();\n  return '\\u274C Error actualizando ' + grupo + '\\n\\n' + stderr.slice(0, 300);\n})() }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1120, 320],
       "id": "a1b2c3d4-0001-0001-0001-000000000008",
       "name": "Responder Error",
       "credentials": {
-        "telegramApi": {
-          "id": "kGTAfWTTp4FATF66",
-          "name": "Telegram Q10 Bot"
-        }
+        "telegramApi": { "id": "kGTAfWTTp4FATF66", "name": "Telegram Q10 Bot" }
       }
     }
   ],
   "connections": {
     "Telegram Trigger": {
-      "main": [
-        [{"node": "Parsear Comando", "type": "main", "index": 0}]
-      ]
+      "main": [[{ "node": "Parsear Comando", "type": "main", "index": 0 }]]
     },
     "Parsear Comando": {
-      "main": [
-        [{"node": "Comando valido?", "type": "main", "index": 0}]
-      ]
+      "main": [[{ "node": "Comando valido?", "type": "main", "index": 0 }]]
     },
     "Comando valido?": {
       "main": [
-        [{"node": "Ejecutar Script", "type": "main", "index": 0}],
-        [{"node": "Enviar Ayuda",    "type": "main", "index": 0}]
+        [{ "node": "Ejecutar q10_to_sheets", "type": "main", "index": 0 }],
+        [{ "node": "Enviar Ayuda",           "type": "main", "index": 0 }]
       ]
     },
-    "Ejecutar Script": {
+    "Ejecutar q10_to_sheets": {
+      "main": [[{ "node": "Exito Q10?", "type": "main", "index": 0 }]]
+    },
+    "Exito Q10?": {
       "main": [
-        [{"node": "Exito?", "type": "main", "index": 0}]
+        [{ "node": "Es h2test?",     "type": "main", "index": 0 }],
+        [{ "node": "Responder Error", "type": "main", "index": 0 }]
       ]
     },
-    "Exito?": {
+    "Es h2test?": {
       "main": [
-        [{"node": "Responder OK",    "type": "main", "index": 0}],
-        [{"node": "Responder Error", "type": "main", "index": 0}]
+        [{ "node": "Ejecutar export_stats", "type": "main", "index": 0 }],
+        [{ "node": "Responder OK",          "type": "main", "index": 0 }]
       ]
+    },
+    "Ejecutar export_stats": {
+      "main": [[{ "node": "Ejecutar export_avance", "type": "main", "index": 0 }]]
+    },
+    "Ejecutar export_avance": {
+      "main": [[{ "node": "Responder OK Dashboard", "type": "main", "index": 0 }]]
     }
   },
   "active": false,
-  "settings": {
-    "executionOrder": "v1"
-  },
+  "settings": { "executionOrder": "v1" },
   "id": "wf-q10-bot-001",
   "meta": {
     "instanceId": "local",
-    "notes": "Workflow ID en producción (n8n local): Rblg81qifVshsRae. Reimportar y reactivar si se reinstala n8n."
+    "notes": "Workflow ID en producción (n8n local): Rblg81qifVshsRae. Reimportar y reactivar si se reinstala n8n. CAMBIOS 2026-06-24: path corregido a Admin-usable, gruposValidos incluye h2test, agregados nodos export_stats y export_avance para pipeline completo."
   }
 }
