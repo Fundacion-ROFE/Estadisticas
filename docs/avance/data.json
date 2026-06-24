@@ -1,0 +1,68 @@
+{
+  "ultima_actualizacion": "2026-06-24T15:29:47.599439-05:00",
+  "segmento": "Logica-Nivel 2-2026",
+  "por_curso": [
+    {
+      "nombre": "Bienvenida",
+      "estudiantes": 863,
+      "promedio": 98.49,
+      "min": 0.0,
+      "max": 100.0
+    },
+    {
+      "nombre": "Hackea Tu Cerebro",
+      "estudiantes": 862,
+      "promedio": 96.37,
+      "min": 0.0,
+      "max": 100.0
+    },
+    {
+      "nombre": "Habilidades Esenciales",
+      "estudiantes": 854,
+      "promedio": 95.09,
+      "min": 0.0,
+      "max": 100.0
+    },
+    {
+      "nombre": "Emprendimiento",
+      "estudiantes": 854,
+      "promedio": 93.63,
+      "min": 0.0,
+      "max": 101.0
+    },
+    {
+      "nombre": "IA",
+      "estudiantes": 809,
+      "promedio": 93.72,
+      "min": 0.0,
+      "max": 100.0
+    },
+    {
+      "nombre": "Lógica de Programación",
+      "estudiantes": 806,
+      "promedio": 86.55,
+      "min": 0.0,
+      "max": 100.0
+    }
+  ],
+  "totales": {
+    "total_cursos": 6,
+    "total_registros": 5048,
+    "estudiantes_unicos_id": 863,
+    "promedio_general": 94.06
+  },
+  "anomalias": [
+    {
+      "categoria": "AVANCE 0%",
+      "cantidad": 174
+    },
+    {
+      "categoria": "AVANCE IRREGULAR",
+      "cantidad": 2
+    },
+    {
+      "categoria": "SIN ETIQUETA",
+      "cantidad": 2584
+    }
+  ]
+}
