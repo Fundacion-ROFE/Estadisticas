@@ -160,3 +160,15 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
 - PASO 3.3: Sección "## Conexiones del sistema" añadida a los 3 archivos de proceso. Sección "## Contingencia manual" añadida donde faltaba.
 - PASO 4: `convenciones.md` actualizado con sección "Doble encabezado en Google Sheets" y enlace bidireccional. Stale refs corregidos (Looker Studio → GitHub Pages, Docker → cloudflared, estadísticas tab → h2test).
 - Sin huérfanos: todos los `.md` en `docs/` tienen enlace de entrada desde `00-vision-global.md`.
+
+---
+
+## 2026-06-24 — [Q10] Pipeline completo — eliminado el .exe del flujo de automatización
+
+**Estado:** Completado (pendiente: reimportar workflow en n8n y probar end-to-end)
+**Proceso relacionado:** [[q10-consolidacion]]
+
+- Creado `organizador_headless.py` — extrae toda la lógica de negocio de `organizador_Q10.py` sin GUI: lee H1Test, ordena por curso, escribe h2test en bloques horizontales (5 cols por curso + 2 cols separador), genera pestaña Observaciones (SIN MATCH / SIN CURSO / AVANCE 0% / IRREGULAR) y pestaña Estadisticas.
+- Workflow n8n actualizado: `q10_to_sheets.py` ahora siempre usa `--grupo h1test`; `/actualizar h2test` encadena organizador → export_stats → export_avance → GitHub Pages; `/actualizar h1test` solo extrae (para revisión sin publicar).
+- Documentación actualizada: flujo de 3 fases en `q10-consolidacion.md`, nueva entrada en `mapa-codigo.md`, diagrama ASCII corregido en `00-vision-global.md`.
+- **Pendiente:** reimportar `n8n-workflows/q10-consolidacion.json` en la instancia n8n local (ID producción actual: `Rblg81qifVshsRae`), desactivar el anterior y activar el nuevo. Luego probar con `/actualizar h2test` en Telegram.
