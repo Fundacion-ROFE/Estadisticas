@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Q10 — Fundación ROFÉ | Jóvenes creaTIvos</title>
+  <!--
+    DISEÑO GENERADO CON 21.dev
+    Pasar la estructura de data.json a 21.dev con estas dos secciones:
+      1. POR CURSO — tabla con columnas: Curso, Estudiantes, Promedio %, Mín %, Máx %
+      2. ANOMALÍAS — scorecards: SIN CURSO, AVANCE 0%, SIN MATCH, AVANCE IRREGULAR
+    Los datos se cargan con fetch('./data.json') — el archivo vive en la misma carpeta.
+  -->
+</head>
+<body>
+  <div id="app">Cargando datos...</div>
+
+  <script>
+    fetch('./data.json')
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('app').textContent =
+          'Última actualización: ' + data.ultima_actualizacion;
+        // El diseño final reemplaza este bloque — generado con 21.dev
+      })
+      .catch(err => {
+        document.getElementById('app').textContent = 'Error al cargar data.json: ' + err;
+      });
+  </script>
+</body>
+</html>

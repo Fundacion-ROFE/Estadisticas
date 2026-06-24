@@ -1,0 +1,194 @@
+{
+  "name": "Bot Q10 - Actualizar Grupos",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 300],
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "name": "Telegram Trigger",
+      "webhookId": "7f3a2b1c-4d5e-6f70-8901-2b3c4d5e6f7a",
+      "credentials": {
+        "telegramApi": {
+          "id": "kGTAfWTTp4FATF66",
+          "name": "Telegram Q10 Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parsear comando /actualizar <grupo>\nconst msg = $input.item.json.message || {};\nconst text = (msg.text || '').trim();\nconst chatId = msg.chat?.id;\nconst gruposValidos = Object.keys({ h1test: 'H1Test' });\n\nconst match = text.match(/^\\/actualizar\\s+(\\S+)/i);\n\nif (!match) {\n  return [{ json: {\n    valido: false,\n    grupo: null,\n    grupo_pedido: null,\n    chat_id: chatId,\n    texto_original: text\n  }}];\n}\n\nconst grupoPedido = match[1].toLowerCase();\nconst esValido = gruposValidos.includes(grupoPedido);\n\nreturn [{ json: {\n  valido: esValido,\n  grupo: esValido ? grupoPedido : null,\n  grupo_pedido: grupoPedido,\n  chat_id: chatId,\n  grupos_disponibles: gruposValidos.join(', '),\n  texto_original: text\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "id": "a1b2c3d4-0001-0001-0001-000000000002",
+      "name": "Parsear Comando"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-valido-001",
+              "leftValue": "={{ $json.valido }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "rightType": "any"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, 300],
+      "id": "a1b2c3d4-0001-0001-0001-000000000003",
+      "name": "Comando valido?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ 'No entendi el comando.\\n\\nUsa:\\n/actualizar <grupo>\\n\\nGrupos disponibles: ' + $json.grupos_disponibles }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [660, 460],
+      "id": "a1b2c3d4-0001-0001-0001-000000000004",
+      "name": "Enviar Ayuda",
+      "credentials": {
+        "telegramApi": {
+          "id": "kGTAfWTTp4FATF66",
+          "name": "Telegram Q10 Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "={{ 'cd C:/Users/EstudiantesJC/Downloads/automatizaciones-empresa/scripts/q10-consolidacion && python q10_to_sheets.py --grupo ' + $json.grupo }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [660, 160],
+      "id": "a1b2c3d4-0001-0001-0001-000000000005",
+      "name": "Ejecutar Script"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-exito-001",
+              "leftValue": "={{ $json.exitCode }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [880, 160],
+      "id": "a1b2c3d4-0001-0001-0001-000000000006",
+      "name": "Exito?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
+        "text": "={{ (() => {\n  const stdout = $json.stdout || '';\n  const m = stdout.match(/RESUMEN: grupo=(\\S+) filas=(\\d+) estado=exito/);\n  const filas = m ? m[2] : '?';\n  const grupo = $('Parsear Comando').first().json.grupo.toUpperCase();\n  return '\\u2705 ' + grupo + ' actualizado\\u2014' + filas + ' filas cargadas.';\n})() }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1100, 60],
+      "id": "a1b2c3d4-0001-0001-0001-000000000007",
+      "name": "Responder OK",
+      "credentials": {
+        "telegramApi": {
+          "id": "kGTAfWTTp4FATF66",
+          "name": "Telegram Q10 Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
+        "text": "={{ (() => {\n  const stderr = $json.stderr || $json.stdout || 'Sin detalle disponible.';\n  const grupo = $('Parsear Comando').first().json.grupo.toUpperCase();\n  return '\\u274C Error actualizando ' + grupo + '\\n\\n' + stderr.slice(0, 300);\n})() }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1100, 260],
+      "id": "a1b2c3d4-0001-0001-0001-000000000008",
+      "name": "Responder Error",
+      "credentials": {
+        "telegramApi": {
+          "id": "kGTAfWTTp4FATF66",
+          "name": "Telegram Q10 Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [{"node": "Parsear Comando", "type": "main", "index": 0}]
+      ]
+    },
+    "Parsear Comando": {
+      "main": [
+        [{"node": "Comando valido?", "type": "main", "index": 0}]
+      ]
+    },
+    "Comando valido?": {
+      "main": [
+        [{"node": "Ejecutar Script", "type": "main", "index": 0}],
+        [{"node": "Enviar Ayuda",    "type": "main", "index": 0}]
+      ]
+    },
+    "Ejecutar Script": {
+      "main": [
+        [{"node": "Exito?", "type": "main", "index": 0}]
+      ]
+    },
+    "Exito?": {
+      "main": [
+        [{"node": "Responder OK",    "type": "main", "index": 0}],
+        [{"node": "Responder Error", "type": "main", "index": 0}]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "wf-q10-bot-001",
+  "meta": {
+    "instanceId": "local",
+    "notes": "Workflow ID en producción (n8n local): Rblg81qifVshsRae. Reimportar y reactivar si se reinstala n8n."
+  }
+}

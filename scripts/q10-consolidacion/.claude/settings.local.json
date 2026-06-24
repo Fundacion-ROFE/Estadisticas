@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__claude_ai_Google_Drive__read_file_content",
+      "PowerShell(python \"C:\\\\Users\\\\ESTUDI~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-EstudiantesJC-downloads-automatizaciones-empresa-scripts-q10-consolidacion\\\\d0ab54c1-51ea-4fe4-b1ed-d7ddd13c5060\\\\scratchpad\\\\find_headers.py\")",
+      "PowerShell(python \"C:\\\\Users\\\\ESTUDI~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-EstudiantesJC-downloads-automatizaciones-empresa-scripts-q10-consolidacion\\\\d0ab54c1-51ea-4fe4-b1ed-d7ddd13c5060\\\\scratchpad\\\\show_tabs.py\")",
+      "PowerShell(git *)"
+    ]
+  }
+}
