@@ -3,29 +3,591 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard Q10 — Fundación ROFÉ | Jóvenes creaTIvos</title>
-  <!--
-    DISEÑO GENERADO CON 21.dev
-    Pasar la estructura de data.json a 21.dev con estas dos secciones:
-      1. POR CURSO — tabla con columnas: Curso, Estudiantes, Promedio %, Mín %, Máx %
-      2. ANOMALÍAS — scorecards: SIN CURSO, AVANCE 0%, SIN MATCH, AVANCE IRREGULAR
-    Los datos se cargan con fetch('./data.json') — el archivo vive en la misma carpeta.
-  -->
+  <title>Dashboard ROFÉ — Jóvenes creaTIvos</title>
+  <style>
+    :root {
+      --bg:         #0f1117;
+      --surface:    #1a1d27;
+      --border:     #2a2d3a;
+      --green:      #22c55e;
+      --green-bg:   rgba(21,128,61,0.13);
+      --yellow:     #f59e0b;
+      --yellow-bg:  rgba(245,158,11,0.13);
+      --red:        #ef4444;
+      --red-bg:     rgba(220,38,38,0.13);
+      --accent:     #6366f1;
+      --accent-bg:  rgba(99,102,241,0.13);
+      --blue:       #3b82f6;
+      --blue-bg:    rgba(59,130,246,0.13);
+      --orange:     #f97316;
+      --orange-bg:  rgba(249,115,22,0.13);
+      --text:       #f1f5f9;
+      --muted:      #94a3b8;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; font-size: 15px;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 32px;
+      display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    }
+    .brand      { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+    .brand-rofe { color: var(--accent); }
+    .hd-meta    { flex: 1; min-width: 0; }
+    .hd-seg     { font-size: 0.8rem; color: var(--muted); }
+    .hd-upd     { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+    .status-badge {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; padding: 4px 10px; border-radius: 4px;
+    }
+    .badge-live   { background: var(--green-bg);  color: var(--green); }
+    .badge-recent { background: var(--accent-bg); color: var(--accent); }
+    .badge-live .dot { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+    }
+    .tab-btn {
+      background: none; border: none; color: var(--muted);
+      font-size: 0.85rem; font-weight: 600; padding: 12px 20px;
+      cursor: pointer; border-bottom: 2px solid transparent;
+      transition: color .2s, border-color .2s;
+    }
+    .tab-btn:hover  { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── Layout ── */
+    main { max-width: 1100px; margin: 0 auto; padding: 28px 24px 56px; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .gap { margin-top: 24px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: 22px;
+    }
+    .card-title {
+      font-size: 0.78rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .07em;
+      color: var(--muted); margin-bottom: 18px;
+    }
+
+    /* ── KPIs ── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+    .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px; }
+    .kpi-val  { font-size: 2rem; font-weight: 700; line-height: 1; }
+    .kpi-lbl  { font-size: 0.8rem; font-weight: 600; margin-top: 7px; }
+    .kpi-sub  { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
+
+    /* ── Semáforo ── */
+    .sem-green  { color: var(--green); }
+    .sem-yellow { color: var(--yellow); }
+    .sem-red    { color: var(--red); }
+    .tag {
+      display: inline-block; font-size: .7rem; font-weight: 700;
+      padding: 2px 7px; border-radius: 4px; white-space: nowrap;
+    }
+    .tag-green  { background: var(--green-bg);  color: var(--green); }
+    .tag-yellow { background: var(--yellow-bg); color: var(--yellow); }
+    .tag-red    { background: var(--red-bg);    color: var(--red); }
+    .tag-blue   { background: var(--blue-bg);   color: var(--blue); }
+    .tag-orange { background: var(--orange-bg); color: var(--orange); }
+
+    /* ── Tabla ── */
+    .dt { width: 100%; border-collapse: collapse; }
+    .dt th {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--muted); padding: 8px 12px;
+      border-bottom: 1px solid var(--border); text-align: left;
+    }
+    .dt td { font-size: .85rem; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+    .dt tr:last-child td { border-bottom: none; }
+    .dt tbody tr:hover td { background: rgba(255,255,255,.02); }
+    .td-r { text-align: right; font-variant-numeric: tabular-nums; }
+
+    /* ── Barras ── */
+    .bar-row { display: grid; grid-template-columns: 200px 1fr 50px; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .bar-lbl  { font-size: .82rem; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar-track { background: var(--border); border-radius: 4px; height: 24px; overflow: hidden; }
+    .bar-fill  { height: 100%; border-radius: 4px; width: 0; }
+    .bar-cnt   { font-size: .82rem; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+
+    /* ── Scorecards anomalías ── */
+    .anom-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+    .anom-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 18px; }
+    .anom-val  { font-size: 2rem; font-weight: 700; color: var(--red); }
+    .anom-lbl  { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-top: 6px; }
+    .anom-desc { font-size: .75rem; color: var(--muted); margin-top: 4px; }
+
+    /* ── Tab 3: dos columnas ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .col-blue   { border-left: 3px solid var(--blue); }
+    .col-orange { border-left: 3px solid var(--orange); }
+    .stat-row   { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-lbl { font-size: .82rem; color: var(--muted); }
+    .stat-val { font-size: 1rem; font-weight: 700; }
+
+    .metrics-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+    .metric-card  { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .metric-val   { font-size: 1.8rem; font-weight: 700; line-height: 1; }
+    .metric-lbl   { font-size: .78rem; color: var(--muted); margin-top: 6px; }
+
+    .compare-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+    .compare-item { text-align: center; padding: 18px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+    .compare-big  { font-size: 2.2rem; font-weight: 700; }
+    .compare-lbl  { font-size: .78rem; color: var(--muted); margin-top: 6px; }
+
+    /* ── Info / nota ── */
+    .info-box {
+      background: var(--accent-bg); border: 1px solid var(--accent);
+      border-radius: 8px; padding: 14px 18px; font-size: .82rem; color: var(--muted);
+    }
+    .info-box strong { color: var(--text); }
+    .chart-note { font-size: .76rem; color: var(--muted); margin-top: 14px; }
+    .chart-note strong { color: var(--text); }
+
+    /* ── Skeleton / Error ── */
+    .skel {
+      background: linear-gradient(90deg,var(--surface) 25%,var(--border) 50%,var(--surface) 75%);
+      background-size: 200% 100%; animation: shim 1.5s infinite; border-radius: 4px;
+    }
+    @keyframes shim { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    .error-box {
+      background: var(--red-bg); border: 1px solid var(--red);
+      border-radius: 8px; padding: 18px 22px; color: var(--red); margin-top: 24px;
+    }
+    .error-box strong { display: block; margin-bottom: 4px; }
+
+    footer { text-align: center; padding: 28px 16px 16px; font-size: .75rem; color: var(--muted); }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      header      { padding: 12px 14px; }
+      .tabs       { padding: 0 8px; }
+      .tab-btn    { padding: 10px 12px; font-size: .78rem; }
+      main        { padding: 16px 12px 40px; }
+      .kpi-grid   { grid-template-columns: 1fr 1fr; }
+      .anom-grid  { grid-template-columns: 1fr; }
+      .two-col    { grid-template-columns: 1fr; }
+      .metrics-grid { grid-template-columns: 1fr 1fr; }
+      .compare-row  { grid-template-columns: 1fr; }
+      .bar-row    { grid-template-columns: 110px 1fr 40px; }
+    }
+  </style>
 </head>
 <body>
-  <div id="app">Cargando datos...</div>
 
-  <script>
-    fetch('./data.json')
-      .then(r => r.json())
-      .then(data => {
-        document.getElementById('app').textContent =
-          'Última actualización: ' + data.ultima_actualizacion;
-        // El diseño final reemplaza este bloque — generado con 21.dev
-      })
-      .catch(err => {
-        document.getElementById('app').textContent = 'Error al cargar data.json: ' + err;
-      });
-  </script>
+<!-- Header dinámico -->
+<div id="header-root">
+  <div style="height:58px;background:var(--surface);border-bottom:1px solid var(--border)"></div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('t1',this)">Estadísticas Q10</button>
+  <button class="tab-btn"        onclick="switchTab('t2',this)">Asistencia</button>
+  <button class="tab-btn"        onclick="switchTab('t3',this)">Comparativo</button>
+</div>
+
+<main>
+  <!-- Skeleton inicial -->
+  <div id="loading">
+    <div class="skel" style="height:100px;margin-bottom:14px"></div>
+    <div class="skel" style="height:220px;margin-bottom:14px"></div>
+    <div class="skel" style="height:160px"></div>
+  </div>
+
+  <div id="t1" class="tab-panel"></div>
+  <div id="t2" class="tab-panel"></div>
+  <div id="t3" class="tab-panel"></div>
+</main>
+
+<footer id="footer-root"></footer>
+
+<script>
+// ── Utilidades ────────────────────────────────────────────────────────────────
+function esc(s){ return String(s??'—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmt(n){ return n!=null ? Number(n).toLocaleString('es-CO') : '—'; }
+function fmtPct(n){ return n!=null ? Number(n).toFixed(1)+'%' : '—'; }
+function fmtTs(iso){
+  try{
+    const d=new Date(iso);
+    return 'Actualizado el '+d.toLocaleDateString('es-CO',{year:'numeric',month:'long',day:'numeric'})
+      +', '+d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  }catch{ return iso||'—'; }
+}
+function esHoy(iso){ try{ return new Date(iso).toDateString()===new Date().toDateString(); }catch{return false;} }
+function maxTs(a,b){ try{ return new Date(a)>=new Date(b)?a:b; }catch{ return a||b; } }
+
+// Semáforo: < 60 rojo, 60-79 amarillo, >= 80 verde
+function sem(v){
+  const n=Number(v);
+  if(n>=80) return {c:'var(--green)',  bg:'var(--green-bg)',  cls:'sem-green',  tag:'tag-green',  lbl:'Satisfactorio'};
+  if(n>=60) return {c:'var(--yellow)', bg:'var(--yellow-bg)', cls:'sem-yellow', tag:'tag-yellow', lbl:'En riesgo'};
+  return         {c:'var(--red)',    bg:'var(--red-bg)',    cls:'sem-red',    tag:'tag-red',    lbl:'Atención'};
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function switchTab(id, btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── Animación de barras ───────────────────────────────────────────────────────
+function animateBars(){
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.querySelectorAll('.bar-fill[data-w]').forEach((el,i)=>{
+      setTimeout(()=>{ el.style.width=el.dataset.w; el.style.transition=`width .55s ease ${i*80}ms`; }, 0);
+    });
+  }));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 1 — Estadísticas Q10
+// ═══════════════════════════════════════════════════════════════════════════════
+function renderT1(d){
+  const t = d.totales||{};
+
+  // KPIs
+  const totalAnoms = (d.anomalias||[]).reduce((a,x)=>a+(x.cantidad||0),0);
+  const promedioGlobal = (d.por_curso||[]).length
+    ? ((d.por_curso||[]).reduce((a,c)=>a+(c.promedio||0),0)/(d.por_curso||[]).length).toFixed(1)
+    : null;
+  const sg = promedioGlobal != null ? sem(promedioGlobal) : null;
+
+  const kpis = `
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-val">${fmt(t.total_cursos)}</div>
+      <div class="kpi-lbl">Cursos activos</div>
+      <div class="kpi-sub">En plataforma Q10</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-val">${fmt(t.total_estudiantes_unicos)}</div>
+      <div class="kpi-lbl">Estudiantes únicos</div>
+      <div class="kpi-sub">Registros en plataforma</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-val ${sg?sg.cls:''}">${promedioGlobal!=null?promedioGlobal+'%':'—'}</div>
+      <div class="kpi-lbl">Avance promedio global</div>
+      <div class="kpi-sub">${sg?`<span class="tag ${sg.tag}">${sg.lbl}</span>`:'—'}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-val sem-red">${fmt(totalAnoms)}</div>
+      <div class="kpi-lbl">Total anomalías</div>
+      <div class="kpi-sub">SIN MATCH + AVANCE 0% + IRREGULAR</div>
+    </div>
+  </div>`;
+
+  // Tabla POR CURSO con semáforo
+  const maxEst = Math.max(...(d.por_curso||[]).map(c=>c.estudiantes||0),1);
+  const filas = (d.por_curso||[]).map((c,i)=>{
+    const s   = sem(c.promedio||0);
+    const pct = ((c.promedio||0)/100*100).toFixed(1);
+    return `<tr>
+      <td>${esc(c.curso)}</td>
+      <td class="td-r">${fmt(c.estudiantes)}</td>
+      <td style="min-width:160px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="bar-track" style="flex:1;height:8px">
+            <div class="bar-fill" data-w="${pct}%" style="background:${s.c}"></div>
+          </div>
+          <span class="${s.cls}" style="width:40px;text-align:right;font-size:.82rem">${fmtPct(c.promedio)}</span>
+        </div>
+      </td>
+      <td class="td-r" style="color:var(--muted);font-size:.78rem">${fmtPct(c.min)}</td>
+      <td class="td-r" style="color:var(--muted);font-size:.78rem">${fmtPct(c.max)}</td>
+      <td><span class="tag ${s.tag}">${s.lbl}</span></td>
+    </tr>`;
+  }).join('');
+
+  const tabla = `
+  <div class="card gap">
+    <div class="card-title">Avance por curso</div>
+    <table class="dt">
+      <thead><tr>
+        <th>Curso</th><th class="td-r">Estudiantes</th>
+        <th>Promedio</th><th class="td-r">Mín</th><th class="td-r">Máx</th><th>Estado</th>
+      </tr></thead>
+      <tbody>${filas||'<tr><td colspan="6" style="color:var(--muted)">Sin datos</td></tr>'}</tbody>
+    </table>
+    <p class="chart-note">
+      🔴 Atención &lt;60% &nbsp;·&nbsp; 🟡 En riesgo 60–79% &nbsp;·&nbsp; 🟢 Satisfactorio ≥80%
+    </p>
+  </div>`;
+
+  // Anomalías
+  const ANOM_DESC = {
+    'SIN MATCH':        'Registros sin coincidencia de email en el sistema',
+    'AVANCE 0%':        'Matriculados que nunca abrieron el contenido',
+    'AVANCE IRREGULAR': 'Avance superior al 100% — error de sincronización',
+  };
+  const anoms = (d.anomalias||[]).map(a=>`
+    <div class="anom-card">
+      <div class="anom-val">${fmt(a.cantidad)}</div>
+      <div class="anom-lbl">${esc(a.categoria)}</div>
+      <div class="anom-desc">${esc(ANOM_DESC[a.categoria]||'')}</div>
+    </div>`).join('');
+
+  const anomSec = anoms ? `
+  <div class="card gap">
+    <div class="card-title" style="color:var(--red)">Anomalías detectadas</div>
+    <div class="anom-grid">${anoms}</div>
+  </div>` : '';
+
+  return kpis + tabla + anomSec;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 2 — Asistencia manual
+// ═══════════════════════════════════════════════════════════════════════════════
+function renderT2(a){
+  const t = a.totales||{};
+  const ret = t.porcentaje_retencion;
+  const sr  = ret!=null ? sem(ret) : null;
+
+  const kpis = `
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-val">${fmt(t.total_sesiones)}</div>
+      <div class="kpi-lbl">Sesiones realizadas</div>
+      <div class="kpi-sub">Registro manual</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-val">${fmt(t.estudiantes_unicos_id)}</div>
+      <div class="kpi-lbl">Estudiantes únicos</div>
+      <div class="kpi-sub">Por número de ID</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-val ${sr?sr.cls:''}">${ret!=null?ret+'%':'—'}</div>
+      <div class="kpi-lbl">Retención</div>
+      <div class="kpi-sub">${sr?`<span class="tag ${sr.tag}">${sr.lbl}</span>`:'Primera → última sesión'}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-val">${t.promedio_sesiones_por_estudiante??'—'}</div>
+      <div class="kpi-lbl">Sesiones promedio</div>
+      <div class="kpi-sub">Por estudiante</div>
+    </div>
+  </div>`;
+
+  const maxA = Math.max(...(a.sesiones||[]).map(s=>s.asistentes||0),1);
+  const bars = (a.sesiones||[]).map((s,i)=>{
+    const pct = ((s.asistentes||0)/maxA*100).toFixed(1);
+    const isMax = s.nombre === t.sesion_max?.nombre;
+    const isMin = s.nombre === t.sesion_min?.nombre;
+    const color = isMax ? 'var(--green)' : isMin ? 'var(--red)' : 'var(--accent)';
+    return `
+    <div class="bar-row">
+      <div class="bar-lbl" title="${esc(s.nombre)}">${esc(s.nombre)}</div>
+      <div class="bar-track"><div class="bar-fill" data-w="${pct}%" style="background:${color}"></div></div>
+      <div class="bar-cnt">${s.asistentes??'—'}</div>
+    </div>`;
+  }).join('');
+
+  const barSec = `
+  <div class="card gap">
+    <div class="card-title">Asistentes por sesión</div>
+    ${bars||'<p style="color:var(--muted)">Sin sesiones</p>'}
+    <p class="chart-note">
+      Más asistentes: <strong>${esc(t.sesion_max?.nombre||'—')}</strong> &nbsp;·&nbsp;
+      Menos: <strong>${esc(t.sesion_min?.nombre||'—')}</strong>
+    </p>
+  </div>`;
+
+  const seg = a.segmento ? `<div class="card gap" style="font-size:.85rem;color:var(--muted)">
+    Segmento activo: <strong style="color:var(--text)">${esc(a.segmento)}</strong>
+    &nbsp;·&nbsp; Total registros acumulados: <strong style="color:var(--text)">${fmt(t.total_registros)}</strong>
+  </div>` : '';
+
+  return kpis + barSec + seg;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 3 — Comparativo
+// ═══════════════════════════════════════════════════════════════════════════════
+function renderT3(d, a){
+  // Promedios Q10
+  const promedios = (d?.por_curso||[]).map(c=>c.promedio).filter(v=>v!=null);
+  const avgQ10 = promedios.length
+    ? (promedios.reduce((x,y)=>x+y,0)/promedios.length).toFixed(1) : null;
+
+  // Panel fuentes
+  const filasQ10 = (d?.por_curso||[]).slice(0,6).map(c=>{
+    const s=sem(c.promedio||0);
+    return `<tr>
+      <td>${esc(c.curso)}</td>
+      <td class="td-r">${fmt(c.estudiantes)}</td>
+      <td><span class="tag ${s.tag}">${fmtPct(c.promedio)}</span></td>
+    </tr>`;
+  }).join('');
+
+  const filasAsist = (a?.sesiones||[]).map(s=>`<tr>
+    <td>${esc(s.nombre)}</td>
+    <td class="td-r" style="color:var(--orange);font-weight:600">${fmt(s.asistentes)}</td>
+  </tr>`).join('');
+
+  const fuentes = `
+  <div class="two-col gap">
+    <div class="card col-blue">
+      <div class="card-title" style="color:var(--blue)">● Plataforma Q10</div>
+      <div class="stat-row"><span class="stat-lbl">Estudiantes únicos</span><span class="stat-val" style="color:var(--blue)">${fmt(d?.totales?.total_estudiantes_unicos)}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Cursos activos</span><span class="stat-val">${fmt(d?.totales?.total_cursos)}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Avance promedio</span><span class="stat-val ${avgQ10?sem(avgQ10).cls:''}">${avgQ10!=null?avgQ10+'%':'—'}</span></div>
+      <table class="dt" style="margin-top:14px">
+        <thead><tr><th>Curso</th><th class="td-r">Est.</th><th>Avance</th></tr></thead>
+        <tbody>${filasQ10||'<tr><td colspan="3" style="color:var(--muted)">Sin datos</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div class="card col-orange">
+      <div class="card-title" style="color:var(--orange)">● Hoja manual</div>
+      <div class="stat-row"><span class="stat-lbl">Estudiantes únicos (ID)</span><span class="stat-val" style="color:var(--orange)">${fmt(a?.totales?.estudiantes_unicos_id)}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Total sesiones</span><span class="stat-val">${fmt(a?.totales?.total_sesiones)}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Retención</span><span class="stat-val">${a?.totales?.porcentaje_retencion!=null?a.totales.porcentaje_retencion+'%':'—'}</span></div>
+      <table class="dt" style="margin-top:14px">
+        <thead><tr><th>Sesión</th><th class="td-r">Asistentes</th></tr></thead>
+        <tbody>${filasAsist||'<tr><td colspan="2" style="color:var(--muted)">Sin datos</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
+
+  // Métricas comparativas
+  const ret = a?.totales?.porcentaje_retencion;
+  const sr  = ret!=null ? sem(ret) : null;
+  const sq  = avgQ10 ? sem(avgQ10) : null;
+
+  const metricas = `
+  <div class="card gap">
+    <div class="card-title">Retención presencial vs. avance en plataforma</div>
+    <div class="compare-row">
+      <div class="compare-item">
+        <div class="compare-big" style="color:var(--orange)">${ret!=null?ret+'%':'—'}</div>
+        <div class="compare-lbl">Retención presencial<br><small style="color:var(--muted)">Primera → última sesión</small></div>
+        ${sr?`<div style="margin-top:8px"><span class="tag ${sr.tag}">${sr.lbl}</span></div>`:''}
+      </div>
+      <div class="compare-item">
+        <div class="compare-big" style="color:var(--blue)">${avgQ10!=null?avgQ10+'%':'—'}</div>
+        <div class="compare-lbl">Avance promedio en plataforma<br><small style="color:var(--muted)">Promedio entre cursos</small></div>
+        ${sq?`<div style="margin-top:8px"><span class="tag ${sq.tag}">${sq.lbl}</span></div>`:''}
+      </div>
+    </div>
+  </div>`;
+
+  // Anomalías en contexto
+  const anoms = (d?.anomalias||[]);
+  const sinMatch = anoms.find(a=>a.categoria==='SIN MATCH');
+  const av0      = anoms.find(a=>a.categoria==='AVANCE 0%');
+  const irr      = anoms.find(a=>a.categoria==='AVANCE IRREGULAR');
+  const totalEst = d?.totales?.total_estudiantes_unicos||1;
+
+  const anomCtx = `
+  <div class="card gap">
+    <div class="card-title" style="color:var(--red)">Anomalías Q10 en contexto</div>
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-val sem-red">${fmt(sinMatch?.cantidad)}</div>
+        <div class="metric-lbl">SIN MATCH</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:4px">
+          ${sinMatch&&totalEst?((sinMatch.cantidad/totalEst)*100).toFixed(1)+'% del total':'—'}<br>
+          Sin coincidencia de email en el sistema
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val sem-red">${fmt(av0?.cantidad)}</div>
+        <div class="metric-lbl">AVANCE 0%</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:4px">
+          ${av0&&totalEst?((av0.cantidad/totalEst)*100).toFixed(1)+'% del total':'—'}<br>
+          Matriculados sin actividad en plataforma
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val" style="color:var(--yellow)">${fmt(irr?.cantidad)}</div>
+        <div class="metric-lbl">AVANCE IRREGULAR</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:4px">
+          Avance &gt;100% — error de sincronización en Q10
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  const info = `
+  <div class="info-box gap">
+    <strong>Cruce individual disponible solo en herramienta local</strong>
+    El análisis por estudiante (quién asistió pero tiene 0% en plataforma, quién está
+    en hoja manual pero no en Q10) se genera con <code>tools/panel_riesgo.py</code>
+    en la máquina de Samuel. Los datos personales nunca se publican en esta página.
+  </div>`;
+
+  return fuentes + metricas + anomCtx + info;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Init — carga ambos JSON y renderiza
+// ═══════════════════════════════════════════════════════════════════════════════
+function renderHeader(dashTs, asistTs, seg){
+  const ts   = maxTs(dashTs, asistTs);
+  const vivo = esHoy(ts);
+  document.getElementById('header-root').innerHTML = `
+  <header>
+    <div class="brand"><span class="brand-rofe">ROFÉ</span> · Jóvenes creaTIvos</div>
+    <div class="hd-meta">
+      <div class="hd-seg">${esc(seg||'')}</div>
+      <div class="hd-upd">${fmtTs(ts)}</div>
+    </div>
+    <div class="status-badge ${vivo?'badge-live':'badge-recent'}">
+      <span class="dot">●</span> ${vivo?'EN VIVO':'DATOS DEL DÍA'}
+    </div>
+  </header>`;
+}
+
+Promise.allSettled([
+  fetch('./data.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }),
+  fetch('../asistencia/data.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }),
+]).then(([r1,r2])=>{
+  const dash  = r1.status==='fulfilled' ? r1.value : null;
+  const asist = r2.status==='fulfilled' ? r2.value : null;
+
+  document.getElementById('loading').style.display = 'none';
+
+  if(!dash && !asist){
+    document.getElementById('t1').classList.add('active');
+    document.getElementById('t1').innerHTML = `<div class="error-box"><strong>No se pudieron cargar los datos</strong>Verifica que data.json y ../asistencia/data.json existen.</div>`;
+    return;
+  }
+
+  renderHeader(dash?.ultima_actualizacion, asist?.ultima_actualizacion, asist?.segmento);
+
+  const warns = [];
+  if(!dash)  warns.push('<div class="error-box" style="margin-bottom:14px"><strong>No se cargó dashboard/data.json</strong>Corre export_stats.py primero.</div>');
+  if(!asist) warns.push('<div class="error-box" style="margin-bottom:14px"><strong>No se cargó asistencia/data.json</strong>Corre export_asistencia.py primero.</div>');
+  const wHtml = warns.join('');
+
+  document.getElementById('t1').innerHTML = wHtml + (dash  ? renderT1(dash)       : '<p style="color:var(--muted);padding:24px">Sin datos Q10.</p>');
+  document.getElementById('t2').innerHTML = wHtml + (asist ? renderT2(asist)      : '<p style="color:var(--muted);padding:24px">Sin datos de asistencia.</p>');
+  document.getElementById('t3').innerHTML = wHtml + renderT3(dash, asist);
+
+  // Activar Tab 1
+  document.getElementById('t1').classList.add('active');
+  animateBars();
+
+  document.getElementById('footer-root').innerHTML =
+    `<footer>Generado automáticamente desde Google Sheets · ${esc(asist?.segmento||'ROFÉ Jóvenes creaTIvos')}</footer>`;
+});
+</script>
 </body>
 </html>

@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manual vs. Automatización — ROFÉ Jóvenes creaTIvos</title>
+  <style>
+    :root {
+      --bg:         #0f1117;
+      --surface:    #1a1d27;
+      --border:     #2a2d3a;
+      --green:      #22c55e;
+      --green-bg:   rgba(21,128,61,0.13);
+      --red:        #ef4444;
+      --red-bg:     rgba(220,38,38,0.13);
+      --yellow:     #f59e0b;
+      --yellow-bg:  rgba(245,158,11,0.13);
+      --accent:     #6366f1;
+      --accent-bg:  rgba(99,102,241,0.13);
+      --blue:       #3b82f6;
+      --blue-bg:    rgba(59,130,246,0.13);
+      --orange:     #f97316;
+      --orange-bg:  rgba(249,115,22,0.13);
+      --text:       #f1f5f9;
+      --muted:      #94a3b8;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 15px;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .brand       { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+    .brand-rofe  { color: var(--accent); }
+    .header-meta { flex: 1; min-width: 0; }
+    .header-title  { font-size: 1rem; font-weight: 700; }
+    .header-sub    { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .header-update { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+    .badges { display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; padding: 4px 10px; border-radius: 4px;
+    }
+    .badge-blue   { background: var(--blue-bg);   color: var(--blue); }
+    .badge-orange { background: var(--orange-bg);  color: var(--orange); }
+
+    /* ── Layout ── */
+    main { max-width: 1100px; margin: 0 auto; padding: 28px 24px 56px; }
+    .section-gap  { margin-top: 28px; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+    }
+    .card.blue-card   { border-left: 3px solid var(--blue); }
+    .card.orange-card { border-left: 3px solid var(--orange); }
+    .card-title {
+      font-size: 0.82rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--muted); margin-bottom: 16px;
+    }
+
+    /* ── Panel 2 columnas ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    .stat-row { display: flex; justify-content: space-between; align-items: baseline;
+      padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { font-size: 0.83rem; color: var(--muted); }
+    .stat-val   { font-size: 1rem; font-weight: 700; color: var(--text); }
+
+    .mini-table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+    .mini-table th { font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--muted); padding: 6px 10px;
+      border-bottom: 1px solid var(--border); text-align: left; }
+    .mini-table td { font-size: 0.82rem; padding: 7px 10px;
+      border-bottom: 1px solid var(--border); color: var(--text); }
+    .mini-table tr:last-child td { border-bottom: none; }
+    .mini-table .td-num { text-align: right; font-variant-numeric: tabular-nums; }
+    .pct-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .pct-bar { flex: 1; height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .pct-fill { height: 100%; border-radius: 99px; width: 0; }
+
+    /* ── Métricas de cruce ── */
+    .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .metric-card  { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 18px; }
+    .metric-val   { font-size: 2rem; font-weight: 700; line-height: 1; }
+    .metric-label { font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
+    .metric-sub   { font-size: 0.73rem; color: var(--muted); margin-top: 4px; }
+
+    /* ── Comparativa retención ── */
+    .compare-row {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 14px; margin-top: 14px;
+    }
+    .compare-item { text-align: center; padding: 18px; background: var(--bg);
+      border: 1px solid var(--border); border-radius: 8px; }
+    .compare-big  { font-size: 2.4rem; font-weight: 700; }
+    .compare-lbl  { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
+    .c-blue   { color: var(--blue); }
+    .c-orange { color: var(--orange); }
+    .c-green  { color: var(--green); }
+    .c-red    { color: var(--red); }
+
+    /* ── Anomalías ── */
+    .anom-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .anom-card { background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px; }
+    .anom-val  { font-size: 1.8rem; font-weight: 700; color: var(--red); }
+    .anom-lbl  { font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--muted); margin-top: 6px; }
+    .anom-desc { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+    /* ── Tabla coincidencias ── */
+    .cross-table { width: 100%; border-collapse: collapse; }
+    .cross-table th { font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--muted); padding: 8px 12px;
+      border-bottom: 1px solid var(--border); text-align: left; }
+    .cross-table td { font-size: 0.83rem; padding: 9px 12px;
+      border-bottom: 1px solid var(--border); color: var(--text); }
+    .cross-table tr:last-child td { border-bottom: none; }
+    .cross-table .td-c { text-align: center; }
+    .tag { font-size: 0.72rem; padding: 2px 7px; border-radius: 4px; }
+    .tag-blue   { background: var(--blue-bg);   color: var(--blue); }
+    .tag-orange { background: var(--orange-bg);  color: var(--orange); }
+    .tag-accent { background: var(--accent-bg);  color: var(--accent); }
+
+    /* ── Info box ── */
+    .info-box {
+      background: var(--accent-bg); border: 1px solid var(--accent);
+      border-radius: 8px; padding: 16px 20px; font-size: 0.83rem; color: var(--muted);
+    }
+    .info-box strong { color: var(--text); }
+
+    /* ── Skeleton / Error ── */
+    .skel {
+      background: linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    .error-box {
+      background: var(--red-bg); border: 1px solid var(--red);
+      border-radius: 8px; padding: 20px 24px; color: var(--red);
+    }
+    .error-box strong { display: block; margin-bottom: 6px; }
+    .warn-box {
+      background: var(--yellow-bg); border: 1px solid var(--yellow);
+      border-radius: 8px; padding: 14px 18px; font-size: 0.83rem; color: var(--yellow);
+      margin-bottom: 16px;
+    }
+
+    /* ── Footer ── */
+    footer { text-align: center; padding: 32px 24px 16px;
+      font-size: 0.78rem; color: var(--muted); }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      header { padding: 14px 16px; }
+      main   { padding: 16px 12px 40px; }
+      .two-col     { grid-template-columns: 1fr; }
+      .metrics-grid{ grid-template-columns: 1fr 1fr; }
+      .anom-grid   { grid-template-columns: 1fr; }
+      .compare-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="root">
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:20px 32px;height:68px"></div>
+  <div style="max-width:1100px;margin:28px auto;padding:0 24px;display:flex;flex-direction:column;gap:14px">
+    <div class="skel" style="height:120px"></div>
+    <div class="skel" style="height:200px"></div>
+    <div class="skel" style="height:160px"></div>
+  </div>
+</div>
+
+<script>
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmt(n) {
+  return n != null ? Number(n).toLocaleString('es-CO') : '—';
+}
+function fmtPct(n) {
+  return n != null ? Number(n).toFixed(1) + '%' : '—';
+}
+function fmtTs(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-CO', {year:'numeric',month:'long',day:'numeric'})
+      + ', ' + d.toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'});
+  } catch { return iso || '—'; }
+}
+function maxTs(a, b) {
+  try {
+    return new Date(a) >= new Date(b) ? a : b;
+  } catch { return a || b; }
+}
+
+// ── Render: Header ─────────────────────────────────────────────────────────────
+function renderHeader(dash, asist) {
+  const ts = maxTs(dash?.ultima_actualizacion, asist?.ultima_actualizacion);
+  return `
+  <header>
+    <div class="brand"><span class="brand-rofe">ROFÉ</span> · Jóvenes creaTIvos</div>
+    <div class="header-meta">
+      <div class="header-title">Manual vs. Automatización</div>
+      <div class="header-sub">Comparación entre asistencia presencial y avance en plataforma</div>
+      <div class="header-update">Datos al: ${fmtTs(ts)}</div>
+    </div>
+    <div class="badges">
+      <div class="badge badge-blue">● Plataforma Q10</div>
+      <div class="badge badge-orange">● Hoja manual</div>
+    </div>
+  </header>`;
+}
+
+// ── Render: Panel de fuentes ──────────────────────────────────────────────────
+function renderFuentes(dash, asist) {
+  // Columna Q10
+  const cursos = (dash?.por_curso || []).slice(0, 6);
+  const filasQ10 = cursos.map(c => {
+    const pct = Math.min(100, c.promedio || 0);
+    return `<tr>
+      <td>${esc(c.curso)}</td>
+      <td class="td-num">${fmt(c.estudiantes)}</td>
+      <td style="min-width:120px">
+        <div class="pct-bar-wrap">
+          <div class="pct-bar"><div class="pct-fill" data-w="${pct.toFixed(1)}%"
+            style="background:var(--blue)"></div></div>
+          <span style="font-size:.78rem;color:var(--muted);width:36px;text-align:right">${fmtPct(c.promedio)}</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Columna Manual
+  const sesiones = (asist?.sesiones || []);
+  const filasAsist = sesiones.map(s => `<tr>
+    <td>${esc(s.nombre)}</td>
+    <td class="td-num" style="color:var(--orange);font-weight:600">${fmt(s.asistentes)}</td>
+  </tr>`).join('');
+
+  return `
+  <div class="two-col section-gap">
+    <div class="card blue-card">
+      <div class="card-title" style="color:var(--blue)">● Plataforma Q10 — Avance académico</div>
+      <div class="stat-row"><span class="stat-label">Estudiantes únicos</span>
+        <span class="stat-val" style="color:var(--blue)">${fmt(dash?.totales?.total_estudiantes_unicos)}</span></div>
+      <div class="stat-row"><span class="stat-label">Cursos activos</span>
+        <span class="stat-val">${fmt(dash?.totales?.total_cursos)}</span></div>
+      <table class="mini-table">
+        <thead><tr><th>Curso</th><th>Estudiantes</th><th>Promedio</th></tr></thead>
+        <tbody>${filasQ10 || '<tr><td colspan="3" style="color:var(--muted)">Sin datos</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div class="card orange-card">
+      <div class="card-title" style="color:var(--orange)">● Hoja manual — Asistencia presencial</div>
+      <div class="stat-row"><span class="stat-label">Estudiantes únicos (ID)</span>
+        <span class="stat-val" style="color:var(--orange)">${fmt(asist?.totales?.estudiantes_unicos_id)}</span></div>
+      <div class="stat-row"><span class="stat-label">Total sesiones</span>
+        <span class="stat-val">${fmt(asist?.totales?.total_sesiones)}</span></div>
+      <div class="stat-row"><span class="stat-label">Total registros</span>
+        <span class="stat-val">${fmt(asist?.totales?.total_registros)}</span></div>
+      <table class="mini-table">
+        <thead><tr><th>Sesión</th><th>Asistentes</th></tr></thead>
+        <tbody>${filasAsist || '<tr><td colspan="2" style="color:var(--muted)">Sin datos</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ── Render: Métricas de cruce ──────────────────────────────────────────────────
+function renderCruce(dash, asist) {
+  // Construir set de IDs únicos de asistencia
+  const asistIds = new Set();
+  (asist?.sesiones || []).forEach(s =>
+    (s.estudiantes || []).forEach(e => { if (e.identificacion) asistIds.add(e.identificacion); })
+  );
+
+  const totalAsist = asist?.totales?.estudiantes_unicos_id ?? asistIds.size;
+  const totalQ10   = dash?.totales?.total_estudiantes_unicos ?? 0;
+
+  // Cruce por ID (posible solo si Q10 también exporta IDs individuales — no disponible aún)
+  // Por ahora mostramos las métricas de totales comparados
+  const retAsist   = asist?.totales?.porcentaje_retencion ?? null;
+  const promAsist  = asist?.totales?.promedio_sesiones_por_estudiante ?? null;
+
+  // Calcular % promedio avance Q10 (promedio de promedios por curso)
+  const promedios = (dash?.por_curso || []).map(c => c.promedio).filter(v => v != null);
+  const promedioQ10 = promedios.length
+    ? (promedios.reduce((a, b) => a + b, 0) / promedios.length).toFixed(1)
+    : null;
+
+  const metrics = [
+    { v: fmt(totalAsist), l: 'Asistentes únicos',    s: 'Hoja manual (por ID)',         c: 'c-orange' },
+    { v: fmt(totalQ10),   l: 'Matriculados en Q10',  s: 'Plataforma (total registros)',  c: 'c-blue' },
+    { v: promedioQ10 ? promedioQ10 + '%' : '—',
+                          l: 'Avance promedio Q10',   s: 'Promedio entre todos los cursos', c: 'c-blue' },
+  ];
+
+  const compareRows = `
+  <div class="compare-row">
+    <div class="compare-item">
+      <div class="compare-big c-orange">${retAsist != null ? retAsist + '%' : '—'}</div>
+      <div class="compare-lbl">Retención presencial<br><small style="color:var(--muted)">Primera → última sesión</small></div>
+    </div>
+    <div class="compare-item">
+      <div class="compare-big c-blue">${promedioQ10 ? promedioQ10 + '%' : '—'}</div>
+      <div class="compare-lbl">Avance en plataforma<br><small style="color:var(--muted)">Promedio entre cursos</small></div>
+    </div>
+  </div>`;
+
+  return `
+  <div class="card section-gap">
+    <div class="card-title">Métricas de cruce</div>
+    <div class="metrics-grid">
+      ${metrics.map(m => `
+        <div class="metric-card">
+          <div class="metric-val ${m.c}">${m.v}</div>
+          <div class="metric-label">${m.l}</div>
+          <div class="metric-sub">${m.s}</div>
+        </div>`).join('')}
+    </div>
+    <div style="margin-top:20px">
+      <div class="card-title">Retención presencial vs. avance en plataforma</div>
+      ${compareRows}
+    </div>
+  </div>`;
+}
+
+// ── Render: Anomalías Q10 ─────────────────────────────────────────────────────
+const ANOM_DESC = {
+  'SIN MATCH':        'Registros sin coincidencia de email en el sistema',
+  'AVANCE 0%':        'Matriculados que nunca abrieron el contenido',
+  'AVANCE IRREGULAR': 'Avance superior al 100% — error de sincronización',
+};
+
+function renderAnomalias(dash) {
+  const anomalias = dash?.anomalias || [];
+  if (!anomalias.length) return '';
+
+  const cards = anomalias.map(a => `
+    <div class="anom-card">
+      <div class="anom-val">${fmt(a.cantidad)}</div>
+      <div class="anom-lbl">${esc(a.categoria)}</div>
+      <div class="anom-desc">${esc(ANOM_DESC[a.categoria] || '')}</div>
+    </div>`).join('');
+
+  return `
+  <div class="card section-gap">
+    <div class="card-title" style="color:var(--red)">Anomalías detectadas — Plataforma Q10</div>
+    <div class="anom-grid">${cards}</div>
+  </div>`;
+}
+
+// ── Render: Tabla de coincidencias ────────────────────────────────────────────
+function renderCoincidencias(dash, asist) {
+  // Construir estudiantes desde asistencia con conteo de sesiones
+  const map = new Map();
+  (asist?.sesiones || []).forEach((s, si) => {
+    (s.estudiantes || []).forEach(e => {
+      const key = e.identificacion || e.nombre;
+      if (!map.has(key)) map.set(key, {...e, _sesCount: 0});
+      map.get(key)._sesCount++;
+    });
+  });
+
+  const estudiantes = [...map.values()].sort((a, b) => b._sesCount - a._sesCount);
+
+  // Q10 no exporta IDs individuales en data.json actual — informar al usuario
+  const sinDatosCruce = !dash?.por_curso?.[0]?.estudiantes_lista;
+
+  if (sinDatosCruce) {
+    return `
+    <div class="card section-gap">
+      <div class="card-title" style="color:var(--accent)">Tabla de coincidencias</div>
+      <div class="info-box">
+        <strong>Cruce individual no disponible aún</strong>
+        El sistema Q10 exporta estadísticas agregadas por curso (promedios, totales),
+        no la lista individual de estudiantes con sus IDs. Con datos reales completos,
+        esta tabla mostrará: qué estudiantes aparecen en ambos sistemas, cuántas sesiones
+        asistieron y qué avance tienen en la plataforma.
+        <br><br>
+        <strong>Lo que sí podemos comparar ahora:</strong> totales y anomalías (sección anterior).
+      </div>
+      ${estudiantes.length ? `
+      <p style="margin-top:16px;font-size:.8rem;color:var(--muted);margin-bottom:10px">
+        Estudiantes de muestra en hoja manual (${estudiantes.length}):
+      </p>
+      <table class="cross-table">
+        <thead><tr>
+          <th>Nombre</th><th>ID</th><th class="td-c">Sesiones asistidas</th><th>Avance Q10</th>
+        </tr></thead>
+        <tbody>${estudiantes.map(e => `<tr>
+          <td>${esc(e.nombre || '—')}</td>
+          <td style="font-size:.78rem;color:var(--muted)">${esc(e.identificacion || '—')}</td>
+          <td class="td-c"><span class="tag tag-orange">${e._sesCount}/${asist?.totales?.total_sesiones ?? '?'}</span></td>
+          <td style="color:var(--muted);font-size:.78rem">Sin datos individuales</td>
+        </tr>`).join('')}</tbody>
+      </table>` : ''}
+    </div>`;
+  }
+
+  // Si en el futuro Q10 exporta IDs individuales, este bloque hace el cruce real
+  return '';
+}
+
+// ── Render completo ────────────────────────────────────────────────────────────
+function render(dash, asist, errores) {
+  const warnHtml = errores.length ? `
+    <div class="warn-box">
+      ⚠ No se pudo cargar: ${errores.join(', ')}.
+      Mostrando lo disponible.
+    </div>` : '';
+
+  document.getElementById('root').innerHTML =
+    renderHeader(dash, asist) +
+    `<main>
+      ${warnHtml}
+      ${renderFuentes(dash, asist)}
+      ${renderCruce(dash, asist)}
+      ${renderAnomalias(dash)}
+      ${renderCoincidencias(dash, asist)}
+    </main>
+    <footer>
+      Generado automáticamente · Plataforma Q10 + Hoja manual de asistencia
+    </footer>`;
+
+  // Animar barras de mini-tabla Q10
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.querySelectorAll('.pct-fill[data-w]').forEach(el => {
+      el.style.width = el.dataset.w;
+      el.style.transition = 'width .6s ease';
+    });
+  }));
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+Promise.allSettled([
+  fetch('../dashboard/data.json').then(r => { if (!r.ok) throw new Error('HTTP '+r.status); return r.json(); }),
+  fetch('../asistencia/data.json').then(r => { if (!r.ok) throw new Error('HTTP '+r.status); return r.json(); }),
+]).then(([r1, r2]) => {
+  const dash  = r1.status === 'fulfilled' ? r1.value : null;
+  const asist = r2.status === 'fulfilled' ? r2.value : null;
+  const errores = [];
+  if (!dash)  errores.push('dashboard/data.json (Q10)');
+  if (!asist) errores.push('asistencia/data.json (hoja manual)');
+
+  if (!dash && !asist) {
+    document.getElementById('root').innerHTML = `
+      <div class="error-box" style="margin:40px auto;max-width:500px">
+        <strong>No se pudieron cargar los datos</strong>
+        Verifica que data.json existe en dashboard/ y asistencia/.
+      </div>`;
+    return;
+  }
+  render(dash, asist, errores);
+});
+</script>
+</body>
+</html>

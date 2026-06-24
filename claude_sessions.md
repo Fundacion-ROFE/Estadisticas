@@ -91,3 +91,44 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
 - Ventaja clave: credenciales nunca salen del PC, JSON solo tiene datos agregados (sin datos personales).
 - Contenido definido: tabla POR CURSO (8 cursos) + 3 scorecards de anomalías.
 - Pendiente próxima sesión: crear `export_stats.py`, repo GitHub Pages, y sitio HTML con Chart.js.
+
+---
+
+## 2026-06-24 — [Q10] Dashboard web: export_stats.py + index.html funcionales
+
+**Estado:** Completado (archivos listos) / Pendiente de activar GitHub Pages
+**Proceso relacionado:** [[q10-consolidacion]]
+
+- Problema resuelto: `export_stats.py` original leía pestaña `estadísticas` que no existía → fallo garantizado.
+- Solución: reescrito para leer `h2test` directamente y computar todas las estadísticas en Python.
+- `index.html` reemplazado: dashboard completo con tabla POR CURSO (barras de progreso CSS) + scorecards de anomalías.
+- Descartada migración a admin/panel externo — flujo definitivo: h2test → JSON → GitHub Pages.
+- Pendiente: (1) `git push` al repositorio remoto para activar GitHub Pages, (2) primera corrida de `export_stats.py` para generar `data.json`, (3) configurar Settings → Pages → main → /docs en GitHub.
+
+---
+
+## 2026-06-24 — [Asistencia] Script de extracción de hoja de asistencias
+
+**Estado:** Completado (script listo) / Pendiente de correr + compartir Sheet
+**Proceso relacionado:** nuevo proceso — dashboard asistencia manual
+
+- Creado `scripts/q10-consolidacion/export_asistencia.py` — lee pestaña `asistencias` del Sheet `1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8`.
+- Parsea estructura de doble encabezado: fila 1 = nombres de módulos, fila 2 = sub-columnas, filas 3+ = datos.
+- Genera `docs/asistencia/data.json` con asistentes por sesión + lista de estudiantes (para cruce mañana).
+- `index.html` del usuario va en `docs/asistencia/index.html`.
+- Pendiente: compartir Sheet con Service Account, correr script, subir index.html.
+
+---
+
+## 2026-06-24 — [Dashboard] Fase 2 completa: dashboard unificado + privacidad + panel de riesgo
+
+**Estado:** Completado (Fase 2) / Listo para Fase 3
+**Proceso relacionado:** [[dashboard-web]]
+
+- `docs/dashboard/index.html` reemplazado por dashboard 3 pestañas unificado: Estadísticas Q10 · Asistencia · Comparativo.
+- Semáforo implementado: ≥80% verde/Satisfactorio, 60-79% amarillo/En riesgo, <60% rojo/Atención.
+- `docs/asistencia/data.json` saneado para publicación: eliminados todos los arrays `estudiantes` con PII.
+- `.gitignore` actualizado: `tools/`, `local_data/`, `*_personal.json`, `*_estudiantes.json` nunca a GitHub.
+- `tools/panel_riesgo.py` creado: script local que cruza hoja manual × h2test por email, genera 4 secciones de reporte y exporta CSVs con `--csv`. Detecta automáticamente SIN MATCH, avance 0% vs presencia física, y casos de atención.
+- Decisión de cruce: por email (correo electrónico), no por ID — los IDs son incompatibles entre sistemas.
+- Pendiente Fase 3: (1) compartir Sheet asistencias con Service Account, (2) correr export_asistencia.py con datos reales, (3) validar cruce panel_riesgo.py, (4) activar GitHub Pages en Settings → Pages → main → /docs.

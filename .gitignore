@@ -21,9 +21,17 @@ scripts/q10-consolidacion/organizador/dist/
 
 # ── Obsidian (configuración personal del editor) ──────────────────────────────
 docs/.obsidian/
+.obsidian/
 
 # ── Carpeta duplicada/anidada ─────────────────────────────────────────────────
 automatizaciones-empresa/
+
+# ── Herramientas locales y datos personales (NUNCA subir) ─────────────────────
+tools/
+local_data/
+*_personal.json
+*_estudiantes.json
+docs/asistencia/data_local.json
 
 # ── Sistema operativo ─────────────────────────────────────────────────────────
 .DS_Store

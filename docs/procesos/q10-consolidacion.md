@@ -112,9 +112,9 @@ El equipo clasifica los registros bajo 4 categorías tras la carga:
 - [x] h2test operativa: se actualiza vía `/actualizar h2test` — datos subiendo correctamente
 - [ ] Regenerar token del bot con BotFather (estaba expuesto — hacer antes de prod real)
 
-### Conexión h2test → Dashboard web (en construcción)
+### Conexión h2test → Dashboard web
 
-El flujo definido es: Q10 → h2test (Google Sheets) → JSON estático → GitHub Pages.
+El flujo es: Q10 → h2test (Google Sheets) → JSON estático → GitHub Pages.
 
 **Por qué este approach:**
 - Las credenciales nunca salen del PC de Samuel (Service Account solo se usa localmente)
@@ -124,14 +124,28 @@ El flujo definido es: Q10 → h2test (Google Sheets) → JSON estático → GitH
 
 **Flujo de actualización:**
 1. `/actualizar h2test` en Telegram → actualiza la pestaña `h2test` en Sheets
-2. `export_stats.py` → lee h2test → genera `data.json` con estadísticas agregadas
+2. `python export_stats.py` → lee h2test directamente → agrega en Python → genera `data.json`
 3. `git commit + push` → GitHub Pages publica automáticamente el JSON actualizado
 
-**Contenido del dashboard (definido):**
+**Contenido del dashboard:**
 - Tabla POR CURSO: Curso, Estudiantes, Promedio %, Mín %, Máx %
-- Scorecards ANOMALÍAS: AVANCE 0% (413), SIN MATCH (3,415), AVANCE IRREGULAR (2)
+- Scorecards ANOMALÍAS: SIN MATCH, AVANCE 0%, AVANCE IRREGULAR
 
-**Estado:** `export_stats.py` creado (2026-06-24). Sitio GitHub Pages — carpeta `docs/dashboard/` lista con `index.html` esqueleto; diseño pendiente de generar con 21.dev.
+**Decisión técnica clave — lectura directa de h2test:**
+`export_stats.py` lee la pestaña `h2test` (datos crudos, 8,818 filas) y computa todas las
+estadísticas en Python. No depende de una pestaña `estadísticas` intermediaria con fórmulas
+en Sheets. Más robusto: una sola fuente de verdad, sin setup manual en Sheets.
+
+**Nota sobre SIN MATCH:** agrupa filas con Curso vacío que resultan del LEFT JOIN.
+Incluye tanto "sin matrícula virtual" como "email sin correspondencia" — son
+indistinguibles en h2test. Número esperado: ~3,415.
+
+**Setup GitHub Pages (una vez):**
+1. Ir a Settings → Pages del repositorio en GitHub
+2. Source: Deploy from a branch → main → /docs
+3. Guardar → sitio en `https://<usuario>.github.io/<repo>/dashboard/`
+
+**Estado:** Completado (2026-06-24) — `export_stats.py` y `index.html` funcionales.
 
 ### Escalabilidad futura
 - [ ] Agregar nuevas pestañas/grupos: editar `MAPEO_GRUPOS` + `MAPEO_SHEET_IDS` en `q10_to_sheets.py` y `SHEET_IDS_POR_PESTANA` + `HEADERS_POR_PESTANA` en `setup_headers.py`

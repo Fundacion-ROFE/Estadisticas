@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-export_stats.py — Lee la pestaña "estadísticas" del Google Sheet de h2test
-y genera docs/dashboard/data.json con estadísticas agregadas (sin datos PII).
+export_stats.py — Lee la pestaña "h2test" del Google Sheet y genera
+docs/dashboard/data.json con estadísticas agregadas (sin PII).
 
 Fundación ROFÉ | Jóvenes creaTIvos
 """
@@ -11,6 +11,7 @@ import json
 import os
 import subprocess
 import sys
+from collections import defaultdict
 from datetime import datetime
 
 # truststore: en Windows con interceptación SSL corporativa, usa el cert store del SO
@@ -31,7 +32,7 @@ from google.oauth2.service_account import Credentials
 
 # ── Configuración ─────────────────────────────────────────────────────────────
 SHEET_ID          = "1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs"
-NOMBRE_HOJA       = "estadísticas"
+NOMBRE_HOJA       = "h2test"
 CREDENCIALES_JSON = "credenciales_service_account.json"
 
 SCOPES = [
@@ -49,15 +50,6 @@ def log(msg: str) -> None:
     print(f"[export-stats] {msg}", flush=True)
 
 
-def _normalizar(s: str) -> str:
-    return (
-        s.strip().lower()
-        .replace("á", "a").replace("é", "e").replace("í", "i")
-        .replace("ó", "o").replace("ú", "u").replace("ü", "u")
-        .replace("ñ", "n")
-    )
-
-
 def _limpiar_porcentaje(valor: str) -> float:
     limpio = valor.strip().replace("%", "").replace(",", ".").strip()
     if not limpio:
@@ -68,44 +60,8 @@ def _limpiar_porcentaje(valor: str) -> float:
         return 0.0
 
 
-def _limpiar_entero(valor: str) -> int:
-    limpio = valor.strip().replace(",", "").replace(".", "")
-    if not limpio:
-        return 0
-    try:
-        return int(limpio)
-    except ValueError:
-        return 0
-
-
-def _celda(row: list, idx: int) -> str:
-    if idx is None or idx >= len(row):
-        return ""
-    return row[idx]
-
-
 def _es_fila_vacia(row: list) -> bool:
     return all(c.strip() == "" for c in row)
-
-
-def _es_header_cursos(row: list) -> bool:
-    celdas = [c.strip() for c in row if c.strip()]
-    if len(celdas) < 3:
-        return False
-    return (
-        _normalizar(celdas[0]) == "curso"
-        and "estudiantes" in _normalizar(" ".join(celdas))
-    )
-
-
-def _es_header_anomalias(row: list) -> bool:
-    celdas = [c.strip() for c in row if c.strip()]
-    if len(celdas) < 2:
-        return False
-    return (
-        _normalizar(celdas[0]) == "categoria"
-        and "cantidad" in _normalizar(" ".join(celdas))
-    )
 
 
 # ── Google Sheets ─────────────────────────────────────────────────────────────
@@ -125,144 +81,95 @@ def conectar_hoja() -> gspread.Worksheet:
     return hoja
 
 
-# ── Parseo de tablas ──────────────────────────────────────────────────────────
-def parsear_tablas(all_values: list) -> tuple:
+# ── Procesamiento de h2test ───────────────────────────────────────────────────
+def procesar_h2test(all_values: list) -> tuple:
     """
-    Detecta ambas tablas escaneando las celdas de encabezado.
-    No depende de posiciones fijas de fila — funciona si se agregan cursos.
+    Lee los datos crudos de h2test (fila 1 = headers, fila 2+ = datos).
+    Columnas A-F: Identificacion, Nombre, Celular, Email, Curso, Avance
+
+    Retorna (por_curso, anomalias, total_estudiantes_unicos).
+
+    Categoría "SIN MATCH" agrupa todas las filas con Curso vacío —
+    incluye tanto "sin matrícula virtual" como "email sin correspondencia en
+    Consolidado", que son indistinguibles en h2test al venir del LEFT JOIN.
     """
-    curso_header_idx     = None
-    anomalias_header_idx = None
+    if not all_values:
+        raise ValueError("La hoja h2test está vacía.")
 
-    for i, row in enumerate(all_values):
-        if _es_header_cursos(row) and curso_header_idx is None:
-            curso_header_idx = i
-            log(f"  Tabla POR CURSO detectada en fila {i + 1}.")
-        if _es_header_anomalias(row) and anomalias_header_idx is None:
-            anomalias_header_idx = i
-            log(f"  Tabla ANOMALÍAS detectada en fila {i + 1}.")
+    headers = [h.strip() for h in all_values[0]]
+    col_map = {h.lower(): i for i, h in enumerate(headers)}
 
-    if curso_header_idx is None:
-        raise ValueError(
-            "No se encontró la cabecera de la tabla POR CURSO.\n"
-            "Verifica que la hoja 'estadísticas' existe y contiene 'Curso | Estudiantes | Promedio %'."
-        )
-    if anomalias_header_idx is None:
-        raise ValueError(
-            "No se encontró la cabecera de la tabla ANOMALÍAS.\n"
-            "Verifica que la hoja contiene 'Categoría | Cantidad'."
-        )
+    col_identificacion = col_map.get("identificacion")
+    col_curso          = col_map.get("curso")
+    col_avance         = col_map.get("avance")
 
-    # Mapear columnas de POR CURSO por nombre
-    col_map = {
-        _normalizar(c): j
-        for j, c in enumerate(all_values[curso_header_idx])
-        if c.strip()
-    }
-    col_curso       = col_map.get("curso")
-    col_estudiantes = col_map.get("estudiantes")
-    col_promedio    = col_map.get("promedio %")
-    col_min         = col_map.get("min %")
-    col_max         = col_map.get("max %")
+    if col_curso is None:
+        raise ValueError(f"No se encontró la columna 'Curso' en h2test. Columnas detectadas: {headers}")
+    if col_avance is None:
+        raise ValueError(f"No se encontró la columna 'Avance' en h2test. Columnas detectadas: {headers}")
 
-    faltantes = [
-        nombre
-        for nombre, idx in [
-            ("Curso", col_curso), ("Estudiantes", col_estudiantes),
-            ("Promedio %", col_promedio), ("Mín %", col_min), ("Máx %", col_max),
-        ]
-        if idx is None
-    ]
-    if faltantes:
-        raise ValueError(f"Columnas no encontradas en POR CURSO: {faltantes}")
+    cursos_data   = defaultdict(list)
+    sin_match     = 0
+    avance_0      = 0
+    avance_irr    = 0
+    ids_unicos    = set()
 
-    # Recolectar filas POR CURSO (detener al llegar a la tabla de anomalías)
-    por_curso = []
-    for i in range(curso_header_idx + 1, len(all_values)):
-        if i == anomalias_header_idx:
-            break
-        row = all_values[i]
+    for row in all_values[1:]:
         if _es_fila_vacia(row):
             continue
-        nombre_curso = _celda(row, col_curso).strip()
-        est_val      = _celda(row, col_estudiantes).strip()
-        # Saltar filas de título como "ANOMALÍAS" que no tienen datos numéricos
-        if not nombre_curso or not est_val:
+
+        def cel(idx):
+            return row[idx].strip() if idx is not None and idx < len(row) else ""
+
+        curso  = cel(col_curso)
+        avance = _limpiar_porcentaje(cel(col_avance))
+
+        if col_identificacion is not None:
+            ide = cel(col_identificacion)
+            if ide:
+                ids_unicos.add(ide)
+
+        if not curso:
+            sin_match += 1
             continue
+
+        cursos_data[curso].append(avance)
+
+        if avance == 0.0:
+            avance_0 += 1
+        if avance > 100.0:
+            avance_irr += 1
+
+    por_curso = []
+    for nombre_curso, avances in sorted(cursos_data.items()):
+        n = len(avances)
         por_curso.append({
             "curso":       nombre_curso,
-            "estudiantes": _limpiar_entero(est_val),
-            "promedio":    _limpiar_porcentaje(_celda(row, col_promedio)),
-            "min":         _limpiar_porcentaje(_celda(row, col_min)),
-            "max":         _limpiar_porcentaje(_celda(row, col_max)),
+            "estudiantes": n,
+            "promedio":    round(sum(avances) / n, 2) if n else 0.0,
+            "min":         round(min(avances), 2) if avances else 0.0,
+            "max":         round(max(avances), 2) if avances else 0.0,
         })
 
-    # Mapear columnas de ANOMALÍAS por nombre
-    col_map_a = {
-        _normalizar(c): j
-        for j, c in enumerate(all_values[anomalias_header_idx])
-        if c.strip()
-    }
-    col_categoria = col_map_a.get("categoria")
-    col_cantidad  = col_map_a.get("cantidad")
+    anomalias = [
+        {"categoria": "SIN MATCH",        "cantidad": sin_match},
+        {"categoria": "AVANCE 0%",         "cantidad": avance_0},
+        {"categoria": "AVANCE IRREGULAR",  "cantidad": avance_irr},
+    ]
 
-    if col_categoria is None or col_cantidad is None:
-        raise ValueError("Columnas 'Categoría'/'Cantidad' no encontradas en ANOMALÍAS.")
-
-    # Recolectar filas ANOMALÍAS — cortar en la primera fila vacía tras recoger datos
-    # (el Sheet tiene RESUMEN GENERAL debajo separado por una fila vacía)
-    anomalias = []
-    for i in range(anomalias_header_idx + 1, len(all_values)):
-        row = all_values[i]
-        if _es_fila_vacia(row):
-            if anomalias:
-                break
-            continue
-        cat_val = _celda(row, col_categoria).strip()
-        if not cat_val:
-            continue
-        anomalias.append({
-            "categoria": cat_val,
-            "cantidad":  _limpiar_entero(_celda(row, col_cantidad)),
-        })
-
-    log(f"  POR CURSO: {len(por_curso)} cursos | ANOMALÍAS: {len(anomalias)} categorías")
-    return por_curso, anomalias
-
-
-def parsear_resumen_general(all_values: list) -> dict:
-    """
-    Lee el bloque RESUMEN GENERAL (Métrica | Valor) de la hoja estadísticas.
-    Devuelve un dict con las métricas normalizadas como claves.
-    """
-    in_bloque = False
-    resultado = {}
-    for row in all_values:
-        celdas = [c.strip() for c in row]
-        celdas_nv = [c for c in celdas if c]
-        if not celdas_nv:
-            continue
-        primera = _normalizar(celdas_nv[0])
-        if primera in ("resumen general", "metrica"):
-            in_bloque = True
-            continue
-        if in_bloque and len(celdas_nv) >= 2:
-            resultado[_normalizar(celdas_nv[0])] = celdas_nv[1]
-    return resultado
+    log(f"  Cursos: {len(por_curso)} | SIN MATCH: {sin_match} | AVANCE 0%: {avance_0} | IRREGULAR: {avance_irr}")
+    return por_curso, anomalias, len(ids_unicos)
 
 
 # ── Generación de data.json ────────────────────────────────────────────────────
-def generar_json(por_curso: list, anomalias: list, resumen: dict) -> dict:
+def generar_json(por_curso: list, anomalias: list, total_estudiantes_unicos: int) -> dict:
     return {
         "ultima_actualizacion": datetime.now().astimezone().isoformat(),
         "por_curso": por_curso,
         "anomalias": anomalias,
         "totales": {
             "total_cursos": len(por_curso),
-            # "Estudiantes únicos" normaliza a "estudiantes unicos"
-            "total_estudiantes_unicos": _limpiar_entero(
-                resumen.get("estudiantes unicos", "0")
-            ),
+            "total_estudiantes_unicos": total_estudiantes_unicos,
         },
     }
 
@@ -302,28 +209,26 @@ def main() -> None:
     try:
         hoja = conectar_hoja()
 
-        log("Leyendo hoja 'estadísticas'...")
+        log(f"Leyendo hoja '{NOMBRE_HOJA}'...")
         all_values = hoja.get_all_values()
         log(f"  {len(all_values)} filas leídas.")
 
-        por_curso, anomalias = parsear_tablas(all_values)
-        resumen = parsear_resumen_general(all_values)
-        log(f"  Estudiantes únicos (RESUMEN GENERAL): {resumen.get('estudiantes unicos', 'no encontrado')}")
+        por_curso, anomalias, total_unicos = procesar_h2test(all_values)
+        log(f"  Estudiantes únicos (Identificacion): {total_unicos}")
 
-        datos = generar_json(por_curso, anomalias, resumen)
+        datos = generar_json(por_curso, anomalias, total_unicos)
         guardar_json(datos)
 
         timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M")
         log("Ejecutando git commit y push...")
         git_commit_y_push(timestamp)
 
-        filas_cursos = len(por_curso)
         log("=" * 60)
-        log(f"  Cursos procesados   : {filas_cursos}")
-        log(f"  Anomalías procesadas: {len(anomalias)}")
+        log(f"  Cursos procesados   : {len(por_curso)}")
+        log(f"  Anomalías           : {len(anomalias)}")
         log(f"  Archivo generado    : {RUTA_DATA_JSON}")
         log("=" * 60)
-        print(f"EXPORT: filas_cursos={filas_cursos} estado=exito", flush=True)
+        print(f"EXPORT: cursos={len(por_curso)} estado=exito", flush=True)
 
     except FileNotFoundError as e:
         print(f"\nERROR: {e}", file=sys.stderr)
@@ -340,7 +245,7 @@ def main() -> None:
     except gspread.exceptions.WorksheetNotFound:
         print(
             f"\nERROR: No existe la pestaña '{NOMBRE_HOJA}'.\n"
-            "Créala manualmente en la hoja de cálculo.",
+            "Verifica que la pestaña 'h2test' existe en el Sheet de Fundación ROFÉ.",
             file=sys.stderr,
         )
         sys.exit(1)

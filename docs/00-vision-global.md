@@ -23,11 +23,16 @@
 |---|---|---|---|
 | Asistencia Zoom | [[zoom-asistencia]] | Alta | Bloqueado — pendiente confirmar captura de Email/ID en sesiones |
 
+## Procesos en construcción (iniciados, no en producción aún)
+
+| Proceso | Nota | Estado | Notas rápidas |
+|---|---|---|---|
+| Dashboard web (3 pestañas) | [[dashboard-web]] | Fase 2 lista — pendiente activar Pages y validar con datos reales (Fase 3) | `export_stats.py` + `export_asistencia.py` + `index.html` unificado + `panel_riesgo.py` completos; falta: setup Pages + primera corrida real |
+
 ## Procesos identificados (pendientes de iniciar)
 
 | Proceso | Descripción breve | Por qué importa |
 |---|---|---|
-| Dashboard web Q10 | Script Python genera JSON desde h2test → commit a GitHub → GitHub Pages muestra estadísticas | En construcción — ver [[q10-consolidacion#Conexión h2test → Dashboard web]] |
 | Creación de reuniones Meet | Hoy lo hacen manualmente 2 asistentes | Ahorro de tiempo humano directo |
 
 ## Patrones recurrentes detectados
