@@ -41,6 +41,12 @@ import requests
 set NODE_TLS_REJECT_UNAUTHORIZED=0
 ```
 
+**En git** — una sola vez por repo, usa el cert store de Windows en vez de OpenSSL:
+```bash
+git config --local http.sslBackend schannel
+```
+Si se clona un repo nuevo en esta red, aplicar este comando antes del primer push.
+
 **Tunnel externo:** usar `cloudflared` (Cloudflare Tunnel) en vez de ngrok. ngrok falla con `x509: certificate signed by unknown authority` porque el proxy intercepta su TLS. cloudflared usa QUIC/UDP, bypasea el proxy HTTP.
 
 ```
