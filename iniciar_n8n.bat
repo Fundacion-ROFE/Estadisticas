@@ -34,9 +34,7 @@ set /a intentos=0
 :esperar_url
 timeout /t 2 /nobreak >nul
 set /a intentos+=1
-for /f "tokens=*" %%L in ('findstr /i "trycloudflare.com" "%CF_LOG%" 2^>nul') do (
-    for /f "tokens=3" %%U in ("%%L") do set "CF_URL=%%U"
-)
+for /f "delims=" %%U in ('powershell -NoProfile -Command "$m=Select-String -Path \"%CF_LOG%\" -Pattern \"https://[a-z0-9-]+\.trycloudflare\.com\"; if($m){$m.Matches[0].Value}"') do set "CF_URL=%%U"
 if defined CF_URL goto :url_ok
 if %intentos% LSS 10 goto :esperar_url
 echo ERROR: No se obtuvo URL de Cloudflare en 20 segundos.
