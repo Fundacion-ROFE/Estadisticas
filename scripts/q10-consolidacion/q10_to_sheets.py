@@ -269,7 +269,7 @@ def descargar_estudiantes(session: requests.Session) -> pd.DataFrame:
         ("Programa", ""),
         ("Filtros[3].Name", "Estado"),
         ("Filtros[3].PartialName", "_RadioFilter"),
-        ("Estado", "A"),
+        ("Estado", ""),
         ("Filtros[4].Name", "informacionAdicional"),
         ("Filtros[4].PartialName", "_SelectFilter"),
         ("informacionAdicional", ""),
@@ -320,7 +320,7 @@ def descargar_estudiantes(session: requests.Session) -> pd.DataFrame:
         "Celular":             "Celular",
     })
 
-    columnas_deseadas = ["Codigo", "Nombre", "Correo", "Celular"]
+    columnas_deseadas = ["Codigo", "Nombre", "Correo", "Celular", "Estado"]
     ausentes = [c for c in columnas_deseadas if c not in df.columns]
     if ausentes:
         log(f"  ADVERTENCIA: columnas no encontradas en Estudiantes: {ausentes}")
@@ -517,7 +517,7 @@ def main() -> None:
             "Correo": "Email",
         })
 
-        COLS_FINALES = ["Identificacion", "Nombre", "Celular", "Email", "Curso", "Avance"]
+        COLS_FINALES = ["Identificacion", "Nombre", "Celular", "Email", "Curso", "Avance", "Estado"]
         ausentes_final = [c for c in COLS_FINALES if c not in df_joined.columns]
         if ausentes_final:
             log(f"ADVERTENCIA: columnas faltantes en el DataFrame final: {ausentes_final}")

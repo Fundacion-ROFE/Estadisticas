@@ -279,9 +279,9 @@ function renderT1(d){
       <div class="kpi-sub">En plataforma Q10</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-val">${fmt(t.total_estudiantes_unicos)}</div>
-      <div class="kpi-lbl">Estudiantes únicos</div>
-      <div class="kpi-sub">Registros en plataforma</div>
+      <div class="kpi-val">${fmt(t.total_habilitados ?? t.total_estudiantes_unicos)}</div>
+      <div class="kpi-lbl">Estudiantes activos</div>
+      <div class="kpi-sub">de ${fmt(t.total_estudiantes_unicos)} matriculados</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-val ${sg?sg.cls:''}">${promedioGlobal!=null?promedioGlobal+'%':'—'}</div>
@@ -334,6 +334,7 @@ function renderT1(d){
 
   // Anomalías
   const ANOM_DESC = {
+    'NO HABILITADO':    'Estudiantes con Estado I (inactivo) en Q10',
     'SIN MATCH':        'Registros sin coincidencia de email en el sistema',
     'AVANCE 0%':        'Matriculados que nunca abrieron el contenido',
     'AVANCE IRREGULAR': 'Avance superior al 100% — error de sincronización',

@@ -67,8 +67,8 @@ def leer_h1test(gc: gspread.Client) -> pd.DataFrame:
 
     df = pd.DataFrame(datos)
 
-    columnas_esperadas = ["Identificacion", "Nombre", "Celular", "Email", "Curso", "Avance"]
-    for col in columnas_esperadas:
+    columnas_requeridas = ["Identificacion", "Nombre", "Celular", "Email", "Curso", "Avance"]
+    for col in columnas_requeridas:
         if col not in df.columns:
             match = [c for c in df.columns if c.lower() == col.lower()]
             if match:
@@ -76,11 +76,24 @@ def leer_h1test(gc: gspread.Client) -> pd.DataFrame:
             else:
                 raise KeyError(f"Columna requerida '{col}' no encontrada en H1Test.")
 
-    for col in columnas_esperadas:
+    if "Estado" not in df.columns:
+        match = [c for c in df.columns if c.lower() == "estado"]
+        if match:
+            df.rename(columns={match[0]: "Estado"}, inplace=True)
+        else:
+            df["Estado"] = "A"
+
+    for col in columnas_requeridas + ["Estado"]:
         df[col] = df[col].astype(str).str.strip()
     df['Avance'] = df['Avance'].str.replace('%', '', regex=False).str.strip()
 
-    log(f"  {len(df)} filas leídas.")
+    df['_av_num'] = pd.to_numeric(df['Avance'], errors='coerce').fillna(-1)
+    df = (df.sort_values('_av_num', ascending=False)
+            .drop_duplicates(subset=['Identificacion', 'Curso'], keep='first')
+            .drop(columns=['_av_num'])
+            .reset_index(drop=True))
+
+    log(f"  {len(df)} filas tras deduplicación.")
     return df
 
 
@@ -96,6 +109,7 @@ def calcular_observaciones(df: pd.DataFrame) -> pd.DataFrame:
         except ValueError:
             avance_num = None
 
+        estado = fila.get('Estado', 'A').strip().upper()
         base = {
             "Identificacion": fila['Identificacion'],
             "Nombre":         fila['Nombre'],
@@ -103,8 +117,13 @@ def calcular_observaciones(df: pd.DataFrame) -> pd.DataFrame:
             "Email":          email,
             "Curso":          curso,
             "Avance":         avance_str,
+            "Estado":         estado,
         }
 
+        if estado not in ('A', ''):
+            filas.append({**base, "Categoria": "NO HABILITADO", "Curso": curso or "[N/A]",
+                          "Observacion": f"Estado Q10: {estado}"})
+            continue
         if curso == "" and avance_str == "" and email != "":
             filas.append({**base, "Categoria": "SIN MATCH", "Curso": "[N/A]",
                           "Observacion": "Email no encontrado en reporte de cursos"})
@@ -120,7 +139,7 @@ def calcular_observaciones(df: pd.DataFrame) -> pd.DataFrame:
                           "Observacion": "Avance superior al 100% — revisar en Q10"})
 
     cols = ["Categoria", "Identificacion", "Nombre", "Celular",
-            "Email", "Curso", "Avance", "Observacion"]
+            "Email", "Curso", "Avance", "Estado", "Observacion"]
     return pd.DataFrame(filas, columns=cols) if filas else pd.DataFrame(columns=cols)
 
 
@@ -145,19 +164,27 @@ def calcular_estadisticas(df: pd.DataFrame) -> dict:
 
     df_obs    = calcular_observaciones(df)
     anomalias = {
+        'NO HABILITADO':    int((df_obs['Categoria'] == 'NO HABILITADO').sum()),
         'SIN CURSO':        int((df_obs['Categoria'] == 'SIN CURSO').sum()),
         'AVANCE 0%':        int((df_obs['Categoria'] == 'AVANCE 0%').sum()),
         'SIN MATCH':        int((df_obs['Categoria'] == 'SIN MATCH').sum()),
         'AVANCE IRREGULAR': int((df_obs['Categoria'] == 'AVANCE IRREGULAR').sum()),
     }
 
+    if 'Estado' in df.columns:
+        df_hab = df[df['Estado'].str.upper().isin(['A', ''])]
+        total_habilitados = int(df_hab['Email'].replace("", pd.NA).dropna().nunique())
+    else:
+        total_habilitados = int(emails_validos.nunique())
+
     return {
-        'total_registros':   len(df),
-        'total_estudiantes': int(emails_validos.nunique()),
-        'promedio_general':  round(avance_valido.mean(), 1) if not avance_valido.empty else 0.0,
-        'stats_por_curso':   stats_por_curso,
-        'anomalias':         anomalias,
-        'timestamp':         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        'total_registros':    len(df),
+        'total_estudiantes':  int(emails_validos.nunique()),
+        'total_habilitados':  total_habilitados,
+        'promedio_general':   round(avance_valido.mean(), 1) if not avance_valido.empty else 0.0,
+        'stats_por_curso':    stats_por_curso,
+        'anomalias':          anomalias,
+        'timestamp':          datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
 
 
@@ -182,26 +209,29 @@ def escribir_h2test(gc: gspread.Client, df: pd.DataFrame) -> tuple:
     for curso in cursos_detectados:
         df_c = df[df['Curso'] == curso].sort_values(by='Nombre')
         bloque = [
-            [curso.upper(), "", "", "", ""],
-            ["Identificacion", "Nombre", "Celular", "Email", "Avance"],
+            [curso.upper(), "", "", "", "", ""],
+            ["Identificacion", "Nombre", "Celular", "Email", "Avance", "Estado"],
         ]
         for _, fila in df_c.iterrows():
             bloque.append([str(fila['Identificacion']), str(fila['Nombre']),
-                           str(fila['Celular']), str(fila['Email']), str(fila['Avance'])])
+                           str(fila['Celular']), str(fila['Email']),
+                           str(fila['Avance']), str(fila.get('Estado', ''))])
         bloques.append(bloque)
-        log(f"    {curso}: {len(df_c)} estudiantes")
+        hab = int((df_c.get('Estado', pd.Series(['A'] * len(df_c))).str.upper().isin(['A', ''])).sum())
+        log(f"    {curso}: {len(df_c)} estudiantes ({hab} activos)")
 
     df_sc = df[df['Curso'] == ""].sort_values(by='Nombre')
     bloque_sc = [
-        ["SIN CURSO ASIGNADO", "", "", "", ""],
-        ["Identificacion", "Nombre", "Celular", "Email", ""],
+        ["SIN CURSO ASIGNADO", "", "", "", "", ""],
+        ["Identificacion", "Nombre", "Celular", "Email", "", "Estado"],
     ]
     for _, fila in df_sc.iterrows():
         bloque_sc.append([str(fila['Identificacion']), str(fila['Nombre']),
-                          str(fila['Celular']), str(fila['Email']), ""])
+                          str(fila['Celular']), str(fila['Email']), "",
+                          str(fila.get('Estado', ''))])
     bloques.append(bloque_sc)
 
-    COLS_BLOQUE = 5
+    COLS_BLOQUE = 6
     SEPARADOR   = ["", ""]
     alto_max    = max(len(b) for b in bloques) if bloques else 0
 
@@ -237,7 +267,7 @@ def escribir_observaciones(gc: gspread.Client, df: pd.DataFrame) -> int:
 
     df_obs  = calcular_observaciones(df)
     cols_obs = ["Categoria", "Identificacion", "Nombre", "Celular",
-                "Email", "Curso", "Avance", "Observacion"]
+                "Email", "Curso", "Avance", "Estado", "Observacion"]
     filas   = [cols_obs] + [[str(fila[c]) for c in cols_obs] for _, fila in df_obs.iterrows()]
     ws_obs.update(values=filas, range_name="A1")
     log(f"  Observaciones: {len(filas) - 1} casos.")
@@ -263,7 +293,8 @@ def escribir_estadisticas(gc: gspread.Client, df: pd.DataFrame) -> dict:
         ["RESUMEN GENERAL", ""],
         ["Metrica", "Valor"],
         ["Total registros",         stats['total_registros']],
-        ["Estudiantes unicos",      stats['total_estudiantes']],
+        ["Estudiantes matriculados", stats['total_estudiantes']],
+        ["Estudiantes activos (A)", stats.get('total_habilitados', stats['total_estudiantes'])],
         ["Promedio avance general", f"{stats['promedio_general']}%"],
         ["Fecha actualizacion",     stats['timestamp']],
         ["", ""],
@@ -301,6 +332,7 @@ def main() -> None:
         print(
             f"RESUMEN: cursos={len(cursos)} "
             f"estudiantes={stats['total_estudiantes']} "
+            f"habilitados={stats.get('total_habilitados', stats['total_estudiantes'])} "
             f"promedio={stats['promedio_general']} "
             f"estado=exito",
             flush=True,
