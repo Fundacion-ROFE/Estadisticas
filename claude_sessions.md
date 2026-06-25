@@ -188,3 +188,16 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
 - `docs/dashboard/index.html`: KPI "Estudiantes activos" = `total_habilitados`, subtexto "de N matriculados"; ANOM_DESC con `NO HABILITADO`.
 - Workflow n8n actualizado vía API (mensaje Telegram ahora muestra "Activos: X | Total: Y").
 - Ejecutar `/Actualizar Q10` para ver datos reales con la separación activos/inactivos.
+
+---
+
+## 2026-06-25 — [Q10] Dos bugs críticos corregidos + pipeline end-to-end validado
+
+**Estado:** Completado
+**Proceso relacionado:** [[q10-consolidacion]], [[dashboard-web]]
+
+- **Bug 1 — h2test clear insuficiente:** `values_clear("A1:Z1000")` solo cubre 26 cols × 1000 filas; h2test necesita 72 cols y 3400+ filas. Datos viejos persistían → export_stats leía 8845 filas en lugar de 3415 y todos los conteos salían iguales (~4554). Fix: `ws_h2.clear()`.
+- **Bug 2 — dedup por Identificacion:** mismo estudiante tiene Código distinto en cada período → el dedup no eliminaba duplicados cross-period. Fix: dedup por `(Email, Curso)` keepMax(Avance).
+- Pipeline validado con ground truth H1Test: 1145 únicos con curso (2026) + 3409 histórico = 4553 total DB.
+- `export_stats.py` y `export_avance.py` corridos y pusheados: dashboard en producción muestra valores correctos.
+- Commit `a573690` con todos los cambios del pipeline Estado + fixes.

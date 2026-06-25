@@ -42,11 +42,14 @@ Para agregar nuevos grupos: editar `MAPEO_GRUPOS`, `MAPEO_SHEET_IDS` en `q10_to_
 **Fase 2 — Organizar H1Test → h2test** (`organizador_headless.py`): *(solo para `/actualizar h2test`)*
 
 10. Leer H1Test (formato plano: una fila por estudiante × curso)
-11. Detectar cursos, ordenar estudiantes por Nombre dentro de cada curso
-12. Construir bloques horizontales: 5 cols por curso + 2 cols separador
-13. Escribir h2test (fila 1 = nombres de cursos, fila 2 = sub-headers, filas 3+ = datos)
-14. Calcular y escribir pestaña Observaciones (SIN MATCH, SIN CURSO, AVANCE 0%, AVANCE IRREGULAR)
-15. Calcular y escribir pestaña Estadisticas (resumen por curso + totales)
+11. Deduplicar por `(Email, Curso)` keepMax(Avance) — el mismo estudiante tiene diferente Identificacion entre períodos, pero siempre el mismo Email
+12. Eliminar filas `Curso=''` de emails que también tienen Curso real (histórico + 2026 en mismo Sheet)
+13. Detectar cursos, ordenar estudiantes por Nombre dentro de cada curso
+14. Construir bloques horizontales: 6 cols por curso (`Identificacion, Nombre, Celular, Email, Avance, Estado`) + 2 cols separador
+15. Limpiar h2test completo con `ws_h2.clear()` antes de escribir (CRÍTICO: `values_clear("A1:Z1000")` solo cubre 26 cols × 1000 filas — insuficiente para 72+ cols × 3400+ filas)
+16. Escribir h2test (fila 1 = nombres de cursos, fila 2 = sub-headers, filas 3+ = datos)
+17. Calcular y escribir pestaña Observaciones (SIN MATCH, SIN CURSO, AVANCE 0%, AVANCE IRREGULAR, NO HABILITADO)
+18. Calcular y escribir pestaña Estadisticas (resumen por curso + totales + total_habilitados)
 
 **Fase 3 — Publicar al dashboard** (`export_stats.py` + `export_avance.py`): *(solo para `/actualizar h2test`)*
 
@@ -95,8 +98,11 @@ Periodos con datos confirmados: `21, 22, 23`. Periodo `1` incluido sin garantía
 - **SSL corporativo.** Ver [[convenciones#SSL corporativo]] — aplica a Python y a n8n.
 - **URLs Azure Blob expiran en ~3 min.** Descargar inmediatamente tras recibir la URL.
 - **Periodo 20 siempre vacío.** Q10 devuelve `not_results` — se omite sin error.
+- **Periodos 2026 confirmados:** IDs 21 (`Logica-Nivel 2-2026`), 22 (`Habilidades-Nivel 1-2026`), 23 (`Unico MR-2026`). Periodo 1 no tiene datos — no incluir en `PERIODOS`.
+- **Dedup debe ser por Email, no Identificacion.** El mismo estudiante tiene `Codigo de matricula` diferente en cada período, pero siempre el mismo email.
+- **`ws_h2.clear()` vs `values_clear("A1:Z1000")`.** h2test tiene 9 bloques × 8 cols = 72 cols, y el bloque SIN CURSO puede tener 3400+ filas. El rango Z1000 solo cubre 26 cols × 1000 filas — datos viejos más allá de esos límites persisten y corrompen export_stats. Usar siempre `ws_h2.clear()`.
 - **Token del bot de Telegram estuvo expuesto** en un chat de desarrollo. Regenerar con BotFather antes de uso en producción real.
-- **Si se agregan columnas propias a H1Test o h2test** a la derecha de F, la lógica borrar-y-resubir las destruiría.
+- **Si se agregan columnas propias a H1Test o h2test** a la derecha de las columnas propias, la lógica borrar-y-resubir las destruiría.
 - **Nombre de pestaña h2test es minúsculas intencional.** Así está creada en Google Sheets. No cambiar a `H2Test` ni en el código ni en Sheets — rompería la conexión. `H1Test` usa CamelCase porque se creó primero con ese nombre; son convenciones distintas por origen histórico.
 
 ## Reglas de Anomalías
