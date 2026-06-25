@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-06-25T11:11:59.710211-05:00",
+  "ultima_actualizacion": "2026-06-25T15:14:03.240732-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -30,7 +30,7 @@
       "max": 100.0
     },
     {
-      "curso": "HABILIDADES DEL SER PARA  EMPRENDEDORAS DEL SIGLO XXI",
+      "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
       "estudiantes": 244,
       "promedio": 30.55,
       "min": 0.0,
@@ -44,7 +44,7 @@
       "max": 100.0
     },
     {
-      "curso": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
+      "curso": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
       "estudiantes": 862,
       "promedio": 96.37,
       "min": 0.0,
