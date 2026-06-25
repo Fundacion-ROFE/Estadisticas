@@ -167,13 +167,6 @@ def procesar_avance(all_values: list) -> tuple:
         })
         log(f"    {g['nombre']}: {n} estudiantes, promedio {por_curso[-1]['promedio']}%")
 
-    # Contar estudiantes en grupos sin etiqueta
-    sin_etiqueta = 0
-    for g in sin_nombre:
-        for row in filas:
-            if _cel(row, g["col_inicio"] + g["offset_id"]):
-                sin_etiqueta += 1
-
     total_registros = sum(c["estudiantes"] for c in por_curso)
     promedio_general = (
         round(sum(c["promedio"] * c["estudiantes"] for c in por_curso) / total_registros, 2)
@@ -188,9 +181,8 @@ def procesar_avance(all_values: list) -> tuple:
     }
 
     anomalias = [
-        {"categoria": "AVANCE 0%",      "cantidad": avance_0},
+        {"categoria": "AVANCE 0%",        "cantidad": avance_0},
         {"categoria": "AVANCE IRREGULAR", "cantidad": avance_irr},
-        {"categoria": "SIN ETIQUETA",   "cantidad": sin_etiqueta},
     ]
 
     return por_curso, totales, anomalias
