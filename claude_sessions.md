@@ -172,3 +172,19 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
 - Workflow n8n actualizado: `q10_to_sheets.py` ahora siempre usa `--grupo h1test`; `/actualizar h2test` encadena organizador → export_stats → export_avance → GitHub Pages; `/actualizar h1test` solo extrae (para revisión sin publicar).
 - Documentación actualizada: flujo de 3 fases en `q10-consolidacion.md`, nueva entrada en `mapa-codigo.md`, diagrama ASCII corregido en `00-vision-global.md`.
 - **Pendiente:** reimportar `n8n-workflows/q10-consolidacion.json` en la instancia n8n local (ID producción actual: `Rblg81qifVshsRae`), desactivar el anterior y activar el nuevo. Luego probar con `/actualizar h2test` en Telegram.
+
+---
+
+## 2026-06-25 — [Q10] Pipeline n8n validado + columna Estado A/I incorporada al flujo completo
+
+**Estado:** Completado
+**Proceso relacionado:** [[q10-consolidacion]], [[dashboard-web]]
+
+- Pipeline end-to-end confirmado funcional (ejecución n8n ID 11, commits a las 5:07 PM del 24/06).
+- Sesión anterior completada (pipeline OK) + nueva tarea: incorporar campo `Estado` (A=activo, I=inactivo) al flujo completo.
+- `q10_to_sheets.py`: removido filtro `Estado=A` del payload Estudiantes (ahora retorna todos los estados), campo `Estado` añadido a `columnas_deseadas` y `COLS_FINALES` → H1Test tendrá columna 7 `Estado`.
+- `organizador_headless.py`: dedup por `(Identificacion, Curso)` keepMax(Avance) añadida; Estado en bloques h2test (6 cols); categoría `NO HABILITADO` en Observaciones; `total_habilitados` en Estadisticas y en línea RESUMEN.
+- `export_stats.py`: `detectar_grupos` detecta `offset_estado`; `procesar_h2test` computa `ids_habilitados` (Estado=A/vacío); `generar_json` añade `total_habilitados` al JSON.
+- `docs/dashboard/index.html`: KPI "Estudiantes activos" = `total_habilitados`, subtexto "de N matriculados"; ANOM_DESC con `NO HABILITADO`.
+- Workflow n8n actualizado vía API (mensaje Telegram ahora muestra "Activos: X | Total: Y").
+- Ejecutar `/Actualizar Q10` para ver datos reales con la separación activos/inactivos.
