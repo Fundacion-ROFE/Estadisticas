@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-06-24T17:07:30.537461-05:00",
+  "ultima_actualizacion": "2026-06-25T09:38:11.474451-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -11,7 +11,7 @@
     {
       "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
       "estudiantes": 135,
-      "promedio": 10.16,
+      "promedio": 10.83,
       "min": 0.0,
       "max": 100.0
     },
@@ -25,14 +25,14 @@
     {
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
       "estudiantes": 806,
-      "promedio": 87.24,
+      "promedio": 87.91,
       "min": 0.0,
       "max": 100.0
     },
     {
       "curso": "HABILIDADES DEL SER PARA  EMPRENDEDORAS DEL SIGLO XXI",
       "estudiantes": 244,
-      "promedio": 30.42,
+      "promedio": 30.55,
       "min": 0.0,
       "max": 100.0
     },
@@ -52,8 +52,8 @@
     },
     {
       "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
-      "estudiantes": 809,
-      "promedio": 93.83,
+      "estudiantes": 810,
+      "promedio": 93.71,
       "min": 0.0,
       "max": 100.0
     }
@@ -61,11 +61,11 @@
   "anomalias": [
     {
       "categoria": "SIN MATCH",
-      "cantidad": 3415
+      "cantidad": 3414
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 3881
+      "cantidad": 3880
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -74,6 +74,7 @@
   ],
   "totales": {
     "total_cursos": 8,
-    "total_estudiantes_unicos": 4563
+    "total_estudiantes_unicos": 4563,
+    "total_habilitados": 4563
   }
 }
