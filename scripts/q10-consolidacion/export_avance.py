@@ -138,10 +138,11 @@ def procesar_avance(all_values: list) -> tuple:
     log(f"  Grupos detectados: {len(grupos)} total — {len(nombrados)} nombrados, {len(sin_nombre)} sin etiqueta")
     log(f"  Cursos: {[g['nombre'] for g in nombrados]}")
 
-    por_curso  = []
-    ids_unicos = set()
-    avance_0   = 0
-    avance_irr = 0
+    por_curso    = []
+    ids_unicos   = set()
+    sin_progreso = 0
+    avance_0     = 0
+    avance_irr   = 0
 
     for g in nombrados:
         avances = []
@@ -150,12 +151,17 @@ def procesar_avance(all_values: list) -> tuple:
             if not id_val:
                 continue
             ids_unicos.add(id_val)
-            av = _limpiar_porcentaje(_cel(row, g["col_inicio"] + g["offset_avance"]) if g["offset_avance"] is not None else "")
-            avances.append(av)
-            if av == 0.0:
-                avance_0 += 1
-            if av > 100.0:
-                avance_irr += 1
+            av_raw = _cel(row, g["col_inicio"] + g["offset_avance"]) if g["offset_avance"] is not None else ""
+            if not av_raw.strip():
+                sin_progreso += 1
+                # No se incluye en avances para no distorsionar el promedio
+            else:
+                av = _limpiar_porcentaje(av_raw)
+                avances.append(av)
+                if av == 0.0:
+                    avance_0 += 1
+                if av > 100.0:
+                    avance_irr += 1
 
         n = len(avances)
         por_curso.append({
@@ -181,6 +187,7 @@ def procesar_avance(all_values: list) -> tuple:
     }
 
     anomalias = [
+        {"categoria": "SIN PROGRESO",     "cantidad": sin_progreso},
         {"categoria": "AVANCE 0%",        "cantidad": avance_0},
         {"categoria": "AVANCE IRREGULAR", "cantidad": avance_irr},
     ]

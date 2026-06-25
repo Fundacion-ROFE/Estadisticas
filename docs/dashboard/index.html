@@ -397,10 +397,10 @@ function renderT1(d){
 
   // Anomalías
   const ANOM_DESC = {
-    'NO HABILITADO':    'Estudiantes con Estado I (inactivo) en Q10',
-    'SIN MATCH':        'Registros sin coincidencia de email en el sistema',
-    'AVANCE 0%':        'Matriculados que nunca abrieron el contenido',
-    'AVANCE IRREGULAR': 'Avance superior al 100% — error de sincronización',
+    'NO HABILITADO':    'Estudiantes importados de Q10 con Estado I (inactivo)',
+    'SIN MATCH':        'Estudiantes con ID en Q10 pero sin curso asignado — dato incompleto en la extracción',
+    'AVANCE 0%':        'Matriculados en curso con avance registrado en cero — nunca abrieron el contenido',
+    'AVANCE IRREGULAR': 'Avance superior al 100% — error de sincronización en Q10',
   };
   const anoms = (d.anomalias||[]).map(a=>`
     <div class="anom-card">
@@ -485,9 +485,9 @@ function renderT2(a){
   </div>`;
 
   const ANOM_DESC = {
-    'AVANCE 0%':       'Matriculados sin actividad registrada en la hoja',
-    'AVANCE IRREGULAR':'Porcentaje superior al 100% — posible error de entrada',
-    'SIN ETIQUETA':    'Registros en grupos sin nombre de curso asignado',
+    'SIN PROGRESO':    'Estudiantes con ID registrado pero sin dato de avance — celda vacía en la hoja manual',
+    'AVANCE 0%':       'Estudiantes con avance registrado en cero — matriculados sin actividad',
+    'AVANCE IRREGULAR':'Porcentaje superior al 100% — posible error de entrada manual',
   };
   const anoms = (a.anomalias||[]).filter(x=>x.cantidad>0).map(x=>`
     <div class="anom-card">
