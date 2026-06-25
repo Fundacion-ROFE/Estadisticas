@@ -1,10 +1,10 @@
 {
-  "ultima_actualizacion": "2026-06-25T11:01:16.586281-05:00",
+  "ultima_actualizacion": "2026-06-25T11:03:23.942297-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
-      "estudiantes": 6288,
-      "promedio": 43.81,
+      "estudiantes": 863,
+      "promedio": 98.47,
       "min": 0.0,
       "max": 100.0
     },
@@ -52,8 +52,8 @@
     },
     {
       "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
-      "estudiantes": 810,
-      "promedio": 93.71,
+      "estudiantes": 809,
+      "promedio": 93.83,
       "min": 0.0,
       "max": 100.0
     }
@@ -61,11 +61,11 @@
   "anomalias": [
     {
       "categoria": "SIN MATCH",
-      "cantidad": 3414
+      "cantidad": 3413
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 3880
+      "cantidad": 388
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -74,8 +74,8 @@
   ],
   "totales": {
     "total_cursos": 8,
-    "total_estudiantes_unicos": 4554,
-    "total_habilitados": 4554,
-    "total_db": 4554
+    "total_estudiantes_unicos": 1145,
+    "total_habilitados": 1145,
+    "total_db": 4553
   }
 }
