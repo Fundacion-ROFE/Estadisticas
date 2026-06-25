@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-06-25T09:38:11.474451-05:00",
+  "ultima_actualizacion": "2026-06-25T09:48:49.465154-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -11,7 +11,7 @@
     {
       "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
       "estudiantes": 135,
-      "promedio": 10.83,
+      "promedio": 10.91,
       "min": 0.0,
       "max": 100.0
     },
@@ -25,7 +25,7 @@
     {
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
       "estudiantes": 806,
-      "promedio": 87.91,
+      "promedio": 87.92,
       "min": 0.0,
       "max": 100.0
     },
