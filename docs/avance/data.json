@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-06-25T11:12:15.086733-05:00",
+  "ultima_actualizacion": "2026-06-25T12:11:33.191244-05:00",
   "segmento": "Logica-Nivel 2-2026",
   "por_curso": [
     {
@@ -59,10 +59,6 @@
     {
       "categoria": "AVANCE IRREGULAR",
       "cantidad": 2
-    },
-    {
-      "categoria": "SIN ETIQUETA",
-      "cantidad": 2584
     }
   ]
 }
