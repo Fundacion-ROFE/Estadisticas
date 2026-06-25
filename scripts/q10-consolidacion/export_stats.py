@@ -100,13 +100,15 @@ def detectar_grupos(row0: list, row1: list) -> list:
         offset_id     = next((o for o, h in sub if "identificac" in h), None)
         offset_avance = next((o for o, h in sub if "avance" in h), None)
         offset_estado = next((o for o, h in sub if "estado" in h), None)
+        offset_email  = next((o for o, h in sub if "email" in h), None)
         grupos.append({
-            "nombre":         nombre,
-            "col_inicio":     col_inicio,
-            "col_fin":        col_fin,
-            "offset_id":      offset_id,
-            "offset_avance":  offset_avance,
-            "offset_estado":  offset_estado,
+            "nombre":        nombre,
+            "col_inicio":    col_inicio,
+            "col_fin":       col_fin,
+            "offset_id":     offset_id,
+            "offset_avance": offset_avance,
+            "offset_estado": offset_estado,
+            "offset_email":  offset_email,
         })
     return grupos
 
@@ -136,22 +138,24 @@ def procesar_h2test(all_values: list) -> tuple:
     cursos_normales = [g for g in grupos if "sin curso" not in g["nombre"].lower()]
     grupo_sin_curso = next((g for g in grupos if "sin curso" in g["nombre"].lower()), None)
 
-    por_curso       = []
-    ids_unicos      = set()
-    ids_habilitados = set()
-    avance_0        = 0
-    avance_irr      = 0
+    por_curso          = []
+    emails_unicos      = set()
+    emails_habilitados = set()
+    avance_0           = 0
+    avance_irr         = 0
 
     for g in cursos_normales:
         avances = []
         for row in filas:
-            id_val = _cel_grupo(row, g["col_inicio"], g["offset_id"])
+            id_val    = _cel_grupo(row, g["col_inicio"], g["offset_id"])
             if not id_val:
                 continue
-            ids_unicos.add(id_val)
-            est_val = _cel_grupo(row, g["col_inicio"], g.get("offset_estado")).upper()
-            if est_val in ("A", ""):
-                ids_habilitados.add(id_val)
+            email_val = _cel_grupo(row, g["col_inicio"], g.get("offset_email")).lower().strip()
+            est_val   = _cel_grupo(row, g["col_inicio"], g.get("offset_estado")).upper()
+            if email_val:
+                emails_unicos.add(email_val)
+                if est_val in ("A", ""):
+                    emails_habilitados.add(email_val)
             av = _limpiar_porcentaje(_cel_grupo(row, g["col_inicio"], g["offset_avance"]))
             avances.append(av)
             if av == 0.0:
@@ -168,11 +172,18 @@ def procesar_h2test(all_values: list) -> tuple:
             "max":         round(max(avances), 2) if avances else 0.0,
         })
 
-    sin_match = 0
+    sin_match        = 0
+    emails_sin_curso = set()
     if grupo_sin_curso and grupo_sin_curso["offset_id"] is not None:
+        offset_em_sc = grupo_sin_curso.get("offset_email")
         for row in filas:
             if _cel_grupo(row, grupo_sin_curso["col_inicio"], grupo_sin_curso["offset_id"]):
                 sin_match += 1
+                em = _cel_grupo(row, grupo_sin_curso["col_inicio"], offset_em_sc).lower().strip()
+                if em:
+                    emails_sin_curso.add(em)
+
+    total_db = len(emails_unicos | emails_sin_curso)
 
     anomalias = [
         {"categoria": "SIN MATCH",        "cantidad": sin_match},
@@ -180,20 +191,21 @@ def procesar_h2test(all_values: list) -> tuple:
         {"categoria": "AVANCE IRREGULAR",  "cantidad": avance_irr},
     ]
 
-    log(f"  Cursos: {len(por_curso)} | Unicos: {len(ids_unicos)} | Habilitados: {len(ids_habilitados)} | SIN MATCH: {sin_match} | AVANCE 0%: {avance_0} | IRREGULAR: {avance_irr}")
-    return por_curso, anomalias, len(ids_unicos), len(ids_habilitados)
+    log(f"  Cursos: {len(por_curso)} | 2026 únicos: {len(emails_unicos)} | Habilitados: {len(emails_habilitados)} | Total DB: {total_db} | SIN MATCH: {sin_match} | AVANCE 0%: {avance_0} | IRREGULAR: {avance_irr}")
+    return por_curso, anomalias, len(emails_unicos), len(emails_habilitados), total_db
 
 
 # ── Generación de data.json ────────────────────────────────────────────────────
-def generar_json(por_curso: list, anomalias: list, total_estudiantes_unicos: int, total_habilitados: int) -> dict:
+def generar_json(por_curso: list, anomalias: list, total_2026: int, total_habilitados: int, total_db: int) -> dict:
     return {
         "ultima_actualizacion": datetime.now().astimezone().isoformat(),
         "por_curso": por_curso,
         "anomalias": anomalias,
         "totales": {
             "total_cursos":             len(por_curso),
-            "total_estudiantes_unicos": total_estudiantes_unicos,
+            "total_estudiantes_unicos": total_2026,
             "total_habilitados":        total_habilitados,
+            "total_db":                 total_db,
         },
     }
 
@@ -237,10 +249,10 @@ def main() -> None:
         all_values = hoja.get_all_values()
         log(f"  {len(all_values)} filas leídas.")
 
-        por_curso, anomalias, total_unicos, total_hab = procesar_h2test(all_values)
-        log(f"  Estudiantes únicos: {total_unicos} | Habilitados (Estado=A): {total_hab}")
+        por_curso, anomalias, total_2026, total_hab, total_db = procesar_h2test(all_values)
+        log(f"  2026 únicos: {total_2026} | Habilitados: {total_hab} | Total DB: {total_db}")
 
-        datos = generar_json(por_curso, anomalias, total_unicos, total_hab)
+        datos = generar_json(por_curso, anomalias, total_2026, total_hab, total_db)
         guardar_json(datos)
 
         timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M")

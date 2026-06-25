@@ -280,8 +280,8 @@ function renderT1(d){
     </div>
     <div class="kpi-card">
       <div class="kpi-val">${fmt(t.total_habilitados ?? t.total_estudiantes_unicos)}</div>
-      <div class="kpi-lbl">Estudiantes activos</div>
-      <div class="kpi-sub">de ${fmt(t.total_estudiantes_unicos)} matriculados</div>
+      <div class="kpi-lbl">Estudiantes activos 2026</div>
+      <div class="kpi-sub">de ${fmt(t.total_estudiantes_unicos)} en plataforma este año</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-val ${sg?sg.cls:''}">${promedioGlobal!=null?promedioGlobal+'%':'—'}</div>
@@ -291,7 +291,7 @@ function renderT1(d){
     <div class="kpi-card">
       <div class="kpi-val sem-red">${fmt(totalAnoms)}</div>
       <div class="kpi-lbl">Total anomalías</div>
-      <div class="kpi-sub">SIN MATCH + AVANCE 0% + IRREGULAR</div>
+      <div class="kpi-sub">${t.total_db ? fmt(t.total_db)+' en histórico total DB' : 'SIN MATCH + AVANCE 0% + IRREGULAR'}</div>
     </div>
   </div>`;
 

@@ -54,7 +54,7 @@ MAPEO_SHEET_IDS: dict[str, str] = {
 TAMANIO_LOTE      = 500
 PAUSA_LOTE        = 1.2   # segundos entre lotes (cuota API Sheets)
 
-PERIODOS = [21, 22, 23, 1]  # periodo 20 → not_results, omitido
+PERIODOS = [21, 22, 23]  # períodos 2026 activos con datos
 
 # Nombres de columnas confirmados en primera corrida (2026-06-18)
 COL_CONS_EMAIL   = "Email"             # clave de JOIN con Estudiantes

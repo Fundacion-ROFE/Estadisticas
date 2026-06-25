@@ -89,11 +89,14 @@ def leer_h1test(gc: gspread.Client) -> pd.DataFrame:
 
     df['_av_num'] = pd.to_numeric(df['Avance'], errors='coerce').fillna(-1)
     df = (df.sort_values('_av_num', ascending=False)
-            .drop_duplicates(subset=['Identificacion', 'Curso'], keep='first')
+            .drop_duplicates(subset=['Email', 'Curso'], keep='first')
             .drop(columns=['_av_num'])
             .reset_index(drop=True))
 
-    log(f"  {len(df)} filas tras deduplicación.")
+    emails_con_curso = set(df[df['Curso'] != '']['Email'].str.lower())
+    df = df[~((df['Email'].str.lower().isin(emails_con_curso)) & (df['Curso'] == ''))].reset_index(drop=True)
+
+    log(f"  {len(df)} filas tras deduplicación. Sin curso real: {(df['Curso'] == '').sum()}")
     return df
 
 
@@ -198,10 +201,7 @@ def escribir_h2test(gc: gspread.Client, df: pd.DataFrame) -> tuple:
     except gspread.exceptions.WorksheetNotFound:
         ws_h2 = sheet_destino.add_worksheet(title="h2test", rows="1000", cols="100")
 
-    try:
-        sheet_destino.values_clear("'h2test'!A1:Z1000")
-    except Exception:
-        ws_h2.clear()
+    ws_h2.clear()
 
     cursos_detectados = sorted(df[df['Curso'] != '']['Curso'].unique())
 
