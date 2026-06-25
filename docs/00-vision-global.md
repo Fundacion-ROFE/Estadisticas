@@ -9,9 +9,10 @@
 ## Flujo general del sistema
 
 ```
-Telegram bot
-    │  /actualizar h2test
-    ▼
+Telegram bot              Schedule 12h (automático)
+    │  /actualizar q10        │
+    └──────────┬──────────────┘
+               ▼
 n8n (local, PC Samuel)
     │  ejecuta
     ▼
@@ -57,6 +58,7 @@ Google Sheets (Avance) ──┘     cruce por email
 | Componente | Detalle |
 |---|---|
 | Orquestador | n8n 2.8.4 self-hosted, local en PC Samuel (EstudiantesJC) |
+| Arranque | Task Scheduler → `iniciar_n8n.bat` al iniciar sesión (automático) |
 | Tunnel | Cloudflare Tunnel (`cloudflared`) — expone n8n al webhook de Telegram |
 | Identidad | Google Workspace — Service Account por proceso |
 | Dashboard | GitHub Pages → `fundacion-rofe.github.io/Estadisticas/dashboard/` |
@@ -68,8 +70,8 @@ Google Sheets (Avance) ──┘     cruce por email
 
 | Proceso | Nota | Completado | Estado |
 |---|---|---|---|
-| Consolidación Q10 | [[q10-consolidacion]] | 2026-06-24 | Bot Telegram activo · 8,845 filas · h2test operativa |
-| Dashboard web | [[dashboard-web]] | 2026-06-24 | GitHub Pages live · 3 tabs · export_stats + export_avance funcionando |
+| Consolidación Q10 | [[q10-consolidacion]] | 2026-06-25 | Schedule 12h + Telegram activos · 1,145 estudiantes 2026 · 4,553 total DB |
+| Dashboard web | [[dashboard-web]] | 2026-06-25 | GitHub Pages live · 3 tabs · KPIs activos/total/histórico funcionando |
 
 ---
 
@@ -114,7 +116,8 @@ Google Sheets (Avance) ──┘     cruce por email
 
 - **SSL corporativo:** aplica a Python, n8n y git. Ver [[convenciones#SSL corporativo]].
 - **Doble encabezado en Sheets:** h2test y pestaña Avance usan el mismo patrón (fila 1 = nombres fusionados, fila 2 = sub-headers). Ver [[convenciones#Doble encabezado en Google Sheets]].
-- **Trigger Telegram + n8n local:** patrón establecido en Q10, reutilizable para otros procesos.
+- **Trigger dual (Telegram + Schedule):** patrón establecido en Q10 — Schedule para actualizaciones automáticas silenciosas, Telegram para forzar actualización on-demand. Reutilizable en otros procesos.
+- **Arranque automático vía Task Scheduler:** tarea "Iniciar n8n ROFE" registrada en Windows — corre `iniciar_n8n.bat` al iniciar sesión de EstudiantesJC. No requiere intervención manual.
 - **JSON sin PII:** toda salida pública es JSON agregado. Datos individuales solo en `tools/`.
 
 ---

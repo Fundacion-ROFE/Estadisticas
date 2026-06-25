@@ -201,3 +201,15 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
 - Pipeline validado con ground truth H1Test: 1145 únicos con curso (2026) + 3409 histórico = 4553 total DB.
 - `export_stats.py` y `export_avance.py` corridos y pusheados: dashboard en producción muestra valores correctos.
 - Commit `a573690` con todos los cambios del pipeline Estado + fixes.
+
+---
+
+## 2026-06-25 — [Q10] Schedule 12h + arranque automático al iniciar sesión
+
+**Estado:** Completado
+**Proceso relacionado:** [[q10-consolidacion]]
+
+- **Schedule Trigger 12h** añadido al workflow n8n (`Rblg81qifVshsRae`): camino paralelo independiente al de Telegram — corre q10_to_sheets → organizador → export_stats → export_avance sin notificación Telegram (errores visibles en log de n8n). Push vía API con desactivación previa (el tunnel expirado bloqueaba el PUT con workflow activo).
+- **Task Scheduler** registrada en Windows: tarea "Iniciar n8n ROFE" ejecuta `iniciar_n8n.bat` (minimizado) al iniciar sesión de EstudiantesJC sin intervención manual. Registrada sin `RunLevel Highest` (no requiere admin).
+- Patrón "trigger dual Schedule + Telegram" documentado en [[convenciones]] como reutilizable para otros procesos.
+- `docs/00-vision-global.md`, `docs/convenciones.md` y `docs/procesos/q10-consolidacion.md` actualizados con nuevo disparador, datos correctos y checklist al día.

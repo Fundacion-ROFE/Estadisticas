@@ -108,5 +108,15 @@ para no redescubrirlas cada vez)*
 
 ## Decisiones de infraestructura
 - n8n 2.8.4 corre directamente (sin Docker) en el PC de Samuel / EstudiantesJC.
-- Arranque: `iniciar_n8n.bat` en el PC de Samuel — levanta cloudflared + n8n, captura la URL del tunnel automáticamente.
+- **Arranque automático:** Task Scheduler (`Iniciar n8n ROFE`) corre `iniciar_n8n.bat` al iniciar sesión — sin intervención manual. Registrado sin `RunLevel Highest` (no requiere admin).
+- **Arranque manual:** doble clic en `iniciar_n8n.bat` — equivalente, útil si el PC no fue reiniciado.
 - Decisión Docker/servidor dedicado: pendiente para cuando la estabilidad 24/7 sea crítica.
+
+## Trigger dual: Schedule + Telegram
+
+Patrón establecido en `q10-consolidacion`, reutilizable en cualquier proceso:
+
+- **Schedule Trigger** (`n8n-nodes-base.scheduleTrigger`, typeVersion 1.2): actualización automática silenciosa. Los errores quedan en el log de ejecuciones de n8n.
+- **Telegram Trigger**: actualización on-demand con respuesta confirmando el resultado.
+- Los dos caminos son **paralelos e independientes** en el workflow — comparten los mismos scripts pero no se cruzan. Evita referencias a `$('Parsear Comando').json.chat_id` que fallarían en ejecuciones sin chat.
+- Si se quiere notificación Telegram también en el schedule: añadir un chat_id de admin fijo en un nodo Set al inicio del camino schedule.

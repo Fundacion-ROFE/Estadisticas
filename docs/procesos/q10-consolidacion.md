@@ -15,13 +15,18 @@ Se ejecuta vía bot de Telegram (`/actualizar h2test`) desde n8n corriendo en el
 
 ## Disparador (Trigger)
 
-Bot de Telegram — comando `/actualizar <grupo>`. El equipo decide cuándo ejecutar.
-No hay Schedule; la actualización es manual/bajo demanda.
+Dos triggers en paralelo — ver patrón en [[convenciones#Trigger dual: Schedule + Telegram]].
 
-| Comando | Qué hace |
+| Trigger | Cuándo corre | Notifica |
+|---|---|---|
+| **Schedule 12h** | Automático cada 12 horas (si n8n está corriendo) | No — errores visibles en log de n8n |
+| **Telegram `/Actualizar Q10`** | On-demand por el equipo | Sí — respuesta con resumen en el chat |
+
+n8n arranca automáticamente al iniciar sesión en el PC de Samuel (Task Scheduler → `iniciar_n8n.bat`).
+
+| Comando Telegram | Qué hace |
 |---|---|
-| `/actualizar h1test` | Solo extrae Q10 → H1Test (revisión interna, sin publicar al dashboard) |
-| `/actualizar h2test` | Pipeline completo: Q10 → H1Test → organizar → h2test → GitHub Pages |
+| `/Actualizar Q10` | Pipeline completo: Q10 → H1Test → organizar → h2test → GitHub Pages |
 
 Para agregar nuevos grupos: editar `MAPEO_GRUPOS`, `MAPEO_SHEET_IDS` en `q10_to_sheets.py`.
 
@@ -140,7 +145,9 @@ El equipo clasifica los registros bajo 4 categorías tras la carga:
 ### Setup h2test — completado (2026-06-24)
 - [x] Service Account con acceso de Editor al Sheet de h2test (`1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs`)
 - [x] Headers fila 1 escritos en h2test: `python setup_headers.py --pestaña h2test --confirmar`
-- [x] h2test operativa: se actualiza vía `/actualizar h2test` — datos subiendo correctamente
+- [x] h2test operativa: se actualiza vía `/Actualizar Q10` — datos subiendo correctamente
+- [x] Schedule 12h agregado al workflow (2026-06-25) — actualización automática sin intervención
+- [x] Task Scheduler configurado (2026-06-25) — n8n arranca al iniciar sesión de EstudiantesJC
 - [ ] Regenerar token del bot con BotFather (estaba expuesto — hacer antes de prod real)
 
 ### Conexión h2test → Dashboard web
