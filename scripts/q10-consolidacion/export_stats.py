@@ -89,7 +89,8 @@ def detectar_grupos(row0: list, row1: list) -> list:
 
     Retorna lista de dicts con la info de cada grupo de columnas.
     """
-    posiciones = [(i, v.strip()) for i, v in enumerate(row0) if v.strip()]
+    posiciones = [(i, ' '.join(v.replace('\xa0', ' ').split()))
+                  for i, v in enumerate(row0) if v.strip()]
     grupos = []
     for j, (col_inicio, nombre) in enumerate(posiciones):
         col_fin = posiciones[j + 1][0] if j + 1 < len(posiciones) else len(row0)

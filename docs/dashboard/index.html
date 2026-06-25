@@ -548,12 +548,13 @@ function renderT3(d, a){
     </div>
   </div>`;
 
+  const norm = s => s.replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
   const q10Map = {};
-  (d?.por_curso||[]).forEach(c=>{ q10Map[c.curso] = c; });
+  (d?.por_curso||[]).forEach(c=>{ q10Map[norm(c.curso)] = c; });
 
   const filasCmp = (a?.por_curso||[]).map(c=>{
     const nombreQ10 = ALIAS_Q10[c.nombre] || null;
-    const q10       = nombreQ10 ? q10Map[nombreQ10] : null;
+    const q10       = nombreQ10 ? q10Map[norm(nombreQ10)] : null;
     const pManual   = c.promedio;
     const pQ10      = q10?.promedio ?? null;
     const diff      = (pManual!=null && pQ10!=null) ? (pManual - pQ10).toFixed(1) : null;
@@ -570,8 +571,8 @@ function renderT3(d, a){
     </tr>`;
   }).join('');
 
-  const nombresManual = new Set((a?.por_curso||[]).map(c=>ALIAS_Q10[c.nombre]).filter(Boolean));
-  const soloQ10 = (d?.por_curso||[]).filter(c=>!nombresManual.has(c.curso));
+  const nombresManual = new Set((a?.por_curso||[]).map(c=>ALIAS_Q10[c.nombre]?norm(ALIAS_Q10[c.nombre]):null).filter(Boolean));
+  const soloQ10 = (d?.por_curso||[]).filter(c=>!nombresManual.has(norm(c.curso)));
   const filasExtra = soloQ10.map(c=>{
     const s=sem(c.promedio||0);
     return `<tr style="opacity:.6">
