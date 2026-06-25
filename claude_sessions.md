@@ -213,3 +213,18 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
 - **Task Scheduler** registrada en Windows: tarea "Iniciar n8n ROFE" ejecuta `iniciar_n8n.bat` (minimizado) al iniciar sesión de EstudiantesJC sin intervención manual. Registrada sin `RunLevel Highest` (no requiere admin).
 - Patrón "trigger dual Schedule + Telegram" documentado en [[convenciones]] como reutilizable para otros procesos.
 - `docs/00-vision-global.md`, `docs/convenciones.md` y `docs/procesos/q10-consolidacion.md` actualizados con nuevo disparador, datos correctos y checklist al día.
+
+---
+
+## 2026-06-25 — [Dashboard] Identidad visual ROFÉ + separación SIN PROGRESO / AVANCE 0%
+
+**Estado:** Completado
+**Proceso relacionado:** [[dashboard-web]], [[q10-consolidacion]]
+
+- `docs/dashboard/index.html` rediseñado con identidad visual Fundación ROFÉ: paleta oficial (#406C9E, #EEC935, #D1793F, #C12D4C, #6EA050), tipografía Gilroy/Century Gothic, fondo blanco, logo en header y footer con eslogan y misión.
+- Logo subido: `docs/img/logo_rofe_aplicacion2.png` (70KB, Aplicación 2 web/digital — fondo blanco).
+- **Bug corregido — SIN ETIQUETA:** se contaban filas de columnas estructurales sin nombre (artifact del Sheet), no datos reales. Eliminado completamente de `export_avance.py`.
+- **Separación SIN PROGRESO / AVANCE 0%:** celda vacía → SIN PROGRESO (ID presente, sin dato); "0" literal → AVANCE 0%. Fix en `_limpiar_porcentaje`: verificar `av_raw.strip()` antes de parsear.
+- Resultado confirmado: SIN PROGRESO=0 (hoja manual sin celdas vacías), AVANCE 0%=170, AVANCE IRREGULAR=2.
+- Descripciones ANOM_DESC actualizadas en Tab 1 (Q10) y Tab 2 (Avance) para reflejar el concepto paralelo: "ID sin curso" ↔ "ID sin avance".
+- Commit `57830b6`: `export_avance.py` + `index.html` en producción.
