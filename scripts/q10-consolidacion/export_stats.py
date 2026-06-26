@@ -121,34 +121,27 @@ def _cel_grupo(row: list, col_inicio: int, offset) -> str:
     return row[idx].strip() if idx < len(row) else ""
 
 
-def procesar_h2test(all_values: list) -> tuple:
+_PALABRAS_MR = ["emprendedoras", "idea a la acci"]
+
+def _es_curso_mr(nombre: str) -> bool:
+    n = nombre.lower()
+    return any(p in n for p in _PALABRAS_MR)
+
+
+def _procesar_grupos(filas: list, grupos: list) -> tuple:
+    """Procesa un subconjunto de grupos de cursos.
+    Retorna (por_curso, emails_unicos, emails_habilitados, avance_0, avance_irr).
     """
-    h2test tiene estructura de doble encabezado:
-      Fila 0: nombres de cursos (celdas fusionadas → valor solo en col inicial)
-      Fila 1: sub-headers por grupo (Identificacion, Nombre, Celular, Email, Avance, [sep x2])
-      Fila 2+: datos — cada fila es un estudiante × curso (grupos paralelos independientes)
-
-    El grupo "SIN CURSO ASIGNADO" no tiene columna Avance → sus filas = SIN MATCH.
-    """
-    if len(all_values) < 2:
-        raise ValueError("La hoja h2test está vacía o tiene menos de 2 filas.")
-
-    grupos = detectar_grupos(all_values[0], all_values[1])
-    filas  = all_values[2:]
-
-    cursos_normales = [g for g in grupos if "sin curso" not in g["nombre"].lower()]
-    grupo_sin_curso = next((g for g in grupos if "sin curso" in g["nombre"].lower()), None)
-
     por_curso          = []
     emails_unicos      = set()
     emails_habilitados = set()
     avance_0           = 0
     avance_irr         = 0
 
-    for g in cursos_normales:
+    for g in grupos:
         avances = []
         for row in filas:
-            id_val    = _cel_grupo(row, g["col_inicio"], g["offset_id"])
+            id_val = _cel_grupo(row, g["col_inicio"], g["offset_id"])
             if not id_val:
                 continue
             email_val = _cel_grupo(row, g["col_inicio"], g.get("offset_email")).lower().strip()
@@ -173,6 +166,29 @@ def procesar_h2test(all_values: list) -> tuple:
             "max":         round(max(avances), 2) if avances else 0.0,
         })
 
+    return por_curso, emails_unicos, emails_habilitados, avance_0, avance_irr
+
+
+def procesar_h2test(all_values: list) -> tuple:
+    """
+    Separa cursos JC y MR, procesa cada programa independientemente.
+    Retorna (pc_jc, pc_mr, anom_jc, anom_mr, n_jc, hab_jc, n_mr, hab_mr, total_db).
+    """
+    if len(all_values) < 2:
+        raise ValueError("La hoja h2test está vacía o tiene menos de 2 filas.")
+
+    grupos = detectar_grupos(all_values[0], all_values[1])
+    filas  = all_values[2:]
+
+    cursos_normales = [g for g in grupos if "sin curso" not in g["nombre"].lower()]
+    grupo_sin_curso = next((g for g in grupos if "sin curso" in g["nombre"].lower()), None)
+
+    cursos_jc = [g for g in cursos_normales if not _es_curso_mr(g["nombre"])]
+    cursos_mr = [g for g in cursos_normales if     _es_curso_mr(g["nombre"])]
+
+    pc_jc, em_jc, eh_jc, av0_jc, avi_jc = _procesar_grupos(filas, cursos_jc)
+    pc_mr, em_mr, eh_mr, av0_mr, avi_mr = _procesar_grupos(filas, cursos_mr)
+
     sin_match        = 0
     emails_sin_curso = set()
     if grupo_sin_curso and grupo_sin_curso["offset_id"] is not None:
@@ -184,29 +200,53 @@ def procesar_h2test(all_values: list) -> tuple:
                 if em:
                     emails_sin_curso.add(em)
 
-    total_db = len(emails_unicos | emails_sin_curso)
+    total_db = len(em_jc | em_mr | emails_sin_curso)
 
-    anomalias = [
+    anom_jc = [
         {"categoria": "SIN MATCH",        "cantidad": sin_match},
-        {"categoria": "AVANCE 0%",         "cantidad": avance_0},
-        {"categoria": "AVANCE IRREGULAR",  "cantidad": avance_irr},
+        {"categoria": "AVANCE 0%",         "cantidad": av0_jc},
+        {"categoria": "AVANCE IRREGULAR",  "cantidad": avi_jc},
+    ]
+    anom_mr = [
+        {"categoria": "AVANCE 0%",         "cantidad": av0_mr},
+        {"categoria": "AVANCE IRREGULAR",  "cantidad": avi_mr},
     ]
 
-    log(f"  Cursos: {len(por_curso)} | 2026 únicos: {len(emails_unicos)} | Habilitados: {len(emails_habilitados)} | Total DB: {total_db} | SIN MATCH: {sin_match} | AVANCE 0%: {avance_0} | IRREGULAR: {avance_irr}")
-    return por_curso, anomalias, len(emails_unicos), len(emails_habilitados), total_db
+    log(f"  JC: {len(pc_jc)} cursos | {len(em_jc)} únicos | Hab: {len(eh_jc)} | SIN MATCH: {sin_match} | AVANCE 0%: {av0_jc} | IRR: {avi_jc}")
+    log(f"  MR: {len(pc_mr)} cursos | {len(em_mr)} únicos | Hab: {len(eh_mr)} | AVANCE 0%: {av0_mr} | IRR: {avi_mr}")
+    log(f"  Total DB: {total_db}")
+    return (pc_jc, pc_mr, anom_jc, anom_mr,
+            len(em_jc), len(eh_jc),
+            len(em_mr), len(eh_mr),
+            total_db)
 
 
 # ── Generación de data.json ────────────────────────────────────────────────────
-def generar_json(por_curso: list, anomalias: list, total_2026: int, total_habilitados: int, total_db: int) -> dict:
+def generar_json(pc_jc: list, pc_mr: list,
+                 anom_jc: list, anom_mr: list,
+                 n_jc: int, hab_jc: int,
+                 n_mr: int, hab_mr: int,
+                 total_db: int) -> dict:
     return {
         "ultima_actualizacion": datetime.now().astimezone().isoformat(),
-        "por_curso": por_curso,
-        "anomalias": anomalias,
+        # Top-level = solo Jóvenes creaTIvos (dashboard principal)
+        "por_curso": pc_jc,
+        "anomalias": anom_jc,
         "totales": {
-            "total_cursos":             len(por_curso),
-            "total_estudiantes_unicos": total_2026,
-            "total_habilitados":        total_habilitados,
+            "total_cursos":             len(pc_jc),
+            "total_estudiantes_unicos": n_jc,
+            "total_habilitados":        hab_jc,
             "total_db":                 total_db,
+        },
+        # Subsección exclusiva para el panel Mujeres ROFÉ
+        "mr": {
+            "por_curso": pc_mr,
+            "anomalias": anom_mr,
+            "totales": {
+                "total_cursos":             len(pc_mr),
+                "total_estudiantes_unicos": n_mr,
+                "total_habilitados":        hab_mr,
+            },
         },
     }
 
@@ -250,10 +290,9 @@ def main() -> None:
         all_values = hoja.get_all_values()
         log(f"  {len(all_values)} filas leídas.")
 
-        por_curso, anomalias, total_2026, total_hab, total_db = procesar_h2test(all_values)
-        log(f"  2026 únicos: {total_2026} | Habilitados: {total_hab} | Total DB: {total_db}")
+        pc_jc, pc_mr, anom_jc, anom_mr, n_jc, hab_jc, n_mr, hab_mr, total_db = procesar_h2test(all_values)
 
-        datos = generar_json(por_curso, anomalias, total_2026, total_hab, total_db)
+        datos = generar_json(pc_jc, pc_mr, anom_jc, anom_mr, n_jc, hab_jc, n_mr, hab_mr, total_db)
         guardar_json(datos)
 
         timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M")
@@ -261,11 +300,11 @@ def main() -> None:
         git_commit_y_push(timestamp)
 
         log("=" * 60)
-        log(f"  Cursos procesados   : {len(por_curso)}")
-        log(f"  Anomalías           : {len(anomalias)}")
+        log(f"  Cursos JC           : {len(pc_jc)}")
+        log(f"  Cursos MR           : {len(pc_mr)}")
         log(f"  Archivo generado    : {RUTA_DATA_JSON}")
         log("=" * 60)
-        print(f"EXPORT: cursos={len(por_curso)} estado=exito", flush=True)
+        print(f"EXPORT: cursos_jc={len(pc_jc)} cursos_mr={len(pc_mr)} estado=exito", flush=True)
 
     except FileNotFoundError as e:
         print(f"\nERROR: {e}", file=sys.stderr)

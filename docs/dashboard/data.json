@@ -9,13 +9,6 @@
       "max": 100.0
     },
     {
-      "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
-      "estudiantes": 136,
-      "promedio": 13.74,
-      "min": 0.0,
-      "max": 100.0
-    },
-    {
       "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
       "estudiantes": 830,
       "promedio": 94.43,
@@ -26,13 +19,6 @@
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
       "estudiantes": 806,
       "promedio": 89.45,
-      "min": 0.0,
-      "max": 100.0
-    },
-    {
-      "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
-      "estudiantes": 244,
-      "promedio": 30.55,
       "min": 0.0,
       "max": 100.0
     },
@@ -65,7 +51,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 379
+      "cantidad": 208
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -73,9 +59,42 @@
     }
   ],
   "totales": {
-    "total_cursos": 8,
-    "total_estudiantes_unicos": 1146,
-    "total_habilitados": 1146,
+    "total_cursos": 6,
+    "total_estudiantes_unicos": 863,
+    "total_habilitados": 863,
     "total_db": 1146
+  },
+  "mr": {
+    "por_curso": [
+      {
+        "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
+        "estudiantes": 136,
+        "promedio": 13.74,
+        "min": 0.0,
+        "max": 100.0
+      },
+      {
+        "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
+        "estudiantes": 244,
+        "promedio": 30.55,
+        "min": 0.0,
+        "max": 100.0
+      }
+    ],
+    "anomalias": [
+      {
+        "categoria": "AVANCE 0%",
+        "cantidad": 171
+      },
+      {
+        "categoria": "AVANCE IRREGULAR",
+        "cantidad": 0
+      }
+    ],
+    "totales": {
+      "total_cursos": 2,
+      "total_estudiantes_unicos": 380,
+      "total_habilitados": 380
+    }
   }
 }

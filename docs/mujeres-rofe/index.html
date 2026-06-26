@@ -583,9 +583,10 @@
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
 
-      // Filtrar solo cursos Mujeres ROFÉ
+      // Cursos MR desde subsección dedicada del JSON (fallback a filtrar por_curso si es JSON antiguo)
+      const fuenteMR = data.mr?.por_curso ?? data.por_curso ?? [];
       const cursosMR = CURSOS_MR.map(mr =>
-        data.por_curso.find(c => c.curso === mr.key)
+        fuenteMR.find(c => c.curso === mr.key)
       ).filter(Boolean);
 
       if (cursosMR.length === 0) {

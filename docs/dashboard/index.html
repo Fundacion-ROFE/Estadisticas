@@ -287,17 +287,6 @@
 <div id="footer-root"></div>
 
 <script>
-// Cursos de Mujeres ROFÉ — excluidos de este dashboard (ver /mujeres-rofe/)
-const CURSOS_MR = new Set([
-  'DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO',
-  'HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI',
-]);
-function filtrarJC(d){
-  if(!d) return d;
-  const cursos = (d.por_curso||[]).filter(c=>!CURSOS_MR.has(c.curso));
-  return {...d, por_curso: cursos, totales: {...(d.totales||{}), total_cursos: cursos.length}};
-}
-
 // ── Utilidades ────────────────────────────────────────────────────────────────
 function esc(s){ return String(s??'—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmt(n){ return n!=null ? Number(n).toLocaleString('es-CO') : '—'; }
@@ -713,10 +702,9 @@ Promise.allSettled([
   if(!asist) warns.push('<div class="error-box" style="margin-bottom:14px"><strong>No se cargó avance/data.json</strong>Corre export_avance.py primero.</div>');
   const wHtml = warns.join('');
 
-  const dashJC = filtrarJC(dash);
-  document.getElementById('t1').innerHTML = wHtml + (dashJC ? renderT1(dashJC) : '<p style="color:var(--muted);padding:24px">Sin datos Q10.</p>');
-  document.getElementById('t2').innerHTML = wHtml + (asist  ? renderT2(asist)  : '<p style="color:var(--muted);padding:24px">Sin datos de avance.</p>');
-  document.getElementById('t3').innerHTML = wHtml + renderT3(dashJC, asist);
+  document.getElementById('t1').innerHTML = wHtml + (dash  ? renderT1(dash)  : '<p style="color:var(--muted);padding:24px">Sin datos Q10.</p>');
+  document.getElementById('t2').innerHTML = wHtml + (asist ? renderT2(asist) : '<p style="color:var(--muted);padding:24px">Sin datos de avance.</p>');
+  document.getElementById('t3').innerHTML = wHtml + renderT3(dash, asist);
 
   document.getElementById('t1').classList.add('active');
   animateBars();
