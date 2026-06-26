@@ -598,8 +598,9 @@
       document.getElementById('hdr-upd').textContent = 'Actualizado ' + fmtd;
       document.getElementById('hero-upd').textContent = 'Última actualización: ' + fmtd;
 
-      // KPIs
-      const totalEst = cursosMR.reduce((s, c) => s + c.estudiantes, 0);
+      // KPIs — usar conteo único de emails desde totales.mr si está disponible
+      const totalEst = data.mr?.totales?.total_estudiantes_unicos
+                    ?? cursosMR.reduce((s, c) => s + c.estudiantes, 0);
       const promGlobal = promedioPonderado(cursosMR);
       const maxGlobal  = Math.max(...cursosMR.map(c => c.max));
 
