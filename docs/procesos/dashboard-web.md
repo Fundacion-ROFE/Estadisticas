@@ -1,7 +1,7 @@
 # Dashboard Web — GitHub Pages
 
 **Estado:** Completado / En producción
-**Última actualización:** 2026-06-24
+**Última actualización:** 2026-06-26
 **Procesos relacionados:** [[q10-consolidacion]]
 
 ## Qué hace
@@ -26,22 +26,34 @@ No hay Schedule ni bot de Telegram para esta parte. El flujo es:
 
 ```
 Script Python (local)
-  ├── export_stats.py      → lee h2test (Q10) → docs/dashboard/data.json
+  ├── export_stats.py      → lee h2test (Q10) → docs/dashboard/data.json (8 cursos JC + MR)
   └── export_avance.py     → lee Avance (manual) → docs/avance/data.json
 
 GitHub Pages (público)
   └── docs/
       ├── dashboard/
-      │   ├── index.html     ← dashboard 3 pestañas
-      │   └── data.json      ← stats Q10 agregadas (sin PII)
+      │   ├── index.html     ← dashboard 3 pestañas (filtra MR en JS con filtrarJC())
+      │   └── data.json      ← stats Q10 agregadas — 8 cursos total (JC + MR, sin PII)
+      ├── mujeres-rofe/
+      │   └── index.html     ← panel independiente MR (lee ../dashboard/data.json, filtra CURSOS_MR)
       └── avance/
           └── data.json      ← stats Avance manual agregadas (sin PII)
 
 Máquina local (privado, gitignoreado)
   └── tools/
-      ├── panel_riesgo.py    ← cruce individual por email (PII)
-      └── reportes/          ← CSVs con nombres/IDs (nunca a GitHub)
+      ├── panel_riesgo_gui.py ← GUI con Tab 5 MR separada; tabs 1-4 solo JC (PII)
+      └── reportes/           ← CSVs con nombres/IDs (nunca a GitHub)
 ```
+
+### Separación JC / Mujeres ROFÉ
+
+`data.json` contiene todos los cursos (JC + MR) — **no se divide**. La separación se hace en JS:
+- `docs/dashboard/index.html` → `filtrarJC(d)` filtra `CURSOS_MR` antes de renderizar Tab 1 y Tab 3.
+- `docs/mujeres-rofe/index.html` → lee el mismo `data.json` y filtra inversamente con `CURSOS_MR`.
+
+Cursos MR detectados por nombre exacto:
+- `"DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO"`
+- `"HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI"`
 
 ## Regla de privacidad (obligatoria)
 
@@ -52,19 +64,22 @@ Solo sube: totales, promedios, conteos por curso, mínimos, máximos, anomalías
 
 ## Pestañas del dashboard (docs/dashboard/index.html)
 
-| Pestaña | Fuente | Contenido |
-|---|---|---|
-| Estadísticas Q10 | `docs/dashboard/data.json` | 4 KPIs · tabla por curso con semáforo · scorecards de anomalías |
-| Avance Manual | `docs/avance/data.json` | 4 KPIs · tabla por curso con semáforo · scorecards de anomalías Avance |
-| Comparativo | Ambos JSONs | Tabla lado a lado Q10 vs Manual · Δ diferencia · anomalías de ambas fuentes |
+Solo cursos Jóvenes creaTIvos (los 2 cursos MR se filtran en JS).
+
+| Pestaña          | Fuente                     | Contenido                                                                   |
+| ---------------- | -------------------------- | --------------------------------------------------------------------------- |
+| Estadísticas Q10 | `docs/dashboard/data.json` | 4 KPIs · tabla por curso con semáforo · scorecards de anomalías             |
+| Avance Manual    | `docs/avance/data.json`    | 4 KPIs · tabla por curso con semáforo · scorecards de anomalías Avance      |
+| Comparativo      | Ambos JSONs                | Tabla lado a lado Q10 vs Manual · Δ diferencia · anomalías de ambas fuentes |
+| Mujeres ROFÉ ↗  | Link externo               | Navega a `docs/mujeres-rofe/index.html` — panel independiente con marca MR |
 
 ## Semáforo
 
-| Rango | Color | Etiqueta |
-|---|---|---|
-| ≥ 80% | Verde | Satisfactorio |
-| 60–79% | Amarillo | En riesgo |
-| < 60% | Rojo | Atención |
+| Rango  | Color    | Etiqueta      |
+| ------ | -------- | ------------- |
+| ≥ 80%  | Verde    | Satisfactorio |
+| 60–79% | Amarillo | En riesgo     |
+| < 60%  | Rojo     | Atención      |
 
 ## Scripts clave
 

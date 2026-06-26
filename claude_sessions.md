@@ -228,3 +228,54 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
 - Resultado confirmado: SIN PROGRESO=0 (hoja manual sin celdas vacías), AVANCE 0%=170, AVANCE IRREGULAR=2.
 - Descripciones ANOM_DESC actualizadas en Tab 1 (Q10) y Tab 2 (Avance) para reflejar el concepto paralelo: "ID sin curso" ↔ "ID sin avance".
 - Commit `57830b6`: `export_avance.py` + `index.html` en producción.
+
+---
+
+## 2026-06-25 — [Panel Riesgo] Diagnóstico duplicados DB manual + Tab Errores DB en GUI
+
+**Estado:** Completado
+**Proceso relacionado:** [[dashboard-web]]
+
+- Consulta puntual sobre `yovadisherrera05@gmail.com`: Q10 confirma EMPRENDIMIENTO en 0% (74% promedio real). El 78.4% que mostraba el GUI venía de un duplicado de "Emprendimiento" al 96% en la hoja Avance manual.
+- Script `detectar_duplicados_avance.py` (en scratchpad) detectó 19 estudiantes con curso duplicado — todos en "Emprendimiento" — causado por un segundo bloque de columnas del mismo nombre en la hoja. 6 casos con valores distintos entre las dos entradas (conflicto real).
+- **Nuevo tab "⚠ Errores DB"** agregado a `tools/panel_riesgo_gui.py`: tabla de 5 columnas (Email, Nombre Q10, Curso, Manual dup, Q10 %) con filas rojas para valores distintos y amarillas para mismo valor duplicado. Card de conteo añadida al Resumen.
+- Decisión: duplicados quedan marcados en el GUI como error de DB manual — la corrección en el Sheet la hace el equipo manualmente. Q10 es la fuente autoritativa.
+
+---
+
+## 2026-06-26 — [Q10] Diagnóstico workflow inactivo + fix bat iniciar_n8n
+
+**Estado:** Completado
+**Proceso relacionado:** [[q10-consolidacion]]
+
+- Workflow encontrado inactivo (`active: false`) — nunca había disparado el schedule de 4h. Causa: quedó desactivado tras el PUT de actualización del 2026-06-25 y no se reactivó.
+- Cloudflared también estaba caído — activar el workflow sin él falla con "Failed to resolve host" porque n8n intenta registrar el webhook de Telegram con la URL del tunnel.
+- **Fix `iniciar_n8n.bat`:** reemplazado `wmic process` (deprecated y colgado en Windows 11) por `Get-CimInstance Win32_Process` vía PowerShell — instantáneo y confiable.
+- **Loop de monitoreo mejorado:** cada 60s verifica cloudflared (lo reinicia si cae, espera 20s por nueva URL) y verifica estado del workflow (lo reactiva automáticamente si está inactivo).
+- Gotcha documentado en [[q10-consolidacion]]: WEBHOOK_URL se inyecta al arrancar n8n — si cloudflared cambia URL, hay que reiniciar el bat completo para que Telegram registre la nueva URL.
+
+---
+
+## 2026-06-26 — [Q10] Refactor arquitectura — Consolidado como única fuente
+
+**Estado:** Completado
+**Proceso relacionado:** [[q10-consolidacion]]
+
+- Descubierto vía HAR + 3 Excel en `excels/`: el endpoint `/ConsolidadoEducacionVirtual` ya incluye toda la información del estudiante (`Número identificación estudiante`, `Nombres/Apellidos estudiante`, `Celular`, `Email`). El endpoint `/Estudiantes` era redundante.
+- **Cambio arquitectural en `q10_to_sheets.py`:** eliminado `descargar_estudiantes()` y el LEFT JOIN por email. Reemplazado por `mapear_columnas()` que extrae todo directamente del Consolidado. Flujo: login → Consolidado × 3 periodos → mapear → H1Test.
+- 3 periodos activos 2026 confirmados: 21=Logica-Nivel 2, 22=Habilidades-Nivel 1, 23=Unico MR. Periodos 20 y 24 devuelven `not_results`.
+- Estado="A" hardcodeado en `mapear_columnas()` — `archivado=false` en el POST ya filtra inactivos.
+- Documentación actualizada: `mapa-codigo.md`, `q10-consolidacion.md` (flujo Fase 1, tabla endpoints, decisiones de diseño).
+- Pendiente: correr `/Actualizar Q10` para validar que H1Test se llena correctamente con la nueva lógica.
+
+---
+
+## 2026-06-26 — [Dashboard] Panel Mujeres ROFÉ + separación visual JC / MR
+
+**Estado:** Completado
+**Proceso relacionado:** [[dashboard-web]]
+
+- **Panel `docs/mujeres-rofe/index.html`:** página independiente con identidad visual Mujeres ROFÉ (paleta rose/warm: #C12D4C, #D1793F, #EEC935; bombilla SVG como decoración). Lee `../dashboard/data.json` y filtra los 2 cursos MR por nombre exacto (`CURSOS_MR` array en JS). Muestra 4 KPIs, 2 tarjetas de curso con barras animadas, panel comparativo, footer oscuro.
+- **`docs/dashboard/index.html`:** link "Mujeres ROFÉ ↗" añadido en la barra de tabs. Cursos MR excluidos con `filtrarJC()` en JS — `data.json` permanece con los 8 cursos para que el panel MR siga funcionando.
+- **`tools/panel_riesgo_gui.py`:** Tab 5 "💡 Mujeres ROFÉ" agregado con estilos rose; tabs 1-4 ahora solo muestran estudiantes JC. `leer_h2test()` devuelve `(q10_jc, q10_mr)` separados por `_es_curso_mr()`.
+- Decisión de diseño: `data.json` NO se divide en dos archivos — el panel MR lee el mismo JSON que el dashboard JC y filtra en JS. Esto mantiene un solo script `export_stats.py` sin lógica de separación.
