@@ -197,12 +197,17 @@
                display: none; align-items: center; justify-content: center; z-index: 999; }
     #loading.show { display: flex; }
     .loading-box { background: white; border-radius: 12px; padding: 32px 40px;
-                   text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,.18); }
+                   text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,.18);
+                   min-width: 300px; }
     .spinner { width: 36px; height: 36px; border: 4px solid var(--border);
                border-top-color: var(--primary); border-radius: 50%;
                animation: spin .7s linear infinite; margin: 0 auto 14px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .loading-text { font-size: 13px; color: var(--muted); font-weight: 600; }
+    .progress-track { width: 100%; height: 8px; background: var(--border);
+                      border-radius: 4px; margin-top: 14px; overflow: hidden; }
+    .progress-fill  { height: 100%; background: var(--primary); border-radius: 4px;
+                      width: 0%; transition: width .35s ease; }
 
     /* ── Collapsible sheets / global controls ── */
     .sheet-expand-btn {
@@ -452,10 +457,11 @@
   <div class="loading-box">
     <div class="spinner"></div>
     <div class="loading-text" id="loading-text">Procesando…</div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
   </div>
 </div>
 
-<!-- SheetJS community edition -->
+<!-- SheetJS community edition (main thread: solo para leer nombres de pestañas + 21 filas de muestra) -->
 <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
@@ -474,6 +480,8 @@ const S = {
   decBuffer: null, decSheetNames: [], decKeyData: null, decFileName: '',
   // search
   searchKeyData: null,
+  // worker activo
+  activeWorker: null,
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -512,20 +520,176 @@ function detectPIICols(aoa) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// CRYPTO — HMAC-SHA-256 (Web Crypto API nativa del navegador)
+// WEB WORKER — código que corre en hilo separado (heap propio)
 // ═══════════════════════════════════════════════════════════════════
-async function makeCryptoKey(password) {
-  const enc = new TextEncoder();
-  return crypto.subtle.importKey(
-    'raw', enc.encode(password),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-  );
-}
-async function hmac16(value, ck) {
-  const enc = new TextEncoder();
-  const sig = await crypto.subtle.sign('HMAC', ck, enc.encode(String(value)));
-  return Array.from(new Uint8Array(sig))
-    .map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+function buildWorkerUrl() {
+  const code = [
+    "'use strict';",
+    "importScripts('https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js');",
+    "",
+    "self.onmessage = async function(e) {",
+    "  try {",
+    "    if (e.data.type === 'encode') await doEncode(e.data);",
+    "    else if (e.data.type === 'decode') await doDecode(e.data);",
+    "  } catch(err) {",
+    "    const oom = /out of memory|allocation failed|memory|heap/i.test(err.message||'') || err instanceof RangeError;",
+    "    self.postMessage({type:'error', message: oom ? 'OOM' : (err.message||String(err))});",
+    "  }",
+    "};",
+    "",
+    "function prog(text, pct) { self.postMessage({type:'progress', text:text, pct:pct}); }",
+    "function tick() { return new Promise(function(r){ setTimeout(r,0); }); }",
+    "",
+    "async function makeCK(pw) {",
+    "  return crypto.subtle.importKey('raw', new TextEncoder().encode(pw),",
+    "    {name:'HMAC',hash:'SHA-256'}, false, ['sign']);",
+    "}",
+    "async function hmac16(v, ck) {",
+    "  var sig = await crypto.subtle.sign('HMAC', ck, new TextEncoder().encode(String(v)));",
+    "  return Array.from(new Uint8Array(sig)).map(function(b){return b.toString(16).padStart(2,'0');}).join('').slice(0,16);",
+    "}",
+    "",
+    "async function doEncode(msg) {",
+    "  var fileBuffer=msg.fileBuffer, sheetNames=msg.sheetNames, sheetConfig=msg.sheetConfig,",
+    "      userKey=msg.userKey, userName=msg.userName, fileName=msg.fileName;",
+    "  var buf = (fileBuffer instanceof Uint8Array) ? fileBuffer : new Uint8Array(fileBuffer);",
+    "  var ck = await makeCK(userKey);",
+    "  var total = sheetNames.length;",
+    "  var sheetsToProcess = sheetNames.filter(function(n){ return sheetConfig[n] && sheetConfig[n].process; });",
+    "",
+    "  // Fase 1 — recopilar valores PII únicos",
+    "  var uniqueSet = new Set();",
+    "  for (var si = 0; si < total; si++) {",
+    "    var sn = sheetNames[si];",
+    "    var cfg = sheetConfig[sn];",
+    "    if (!cfg || !cfg.process) continue;",
+    "    prog('Analizando ' + (si+1) + '/' + total + ': ' + sn, Math.round(si/total*28));",
+    "    await tick();",
+    "    var miniWb = XLSX.read(buf, {sheets:si, cellFormula:false, cellDates:true});",
+    "    var aoa = XLSX.utils.sheet_to_json(miniWb.Sheets[sn]||{}, {header:1, defval:''});",
+    "    miniWb = null;",
+    "    for (var r = 1; r < aoa.length; r++) {",
+    "      var row = aoa[r];",
+    "      for (var c = 0; c < (cfg.columns ? cfg.columns.length : 0); c++) {",
+    "        if (!cfg.columns[c]) continue;",
+    "        var v = row[c];",
+    "        if (v !== '' && v !== null && v !== undefined) uniqueSet.add(String(v));",
+    "      }",
+    "    }",
+    "    aoa = null;",
+    "  }",
+    "",
+    "  // Fase 2 — HMAC por lotes",
+    "  var uniqueVals = Array.from(uniqueSet); uniqueSet.clear();",
+    "  var dictionary = {}, fwdMap = {};",
+    "  var BATCH = 200;",
+    "  for (var i = 0; i < uniqueVals.length; i += BATCH) {",
+    "    var done2 = Math.min(i+BATCH, uniqueVals.length);",
+    "    prog('Codificando ' + done2.toLocaleString() + ' / ' + uniqueVals.length.toLocaleString() + ' valores',",
+    "         28 + Math.round(i/Math.max(uniqueVals.length,1)*20));",
+    "    var batch = uniqueVals.slice(i, done2);",
+    "    var hashes = await Promise.all(batch.map(function(v){ return hmac16(v,ck); }));",
+    "    for (var j = 0; j < batch.length; j++) {",
+    "      var orig = batch[j];",
+    "      var pseudo = hashes[j];",
+    "      if (dictionary[pseudo] && dictionary[pseudo] !== orig)",
+    "        pseudo = (await hmac16(orig+'_ext', ck)).slice(0,20);",
+    "      dictionary[pseudo] = orig;",
+    "      fwdMap[orig] = pseudo;",
+    "    }",
+    "  }",
+    "  uniqueVals.length = 0;",
+    "",
+    "  // Fase 3 — reemplazar en cada pestaña",
+    "  var newWb = XLSX.utils.book_new();",
+    "  var totalCells = 0, processedSheets = 0;",
+    "  for (var si2 = 0; si2 < total; si2++) {",
+    "    var sn2 = sheetNames[si2];",
+    "    var cfg2 = sheetConfig[sn2];",
+    "    prog('Generando Excel ' + (si2+1) + '/' + total + ': ' + sn2,",
+    "         48 + Math.round(si2/total*44));",
+    "    await tick();",
+    "    var miniWb2 = XLSX.read(buf, {sheets:si2, cellFormula:false, cellDates:true});",
+    "    var ws2 = miniWb2.Sheets[sn2] || {};",
+    "    if (!cfg2 || !cfg2.process) {",
+    "      XLSX.utils.book_append_sheet(newWb, ws2, sn2);",
+    "      miniWb2 = null; continue;",
+    "    }",
+    "    processedSheets++;",
+    "    var aoa2 = XLSX.utils.sheet_to_json(ws2, {header:1, defval:''});",
+    "    miniWb2 = null;",
+    "    var newAoa = [];",
+    "    for (var r2 = 0; r2 < aoa2.length; r2++) {",
+    "      var row2 = aoa2[r2].map(function(x){ return (x===null||x===undefined)?'':x; });",
+    "      if (r2 === 0) { newAoa.push(row2.slice()); continue; }",
+    "      var newRow = row2.slice();",
+    "      for (var c2 = 0; c2 < newRow.length; c2++) {",
+    "        if (!cfg2.columns || !cfg2.columns[c2]) continue;",
+    "        var val = newRow[c2];",
+    "        if (val===''||val===null||val===undefined) continue;",
+    "        var ps = fwdMap[String(val)];",
+    "        if (ps !== undefined) { newRow[c2] = ps; totalCells++; }",
+    "      }",
+    "      newAoa.push(newRow);",
+    "    }",
+    "    aoa2 = null;",
+    "    XLSX.utils.book_append_sheet(newWb, XLSX.utils.aoa_to_sheet(newAoa), sn2);",
+    "  }",
+    "",
+    "  prog('Escribiendo archivo Excel…', 94); await tick();",
+    "  var outBuf = XLSX.write(newWb, {type:'uint8array', bookType:'xlsx'});",
+    "",
+    "  var keyData = {",
+    "    meta: {",
+    "      version:'1.0', usuario:userName, fecha:new Date().toISOString(),",
+    "      archivo_origen:fileName, pestanas_procesadas:sheetsToProcess,",
+    "      columnas_por_pestana: Object.fromEntries(",
+    "        sheetsToProcess.map(function(n) {",
+    "          var c = sheetConfig[n];",
+    "          return [n, (c.headers||[]).filter(function(_,i){ return c.columns && c.columns[i]; })];",
+    "        })",
+    "      ),",
+    "    },",
+    "    diccionario: dictionary,",
+    "  };",
+    "  prog('¡Listo!', 100);",
+    "  self.postMessage({type:'done', excelBuf:outBuf.buffer, keyData:keyData,",
+    "    totalCells:totalCells, processedSheets:processedSheets, fileName:fileName}, [outBuf.buffer]);",
+    "}",
+    "",
+    "async function doDecode(msg) {",
+    "  var fileBuffer=msg.fileBuffer, decSheetNames=msg.decSheetNames,",
+    "      decKeyData=msg.decKeyData, decFileName=msg.decFileName;",
+    "  var buf = (fileBuffer instanceof Uint8Array) ? fileBuffer : new Uint8Array(fileBuffer);",
+    "  var dict = decKeyData.diccionario;",
+    "  var newWb = XLSX.utils.book_new();",
+    "  var replaced = 0, total = decSheetNames.length;",
+    "  for (var si = 0; si < total; si++) {",
+    "    var sn = decSheetNames[si];",
+    "    prog('Restaurando ' + (si+1) + '/' + total + ': ' + sn, Math.round(si/total*90));",
+    "    await tick();",
+    "    var miniWb = XLSX.read(buf, {sheets:si, cellFormula:false, cellDates:true});",
+    "    var aoa = XLSX.utils.sheet_to_json(miniWb.Sheets[sn]||{}, {header:1, defval:''});",
+    "    miniWb = null;",
+    "    var newAoa = aoa.map(function(row){",
+    "      return row.map(function(cell){",
+    "        var k = String(cell);",
+    "        if (dict[k] !== undefined) { replaced++; return dict[k]; }",
+    "        return cell;",
+    "      });",
+    "    });",
+    "    aoa = null;",
+    "    XLSX.utils.book_append_sheet(newWb, XLSX.utils.aoa_to_sheet(newAoa), sn);",
+    "  }",
+    "  if (replaced === 0) { self.postMessage({type:'error', message:'nomatch'}); return; }",
+    "  prog('Escribiendo archivo restaurado…', 95); await tick();",
+    "  var outBuf = XLSX.write(newWb, {type:'uint8array', bookType:'xlsx'});",
+    "  prog('¡Listo!', 100);",
+    "  self.postMessage({type:'done', excelBuf:outBuf.buffer, replaced:replaced, decFileName:decFileName},",
+    "    [outBuf.buffer]);",
+    "}",
+  ].join('\n');
+  return URL.createObjectURL(new Blob([code], {type:'application/javascript'}));
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -793,164 +957,98 @@ function toggleOnlyPIISheets() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// CODIFICAR — Paso 4: ejecutar
+// CODIFICAR — Paso 4: ejecutar (vía Web Worker)
 // ═══════════════════════════════════════════════════════════════════
-async function runEncode() {
-  setLoading(true, 'Analizando archivo…');
+function runEncode() {
+  if (!window.Worker) {
+    return setStatus('❌ Tu navegador no soporta Web Workers. Usa Chrome, Edge o Firefox actualizado.', true);
+  }
+  if (S.activeWorker) { S.activeWorker.terminate(); S.activeWorker = null; }
+
+  setLoading(true, 'Iniciando procesador…');
+  setProgress(0);
   document.getElementById('download-area').classList.add('hidden');
 
-  try {
-    const ck = await makeCryptoKey(S.userKey);
-    const sheetsToProcess = S.sheetNames.filter(n => S.sheetConfig[n]?.process);
-
-    // ── Fase 1: recolectar valores únicos ─────────────────────────
-    // Cada pestaña se parsea por separado desde el buffer crudo y se descarta.
-    const uniqueSet = new Set();
-    for (let si = 0; si < S.sheetNames.length; si++) {
-      const sn = S.sheetNames[si];
-      if (!S.sheetConfig[sn]?.process) continue;
-      setLoading(true, `Analizando… (${si + 1}/${S.sheetNames.length}) ${sn}`);
-      await new Promise(r => setTimeout(r, 0));
-      const cfg    = S.sheetConfig[sn];
-      const miniWb = XLSX.read(S.fileBuffer, { sheets: si, cellFormula: false, cellDates: true });
-      const aoa    = XLSX.utils.sheet_to_json(miniWb.Sheets[sn] || {}, { header: 1, defval: '' });
-      for (let r = 1; r < aoa.length; r++) {
-        const row = aoa[r];
-        for (let c = 0; c < row.length; c++) {
-          if (!cfg.columns[c]) continue;
-          const v = row[c];
-          if (v !== '' && v !== null && v !== undefined) uniqueSet.add(String(v));
-        }
-      }
-      // miniWb y aoa salen de scope → GC puede liberarlos
-    }
-
-    const uniqueVals = [...uniqueSet];
-    const dictionary = {};  // pseudo → original (para el .json)
-    const fwdMap     = {};  // original → pseudo (para el reemplazo)
-
-    // ── Fase 2: HMAC por lotes de 200 ────────────────────────────
-    const BATCH = 200;
-    for (let i = 0; i < uniqueVals.length; i += BATCH) {
-      const done = Math.min(i + BATCH, uniqueVals.length);
-      setLoading(true, `Codificando… ${done.toLocaleString()} / ${uniqueVals.length.toLocaleString()} valores únicos`);
-      const batch  = uniqueVals.slice(i, i + BATCH);
-      const hashes = await Promise.all(batch.map(v => hmac16(v, ck)));
-      for (let j = 0; j < batch.length; j++) {
-        const orig = batch[j];
-        let pseudo = hashes[j];
-        if (dictionary[pseudo] && dictionary[pseudo] !== orig)
-          pseudo = (await hmac16(orig + '_ext', ck)).slice(0, 20);
-        dictionary[pseudo] = orig;
-        fwdMap[orig]        = pseudo;
-      }
-    }
-
-    // ── Fase 3: reemplazo en pestañas ─────────────────────────────
-    // Cada pestaña se lee por separado del buffer crudo y se descarta tras procesarla.
-    const newWb = XLSX.utils.book_new();
-    let totalCells = 0, processedSheets = 0;
-
-    for (let si = 0; si < S.sheetNames.length; si++) {
-      const sheetName = S.sheetNames[si];
-      const cfg = S.sheetConfig[sheetName];
-      setLoading(true, `Generando Excel… ${si + 1}/${S.sheetNames.length}: ${sheetName}`);
-      await new Promise(r => setTimeout(r, 0));
-
-      // Parsear SOLO esta pestaña desde el buffer crudo
-      const miniWb = XLSX.read(S.fileBuffer, { sheets: si, cellFormula: false, cellDates: true });
-      const ws     = miniWb.Sheets[sheetName] || {};
-
-      if (!cfg?.process) {
-        XLSX.utils.book_append_sheet(newWb, ws, sheetName);
-        continue; // miniWb sale de scope → GC
-      }
-
-      processedSheets++;
-      const aoa    = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-      const newAoa = [];
-      for (let r = 0; r < aoa.length; r++) {
-        const row = aoa[r].map(c => (c === null || c === undefined) ? '' : c);
-        if (r === 0) { newAoa.push([...row]); continue; }
-        const newRow = [...row];
-        for (let c = 0; c < row.length; c++) {
-          if (!cfg.columns[c]) continue;
-          const val = row[c];
-          if (val === '' || val === null || val === undefined) continue;
-          const pseudo = fwdMap[String(val)];
-          if (pseudo !== undefined) { newRow[c] = pseudo; totalCells++; }
-        }
-        newAoa.push(newRow);
-      }
-      XLSX.utils.book_append_sheet(newWb, XLSX.utils.aoa_to_sheet(newAoa), sheetName);
-      // miniWb, aoa y newAoa salen de scope → GC puede liberar esta pestaña
-    }
-
-    // ── Generar archivos de descarga ──────────────────────────────
-    setLoading(true, 'Preparando archivos para descargar…');
-    await new Promise(r => setTimeout(r, 0));
-
-    const excelBuf  = XLSX.write(newWb, { type: 'array', bookType: 'xlsx' });
-    const excelBlob = new Blob([excelBuf],
-      { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const excelUrl  = URL.createObjectURL(excelBlob);
-    const baseName  = S.fileName.replace(/\.[^.]+$/, '');
-    const excelName = `${baseName}_codificado.xlsx`;
-
-    const keyData = {
-      meta: {
-        version: '1.0',
-        usuario: S.userName,
-        fecha: new Date().toISOString(),
-        archivo_origen: S.fileName,
-        pestanas_procesadas: sheetsToProcess,
-        columnas_por_pestana: Object.fromEntries(
-          sheetsToProcess.map(n => [n, S.sheetConfig[n].headers.filter((_, i) => S.sheetConfig[n].columns[i])])
-        ),
-      },
-      diccionario: dictionary,
-    };
-    const jsonBlob = new Blob([JSON.stringify(keyData, null, 2)], { type: 'application/json' });
-    const jsonUrl  = URL.createObjectURL(jsonBlob);
-    const today    = new Date().toISOString().slice(0, 10);
-    const jsonName = `clave_${S.userName}_${today}.json`;
-
-    document.getElementById('encode-summary').textContent =
-      `✅ ${totalCells.toLocaleString()} valores protegidos en ${processedSheets} pestaña(s)`;
-
-    const dlCards = document.getElementById('dl-cards');
-    dlCards.innerHTML = `
-      <a href="${excelUrl}" download="${escHtml(excelName)}" class="dl-card dl-excel"
-         onclick="setStatus('📄 Excel codificado descargado.')">
-        <div class="dl-card-icon">📄</div>
-        <div class="dl-card-title">Para la IA</div>
-        <div class="dl-card-sub">${escHtml(excelName)}</div>
-        <button class="dl-card-btn">⬇ Descargar</button>
-      </a>
-      <a href="${jsonUrl}" download="${escHtml(jsonName)}" class="dl-card dl-key"
-         onclick="setStatus('🔑 Clave descargada — guárdala en lugar seguro.')">
-        <div class="dl-card-icon">🔑</div>
-        <div class="dl-card-title">Tu clave de recuperación — NO envíes a la IA</div>
-        <div class="dl-card-sub">${escHtml(jsonName)}</div>
-        <button class="dl-card-btn">⬇ Descargar</button>
-      </a>
-    `;
-
-    document.getElementById('download-area').classList.remove('hidden');
-    document.getElementById('sn-4').classList.add('done');
-    setStatus(`✅ Listo — ${totalCells.toLocaleString()} valores codificados.`);
-
-  } catch(err) {
-    const oom = /out of memory|allocation failed|memory|heap/i.test(err.message || '') || err instanceof RangeError;
-    if (oom) {
-      setStatus('❌ Memoria insuficiente. Consejos: selecciona menos columnas o pestañas, cierra otras pestañas del navegador e intenta de nuevo.', true);
-    } else {
-      setStatus('❌ Error al codificar: ' + err.message, true);
-    }
-    console.error(err);
-  } finally {
-    setLoading(false);
+  const workerUrl = buildWorkerUrl();
+  let worker;
+  try { worker = new Worker(workerUrl); }
+  catch(e) {
+    URL.revokeObjectURL(workerUrl);
+    return setStatus('❌ No se pudo iniciar el procesador: ' + e.message, true);
   }
+  S.activeWorker = worker;
+
+  worker.onmessage = function(e) {
+    const msg = e.data;
+    if (msg.type === 'progress') {
+      setLoading(true, msg.text);
+      setProgress(msg.pct || 0);
+    } else if (msg.type === 'done') {
+      URL.revokeObjectURL(workerUrl);
+      S.activeWorker = null;
+      const { excelBuf, keyData, totalCells, processedSheets, fileName } = msg;
+      const excelBlob = new Blob([excelBuf],
+        { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const excelUrl  = URL.createObjectURL(excelBlob);
+      const baseName  = fileName.replace(/\.[^.]+$/, '');
+      const excelName = baseName + '_codificado.xlsx';
+      const jsonBlob  = new Blob([JSON.stringify(keyData, null, 2)], { type: 'application/json' });
+      const jsonUrl   = URL.createObjectURL(jsonBlob);
+      const today     = new Date().toISOString().slice(0, 10);
+      const jsonName  = 'clave_' + S.userName + '_' + today + '.json';
+      document.getElementById('encode-summary').textContent =
+        '✅ ' + totalCells.toLocaleString() + ' valores protegidos en ' + processedSheets + ' pestaña(s)';
+      const dlCards = document.getElementById('dl-cards');
+      dlCards.innerHTML =
+        '<a href="' + excelUrl + '" download="' + escHtml(excelName) + '" class="dl-card dl-excel"' +
+        '   onclick="setStatus(\'📄 Excel codificado descargado.\')">' +
+        '  <div class="dl-card-icon">📄</div>' +
+        '  <div class="dl-card-title">Para la IA</div>' +
+        '  <div class="dl-card-sub">' + escHtml(excelName) + '</div>' +
+        '  <button class="dl-card-btn">⬇ Descargar</button></a>' +
+        '<a href="' + jsonUrl + '" download="' + escHtml(jsonName) + '" class="dl-card dl-key"' +
+        '   onclick="setStatus(\'🔑 Clave descargada — guárdala en lugar seguro.\')">' +
+        '  <div class="dl-card-icon">🔑</div>' +
+        '  <div class="dl-card-title">Tu clave de recuperación — NO envíes a la IA</div>' +
+        '  <div class="dl-card-sub">' + escHtml(jsonName) + '</div>' +
+        '  <button class="dl-card-btn">⬇ Descargar</button></a>';
+      document.getElementById('download-area').classList.remove('hidden');
+      document.getElementById('sn-4').classList.add('done');
+      setLoading(false);
+      setStatus('✅ Listo — ' + totalCells.toLocaleString() + ' valores codificados.');
+    } else if (msg.type === 'error') {
+      URL.revokeObjectURL(workerUrl);
+      S.activeWorker = null;
+      setLoading(false);
+      const oom = msg.message === 'OOM' || /out of memory|oom/i.test(msg.message || '');
+      setStatus('❌ ' + (oom
+        ? 'Memoria insuficiente. Cierra otras pestañas del navegador e intenta de nuevo.'
+        : 'Error al codificar: ' + msg.message), true);
+    }
+  };
+  worker.onerror = function(e) {
+    URL.revokeObjectURL(workerUrl);
+    S.activeWorker = null;
+    setLoading(false);
+    setStatus('❌ Error en el procesador: ' + e.message, true);
+  };
+
+  // Construir sheetConfig sin piiDetected (no se necesita en el worker)
+  const workerCfg = {};
+  for (const name of S.sheetNames) {
+    const c = S.sheetConfig[name];
+    workerCfg[name] = { process: c.process, columns: c.columns.slice(), headers: c.headers.slice() };
+  }
+
+  worker.postMessage({
+    type: 'encode',
+    fileBuffer: S.fileBuffer,   // Uint8Array → se clona (no transfiere) → main conserva S.fileBuffer
+    sheetNames: S.sheetNames.slice(),
+    sheetConfig: workerCfg,
+    userKey: S.userKey,
+    userName: S.userName,
+    fileName: S.fileName,
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1010,64 +1108,72 @@ function checkDecodeReady() {
   document.getElementById('btn-decode').disabled = !(S.decBuffer && S.decKeyData);
 }
 
-async function runDecode() {
+function runDecode() {
   if (!S.decBuffer || !S.decKeyData) return;
-  setLoading(true, 'Restaurando datos…');
-
-  try {
-    const dict   = S.decKeyData.diccionario;
-    const newWb  = XLSX.utils.book_new();
-    let replaced = 0;
-
-    for (let si = 0; si < S.decSheetNames.length; si++) {
-      const sheetName = S.decSheetNames[si];
-      setLoading(true, `Restaurando… (${si + 1}/${S.decSheetNames.length}) ${sheetName}`);
-      await new Promise(r => setTimeout(r, 0));
-      const miniWb = XLSX.read(S.decBuffer, { sheets: si, cellFormula: false, cellDates: true });
-      const ws     = miniWb.Sheets[sheetName] || {};
-      const aoa    = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-
-      const newAoa = aoa.map(row => row.map(cell => {
-        const k = String(cell);
-        if (dict[k] !== undefined) { replaced++; return dict[k]; }
-        return cell;
-      }));
-
-      XLSX.utils.book_append_sheet(newWb, XLSX.utils.aoa_to_sheet(newAoa), sheetName);
-      // miniWb, aoa y newAoa salen de scope → GC
-    }
-
-    if (replaced === 0) {
-      setStatus('⚠️ No se encontraron valores para restaurar. Verifica que el .json corresponde a este archivo.', true);
-      setLoading(false);
-      return;
-    }
-
-    const buf   = XLSX.write(newWb, { type: 'array', bookType: 'xlsx' });
-    const blob  = new Blob([buf],
-      { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url   = URL.createObjectURL(blob);
-    const base  = S.decFileName.replace(/\.[^.]+$/, '');
-    const fname = `${base}_restaurado.xlsx`;
-
-    const res = document.getElementById('decode-result');
-    res.innerHTML = `
-      <a href="${url}" download="${escHtml(fname)}" class="btn btn-green" style="width:100%;justify-content:center">
-        ⬇ Descargar archivo restaurado
-      </a>
-      <p class="success-msg text-center mt-12">
-        ✅ ${replaced.toLocaleString()} valores restaurados correctamente.
-      </p>
-    `;
-    res.classList.remove('hidden');
-    setStatus(`✅ ${replaced.toLocaleString()} valores restaurados.`);
-
-  } catch(err) {
-    setStatus('❌ Error al decodificar: ' + err.message, true);
-    console.error(err);
-  } finally {
-    setLoading(false);
+  if (!window.Worker) {
+    return setStatus('❌ Tu navegador no soporta Web Workers. Usa Chrome, Edge o Firefox actualizado.', true);
   }
+  if (S.activeWorker) { S.activeWorker.terminate(); S.activeWorker = null; }
+
+  setLoading(true, 'Iniciando restauración…');
+  setProgress(0);
+
+  const workerUrl = buildWorkerUrl();
+  let worker;
+  try { worker = new Worker(workerUrl); }
+  catch(e) {
+    URL.revokeObjectURL(workerUrl);
+    return setStatus('❌ No se pudo iniciar el procesador: ' + e.message, true);
+  }
+  S.activeWorker = worker;
+
+  worker.onmessage = function(e) {
+    const msg = e.data;
+    if (msg.type === 'progress') {
+      setLoading(true, msg.text);
+      setProgress(msg.pct || 0);
+    } else if (msg.type === 'done') {
+      URL.revokeObjectURL(workerUrl);
+      S.activeWorker = null;
+      const { excelBuf, replaced, decFileName } = msg;
+      const blob  = new Blob([excelBuf],
+        { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url   = URL.createObjectURL(blob);
+      const base  = decFileName.replace(/\.[^.]+$/, '');
+      const fname = base + '_restaurado.xlsx';
+      const res   = document.getElementById('decode-result');
+      res.innerHTML =
+        '<a href="' + url + '" download="' + escHtml(fname) + '" class="btn btn-green" style="width:100%;justify-content:center">' +
+        '  ⬇ Descargar archivo restaurado</a>' +
+        '<p class="success-msg text-center mt-12">✅ ' + replaced.toLocaleString() + ' valores restaurados correctamente.</p>';
+      res.classList.remove('hidden');
+      setLoading(false);
+      setStatus('✅ ' + replaced.toLocaleString() + ' valores restaurados.');
+    } else if (msg.type === 'error') {
+      URL.revokeObjectURL(workerUrl);
+      S.activeWorker = null;
+      setLoading(false);
+      if (msg.message === 'nomatch') {
+        setStatus('⚠️ No se encontraron valores para restaurar. Verifica que el .json corresponde a este archivo.', true);
+      } else {
+        setStatus('❌ Error al restaurar: ' + msg.message, true);
+      }
+    }
+  };
+  worker.onerror = function(e) {
+    URL.revokeObjectURL(workerUrl);
+    S.activeWorker = null;
+    setLoading(false);
+    setStatus('❌ Error en el procesador: ' + e.message, true);
+  };
+
+  worker.postMessage({
+    type: 'decode',
+    fileBuffer: S.decBuffer,
+    decSheetNames: S.decSheetNames.slice(),
+    decKeyData: S.decKeyData,
+    decFileName: S.decFileName,
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1155,6 +1261,12 @@ function setLoading(show, text) {
   const el = document.getElementById('loading');
   el.classList.toggle('show', show);
   if (text) document.getElementById('loading-text').textContent = text;
+  if (!show) setProgress(0);
+}
+
+function setProgress(pct) {
+  const bar = document.getElementById('progress-fill');
+  if (bar) bar.style.width = Math.min(100, Math.max(0, pct)) + '%';
 }
 
 function setStatus(msg, isError) {
