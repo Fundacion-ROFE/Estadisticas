@@ -1,45 +1,45 @@
 {
-  "ultima_actualizacion": "2026-06-26T17:06:21.835882-05:00",
+  "ultima_actualizacion": "2026-06-30T09:19:18.566694-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
-      "estudiantes": 863,
+      "estudiantes": 862,
       "promedio": 98.47,
       "min": 0.0,
       "max": 100.0
     },
     {
       "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
-      "estudiantes": 830,
-      "promedio": 94.43,
+      "estudiantes": 829,
+      "promedio": 94.51,
       "min": 0.0,
       "max": 101.0
     },
     {
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
-      "estudiantes": 806,
-      "promedio": 89.57,
+      "estudiantes": 805,
+      "promedio": 91.59,
       "min": 0.0,
       "max": 100.0
     },
     {
       "curso": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
-      "estudiantes": 854,
+      "estudiantes": 853,
       "promedio": 95.1,
       "min": 0.0,
       "max": 100.0
     },
     {
       "curso": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
-      "estudiantes": 862,
+      "estudiantes": 861,
       "promedio": 96.37,
       "min": 0.0,
       "max": 100.0
     },
     {
       "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
-      "estudiantes": 809,
-      "promedio": 94.04,
+      "estudiantes": 808,
+      "promedio": 94.26,
       "min": 0.0,
       "max": 100.0
     }
@@ -51,7 +51,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 163
+      "cantidad": 159
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -60,23 +60,23 @@
   ],
   "totales": {
     "total_cursos": 6,
-    "total_estudiantes_unicos": 863,
-    "total_habilitados": 863,
-    "total_db": 1146
+    "total_estudiantes_unicos": 862,
+    "total_habilitados": 862,
+    "total_db": 1145
   },
   "mr": {
     "por_curso": [
       {
         "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
         "estudiantes": 136,
-        "promedio": 14.07,
+        "promedio": 15.05,
         "min": 0.0,
         "max": 100.0
       },
       {
         "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
         "estudiantes": 244,
-        "promedio": 30.55,
+        "promedio": 30.95,
         "min": 0.0,
         "max": 100.0
       }
@@ -84,7 +84,7 @@
     "anomalias": [
       {
         "categoria": "AVANCE 0%",
-        "cantidad": 215
+        "cantidad": 208
       },
       {
         "categoria": "AVANCE IRREGULAR",
