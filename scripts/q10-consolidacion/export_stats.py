@@ -39,9 +39,12 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive",
 ]
 
-DIRECTORIO_SCRIPT = os.path.dirname(os.path.abspath(__file__))
-PROYECTO_ROOT     = os.path.abspath(os.path.join(DIRECTORIO_SCRIPT, "..", ".."))
-RUTA_DATA_JSON    = os.path.join(PROYECTO_ROOT, "docs", "dashboard", "data.json")
+DIRECTORIO_SCRIPT      = os.path.dirname(os.path.abspath(__file__))
+PROYECTO_ROOT          = os.path.abspath(os.path.join(DIRECTORIO_SCRIPT, "..", ".."))
+RUTA_DATA_JSON         = os.path.join(PROYECTO_ROOT, "docs", "dashboard", "data.json")
+RUTA_HISTORY_JSON      = os.path.join(PROYECTO_ROOT, "docs", "dashboard", "history.json")
+CONFIG_CURSOS          = os.path.join(PROYECTO_ROOT, "tools", "course_config.json")
+INTERVALO_HISTORY_DIAS = 4   # snapshot cada ~4 días (dos veces por semana)
 
 
 # ── Utilidades ────────────────────────────────────────────────────────────────
@@ -123,9 +126,25 @@ def _cel_grupo(row: list, col_inicio: int, offset) -> str:
 
 _PALABRAS_MR = ["emprendedoras", "idea a la acci"]
 
-def _es_curso_mr(nombre: str) -> bool:
-    n = nombre.lower()
-    return any(p in n for p in _PALABRAS_MR)
+
+def _cargar_config_cursos() -> dict:
+    if os.path.isfile(CONFIG_CURSOS):
+        try:
+            with open(CONFIG_CURSOS, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"jc": [], "mr": [], "stand": []}
+
+
+def _clasificar_curso(nombre: str, config: dict) -> str:
+    """Retorna 'jc', 'mr' o 'stand'. Config tiene precedencia sobre keywords."""
+    n = ' '.join(nombre.replace('\xa0', ' ').split())
+    if n in config.get("mr",    []): return "mr"
+    if n in config.get("stand", []): return "stand"
+    if n in config.get("jc",    []): return "jc"
+    n_low = nombre.lower()
+    return "mr" if any(p in n_low for p in _PALABRAS_MR) else "jc"
 
 
 def _procesar_grupos(filas: list, grupos: list) -> tuple:
@@ -171,23 +190,27 @@ def _procesar_grupos(filas: list, grupos: list) -> tuple:
 
 def procesar_h2test(all_values: list) -> tuple:
     """
-    Separa cursos JC y MR, procesa cada programa independientemente.
-    Retorna (pc_jc, pc_mr, anom_jc, anom_mr, n_jc, hab_jc, n_mr, hab_mr, total_db).
+    Separa cursos JC, MR y Stand-by según course_config.json (keywords como fallback).
+    Retorna (pc_jc, pc_mr, pc_stand, anom_jc, anom_mr, n_jc, hab_jc, n_mr, hab_mr,
+             n_stand, hab_stand, total_db).
     """
     if len(all_values) < 2:
         raise ValueError("La hoja h2test está vacía o tiene menos de 2 filas.")
 
+    config = _cargar_config_cursos()
     grupos = detectar_grupos(all_values[0], all_values[1])
     filas  = all_values[2:]
 
     cursos_normales = [g for g in grupos if "sin curso" not in g["nombre"].lower()]
     grupo_sin_curso = next((g for g in grupos if "sin curso" in g["nombre"].lower()), None)
 
-    cursos_jc = [g for g in cursos_normales if not _es_curso_mr(g["nombre"])]
-    cursos_mr = [g for g in cursos_normales if     _es_curso_mr(g["nombre"])]
+    cursos_jc    = [g for g in cursos_normales if _clasificar_curso(g["nombre"], config) == "jc"]
+    cursos_mr    = [g for g in cursos_normales if _clasificar_curso(g["nombre"], config) == "mr"]
+    cursos_stand = [g for g in cursos_normales if _clasificar_curso(g["nombre"], config) == "stand"]
 
-    pc_jc, em_jc, eh_jc, av0_jc, avi_jc = _procesar_grupos(filas, cursos_jc)
-    pc_mr, em_mr, eh_mr, av0_mr, avi_mr = _procesar_grupos(filas, cursos_mr)
+    pc_jc,    em_jc,    eh_jc,    av0_jc,    avi_jc    = _procesar_grupos(filas, cursos_jc)
+    pc_mr,    em_mr,    eh_mr,    av0_mr,    avi_mr    = _procesar_grupos(filas, cursos_mr)
+    pc_stand, em_stand, eh_stand, av0_stand, avi_stand = _procesar_grupos(filas, cursos_stand)
 
     sin_match        = 0
     emails_sin_curso = set()
@@ -200,7 +223,7 @@ def procesar_h2test(all_values: list) -> tuple:
                 if em:
                     emails_sin_curso.add(em)
 
-    total_db = len(em_jc | em_mr | emails_sin_curso)
+    total_db = len(em_jc | em_mr | em_stand | emails_sin_curso)
 
     anom_jc = [
         {"categoria": "SIN MATCH",        "cantidad": sin_match},
@@ -212,20 +235,23 @@ def procesar_h2test(all_values: list) -> tuple:
         {"categoria": "AVANCE IRREGULAR",  "cantidad": avi_mr},
     ]
 
-    log(f"  JC: {len(pc_jc)} cursos | {len(em_jc)} únicos | Hab: {len(eh_jc)} | SIN MATCH: {sin_match} | AVANCE 0%: {av0_jc} | IRR: {avi_jc}")
-    log(f"  MR: {len(pc_mr)} cursos | {len(em_mr)} únicos | Hab: {len(eh_mr)} | AVANCE 0%: {av0_mr} | IRR: {avi_mr}")
+    log(f"  JC:    {len(pc_jc)} cursos | {len(em_jc)} únicos | Hab: {len(eh_jc)} | SIN MATCH: {sin_match} | AVANCE 0%: {av0_jc} | IRR: {avi_jc}")
+    log(f"  MR:    {len(pc_mr)} cursos | {len(em_mr)} únicos | Hab: {len(eh_mr)} | AVANCE 0%: {av0_mr} | IRR: {avi_mr}")
+    log(f"  STAND: {len(pc_stand)} cursos | {len(em_stand)} únicos")
     log(f"  Total DB: {total_db}")
-    return (pc_jc, pc_mr, anom_jc, anom_mr,
+    return (pc_jc, pc_mr, pc_stand, anom_jc, anom_mr,
             len(em_jc), len(eh_jc),
             len(em_mr), len(eh_mr),
+            len(em_stand), len(eh_stand),
             total_db)
 
 
 # ── Generación de data.json ────────────────────────────────────────────────────
-def generar_json(pc_jc: list, pc_mr: list,
+def generar_json(pc_jc: list, pc_mr: list, pc_stand: list,
                  anom_jc: list, anom_mr: list,
                  n_jc: int, hab_jc: int,
                  n_mr: int, hab_mr: int,
+                 n_stand: int, hab_stand: int,
                  total_db: int) -> dict:
     return {
         "ultima_actualizacion": datetime.now().astimezone().isoformat(),
@@ -248,6 +274,15 @@ def generar_json(pc_jc: list, pc_mr: list,
                 "total_habilitados":        hab_mr,
             },
         },
+        # Cursos en observación (sin programa asignado aún)
+        "stand": {
+            "por_curso": pc_stand,
+            "totales": {
+                "total_cursos":             len(pc_stand),
+                "total_estudiantes_unicos": n_stand,
+                "total_habilitados":        hab_stand,
+            },
+        },
     }
 
 
@@ -258,12 +293,71 @@ def guardar_json(datos: dict) -> None:
     log(f"  data.json generado en: {RUTA_DATA_JSON}")
 
 
+# ── Historial de snapshots ────────────────────────────────────────────────────
+def _snapshot_from_data(datos: dict, fecha: str) -> dict:
+    """Extrae un resumen liviano de un data.json completo para el historial."""
+    def resumir(por_curso: list, total_unicos: int) -> dict:
+        cursos = [
+            {"curso": c["curso"], "promedio": c["promedio"], "estudiantes": c["estudiantes"]}
+            for c in por_curso
+        ]
+        total_est = sum(c["estudiantes"] for c in cursos)
+        prom_global = (
+            round(sum(c["promedio"] * c["estudiantes"] for c in cursos) / total_est, 2)
+            if total_est else 0.0
+        )
+        return {"total_estudiantes_unicos": total_unicos, "promedio_global": prom_global, "por_curso": cursos}
+
+    jc = resumir(datos.get("por_curso", []),
+                 datos.get("totales", {}).get("total_estudiantes_unicos", 0))
+    mr = resumir(datos.get("mr", {}).get("por_curso", []),
+                 datos.get("mr", {}).get("totales", {}).get("total_estudiantes_unicos", 0))
+    return {"fecha": fecha, "jc": jc, "mr": mr}
+
+
+def actualizar_history(datos: dict) -> bool:
+    """
+    Añade un snapshot a history.json si han pasado >= INTERVALO_HISTORY_DIAS
+    desde el último registro. Retorna True si se añadió un nuevo snapshot.
+    """
+    historia: list = []
+    if os.path.isfile(RUTA_HISTORY_JSON):
+        try:
+            with open(RUTA_HISTORY_JSON, encoding="utf-8") as f:
+                historia = json.load(f)
+        except Exception:
+            historia = []
+
+    hoy = datetime.now().date()
+
+    if historia:
+        ultima_fecha = datetime.fromisoformat(historia[-1]["fecha"]).date()
+        delta = (hoy - ultima_fecha).days
+        if delta < INTERVALO_HISTORY_DIAS:
+            log(f"  History: último snapshot hace {delta} día(s) (umbral {INTERVALO_HISTORY_DIAS}). Sin cambios.")
+            return False
+
+    entrada = _snapshot_from_data(datos, hoy.isoformat())
+    historia.append(entrada)
+
+    os.makedirs(os.path.dirname(RUTA_HISTORY_JSON), exist_ok=True)
+    with open(RUTA_HISTORY_JSON, "w", encoding="utf-8") as f:
+        json.dump(historia, f, ensure_ascii=False, indent=2)
+
+    log(f"  History: snapshot {hoy.isoformat()} añadido — total: {len(historia)} entradas.")
+    return True
+
+
 # ── Git commit y push ──────────────────────────────────────────────────────────
-def git_commit_y_push(timestamp: str) -> None:
-    ruta_relativa = os.path.join("docs", "dashboard", "data.json")
+def git_commit_y_push(timestamp: str, incluir_history: bool = False) -> None:
+    archivos = [os.path.join("docs", "dashboard", "data.json")]
+    if incluir_history:
+        archivos.append(os.path.join("docs", "dashboard", "history.json"))
+
+    sufijo = " +history" if incluir_history else ""
     pasos = [
-        ["git", "add", ruta_relativa],
-        ["git", "commit", "-m", f"chore: actualizar estadisticas [{timestamp}]"],
+        ["git", "add"] + archivos,
+        ["git", "commit", "-m", f"chore: actualizar estadisticas [{timestamp}]{sufijo}"],
         ["git", "push", "origin", "main"],
     ]
     for cmd in pasos:
@@ -290,21 +384,35 @@ def main() -> None:
         all_values = hoja.get_all_values()
         log(f"  {len(all_values)} filas leídas.")
 
-        pc_jc, pc_mr, anom_jc, anom_mr, n_jc, hab_jc, n_mr, hab_mr, total_db = procesar_h2test(all_values)
+        (pc_jc, pc_mr, pc_stand,
+         anom_jc, anom_mr,
+         n_jc, hab_jc,
+         n_mr, hab_mr,
+         n_stand, hab_stand,
+         total_db) = procesar_h2test(all_values)
 
-        datos = generar_json(pc_jc, pc_mr, anom_jc, anom_mr, n_jc, hab_jc, n_mr, hab_mr, total_db)
+        datos = generar_json(pc_jc, pc_mr, pc_stand,
+                             anom_jc, anom_mr,
+                             n_jc, hab_jc,
+                             n_mr, hab_mr,
+                             n_stand, hab_stand,
+                             total_db)
         guardar_json(datos)
+
+        log("Actualizando historial...")
+        nuevo_snapshot = actualizar_history(datos)
 
         timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M")
         log("Ejecutando git commit y push...")
-        git_commit_y_push(timestamp)
+        git_commit_y_push(timestamp, incluir_history=nuevo_snapshot)
 
         log("=" * 60)
         log(f"  Cursos JC           : {len(pc_jc)}")
         log(f"  Cursos MR           : {len(pc_mr)}")
+        log(f"  Cursos Stand-by     : {len(pc_stand)}")
         log(f"  Archivo generado    : {RUTA_DATA_JSON}")
         log("=" * 60)
-        print(f"EXPORT: cursos_jc={len(pc_jc)} cursos_mr={len(pc_mr)} estado=exito", flush=True)
+        print(f"EXPORT: cursos_jc={len(pc_jc)} cursos_mr={len(pc_mr)} cursos_stand={len(pc_stand)} estado=exito", flush=True)
 
     except FileNotFoundError as e:
         print(f"\nERROR: {e}", file=sys.stderr)
