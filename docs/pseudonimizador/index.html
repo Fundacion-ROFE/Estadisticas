@@ -203,6 +203,23 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .loading-text { font-size: 13px; color: var(--muted); font-weight: 600; }
 
+    /* ── Collapsible sheets / global controls ── */
+    .sheet-expand-btn {
+      font-size: 11px; color: var(--primary); cursor: pointer;
+      background: none; border: 1px solid var(--border); font-family: inherit;
+      padding: 3px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+      transition: all .15s;
+    }
+    .sheet-expand-btn:hover { background: var(--primary-lt); border-color: var(--primary); }
+    .global-controls {
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+      margin-bottom: 12px; padding: 10px 14px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    }
+    .global-ctrl-sep { width: 1px; height: 16px; background: var(--border); flex-shrink: 0; margin: 0 2px; }
+    .global-ctrl-label { font-size: 11px; font-weight: 700; color: var(--muted);
+                         text-transform: uppercase; letter-spacing: .5px; }
+
     .hidden { display: none !important; }
     .mt-12 { margin-top: 12px; }
     .mt-16 { margin-top: 16px; }
@@ -598,18 +615,39 @@ function buildSheetsUI(wb) {
   container.innerHTML = '';
   S.sheetConfig = {};
 
+  const many = wb.SheetNames.length > 5;
+
+  // Barra de controles globales
+  const gcDiv = document.createElement('div');
+  gcDiv.className = 'global-controls';
+  gcDiv.innerHTML = `
+    <span class="global-ctrl-label">Pestañas:</span>
+    <button class="sheet-expand-btn" onclick="toggleAllSheets(true)">✓ Todas</button>
+    <button class="sheet-expand-btn" onclick="toggleOnlyPIISheets()">★ Solo PII</button>
+    <button class="sheet-expand-btn" onclick="toggleAllSheets(false)">✗ Ninguna</button>
+    <div class="global-ctrl-sep"></div>
+    <span class="global-ctrl-label">Vista:</span>
+    <button class="sheet-expand-btn" onclick="expandAllSheets(true)">▼ Expandir</button>
+    <button class="sheet-expand-btn" onclick="expandAllSheets(false)">▲ Colapsar</button>
+  `;
+  container.appendChild(gcDiv);
+
   wb.SheetNames.forEach(name => {
     const ws  = wb.Sheets[name];
     const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
     const headers = (aoa[0] || []).map(h => String(h || ''));
-    const pii = detectPIICols(aoa);
+    const pii  = detectPIICols(aoa);
     const nRows = Math.max(0, aoa.length - 1);
+    const nPii  = pii.filter(Boolean).length;
 
-    S.sheetConfig[name] = { process: true, columns: [...pii], headers, aoa };
+    S.sheetConfig[name] = { process: true, columns: [...pii], piiDetected: [...pii], headers, aoa };
 
-    const safeId = CSS.escape(name);
+    const safeId   = CSS.escape(name);
+    const expanded = !many || nPii > 0;
+
     const div = document.createElement('div');
     div.className = 'sheet-block';
+    div.id = `sheet-block-${safeId}`;
     div.innerHTML = `
       <div class="sheet-title-row">
         <label class="cb-label">
@@ -617,20 +655,14 @@ function buildSheetsUI(wb) {
                  onchange="toggleSheet(${JSON.stringify(name)}, this.checked)">
           📋 <strong>${escHtml(name)}</strong>
         </label>
-        <span class="sheet-count">${nRows.toLocaleString()} filas · ${headers.length} columnas
-          · ${pii.filter(Boolean).length} PII detectadas</span>
+        <span class="sheet-count">${nRows.toLocaleString()} filas · ${headers.length} cols · ${nPii} PII</span>
+        <button class="sheet-expand-btn" id="expand-btn-${safeId}"
+                onclick="toggleSheetExpand(${JSON.stringify(name)})">
+          ${expanded ? '▲ Colapsar' : `▼ ${nPii} col${nPii !== 1 ? 's' : ''} PII`}
+        </button>
       </div>
-      <div class="cols-grid" id="cols-${safeId}">
-        ${headers.map((h, i) => `
-          <label class="col-chip ${pii[i] ? 'checked' : ''}"
-                 id="chip-${safeId}-${i}">
-            <input type="checkbox" ${pii[i] ? 'checked' : ''}
-                   onchange="toggleColumn(${JSON.stringify(name)}, ${i}, this.checked)">
-            ${escHtml(h || 'Col ' + (i+1))}
-            ${pii[i] ? '<span class="pii-tag">PII</span>' : ''}
-          </label>
-        `).join('')}
-        ${headers.length === 0 ? '<em style="font-size:12px;color:var(--muted)">Pestaña vacía</em>' : ''}
+      <div class="cols-grid${expanded ? '' : ' hidden'}" id="cols-${safeId}" data-rendered="${expanded}">
+        ${expanded ? renderChips(name, headers, pii, safeId) : ''}
       </div>
     `;
     container.appendChild(div);
@@ -641,18 +673,31 @@ function buildSheetsUI(wb) {
   checkEncodeReady();
 }
 
+function renderChips(name, headers, columns, safeId) {
+  const detected = S.sheetConfig[name]?.piiDetected || [];
+  if (headers.length === 0) return '<em style="font-size:12px;color:var(--muted)">Pestaña vacía</em>';
+  return headers.map((h, i) => `
+    <label class="col-chip${columns[i] ? ' checked' : ''}" id="chip-${safeId}-${i}"
+           onclick="toggleColumn(${JSON.stringify(name)}, ${i})">
+      ${escHtml(h || 'Col ' + (i + 1))}
+      ${detected[i] ? '<span class="pii-tag">PII</span>' : ''}
+    </label>
+  `).join('');
+}
+
 function toggleSheet(name, checked) {
   if (!S.sheetConfig[name]) return;
   S.sheetConfig[name].process = checked;
   checkEncodeReady();
 }
 
-function toggleColumn(name, idx, checked) {
+function toggleColumn(name, idx) {
   if (!S.sheetConfig[name]) return;
-  S.sheetConfig[name].columns[idx] = checked;
+  const newVal = !S.sheetConfig[name].columns[idx];
+  S.sheetConfig[name].columns[idx] = newVal;
   const safeId = CSS.escape(name);
   const chip = document.getElementById(`chip-${safeId}-${idx}`);
-  if (chip) chip.classList.toggle('checked', checked);
+  if (chip) chip.classList.toggle('checked', newVal);
   checkEncodeReady();
 }
 
@@ -666,60 +711,149 @@ function checkEncodeReady() {
   if (btn) btn.disabled = !(identityOk && fileOk && anyCol);
 }
 
+function toggleSheetExpand(name) {
+  const safeId    = CSS.escape(name);
+  const colsDiv   = document.getElementById(`cols-${safeId}`);
+  const expandBtn = document.getElementById(`expand-btn-${safeId}`);
+  if (!colsDiv) return;
+  const wasHidden = colsDiv.classList.contains('hidden');
+  if (wasHidden && colsDiv.dataset.rendered !== 'true') {
+    const cfg = S.sheetConfig[name];
+    colsDiv.innerHTML = renderChips(name, cfg.headers, cfg.columns, safeId);
+    colsDiv.dataset.rendered = 'true';
+  }
+  colsDiv.classList.toggle('hidden', !wasHidden);
+  if (expandBtn) {
+    const n = S.sheetConfig[name]?.columns.filter(Boolean).length || 0;
+    expandBtn.textContent = wasHidden ? '▲ Colapsar' : `▼ ${n} col${n !== 1 ? 's' : ''} PII`;
+  }
+}
+
+function expandAllSheets(expand) {
+  Object.keys(S.sheetConfig).forEach(name => {
+    const safeId    = CSS.escape(name);
+    const colsDiv   = document.getElementById(`cols-${safeId}`);
+    const expandBtn = document.getElementById(`expand-btn-${safeId}`);
+    if (!colsDiv) return;
+    if (expand && colsDiv.dataset.rendered !== 'true') {
+      const cfg = S.sheetConfig[name];
+      colsDiv.innerHTML = renderChips(name, cfg.headers, cfg.columns, safeId);
+      colsDiv.dataset.rendered = 'true';
+    }
+    colsDiv.classList.toggle('hidden', !expand);
+    if (expandBtn) {
+      const n = S.sheetConfig[name]?.columns.filter(Boolean).length || 0;
+      expandBtn.textContent = expand ? '▲ Colapsar' : `▼ ${n} col${n !== 1 ? 's' : ''} PII`;
+    }
+  });
+}
+
+function toggleAllSheets(checked) {
+  Object.keys(S.sheetConfig).forEach(name => {
+    S.sheetConfig[name].process = checked;
+    const safeId = CSS.escape(name);
+    const blk = document.getElementById(`sheet-block-${safeId}`);
+    if (blk) { const cb = blk.querySelector('.cb-label input'); if (cb) cb.checked = checked; }
+  });
+  checkEncodeReady();
+}
+
+function toggleOnlyPIISheets() {
+  Object.keys(S.sheetConfig).forEach(name => {
+    const hasPii = S.sheetConfig[name].piiDetected?.some(Boolean) || false;
+    S.sheetConfig[name].process = hasPii;
+    const safeId = CSS.escape(name);
+    const blk = document.getElementById(`sheet-block-${safeId}`);
+    if (blk) { const cb = blk.querySelector('.cb-label input'); if (cb) cb.checked = hasPii; }
+  });
+  checkEncodeReady();
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // CODIFICAR — Paso 4: ejecutar
 // ═══════════════════════════════════════════════════════════════════
 async function runEncode() {
-  setLoading(true, 'Codificando… puede tardar con archivos grandes.');
+  setLoading(true, 'Analizando archivo…');
   document.getElementById('download-area').classList.add('hidden');
 
   try {
     const ck = await makeCryptoKey(S.userKey);
-    const dictionary = {};
+    const sheetsToProcess = S.workbook.SheetNames.filter(n => S.sheetConfig[n]?.process);
+
+    // ── Fase 1: recolectar valores únicos ─────────────────────────
+    const uniqueSet = new Set();
+    for (const sn of sheetsToProcess) {
+      const cfg = S.sheetConfig[sn];
+      for (let r = 1; r < cfg.aoa.length; r++) {
+        const row = cfg.aoa[r];
+        for (let c = 0; c < row.length; c++) {
+          if (!cfg.columns[c]) continue;
+          const v = row[c];
+          if (v !== '' && v !== null && v !== undefined) uniqueSet.add(String(v));
+        }
+      }
+    }
+
+    const uniqueVals = [...uniqueSet];
+    const dictionary = {};  // pseudo → original (para el .json)
+    const fwdMap     = {};  // original → pseudo (para el reemplazo)
+
+    // ── Fase 2: HMAC por lotes de 200 ────────────────────────────
+    const BATCH = 200;
+    for (let i = 0; i < uniqueVals.length; i += BATCH) {
+      const done = Math.min(i + BATCH, uniqueVals.length);
+      setLoading(true, `Codificando… ${done.toLocaleString()} / ${uniqueVals.length.toLocaleString()} valores únicos`);
+      const batch  = uniqueVals.slice(i, i + BATCH);
+      const hashes = await Promise.all(batch.map(v => hmac16(v, ck)));
+      for (let j = 0; j < batch.length; j++) {
+        const orig = batch[j];
+        let pseudo = hashes[j];
+        if (dictionary[pseudo] && dictionary[pseudo] !== orig)
+          pseudo = (await hmac16(orig + '_ext', ck)).slice(0, 20);
+        dictionary[pseudo] = orig;
+        fwdMap[orig]        = pseudo;
+      }
+    }
+
+    // ── Fase 3: reemplazo en pestañas ─────────────────────────────
     const newWb = XLSX.utils.book_new();
     let totalCells = 0, processedSheets = 0;
 
-    for (const sheetName of S.workbook.SheetNames) {
+    for (let si = 0; si < S.workbook.SheetNames.length; si++) {
+      const sheetName = S.workbook.SheetNames[si];
       const cfg = S.sheetConfig[sheetName];
       const ws  = S.workbook.Sheets[sheetName];
 
-      if (!cfg || !cfg.process) {
+      if (!cfg?.process) {
         XLSX.utils.book_append_sheet(newWb, ws, sheetName);
         continue;
       }
 
+      setLoading(true, `Generando Excel… ${si + 1}/${S.workbook.SheetNames.length}: ${sheetName}`);
+      await new Promise(r => setTimeout(r, 0));
       processedSheets++;
-      const aoa    = cfg.aoa;
+
       const newAoa = [];
-
-      for (let r = 0; r < aoa.length; r++) {
-        const row = aoa[r].map(c => (c === null || c === undefined) ? '' : c);
-        if (r === 0) { newAoa.push([...row]); continue; } // headers intactos
-
+      for (let r = 0; r < cfg.aoa.length; r++) {
+        const row = cfg.aoa[r].map(c => (c === null || c === undefined) ? '' : c);
+        if (r === 0) { newAoa.push([...row]); continue; }
         const newRow = [...row];
         for (let c = 0; c < row.length; c++) {
           if (!cfg.columns[c]) continue;
           const val = row[c];
           if (val === '' || val === null || val === undefined) continue;
-
-          const original = String(val);
-          let pseudo = await hmac16(original, ck);
-
-          // Colisión: si el pseudo ya apunta a otro valor, extender a 20 chars
-          if (dictionary[pseudo] && dictionary[pseudo] !== original) {
-            pseudo = (await hmac16(original + '_ext', ck)).slice(0, 20);
-          }
-          dictionary[pseudo] = original;
-          newRow[c] = pseudo;
-          totalCells++;
+          const pseudo = fwdMap[String(val)];
+          if (pseudo !== undefined) { newRow[c] = pseudo; totalCells++; }
         }
         newAoa.push(newRow);
       }
-
       XLSX.utils.book_append_sheet(newWb, XLSX.utils.aoa_to_sheet(newAoa), sheetName);
     }
 
-    // ── Generar Excel codificado ──────────────────────────────────
+    // ── Generar archivos de descarga ──────────────────────────────
+    setLoading(true, 'Preparando archivos para descargar…');
+    await new Promise(r => setTimeout(r, 0));
+
     const excelBuf  = XLSX.write(newWb, { type: 'array', bookType: 'xlsx' });
     const excelBlob = new Blob([excelBuf],
       { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -727,30 +861,24 @@ async function runEncode() {
     const baseName  = S.fileName.replace(/\.[^.]+$/, '');
     const excelName = `${baseName}_codificado.xlsx`;
 
-    // ── Generar archivo de clave (.json) ─────────────────────────
     const keyData = {
       meta: {
         version: '1.0',
         usuario: S.userName,
         fecha: new Date().toISOString(),
         archivo_origen: S.fileName,
-        pestanas_procesadas: Object.keys(S.sheetConfig)
-          .filter(n => S.sheetConfig[n].process),
+        pestanas_procesadas: sheetsToProcess,
         columnas_por_pestana: Object.fromEntries(
-          Object.entries(S.sheetConfig)
-            .filter(([, c]) => c.process)
-            .map(([n, c]) => [n, c.headers.filter((_, i) => c.columns[i])])
+          sheetsToProcess.map(n => [n, S.sheetConfig[n].headers.filter((_, i) => S.sheetConfig[n].columns[i])])
         ),
       },
       diccionario: dictionary,
     };
-    const jsonBlob = new Blob([JSON.stringify(keyData, null, 2)],
-      { type: 'application/json' });
+    const jsonBlob = new Blob([JSON.stringify(keyData, null, 2)], { type: 'application/json' });
     const jsonUrl  = URL.createObjectURL(jsonBlob);
     const today    = new Date().toISOString().slice(0, 10);
     const jsonName = `clave_${S.userName}_${today}.json`;
 
-    // ── Mostrar descargas ─────────────────────────────────────────
     document.getElementById('encode-summary').textContent =
       `✅ ${totalCells.toLocaleString()} valores protegidos en ${processedSheets} pestaña(s)`;
 
