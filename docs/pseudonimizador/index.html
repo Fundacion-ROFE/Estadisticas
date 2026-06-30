@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pseudonimizador — Fundación ROFÉ</title>
+  <link rel="icon" href="../img/logo_rofe_aplicacion2.png" type="image/png">
   <style>
     :root {
       --primary:   #406C9E;
@@ -652,12 +653,12 @@ function buildSheetsUI(wb) {
       <div class="sheet-title-row">
         <label class="cb-label">
           <input type="checkbox" checked
-                 onchange="toggleSheet(${JSON.stringify(name)}, this.checked)">
+                 onchange="toggleSheet(${escHtml(JSON.stringify(name))}, this.checked)">
           📋 <strong>${escHtml(name)}</strong>
         </label>
         <span class="sheet-count">${nRows.toLocaleString()} filas · ${headers.length} cols · ${nPii} PII</span>
         <button class="sheet-expand-btn" id="expand-btn-${safeId}"
-                onclick="toggleSheetExpand(${JSON.stringify(name)})">
+                onclick="toggleSheetExpand(${escHtml(JSON.stringify(name))})">
           ${expanded ? '▲ Colapsar' : `▼ ${nPii} col${nPii !== 1 ? 's' : ''} PII`}
         </button>
       </div>
@@ -678,7 +679,7 @@ function renderChips(name, headers, columns, safeId) {
   if (headers.length === 0) return '<em style="font-size:12px;color:var(--muted)">Pestaña vacía</em>';
   return headers.map((h, i) => `
     <label class="col-chip${columns[i] ? ' checked' : ''}" id="chip-${safeId}-${i}"
-           onclick="toggleColumn(${JSON.stringify(name)}, ${i})">
+           onclick="toggleColumn(${escHtml(JSON.stringify(name))}, ${i})">
       ${escHtml(h || 'Col ' + (i + 1))}
       ${detected[i] ? '<span class="pii-tag">PII</span>' : ''}
     </label>
