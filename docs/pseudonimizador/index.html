@@ -232,6 +232,18 @@
     .text-center { text-align: center; }
     .decode-result { margin-top: 16px; }
     .success-msg { font-size: 13px; color: var(--green); font-weight: 600; margin-top: 10px; }
+
+    /* ── Paste tab ── */
+    .txt-area { width: 100%; padding: 10px 12px; font-family: 'Courier New', monospace;
+                font-size: 12px; border: 1.5px solid var(--border); border-radius: 7px;
+                resize: vertical; color: var(--text); background: var(--bg);
+                transition: border-color .15s; line-height: 1.5; }
+    .txt-area:focus { outline: none; border-color: var(--primary); }
+    .txt-area[readonly] { background: var(--surface); cursor: default; }
+    .paste-info { font-size: 12px; color: var(--muted); margin-top: 8px; }
+    .copy-ok { font-size: 12px; color: var(--green); font-weight: 700;
+               margin-left: 10px; opacity: 0; transition: opacity .3s; }
+    .copy-ok.show { opacity: 1; }
   </style>
 </head>
 <body>
@@ -251,6 +263,7 @@
 <!-- ── Tab nav ──────────────────────────────────────────────────── -->
 <nav class="tab-nav">
   <button class="tab-btn active" onclick="switchTab('codificar')">🔒 Codificar</button>
+  <button class="tab-btn" onclick="switchTab('texto')">📋 Pegar texto</button>
   <button class="tab-btn" onclick="switchTab('decodificar')">🔓 Decodificar</button>
   <button class="tab-btn" onclick="switchTab('buscar')">🔍 Buscar valor</button>
 </nav>
@@ -447,6 +460,96 @@
   </div>
 
 </div><!-- /tab-buscar -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  TAB: PEGAR TEXTO                                              -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="tab-texto" class="tab-panel">
+
+  <div class="warn-box">
+    <span class="warn-icon">💡</span>
+    <div>Para rangos simples: copia celdas desde Excel o Sheets con <strong>Ctrl+C</strong>,
+    pégalas aquí, codifica, y vuelve a copiar el resultado para pegarlo en tu planilla.
+    Usa la misma clave que en el tab Codificar para que los pseudónimos sean compatibles.</div>
+  </div>
+
+  <!-- Step 1: Identidad compacta -->
+  <div class="card" id="txt-card-1">
+    <div class="card-header">
+      <span class="step-num" id="txt-sn-1">1</span>
+      Tu identidad
+    </div>
+    <div class="card-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tu nombre <span class="req">*</span></label>
+          <input type="text" id="txt-inp-name" placeholder="Ej: Samuel"
+                 oninput="onTxtIdentity()">
+        </div>
+        <div class="form-group">
+          <label>Clave personal <span class="req">*</span></label>
+          <input type="password" id="txt-inp-key" placeholder="Mínimo 8 caracteres"
+                 oninput="onTxtIdentity()">
+          <span class="form-hint">Usa la misma clave que usarías en el tab Codificar.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Pegar -->
+  <div class="card locked" id="txt-card-2">
+    <div class="card-header">
+      <span class="step-num" id="txt-sn-2">2</span>
+      Pega tus datos
+    </div>
+    <div class="card-body">
+      <textarea id="txt-paste-area" class="txt-area" rows="8"
+                placeholder="Pega aquí con Ctrl+V los datos copiados de Excel o Google Sheets.&#10;La primera fila se usará como encabezado para detectar columnas PII."
+                oninput="onTxtPaste()"></textarea>
+      <div id="txt-paste-info" class="paste-info hidden"></div>
+    </div>
+  </div>
+
+  <!-- Step 3: Columnas -->
+  <div class="card locked" id="txt-card-3">
+    <div class="card-header">
+      <span class="step-num" id="txt-sn-3">3</span>
+      ¿Qué columnas proteger?
+    </div>
+    <div class="card-body">
+      <div id="txt-cols-grid" class="cols-grid"></div>
+    </div>
+  </div>
+
+  <!-- Step 4: Resultado -->
+  <div class="card locked" id="txt-card-4">
+    <div class="card-header">
+      <span class="step-num" id="txt-sn-4">4</span>
+      Codificar y copiar
+    </div>
+    <div class="card-body">
+      <div class="warn-box">
+        <span class="warn-icon">⚠️</span>
+        <div>Descarga el <strong>archivo .json</strong> antes de cerrar esta pestaña.
+        Sin él no podrás recuperar los datos originales.</div>
+      </div>
+      <button id="txt-btn-encode" class="btn btn-primary btn-lg"
+              onclick="runTxtEncode()" disabled>
+        🔒 Codificar
+      </button>
+      <div id="txt-result" class="hidden mt-16">
+        <textarea id="txt-result-area" class="txt-area" rows="8" readonly></textarea>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="copyTxtResult()">📋 Copiar resultado</button>
+          <a id="txt-json-dl" class="btn btn-secondary">⬇ Descargar clave .json</a>
+          <span class="copy-ok" id="txt-copy-ok">✅ Copiado</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /tab-texto -->
 </main><!-- /main -->
 
 <!-- ── Status bar ───────────────────────────────────────────────── -->
@@ -521,6 +624,18 @@ function detectPIICols(aoa) {
       .filter(v => v !== null && v !== undefined && v !== '');
     return isPIIValues(samples);
   });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CRYPTO — hilo principal (solo para tab Texto; encode/decode usan Worker)
+// ═══════════════════════════════════════════════════════════════════
+async function makeCryptoKey(pw) {
+  return crypto.subtle.importKey('raw', new TextEncoder().encode(pw),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+}
+async function hmac16(v, ck) {
+  const sig = await crypto.subtle.sign('HMAC', ck, new TextEncoder().encode(String(v)));
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2,'0')).join('').slice(0,16);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1220,6 +1335,173 @@ async function loadSearchKey(e) {
   } catch(err) {
     setStatus('❌ ' + err.message, true);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TAB TEXTO — pegar, codificar y copiar
+// ═══════════════════════════════════════════════════════════════════
+const TS = { rows: [], headers: [], columns: [], piiDetected: [] };
+
+function onTxtIdentity() {
+  const name = document.getElementById('txt-inp-name').value.trim();
+  const key  = document.getElementById('txt-inp-key').value;
+  S.userName = name; S.userKey = key;
+  const ok = name.length > 0 && key.length >= 8;
+  lockCard('txt-card-2', !ok);
+  if (ok) document.getElementById('txt-sn-1').classList.add('done');
+  else     document.getElementById('txt-sn-1').classList.remove('done');
+  checkTxtEncodeReady();
+}
+
+function onTxtPaste() {
+  const raw = document.getElementById('txt-paste-area').value;
+  if (!raw.trim()) return;
+
+  const rows = raw.split(/\r?\n/).map(r => r.split('\t'));
+  while (rows.length && rows[rows.length - 1].every(c => !c.trim())) rows.pop();
+  if (rows.length < 2) {
+    setStatus('⚠️ Pega al menos una fila de encabezado y una de datos.', true);
+    return;
+  }
+
+  TS.rows = rows;
+  TS.headers = rows[0].map(h => String(h || ''));
+  const pii = detectPIICols(rows);
+  TS.columns = [...pii];
+  TS.piiDetected = [...pii];
+
+  const nPii = pii.filter(Boolean).length;
+  const info = document.getElementById('txt-paste-info');
+  info.textContent = (rows.length - 1) + ' filas · ' + TS.headers.length + ' columnas · ' + nPii + ' PII detectadas automáticamente';
+  info.classList.remove('hidden');
+
+  buildTxtColsUI();
+  lockCard('txt-card-3', false);
+  lockCard('txt-card-4', false);
+  document.getElementById('txt-sn-2').classList.add('done');
+  document.getElementById('txt-result').classList.add('hidden');
+  checkTxtEncodeReady();
+}
+
+function buildTxtColsUI() {
+  const grid = document.getElementById('txt-cols-grid');
+  grid.innerHTML = '';
+  TS.headers.forEach((h, i) => {
+    const chip = document.createElement('label');
+    chip.className = 'col-chip' + (TS.columns[i] ? ' checked' : '');
+    chip.id = 'txt-chip-' + i;
+    chip.onclick = () => toggleTxtCol(i);
+    chip.innerHTML = escHtml(h || 'Col ' + (i + 1)) +
+      (TS.piiDetected[i] ? '<span class="pii-tag">PII</span>' : '');
+    grid.appendChild(chip);
+  });
+  document.getElementById('txt-sn-3').classList.add('done');
+}
+
+function toggleTxtCol(i) {
+  TS.columns[i] = !TS.columns[i];
+  const chip = document.getElementById('txt-chip-' + i);
+  if (chip) chip.classList.toggle('checked', TS.columns[i]);
+  checkTxtEncodeReady();
+}
+
+function checkTxtEncodeReady() {
+  const ok = S.userName.length > 0 && S.userKey.length >= 8
+          && TS.rows.length > 1 && TS.columns.some(Boolean);
+  document.getElementById('txt-btn-encode').disabled = !ok;
+}
+
+async function runTxtEncode() {
+  setLoading(true, 'Codificando texto…');
+  setProgress(0);
+  try {
+    const ck = await makeCryptoKey(S.userKey);
+
+    // Recopilar valores únicos de columnas PII + emails en texto libre
+    const uniqueSet = new Set();
+    for (let r = 1; r < TS.rows.length; r++) {
+      const row = TS.rows[r];
+      for (let c = 0; c < row.length; c++) {
+        const v = row[c].trim();
+        if (!v) continue;
+        if (TS.columns[c]) {
+          uniqueSet.add(v);
+        } else {
+          const em = v.match(/[\w.+\-]+@[\w\-]+\.[a-z]{2,}/gi);
+          if (em) em.forEach(e => uniqueSet.add(e));
+        }
+      }
+    }
+    setProgress(25);
+
+    // HMAC por lotes
+    const uniqueVals = [...uniqueSet]; uniqueSet.clear();
+    const dictionary = {}, fwdMap = {};
+    const BATCH = 200;
+    for (let i = 0; i < uniqueVals.length; i += BATCH) {
+      const batch  = uniqueVals.slice(i, Math.min(i + BATCH, uniqueVals.length));
+      const hashes = await Promise.all(batch.map(v => hmac16(v, ck)));
+      for (let j = 0; j < batch.length; j++) {
+        const orig = batch[j];
+        let pseudo = hashes[j];
+        if (dictionary[pseudo] && dictionary[pseudo] !== orig)
+          pseudo = (await hmac16(orig + '_ext', ck)).slice(0, 20);
+        dictionary[pseudo] = orig;
+        fwdMap[orig] = pseudo;
+      }
+    }
+    setProgress(60);
+
+    // Reemplazar
+    const newRows = TS.rows.map((row, ri) => {
+      if (ri === 0) return row;
+      return row.map((cell, ci) => {
+        const v = cell.trim();
+        if (!v) return cell;
+        if (TS.columns[ci]) return fwdMap[v] ?? cell;
+        return cell.replace(/[\w.+\-]+@[\w\-]+\.[a-z]{2,}/gi,
+          m => fwdMap[m] ?? m);
+      });
+    });
+    setProgress(85);
+
+    // TSV de salida
+    document.getElementById('txt-result-area').value =
+      newRows.map(r => r.join('\t')).join('\n');
+
+    // Clave .json
+    const keyData = {
+      meta: {
+        version: '1.0', usuario: S.userName, fecha: new Date().toISOString(),
+        origen: 'pegado directo (texto)',
+        columnas_codificadas: TS.headers.filter((_, i) => TS.columns[i]),
+      },
+      diccionario: dictionary,
+    };
+    const jsonBlob = new Blob([JSON.stringify(keyData, null, 2)], { type: 'application/json' });
+    const jsonUrl  = URL.createObjectURL(jsonBlob);
+    const today    = new Date().toISOString().slice(0, 10);
+    const dl = document.getElementById('txt-json-dl');
+    dl.href = jsonUrl; dl.download = 'clave_' + S.userName + '_' + today + '.json';
+
+    document.getElementById('txt-result').classList.remove('hidden');
+    document.getElementById('txt-sn-4').classList.add('done');
+    setProgress(100);
+    setStatus('✅ Datos codificados — copia el resultado y pégalo en tu planilla.');
+  } catch(err) {
+    setStatus('❌ Error: ' + err.message, true);
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function copyTxtResult() {
+  const txt = document.getElementById('txt-result-area').value;
+  if (!txt) return;
+  await navigator.clipboard.writeText(txt);
+  const ok = document.getElementById('txt-copy-ok');
+  ok.classList.add('show');
+  setTimeout(() => ok.classList.remove('show'), 2000);
 }
 
 function runSearch() {
