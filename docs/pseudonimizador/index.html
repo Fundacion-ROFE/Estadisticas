@@ -549,6 +549,65 @@
     </div>
   </div>
 
+  <!-- ── Separador decodificar ── -->
+  <div style="display:flex;align-items:center;gap:12px;margin:28px 0 16px">
+    <div style="flex:1;height:1px;background:var(--border)"></div>
+    <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap">🔓 Decodificar texto pegado</span>
+    <div style="flex:1;height:1px;background:var(--border)"></div>
+  </div>
+
+  <!-- Dec Step 1: cargar clave -->
+  <div class="card" id="txt-dec-card-1">
+    <div class="card-header">
+      <span class="step-num" id="txt-dec-sn-1">1</span>
+      Carga tu archivo de clave (.json)
+    </div>
+    <div class="card-body">
+      <div class="upload-slot" style="max-width:360px" id="txt-dec-slot-json"
+           onclick="document.getElementById('txt-dec-json-input').click()">
+        <div class="slot-icon">🔑</div>
+        <div class="slot-label">Archivo de clave .json</div>
+        <div class="slot-name" id="txt-dec-slot-name">Haz clic para seleccionar</div>
+      </div>
+      <input type="file" id="txt-dec-json-input" accept=".json"
+             style="display:none" onchange="loadTxtDecKey(event)">
+    </div>
+  </div>
+
+  <!-- Dec Step 2: pegar texto codificado -->
+  <div class="card locked" id="txt-dec-card-2">
+    <div class="card-header">
+      <span class="step-num" id="txt-dec-sn-2">2</span>
+      Pega el texto codificado
+    </div>
+    <div class="card-body">
+      <textarea id="txt-dec-paste" class="txt-area" rows="8"
+                placeholder="Pega aquí el TSV codificado (el que devolvió la IA o el que copiaste del resultado)."
+                oninput="checkTxtDecReady()"></textarea>
+    </div>
+  </div>
+
+  <!-- Dec Step 3: resultado -->
+  <div class="card locked" id="txt-dec-card-3">
+    <div class="card-header">
+      <span class="step-num" id="txt-dec-sn-3">3</span>
+      Restaurar y copiar
+    </div>
+    <div class="card-body">
+      <button id="txt-btn-decode" class="btn btn-green btn-lg"
+              onclick="runTxtDecode()" disabled>
+        🔓 Restaurar datos originales
+      </button>
+      <div id="txt-dec-result" class="hidden mt-16">
+        <textarea id="txt-dec-result-area" class="txt-area" rows="8" readonly></textarea>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+          <button class="btn btn-green" onclick="copyTxtDecResult()">📋 Copiar resultado</button>
+          <span class="copy-ok" id="txt-dec-copy-ok">✅ Copiado</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /tab-texto -->
 </main><!-- /main -->
 
@@ -1500,6 +1559,85 @@ async function copyTxtResult() {
   if (!txt) return;
   await navigator.clipboard.writeText(txt);
   const ok = document.getElementById('txt-copy-ok');
+  ok.classList.add('show');
+  setTimeout(() => ok.classList.remove('show'), 2000);
+}
+
+// ── Decodificar texto ────────────────────────────────────────────
+const TD = { keyData: null };
+
+async function loadTxtDecKey(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  try {
+    const text = await readFileText(file);
+    const data = JSON.parse(text);
+    if (!data.diccionario) throw new Error('El archivo .json no tiene el formato esperado.');
+    TD.keyData = data;
+    const slot = document.getElementById('txt-dec-slot-json');
+    slot.classList.add('loaded');
+    const meta = data.meta || {};
+    document.getElementById('txt-dec-slot-name').textContent =
+      (meta.usuario || file.name) + ' · ' + Object.keys(data.diccionario).length + ' entradas';
+    document.getElementById('txt-dec-sn-1').classList.add('done');
+    lockCard('txt-dec-card-2', false);
+    lockCard('txt-dec-card-3', false);
+    checkTxtDecReady();
+    setStatus('Clave cargada — ' + Object.keys(data.diccionario).length + ' entradas.');
+  } catch(err) {
+    setStatus('❌ ' + err.message, true);
+  }
+}
+
+function checkTxtDecReady() {
+  const hasKey  = !!TD.keyData;
+  const hasText = document.getElementById('txt-dec-paste').value.trim().length > 0;
+  document.getElementById('txt-btn-decode').disabled = !(hasKey && hasText);
+}
+
+function runTxtDecode() {
+  if (!TD.keyData) return;
+  const raw = document.getElementById('txt-dec-paste').value;
+  if (!raw.trim()) return;
+
+  const dict = TD.keyData.diccionario;
+  const rows = raw.split(/\r?\n/).map(r => r.split('\t'));
+  let replaced = 0;
+
+  const newRows = rows.map(row =>
+    row.map(cell => {
+      const v = cell.trim();
+      if (!v) return cell;
+      // Coincidencia exacta de celda
+      if (dict[v] !== undefined) { replaced++; return dict[v]; }
+      // Pseudónimos embebidos dentro de texto (hex 16-20 chars)
+      const rep = cell.replace(/[0-9a-f]{16,20}/gi, m => {
+        if (dict[m] !== undefined) { replaced++; return dict[m]; }
+        return m;
+      });
+      return rep;
+    })
+  );
+
+  if (replaced === 0) {
+    setStatus('⚠️ No se encontraron valores para restaurar. Verifica que el .json corresponde a este texto.', true);
+    return;
+  }
+
+  document.getElementById('txt-dec-result-area').value =
+    newRows.map(r => r.join('\t')).join('\n');
+  document.getElementById('txt-dec-result').classList.remove('hidden');
+  document.getElementById('txt-dec-sn-2').classList.add('done');
+  document.getElementById('txt-dec-sn-3').classList.add('done');
+  setStatus('✅ ' + replaced + ' valores restaurados — copia el resultado.');
+}
+
+async function copyTxtDecResult() {
+  const txt = document.getElementById('txt-dec-result-area').value;
+  if (!txt) return;
+  await navigator.clipboard.writeText(txt);
+  const ok = document.getElementById('txt-dec-copy-ok');
   ok.classList.add('show');
   setTimeout(() => ok.classList.remove('show'), 2000);
 }
