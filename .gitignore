@@ -28,6 +28,7 @@ automatizaciones-empresa/
 
 # ── Herramientas locales y datos personales (NUNCA subir) ─────────────────────
 tools/
+excels/
 local_data/
 *_personal.json
 *_estudiantes.json
