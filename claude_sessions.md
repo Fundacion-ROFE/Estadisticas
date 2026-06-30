@@ -279,3 +279,72 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
 - **`docs/dashboard/index.html`:** link "Mujeres ROFÉ ↗" añadido en la barra de tabs. Cursos MR excluidos con `filtrarJC()` en JS — `data.json` permanece con los 8 cursos para que el panel MR siga funcionando.
 - **`tools/panel_riesgo_gui.py`:** Tab 5 "💡 Mujeres ROFÉ" agregado con estilos rose; tabs 1-4 ahora solo muestran estudiantes JC. `leer_h2test()` devuelve `(q10_jc, q10_mr)` separados por `_es_curso_mr()`.
 - Decisión de diseño: `data.json` NO se divide en dos archivos — el panel MR lee el mismo JSON que el dashboard JC y filtra en JS. Esto mantiene un solo script `export_stats.py` sin lógica de separación.
+
+---
+
+## 2026-06-26 — [Panel Riesgo + Dashboard] Refactor mayor GUI + tab Admin + course_config
+
+**Estado:** Completado
+**Proceso relacionado:** [[dashboard-web]]
+
+- **`tools/panel_riesgo_gui.py` reescrito completamente:** de 5 tabs → 4 tabs (Resumen, Atención, MR, Admin). Eliminados: "Sin match manual", "Avance 0%" y "Errores DB". Tab Atención: ahora genera una fila por (estudiante, curso en riesgo) en lugar de una por estudiante — permite filtrar por curso. Tab MR: una fila por estudiante único, doble clic abre popup con todos sus cursos. Tab Admin: lista scrollable de todos los cursos con ComboBox JC/MR/Stand-by, botón Guardar → escribe `tools/course_config.json`.
+- **`tools/course_config.json` creado:** clasifica los 8 cursos actuales (6 JC, 2 MR, 0 stand). Fuente de verdad para clasificación de programas — tiene precedencia sobre los keywords de fallback.
+- **`scripts/q10-consolidacion/export_stats.py`:** agrega `_cargar_config_cursos()` + `_clasificar_curso()` que usa config primero y keywords como fallback. `procesar_h2test()` ahora extrae un tercer grupo `cursos_stand`. `generar_json()` incluye nueva sección `"stand"`. `main()` actualizado para desempaquetar 12 valores.
+- **`docs/dashboard/index.html`:** Tab 4 "Admin" añadido. `renderAdmin(d)` muestra resumen por programa (tarjetas KPI con color por programa), gráfico de barras horizontales para todos los cursos (color por programa), tabla detalle. Lee `d.por_curso` (JC), `d.mr.por_curso` (MR) y `d.stand.por_curso` (Stand-by).
+- Decisión: la clasificación vive en `tools/course_config.json` (local, gitignoreado potencialmente), no hardcodeada — permite que Samuel añada nuevos cursos sin tocar código.
+
+---
+
+## 2026-06-26 — [Panel Riesgo + Dashboard] KPI cards clickeables + vistas dinámicas JC y MR
+
+**Estado:** Completado
+**Proceso relacionado:** [[dashboard-web]]
+
+- **Tab 💡 Mujeres ROFÉ — 6 vistas dinámicas:** las 6 tarjetas KPI superiores se convirtieron en botones (cursor hand2, bind `<Button-1>`). Al hacer clic la tarjeta activa se resalta con `PRIMARY_LT`. Cada vista regenera la tabla: MUJERES (283 únicas), CURSOS (resumen 2 cursos), PROMEDIO (nota por curso + promedio), ≥ 80% OK, EN RIESGO 60–79%, AVANCE 0%. Conteos por estudiante único (no por matrícula) usando `student_stats` agrupado por email.
+- **Tab 🎓 Jóvenes creaTIvos (antes "Resumen") — 6 vistas dinámicas:** mismo patrón KPI clickeable. Vistas: EN Q10 JC (todos en plataforma), MATCH AMBAS (cruzados manual+Q10), ATENCIÓN (cursos en riesgo), AVANCE 0%, SIN MATCH (en Q10 sin registro manual), OK ✓. La pestaña pasó de mostrar un resumen estático a ser completamente interactiva.
+- **Exportar CSV selectivo:** `_exportar_csv()` detecta el tab activo y la vista activa (`_jc_vista_activa`, `_mr_vista_activa`) → descarga solo la tabla visible con nombre descriptivo (ej. `mr_ok_20260626.csv`). Tab Admin bloqueado.
+- **Gotcha confirmado:** AVANCE 0% en data.json = 215 es por matrícula. En el GUI: 211 estudiantes únicas con avg=0%, 72 con avg>0%. El panel es correcto — la distinción se documenta en [[dashboard-web#Gotchas]].
+- Documentación final actualizada: `dashboard-web.md` (reescritura completa), `mapa-codigo.md` (panel_riesgo_gui.py 4 tabs + course_config.json), `00-vision-global.md` (flujo y tabla de procesos).
+
+---
+
+## 2026-06-30 — [Panel Riesgo] Tab Diferencias + explicación discrepancia dashboard vs GUI
+
+**Estado:** Completado
+**Proceso relacionado:** [[dashboard-web]]
+
+- **Diagnóstico discrepancia "AVANCE 0%":** dashboard GitHub muestra 167 por *matrícula* (una persona en 6 cursos todos a 0% = 6); panel GUI muestra 6 porque solo cuenta estudiantes *únicos* que están en AMBAS fuentes (Q10 ∩ Manual) con avance 0% en todos sus cursos. Diferencia documentada en `dashboard-web.md#gotchas`.
+- **Nuevo tab "🔀 Diferencias"** agregado a `tools/panel_riesgo_gui.py` (tab índice 3). Tres vistas KPI clickeables: "EN Q10 SIN registro manual" (= `sin_match_manual` de `cruzar()`), "EN MANUAL SIN registro Q10" (nuevo: `ea - eq`), "EN AMBAS fuentes" (tabla completa de cruzados). Permite identificar si la diferencia es error de captación en Q10 o en manual.
+- `leer_avance()` actualizado para capturar campo `nombre` de la pestaña Avance (antes se perdía).
+- `cruzar()` añade clave `"solo_manual"` con estudiantes en Avance pero no en Q10.
+- `_exportar_csv()` actualizado para soportar tab índice 3.
+
+
+## 2026-06-30 — [Pseudonimizador] Arquitectura definida + documentación del plan semanal
+
+**Estado:** En progreso (Fase 1 completada)
+**Proceso relacionado:** [[pseudonimizador]]
+
+- **Proceso nuevo iniciado:** herramienta de pseudonimización para compartir datos con IA sin violar privacidad.
+- **Decisión de arquitectura:** app web estática en `docs/pseudonimizador/index.html` → GitHub Pages, cero instalación, procesamiento 100% en el navegador (ningún byte sube a servidores).
+- **Motor de encriptación:** HMAC-SHA256(valor + clave_personal) → primeros 12 hex chars. Determinístico (misma cédula = mismo hash en todas las pestañas → IA puede cruzar registros). Reversible mediante diccionario .json descargado por el usuario. Auditable: cada persona tiene clave propia.
+- **Flujo:** usuario → codificador → [xlsx para IA + .json privado] → IA hace cambios → usuario → decodificador → datos reales → DB original.
+- **Multi-formato:** xlsx, xls, csv (vía SheetJS desde CDN).
+- **Clave personal por usuario:** auditabilidad — si hay mal manejo se sabe quién generó el archivo.
+- **Plan semanal documentado** en [[pseudonimizador]] con 5 fases: UI base → motor codificación → motor decodificación → buscador + UX → deploy y demo.
+- Pendiente columna `Retirados` en Q10 (decisión del equipo) — no bloquea el pseudonimizador.
+
+---
+
+## 2026-06-30 — [Pseudonimizador] App completa construida — Fase 2+3+4 en una sesión
+
+**Estado:** Lista para deploy (pendiente push a GitHub Pages y prueba con equipo)
+**Proceso relacionado:** [[pseudonimizador]]
+
+- **`docs/pseudonimizador/index.html` creado:** app de una sola página, ~520 líneas HTML+CSS+JS.
+- **Tab Codificar:** pasos numerados (identidad → archivo → columnas → descargar). Drag-and-drop. SheetJS para leer xlsx/xls/csv. Detección automática PII por nombre de columna (regex) y por contenido (>50% coincide con emails/cédulas/celulares). Checkboxes por pestaña y por columna. HMAC-SHA256 vía Web Crypto API nativa (sin dependencias extra). Genera Excel codificado + .json con metadata (usuario, fecha, pestañas procesadas, columnas protegidas, diccionario pseudónimo→real).
+- **Tab Decodificar:** upload par (Excel modificado + .json). Sustituye pseudónimos → valores reales en todas las celdas. Descarga `_restaurado.xlsx`.
+- **Tab Buscar:** carga .json → búsqueda bidireccional (valor real → pseudónimo o pseudónimo → valor real).
+- **Decisión:** pseudónimos de 16 chars hex (64 bits de entropía HMAC-SHA256) — suficiente para evitar colisiones accidentales y opaco para la IA.
+- **Prueba con equipo y push a GitHub Pages pendientes para Fase 5.**
+

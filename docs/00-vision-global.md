@@ -9,7 +9,7 @@
 ## Flujo general del sistema
 
 ```
-Telegram bot              Schedule 12h (automático)
+Telegram bot              Schedule 4h (automático)
     │  /actualizar q10        │
     └──────────┬──────────────┘
                ▼
@@ -30,8 +30,13 @@ Google Sheets H1Test (datos crudos planos)
 Google Sheets h2test            Google Sheets (Avance — manual)
     │                                   │
     │ export_stats.py                   │ export_avance.py
+    │ + tools/course_config.json        │
+    │   (JC / MR / Stand-by)           │
     ▼                                   ▼
 docs/dashboard/data.json        docs/avance/data.json
+  { JC top-level,                (solo cursos manuales JC)
+    mr: {...},
+    stand: {...} }
     │                                   │
     └──────────────┬────────────────────┘
                    │ git push
@@ -39,16 +44,22 @@ docs/dashboard/data.json        docs/avance/data.json
            GitHub Pages
     fundacion-rofe.github.io/Estadisticas/dashboard/
                    │
-    ┌──────────────┼─────────────────┐
-    ▼              ▼                 ▼
-Tab 1 Q10    Tab 2 Avance    Tab 3 Comparativo
+    ┌──────────────┼──────────────┬──────────────┐
+    ▼              ▼              ▼               ▼
+Tab 1 Q10    Tab 2 Avance   Tab 3 Comp.   Tab 4 Admin
+(solo JC)    (solo JC)     (JC vs JC)   (JC+MR+Stand)
+
++ docs/mujeres-rofe/ → lee data.mr del mismo JSON
 ```
 
 ```
 (solo local, nunca GitHub)
 Google Sheets h2test   ──┐
-                          ├──► panel_riesgo.py ──► consola + tools/reportes/*.csv
-Google Sheets (Avance) ──┘     cruce por email
+                          ├──► panel_riesgo_gui.py
+Google Sheets Avance   ──┘     4 tabs interactivos (PII):
+                               🎓 JC  |  ⚠ Atención  |  💡 MR  |  ⚙ Admin
+                               ↑ KPIs clickeables → tabla dinámica
+                               Admin guarda → tools/course_config.json
 ```
 
 ---
@@ -70,8 +81,9 @@ Google Sheets (Avance) ──┘     cruce por email
 
 | Proceso | Nota | Completado | Estado |
 |---|---|---|---|
-| Consolidación Q10 | [[q10-consolidacion]] | 2026-06-25 | Schedule 12h + Telegram activos · 1,145 estudiantes 2026 · 4,553 total DB |
-| Dashboard web | [[dashboard-web]] | 2026-06-25 | GitHub Pages live · 3 tabs · KPIs activos/total/histórico funcionando |
+| Consolidación Q10 | [[q10-consolidacion]] | 2026-06-25 | Schedule 4h + Telegram activos · 1,145 estudiantes 2026 · 4,553 total DB |
+| Dashboard web | [[dashboard-web]] | 2026-06-26 | GitHub Pages live · 4 tabs (JC/Avance/Comp/Admin) · panel MR · separación JC/MR en Python |
+| Panel de riesgo GUI | [[dashboard-web]] | 2026-06-26 | 4 tabs interactivos · KPIs clickeables · vistas dinámicas JC y MR · Tab Admin con course_config.json |
 
 ---
 
@@ -80,6 +92,7 @@ Google Sheets (Avance) ──┘     cruce por email
 | Proceso | Nota | Bloqueado por |
 |---|---|---|
 | Asistencia Zoom | [[zoom-asistencia]] | Confirmar cómo se captura Email/ID en sesiones reales |
+| Pseudonimizador | [[pseudonimizador]] | App completa lista (HTML único, 3 tabs) · Pendiente push a GitHub Pages y prueba con equipo |
 
 ---
 
@@ -88,7 +101,6 @@ Google Sheets (Avance) ──┘     cruce por email
 | Proceso | Por qué importa |
 |---|---|
 | Creación reuniones Meet | 2 asistentes lo hacen manualmente hoy |
-| Panel de riesgo real | `panel_riesgo.py` listo — pendiente validar con datos reales y corregir apuntador a pestaña Avance |
 
 ---
 

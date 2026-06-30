@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pseudonimizador — Fundación ROFÉ</title>
+  <style>
+    :root {
+      --primary:   #406C9E;
+      --primary-lt:#EBF0F7;
+      --green:     #6EA050;
+      --green-lt:  #EBF5E4;
+      --orange:    #D1793F;
+      --orange-lt: #FDF0E8;
+      --red:       #C12D4C;
+      --red-lt:    #FCEAEE;
+      --yellow:    #EEC935;
+      --gray:      #8A9BB0;
+      --bg:        #FFFFFF;
+      --surface:   #F4F7FB;
+      --border:    #DDE4ED;
+      --text:      #1A2535;
+      --muted:     #6B7A94;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Century Gothic', 'Segoe UI', sans-serif; background: var(--surface);
+           color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Header ── */
+    header { background: var(--bg); border-bottom: 1px solid var(--border); }
+    .header-inner { display: flex; align-items: center; justify-content: space-between;
+                    padding: 12px 24px; }
+    .brand-name { font-size: 15px; font-weight: 700; color: var(--primary); }
+    .brand-sub  { font-size: 11px; color: var(--muted); }
+    .privacy-badge { font-size: 11px; background: var(--green-lt); color: var(--green);
+                     border: 1px solid var(--green); border-radius: 20px;
+                     padding: 4px 12px; font-weight: 600; }
+    .header-bar { height: 3px; background: var(--primary); }
+
+    /* ── Tab nav ── */
+    .tab-nav { display: flex; background: var(--bg); border-bottom: 1px solid var(--border);
+               padding: 0 24px; }
+    .tab-btn { padding: 12px 20px; border: none; background: none; cursor: pointer;
+               font-family: inherit; font-size: 13px; font-weight: 600; color: var(--muted);
+               border-bottom: 3px solid transparent; margin-bottom: -1px;
+               transition: color .15s, border-color .15s; }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+
+    /* ── Main layout ── */
+    .main { flex: 1; padding: 24px; max-width: 860px; width: 100%; margin: 0 auto; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Cards ── */
+    .card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+            margin-bottom: 16px; overflow: hidden; }
+    .card-header { display: flex; align-items: center; gap: 12px; padding: 14px 20px;
+                   background: var(--surface); border-bottom: 1px solid var(--border);
+                   font-size: 13px; font-weight: 700; color: var(--text); }
+    .step-num { width: 26px; height: 26px; border-radius: 50%; background: var(--primary);
+                color: white; font-size: 12px; font-weight: 700;
+                display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .step-num.done { background: var(--green); }
+    .card-body { padding: 20px; }
+    .card.locked { opacity: .45; pointer-events: none; }
+
+    /* ── Forms ── */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase;
+            letter-spacing: .5px; }
+    input[type=text], input[type=password] {
+      padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 7px;
+      font-family: inherit; font-size: 13px; color: var(--text); background: var(--bg);
+      transition: border-color .15s; }
+    input:focus { outline: none; border-color: var(--primary); }
+    .form-hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .req { color: var(--red); }
+
+    /* ── Drop zone ── */
+    .drop-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 36px 20px;
+                 text-align: center; cursor: pointer; transition: all .2s;
+                 background: var(--surface); }
+    .drop-zone.drag-over { border-color: var(--primary); background: var(--primary-lt); }
+    .drop-icon { font-size: 36px; margin-bottom: 10px; }
+    .drop-text { font-size: 14px; font-weight: 600; color: var(--text); }
+    .drop-sub  { font-size: 12px; color: var(--muted); margin: 8px 0; }
+    .drop-formats { font-size: 11px; color: var(--muted); margin-top: 10px; }
+    .file-info { background: var(--primary-lt); border: 1px solid var(--primary);
+                 border-radius: 7px; padding: 12px 16px; margin-top: 12px;
+                 font-size: 13px; color: var(--primary); font-weight: 600; }
+
+    /* ── Sheet config ── */
+    .sheet-block { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 12px; overflow: hidden; }
+    .sheet-title-row { display: flex; align-items: center; justify-content: space-between;
+                       padding: 10px 16px; background: var(--surface);
+                       border-bottom: 1px solid var(--border); }
+    .sheet-count { font-size: 11px; color: var(--muted); }
+    .cols-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 16px; }
+    .col-chip { display: flex; align-items: center; gap: 5px; padding: 5px 10px;
+                border-radius: 20px; border: 1.5px solid var(--border);
+                font-size: 12px; cursor: pointer; background: var(--bg);
+                transition: all .15s; user-select: none; }
+    .col-chip input { display: none; }
+    .col-chip.detected { border-color: var(--orange); background: var(--orange-lt); }
+    .col-chip.checked  { border-color: var(--primary); background: var(--primary-lt);
+                         color: var(--primary); font-weight: 600; }
+    .pii-tag { font-size: 9px; background: var(--orange); color: white;
+               border-radius: 3px; padding: 1px 4px; font-weight: 700; }
+    .toggle-all { font-size: 11px; color: var(--primary); cursor: pointer;
+                  background: none; border: none; font-family: inherit;
+                  text-decoration: underline; padding: 0; }
+
+    /* ── Buttons ── */
+    .btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 20px;
+           border-radius: 7px; font-family: inherit; font-size: 13px; font-weight: 700;
+           cursor: pointer; border: none; transition: all .15s; text-decoration: none; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover:not(:disabled) { background: #2E5280; }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-secondary { background: var(--surface); color: var(--primary);
+                     border: 1.5px solid var(--border); }
+    .btn-secondary:hover { background: var(--primary-lt); }
+    .btn-green  { background: var(--green); color: white; }
+    .btn-green:hover { background: #56803C; }
+    .btn-lg { padding: 13px 28px; font-size: 14px; width: 100%; justify-content: center; }
+
+    /* ── Warning / info boxes ── */
+    .warn-box { background: #FFF9DC; border: 1.5px solid var(--yellow); border-radius: 8px;
+                padding: 14px 16px; font-size: 12px; margin-bottom: 16px;
+                display: flex; gap: 10px; align-items: flex-start; }
+    .warn-icon { font-size: 18px; flex-shrink: 0; }
+    .info-box  { background: var(--primary-lt); border: 1px solid var(--primary);
+                 border-radius: 8px; padding: 12px 16px; font-size: 12px; }
+
+    /* ── Download area ── */
+    .download-area { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 16px; }
+    .dl-card { flex: 1; min-width: 220px; border-radius: 10px; padding: 16px;
+               display: flex; flex-direction: column; gap: 8px; text-decoration: none; }
+    .dl-card.dl-excel { background: var(--primary-lt); border: 2px solid var(--primary); }
+    .dl-card.dl-key   { background: var(--red-lt);     border: 2px solid var(--red); }
+    .dl-card-icon { font-size: 28px; }
+    .dl-card-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .dl-card-sub   { font-size: 11px; color: var(--muted); }
+    .dl-card-btn { margin-top: 6px; font-size: 12px; font-weight: 700;
+                   padding: 7px 14px; border-radius: 5px; border: none; cursor: pointer;
+                   font-family: inherit; }
+    .dl-excel .dl-card-btn { background: var(--primary); color: white; }
+    .dl-key   .dl-card-btn { background: var(--red);     color: white; }
+
+    /* ── Upload pair (for decode tab) ── */
+    .upload-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .upload-pair { grid-template-columns: 1fr; } }
+    .upload-slot { border: 2px dashed var(--border); border-radius: 8px; padding: 24px 16px;
+                   text-align: center; cursor: pointer; transition: all .2s; background: var(--surface); }
+    .upload-slot.loaded { border-style: solid; border-color: var(--green); background: var(--green-lt); }
+    .upload-slot:hover { border-color: var(--primary); background: var(--primary-lt); }
+    .slot-icon { font-size: 28px; margin-bottom: 8px; }
+    .slot-label { font-size: 12px; font-weight: 700; color: var(--muted);
+                  text-transform: uppercase; letter-spacing: .5px; }
+    .slot-name  { font-size: 12px; color: var(--text); margin-top: 6px; font-weight: 600; }
+
+    /* ── Search ── */
+    .search-row { display: flex; gap: 10px; }
+    .search-row input { flex: 1; }
+    .search-result { margin-top: 16px; }
+    .result-found { background: var(--green-lt); border: 1.5px solid var(--green);
+                    border-radius: 8px; padding: 16px; }
+    .result-pseudo { font-family: 'Courier New', monospace; font-size: 18px; font-weight: 700;
+                     color: var(--primary); letter-spacing: 1px; margin: 8px 0; }
+    .result-hint  { font-size: 11px; color: var(--muted); }
+    .result-not   { background: var(--orange-lt); border: 1.5px solid var(--orange);
+                    border-radius: 8px; padding: 14px 16px; font-size: 13px; color: var(--orange); }
+
+    /* ── Summary badge ── */
+    .summary-badge { display: inline-flex; align-items: center; gap: 6px;
+                     background: var(--green-lt); border: 1px solid var(--green);
+                     color: var(--green); border-radius: 20px; padding: 4px 12px;
+                     font-size: 12px; font-weight: 700; margin-bottom: 14px; }
+
+    /* ── Checkbox label ── */
+    .cb-label { display: flex; align-items: center; gap: 8px; cursor: pointer;
+                font-size: 13px; font-weight: 600; }
+    .cb-label input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary); }
+
+    /* ── Status bar ── */
+    .status-bar { background: var(--surface); border-top: 1px solid var(--border);
+                  padding: 8px 24px; font-size: 11px; color: var(--muted); }
+    .status-bar.error { color: var(--red); }
+
+    /* ── Loading overlay ── */
+    #loading { position: fixed; inset: 0; background: rgba(26,37,53,.45);
+               display: none; align-items: center; justify-content: center; z-index: 999; }
+    #loading.show { display: flex; }
+    .loading-box { background: white; border-radius: 12px; padding: 32px 40px;
+                   text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,.18); }
+    .spinner { width: 36px; height: 36px; border: 4px solid var(--border);
+               border-top-color: var(--primary); border-radius: 50%;
+               animation: spin .7s linear infinite; margin: 0 auto 14px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 13px; color: var(--muted); font-weight: 600; }
+
+    .hidden { display: none !important; }
+    .mt-12 { margin-top: 12px; }
+    .mt-16 { margin-top: 16px; }
+    .text-center { text-align: center; }
+    .decode-result { margin-top: 16px; }
+    .success-msg { font-size: 13px; color: var(--green); font-weight: 600; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ───────────────────────────────────────────────────── -->
+<header>
+  <div class="header-inner">
+    <div>
+      <div class="brand-name">Fundación ROFÉ</div>
+      <div class="brand-sub">Pseudonimizador · Protección de datos para IA</div>
+    </div>
+    <div class="privacy-badge">🔒 100% local — ningún dato sale de tu computador</div>
+  </div>
+  <div class="header-bar"></div>
+</header>
+
+<!-- ── Tab nav ──────────────────────────────────────────────────── -->
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('codificar')">🔒 Codificar</button>
+  <button class="tab-btn" onclick="switchTab('decodificar')">🔓 Decodificar</button>
+  <button class="tab-btn" onclick="switchTab('buscar')">🔍 Buscar valor</button>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  TAB: CODIFICAR                                                -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<main class="main">
+<div id="tab-codificar" class="tab-panel active">
+
+  <!-- Step 1: Identity -->
+  <div class="card" id="card-1">
+    <div class="card-header">
+      <span class="step-num" id="sn-1">1</span>
+      Tu identidad
+    </div>
+    <div class="card-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tu nombre <span class="req">*</span></label>
+          <input type="text" id="inp-name" placeholder="Ej: Samuel"
+                 oninput="onIdentityChange()">
+        </div>
+        <div class="form-group">
+          <label>Clave personal <span class="req">*</span></label>
+          <input type="password" id="inp-key" placeholder="Mínimo 8 caracteres"
+                 oninput="onIdentityChange()">
+          <span class="form-hint">No se almacena en ningún servidor. La necesitarás para decodificar.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: File -->
+  <div class="card locked" id="card-2">
+    <div class="card-header">
+      <span class="step-num" id="sn-2">2</span>
+      Archivo a proteger
+    </div>
+    <div class="card-body">
+      <div class="drop-zone" id="drop-zone"
+           ondrop="handleDrop(event)" ondragover="handleDragOver(event)"
+           ondragleave="handleDragLeave()" onclick="document.getElementById('file-input').click()">
+        <div class="drop-icon">📁</div>
+        <div class="drop-text">Arrastra tu archivo aquí</div>
+        <div class="drop-sub">o haz clic para seleccionar</div>
+        <div class="drop-formats">Formatos aceptados: .xlsx · .xls · .csv</div>
+      </div>
+      <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none"
+             onchange="handleFileSelect(event)">
+      <div id="file-info" class="file-info hidden"></div>
+    </div>
+  </div>
+
+  <!-- Step 3: Sheets & columns -->
+  <div class="card locked" id="card-3">
+    <div class="card-header">
+      <span class="step-num" id="sn-3">3</span>
+      ¿Qué proteger?
+      <span style="font-size:11px;color:var(--muted);font-weight:400;margin-left:auto">
+        Las columnas marcadas como PII se detectaron automáticamente
+      </span>
+    </div>
+    <div class="card-body">
+      <div id="sheets-config">
+        <p style="color:var(--muted);font-size:13px">Carga un archivo para ver sus pestañas aquí.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4: Encode -->
+  <div class="card locked" id="card-4">
+    <div class="card-header">
+      <span class="step-num" id="sn-4">4</span>
+      Codificar y descargar
+    </div>
+    <div class="card-body">
+      <div class="warn-box">
+        <span class="warn-icon">⚠️</span>
+        <div>
+          <strong>Descarga AMBOS archivos.</strong> El archivo 🔑 JSON es tu única forma de recuperar
+          los datos originales. Si lo pierdes, los datos son irrecuperables. Nunca lo envíes a la IA.
+        </div>
+      </div>
+      <button id="btn-encode" class="btn btn-primary btn-lg" onclick="runEncode()" disabled>
+        🔒 Codificar archivo
+      </button>
+      <div id="download-area" class="hidden mt-16">
+        <div class="summary-badge" id="encode-summary"></div>
+        <div class="download-area" id="dl-cards"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /tab-codificar -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  TAB: DECODIFICAR                                              -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="tab-decodificar" class="tab-panel">
+
+  <div class="card">
+    <div class="card-header">
+      <span class="step-num">1</span>
+      Carga los dos archivos
+    </div>
+    <div class="card-body">
+      <div class="info-box" style="margin-bottom:16px">
+        Sube el Excel que devolvió la IA (<em>modificado</em>) y el archivo 🔑 JSON que descargaste
+        cuando lo codificaste. El JSON debe ser el que corresponde a ese Excel.
+      </div>
+      <div class="upload-pair">
+        <!-- Excel slot -->
+        <div class="upload-slot" id="slot-excel"
+             onclick="document.getElementById('dec-excel-input').click()"
+             ondrop="handleDecDrop(event,'excel')" ondragover="event.preventDefault()">
+          <div class="slot-icon">📄</div>
+          <div class="slot-label">Excel modificado por la IA</div>
+          <div class="slot-name" id="slot-excel-name">.xlsx · .xls · .csv</div>
+        </div>
+        <!-- JSON slot -->
+        <div class="upload-slot" id="slot-json"
+             onclick="document.getElementById('dec-json-input').click()"
+             ondrop="handleDecDrop(event,'json')" ondragover="event.preventDefault()">
+          <div class="slot-icon">🔑</div>
+          <div class="slot-label">Tu archivo .json de clave</div>
+          <div class="slot-name" id="slot-json-name">clave_usuario_fecha.json</div>
+        </div>
+      </div>
+      <input type="file" id="dec-excel-input" accept=".xlsx,.xls,.csv"
+             style="display:none" onchange="loadDecExcel(event)">
+      <input type="file" id="dec-json-input" accept=".json"
+             style="display:none" onchange="loadDecKey(event)">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="step-num">2</span>
+      Restaurar datos
+    </div>
+    <div class="card-body">
+      <button id="btn-decode" class="btn btn-green btn-lg" onclick="runDecode()" disabled>
+        🔓 Restaurar datos originales
+      </button>
+      <div id="decode-result" class="decode-result hidden"></div>
+    </div>
+  </div>
+
+</div><!-- /tab-decodificar -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  TAB: BUSCAR VALOR                                             -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="tab-buscar" class="tab-panel">
+
+  <div class="card">
+    <div class="card-header">
+      <span class="step-num">1</span>
+      Carga tu archivo de clave (.json)
+    </div>
+    <div class="card-body">
+      <div class="upload-slot" style="max-width:360px"
+           onclick="document.getElementById('search-json-input').click()"
+           id="slot-search-json">
+        <div class="slot-icon">🔑</div>
+        <div class="slot-label">Archivo de clave .json</div>
+        <div class="slot-name" id="slot-search-name">Haz clic para seleccionar</div>
+      </div>
+      <input type="file" id="search-json-input" accept=".json"
+             style="display:none" onchange="loadSearchKey(event)">
+    </div>
+  </div>
+
+  <div class="card" id="card-search" style="opacity:.45;pointer-events:none">
+    <div class="card-header">
+      <span class="step-num">2</span>
+      Buscar en ambas direcciones
+    </div>
+    <div class="card-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">
+        Ingresa un <strong>valor real</strong> (cédula, nombre, email) para obtener su pseudónimo,
+        o un <strong>pseudónimo</strong> para obtener el valor real.
+      </p>
+      <div class="search-row">
+        <input type="text" id="search-input" placeholder="Ej: 1234567890  o  a3f7b2c1d4e5ff01"
+               onkeydown="if(event.key==='Enter') runSearch()">
+        <button class="btn btn-primary" onclick="runSearch()">Buscar</button>
+      </div>
+      <div id="search-result" class="search-result"></div>
+    </div>
+  </div>
+
+</div><!-- /tab-buscar -->
+</main><!-- /main -->
+
+<!-- ── Status bar ───────────────────────────────────────────────── -->
+<div class="status-bar" id="status-bar">Listo. Ningún dato sale de este navegador.</div>
+
+<!-- ── Loading overlay ──────────────────────────────────────────── -->
+<div id="loading">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">Procesando…</div>
+  </div>
+</div>
+
+<!-- SheetJS community edition -->
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ═══════════════════════════════════════════════════════════════════
+const S = {
+  userName: '', userKey: '',
+  workbook: null, fileName: '',
+  sheetConfig: {},   // { sheetName: { process, columns:[bool], headers:[str], aoa } }
+  // decode
+  decWb: null, decKeyData: null, decFileName: '',
+  // search
+  searchKeyData: null,
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// DETECCIÓN DE PII
+// ═══════════════════════════════════════════════════════════════════
+const PII_HEADER_RE = [
+  /c[eé]dula/i, /identificaci[oó]n/i, /\b(id|dni|documento|doc)\b/i,
+  /\bnombre\b/i, /apellido/i, /email/i, /correo/i,
+  /celular/i, /tel[eé]fono/i, /\btel\b/i, /\bphone\b/i,
+];
+const PII_VALUE_RE = [
+  /^[\w.+\-]+@[\w\-]+\.[a-z]{2,}$/i,   // email
+  /^\d{7,12}$/,                           // cédulas / IDs
+  /^\d{10}$/,                             // celulares
+];
+
+function isPIIHeader(name) {
+  return PII_HEADER_RE.some(r => r.test(String(name || '')));
+}
+function isPIIValues(samples) {
+  if (!samples.length) return false;
+  const hits = samples.filter(v =>
+    v !== '' && PII_VALUE_RE.some(r => r.test(String(v).trim()))
+  ).length;
+  return hits / samples.length > 0.5;
+}
+function detectPIICols(aoa) {
+  if (aoa.length < 2) return [];
+  const headers = aoa[0] || [];
+  return headers.map((h, c) => {
+    if (isPIIHeader(h)) return true;
+    const samples = aoa.slice(1, 21).map(r => r[c])
+      .filter(v => v !== null && v !== undefined && v !== '');
+    return isPIIValues(samples);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CRYPTO — HMAC-SHA-256 (Web Crypto API nativa del navegador)
+// ═══════════════════════════════════════════════════════════════════
+async function makeCryptoKey(password) {
+  const enc = new TextEncoder();
+  return crypto.subtle.importKey(
+    'raw', enc.encode(password),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+}
+async function hmac16(value, ck) {
+  const enc = new TextEncoder();
+  const sig = await crypto.subtle.sign('HMAC', ck, enc.encode(String(value)));
+  return Array.from(new Uint8Array(sig))
+    .map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════════════
+function switchTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CODIFICAR — Paso 1: identidad
+// ═══════════════════════════════════════════════════════════════════
+function onIdentityChange() {
+  const name = document.getElementById('inp-name').value.trim();
+  const key  = document.getElementById('inp-key').value;
+  S.userName = name; S.userKey = key;
+  const ok = name.length > 0 && key.length >= 8;
+  lockCard('card-2', !ok);
+  if (ok) document.getElementById('sn-1').classList.add('done');
+  else     document.getElementById('sn-1').classList.remove('done');
+  checkEncodeReady();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CODIFICAR — Paso 2: archivo
+// ═══════════════════════════════════════════════════════════════════
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.add('drag-over');
+}
+function handleDragLeave() {
+  document.getElementById('drop-zone').classList.remove('drag-over');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  handleDragLeave();
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+  e.target.value = '';
+}
+
+async function processFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['xlsx','xls','csv'].includes(ext)) {
+    return setStatus('❌ Formato no soportado. Usa .xlsx, .xls o .csv.', true);
+  }
+  setLoading(true, 'Leyendo archivo…');
+  try {
+    const buf = await readFileBuffer(file);
+    const wb  = XLSX.read(buf, { type: 'array', cellDates: true });
+    S.workbook = wb;
+    S.fileName = file.name;
+
+    const fi = document.getElementById('file-info');
+    fi.textContent = `📄 ${file.name} — ${wb.SheetNames.length} pestaña(s)`;
+    fi.classList.remove('hidden');
+
+    lockCard('card-3', false);
+    document.getElementById('sn-2').classList.add('done');
+    buildSheetsUI(wb);
+    setStatus(`Archivo cargado: ${file.name}`);
+  } catch(err) {
+    setStatus('❌ Error al leer el archivo: ' + err.message, true);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function readFileBuffer(file) {
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload  = e => res(new Uint8Array(e.target.result));
+    fr.onerror = rej;
+    fr.readAsArrayBuffer(file);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CODIFICAR — Paso 3: pestañas y columnas
+// ═══════════════════════════════════════════════════════════════════
+function buildSheetsUI(wb) {
+  const container = document.getElementById('sheets-config');
+  container.innerHTML = '';
+  S.sheetConfig = {};
+
+  wb.SheetNames.forEach(name => {
+    const ws  = wb.Sheets[name];
+    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    const headers = (aoa[0] || []).map(h => String(h || ''));
+    const pii = detectPIICols(aoa);
+    const nRows = Math.max(0, aoa.length - 1);
+
+    S.sheetConfig[name] = { process: true, columns: [...pii], headers, aoa };
+
+    const safeId = CSS.escape(name);
+    const div = document.createElement('div');
+    div.className = 'sheet-block';
+    div.innerHTML = `
+      <div class="sheet-title-row">
+        <label class="cb-label">
+          <input type="checkbox" checked
+                 onchange="toggleSheet(${JSON.stringify(name)}, this.checked)">
+          📋 <strong>${escHtml(name)}</strong>
+        </label>
+        <span class="sheet-count">${nRows.toLocaleString()} filas · ${headers.length} columnas
+          · ${pii.filter(Boolean).length} PII detectadas</span>
+      </div>
+      <div class="cols-grid" id="cols-${safeId}">
+        ${headers.map((h, i) => `
+          <label class="col-chip ${pii[i] ? 'detected checked' : ''}"
+                 id="chip-${safeId}-${i}">
+            <input type="checkbox" ${pii[i] ? 'checked' : ''}
+                   onchange="toggleColumn(${JSON.stringify(name)}, ${i}, this.checked)">
+            ${escHtml(h || 'Col ' + (i+1))}
+            ${pii[i] ? '<span class="pii-tag">PII</span>' : ''}
+          </label>
+        `).join('')}
+        ${headers.length === 0 ? '<em style="font-size:12px;color:var(--muted)">Pestaña vacía</em>' : ''}
+      </div>
+    `;
+    container.appendChild(div);
+  });
+
+  lockCard('card-4', false);
+  document.getElementById('sn-3').classList.add('done');
+  checkEncodeReady();
+}
+
+function toggleSheet(name, checked) {
+  if (!S.sheetConfig[name]) return;
+  S.sheetConfig[name].process = checked;
+  checkEncodeReady();
+}
+
+function toggleColumn(name, idx, checked) {
+  if (!S.sheetConfig[name]) return;
+  S.sheetConfig[name].columns[idx] = checked;
+  const safeId = CSS.escape(name);
+  const chip = document.getElementById(`chip-${safeId}-${idx}`);
+  if (chip) chip.classList.toggle('checked', checked);
+  checkEncodeReady();
+}
+
+function checkEncodeReady() {
+  const identityOk = S.userName.length > 0 && S.userKey.length >= 8;
+  const fileOk     = !!S.workbook;
+  const anyCol     = Object.values(S.sheetConfig).some(c =>
+    c.process && c.columns.some(Boolean)
+  );
+  const btn = document.getElementById('btn-encode');
+  if (btn) btn.disabled = !(identityOk && fileOk && anyCol);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CODIFICAR — Paso 4: ejecutar
+// ═══════════════════════════════════════════════════════════════════
+async function runEncode() {
+  setLoading(true, 'Codificando… puede tardar con archivos grandes.');
+  document.getElementById('download-area').classList.add('hidden');
+
+  try {
+    const ck = await makeCryptoKey(S.userKey);
+    const dictionary = {};
+    const newWb = XLSX.utils.book_new();
+    let totalCells = 0, processedSheets = 0;
+
+    for (const sheetName of S.workbook.SheetNames) {
+      const cfg = S.sheetConfig[sheetName];
+      const ws  = S.workbook.Sheets[sheetName];
+
+      if (!cfg || !cfg.process) {
+        XLSX.utils.book_append_sheet(newWb, ws, sheetName);
+        continue;
+      }
+
+      processedSheets++;
+      const aoa    = cfg.aoa;
+      const newAoa = [];
+
+      for (let r = 0; r < aoa.length; r++) {
+        const row = aoa[r].map(c => (c === null || c === undefined) ? '' : c);
+        if (r === 0) { newAoa.push([...row]); continue; } // headers intactos
+
+        const newRow = [...row];
+        for (let c = 0; c < row.length; c++) {
+          if (!cfg.columns[c]) continue;
+          const val = row[c];
+          if (val === '' || val === null || val === undefined) continue;
+
+          const original = String(val);
+          let pseudo = await hmac16(original, ck);
+
+          // Colisión: si el pseudo ya apunta a otro valor, extender a 20 chars
+          if (dictionary[pseudo] && dictionary[pseudo] !== original) {
+            pseudo = (await hmac16(original + '_ext', ck)).slice(0, 20);
+          }
+          dictionary[pseudo] = original;
+          newRow[c] = pseudo;
+          totalCells++;
+        }
+        newAoa.push(newRow);
+      }
+
+      XLSX.utils.book_append_sheet(newWb, XLSX.utils.aoa_to_sheet(newAoa), sheetName);
+    }
+
+    // ── Generar Excel codificado ──────────────────────────────────
+    const excelBuf  = XLSX.write(newWb, { type: 'array', bookType: 'xlsx' });
+    const excelBlob = new Blob([excelBuf],
+      { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const excelUrl  = URL.createObjectURL(excelBlob);
+    const baseName  = S.fileName.replace(/\.[^.]+$/, '');
+    const excelName = `${baseName}_codificado.xlsx`;
+
+    // ── Generar archivo de clave (.json) ─────────────────────────
+    const keyData = {
+      meta: {
+        version: '1.0',
+        usuario: S.userName,
+        fecha: new Date().toISOString(),
+        archivo_origen: S.fileName,
+        pestanas_procesadas: Object.keys(S.sheetConfig)
+          .filter(n => S.sheetConfig[n].process),
+        columnas_por_pestana: Object.fromEntries(
+          Object.entries(S.sheetConfig)
+            .filter(([, c]) => c.process)
+            .map(([n, c]) => [n, c.headers.filter((_, i) => c.columns[i])])
+        ),
+      },
+      diccionario: dictionary,
+    };
+    const jsonBlob = new Blob([JSON.stringify(keyData, null, 2)],
+      { type: 'application/json' });
+    const jsonUrl  = URL.createObjectURL(jsonBlob);
+    const today    = new Date().toISOString().slice(0, 10);
+    const jsonName = `clave_${S.userName}_${today}.json`;
+
+    // ── Mostrar descargas ─────────────────────────────────────────
+    document.getElementById('encode-summary').textContent =
+      `✅ ${totalCells.toLocaleString()} valores protegidos en ${processedSheets} pestaña(s)`;
+
+    const dlCards = document.getElementById('dl-cards');
+    dlCards.innerHTML = `
+      <a href="${excelUrl}" download="${escHtml(excelName)}" class="dl-card dl-excel"
+         onclick="setStatus('📄 Excel codificado descargado.')">
+        <div class="dl-card-icon">📄</div>
+        <div class="dl-card-title">Para la IA</div>
+        <div class="dl-card-sub">${escHtml(excelName)}</div>
+        <button class="dl-card-btn">⬇ Descargar</button>
+      </a>
+      <a href="${jsonUrl}" download="${escHtml(jsonName)}" class="dl-card dl-key"
+         onclick="setStatus('🔑 Clave descargada — guárdala en lugar seguro.')">
+        <div class="dl-card-icon">🔑</div>
+        <div class="dl-card-title">Tu clave de recuperación — NO envíes a la IA</div>
+        <div class="dl-card-sub">${escHtml(jsonName)}</div>
+        <button class="dl-card-btn">⬇ Descargar</button>
+      </a>
+    `;
+
+    document.getElementById('download-area').classList.remove('hidden');
+    document.getElementById('sn-4').classList.add('done');
+    setStatus(`✅ Listo — ${totalCells.toLocaleString()} valores codificados.`);
+
+  } catch(err) {
+    setStatus('❌ Error al codificar: ' + err.message, true);
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DECODIFICAR
+// ═══════════════════════════════════════════════════════════════════
+async function handleDecDrop(e, type) {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  type === 'excel' ? await loadDecExcelFile(file) : await loadDecKeyFile(file);
+}
+
+async function loadDecExcel(e) {
+  await loadDecExcelFile(e.target.files[0]);
+  e.target.value = '';
+}
+async function loadDecExcelFile(file) {
+  try {
+    const buf = await readFileBuffer(file);
+    S.decWb       = XLSX.read(buf, { type: 'array' });
+    S.decFileName = file.name;
+    const slot = document.getElementById('slot-excel');
+    slot.classList.add('loaded');
+    document.getElementById('slot-excel-name').textContent = file.name;
+    checkDecodeReady();
+    setStatus('Excel cargado: ' + file.name);
+  } catch(err) {
+    setStatus('❌ Error leyendo Excel: ' + err.message, true);
+  }
+}
+
+async function loadDecKey(e) {
+  await loadDecKeyFile(e.target.files[0]);
+  e.target.value = '';
+}
+async function loadDecKeyFile(file) {
+  try {
+    const text = await readFileText(file);
+    const data = JSON.parse(text);
+    if (!data.diccionario) throw new Error('El archivo .json no tiene el formato esperado.');
+    S.decKeyData = data;
+    const slot = document.getElementById('slot-json');
+    slot.classList.add('loaded');
+    const meta = data.meta || {};
+    document.getElementById('slot-json-name').textContent =
+      `${meta.usuario || '?'} · ${(meta.fecha || '').slice(0,10)} · ${Object.keys(data.diccionario).length} entradas`;
+    checkDecodeReady();
+    setStatus('Clave cargada — ' + Object.keys(data.diccionario).length + ' entradas.');
+  } catch(err) {
+    setStatus('❌ Error leyendo .json: ' + err.message, true);
+  }
+}
+
+function checkDecodeReady() {
+  document.getElementById('btn-decode').disabled = !(S.decWb && S.decKeyData);
+}
+
+async function runDecode() {
+  if (!S.decWb || !S.decKeyData) return;
+  setLoading(true, 'Restaurando datos…');
+
+  try {
+    const dict   = S.decKeyData.diccionario;
+    const newWb  = XLSX.utils.book_new();
+    let replaced = 0;
+
+    for (const sheetName of S.decWb.SheetNames) {
+      const ws  = S.decWb.Sheets[sheetName];
+      const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+      const newAoa = aoa.map(row => row.map(cell => {
+        const k = String(cell);
+        if (dict[k] !== undefined) { replaced++; return dict[k]; }
+        return cell;
+      }));
+
+      XLSX.utils.book_append_sheet(newWb, XLSX.utils.aoa_to_sheet(newAoa), sheetName);
+    }
+
+    if (replaced === 0) {
+      setStatus('⚠️ No se encontraron valores para restaurar. Verifica que el .json corresponde a este archivo.', true);
+      setLoading(false);
+      return;
+    }
+
+    const buf   = XLSX.write(newWb, { type: 'array', bookType: 'xlsx' });
+    const blob  = new Blob([buf],
+      { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url   = URL.createObjectURL(blob);
+    const base  = S.decFileName.replace(/\.[^.]+$/, '');
+    const fname = `${base}_restaurado.xlsx`;
+
+    const res = document.getElementById('decode-result');
+    res.innerHTML = `
+      <a href="${url}" download="${escHtml(fname)}" class="btn btn-green" style="width:100%;justify-content:center">
+        ⬇ Descargar archivo restaurado
+      </a>
+      <p class="success-msg text-center mt-12">
+        ✅ ${replaced.toLocaleString()} valores restaurados correctamente.
+      </p>
+    `;
+    res.classList.remove('hidden');
+    setStatus(`✅ ${replaced.toLocaleString()} valores restaurados.`);
+
+  } catch(err) {
+    setStatus('❌ Error al decodificar: ' + err.message, true);
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// BUSCADOR
+// ═══════════════════════════════════════════════════════════════════
+async function loadSearchKey(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  try {
+    const text = await readFileText(file);
+    const data = JSON.parse(text);
+    if (!data.diccionario) throw new Error('Formato de .json no reconocido.');
+    S.searchKeyData = data;
+    const slot = document.getElementById('slot-search-json');
+    slot.classList.add('loaded');
+    const meta = data.meta || {};
+    document.getElementById('slot-search-name').textContent =
+      `${meta.usuario || file.name} · ${Object.keys(data.diccionario).length} entradas`;
+    document.getElementById('card-search').style.opacity = '1';
+    document.getElementById('card-search').style.pointerEvents = 'auto';
+    setStatus('Diccionario de búsqueda cargado.');
+  } catch(err) {
+    setStatus('❌ ' + err.message, true);
+  }
+}
+
+function runSearch() {
+  const query = document.getElementById('search-input').value.trim();
+  const res   = document.getElementById('search-result');
+  res.innerHTML = '';
+
+  if (!query || !S.searchKeyData) return;
+  const dict = S.searchKeyData.diccionario;
+
+  // Búsqueda directa: el query es un pseudónimo
+  if (dict[query] !== undefined) {
+    res.innerHTML = `
+      <div class="result-found">
+        <div style="font-size:12px;color:var(--muted);font-weight:600">
+          El pseudónimo <code>${escHtml(query)}</code> corresponde a:</div>
+        <div class="result-pseudo">${escHtml(dict[query])}</div>
+      </div>`;
+    return;
+  }
+
+  // Búsqueda inversa: el query es un valor real
+  const pseudo = Object.keys(dict).find(k => dict[k] === query);
+  if (pseudo) {
+    res.innerHTML = `
+      <div class="result-found">
+        <div style="font-size:12px;color:var(--muted);font-weight:600">
+          El pseudónimo de <strong>${escHtml(query)}</strong> es:</div>
+        <div class="result-pseudo">${escHtml(pseudo)}</div>
+        <div class="result-hint">Busca este valor en tu archivo codificado.</div>
+      </div>`;
+    return;
+  }
+
+  // No encontrado
+  res.innerHTML = `<div class="result-not">
+    No se encontró <strong>${escHtml(query)}</strong> en el diccionario cargado.<br>
+    <span style="font-size:11px">Verifica que sea el .json correcto y que el valor esté escrito exactamente igual.</span>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// UTILIDADES
+// ═══════════════════════════════════════════════════════════════════
+function readFileText(file) {
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload  = e => res(e.target.result);
+    fr.onerror = rej;
+    fr.readAsText(file, 'UTF-8');
+  });
+}
+
+function lockCard(id, locked) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('locked', locked);
+}
+
+function setLoading(show, text) {
+  const el = document.getElementById('loading');
+  el.classList.toggle('show', show);
+  if (text) document.getElementById('loading-text').textContent = text;
+}
+
+function setStatus(msg, isError) {
+  const bar = document.getElementById('status-bar');
+  bar.textContent = msg;
+  bar.classList.toggle('error', !!isError);
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
