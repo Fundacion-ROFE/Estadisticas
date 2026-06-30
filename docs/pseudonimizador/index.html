@@ -103,10 +103,11 @@
                 border-radius: 20px; border: 1.5px solid var(--border);
                 font-size: 12px; cursor: pointer; background: var(--bg);
                 transition: all .15s; user-select: none; }
+    .col-chip:hover { border-color: var(--primary); }
     .col-chip input { display: none; }
-    .col-chip.detected { border-color: var(--orange); background: var(--orange-lt); }
     .col-chip.checked  { border-color: var(--primary); background: var(--primary-lt);
                          color: var(--primary); font-weight: 600; }
+    .col-chip.checked::before { content: '✓ '; }
     .pii-tag { font-size: 9px; background: var(--orange); color: white;
                border-radius: 3px; padding: 1px 4px; font-weight: 700; }
     .toggle-all { font-size: 11px; color: var(--primary); cursor: pointer;
@@ -621,7 +622,7 @@ function buildSheetsUI(wb) {
       </div>
       <div class="cols-grid" id="cols-${safeId}">
         ${headers.map((h, i) => `
-          <label class="col-chip ${pii[i] ? 'detected checked' : ''}"
+          <label class="col-chip ${pii[i] ? 'checked' : ''}"
                  id="chip-${safeId}-${i}">
             <input type="checkbox" ${pii[i] ? 'checked' : ''}
                    onchange="toggleColumn(${JSON.stringify(name)}, ${i}, this.checked)">
