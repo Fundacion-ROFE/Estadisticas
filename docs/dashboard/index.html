@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard — Jóvenes creaTIvos · Fundación ROFÉ</title>
+  <link rel="icon" href="../img/logo_rofe_aplicacion2.png" type="image/png">
   <style>
     /* ── Variables de marca ── */
     :root {
@@ -265,6 +266,8 @@
   <button class="tab-btn active" onclick="switchTab('t1',this)">Estadísticas Q10</button>
   <button class="tab-btn"        onclick="switchTab('t2',this)">Avance Manual</button>
   <button class="tab-btn"        onclick="switchTab('t3',this)">Comparativo</button>
+  <button class="tab-btn"        onclick="switchTab('t4',this)">Admin</button>
+  <button class="tab-btn"        onclick="switchTab('t5',this)">📈 Tendencia</button>
   <a href="../mujeres-rofe/" style="margin-left:auto;align-self:center;display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;color:var(--red);text-decoration:none;padding:6px 14px;border-radius:20px;border:1px solid var(--red-bg);background:var(--red-bg);white-space:nowrap">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 2.74 1.54 5.12 3.8 6.38V18h6.4v-2.62C17.46 14.12 19 11.74 19 9c0-3.87-3.13-7-7-7zm2.4 14H9.6v-1h4.8v1zM9.6 18h4.8v1H9.6v-1zm2.4 3c.55 0 1-.45 1-1h-2c0 .55.45 1 1 1z"/></svg>
     Mujeres ROFÉ ↗
@@ -282,10 +285,13 @@
   <div id="t1" class="tab-panel"></div>
   <div id="t2" class="tab-panel"></div>
   <div id="t3" class="tab-panel"></div>
+  <div id="t4" class="tab-panel"></div>
+  <div id="t5" class="tab-panel"></div>
 </main>
 
 <div id="footer-root"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // ── Utilidades ────────────────────────────────────────────────────────────────
 function esc(s){ return String(s??'—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -315,6 +321,10 @@ function switchTab(id, btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   btn.classList.add('active');
+  if(id==='t5' && window._histJC && !window._chartJCReady){
+    window._chartJCReady = true;
+    setTimeout(()=>iniciarChartJC(window._histJC), 60);
+  }
 }
 
 // ── Animación de barras ───────────────────────────────────────────────────────
@@ -657,6 +667,234 @@ function renderT3(d, a){
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// TAB 4 — Admin (todos los programas)
+// ═══════════════════════════════════════════════════════════════════════════════
+function renderAdmin(d){
+  const jc    = d?.por_curso     || [];
+  const mr    = d?.mr?.por_curso || [];
+  const stand = d?.stand?.por_curso || [];
+
+  const tJC    = d?.totales              || {};
+  const tMR    = d?.mr?.totales          || {};
+  const tStand = d?.stand?.totales       || {};
+
+  // ── Tarjetas resumen por programa ──
+  const programas = [
+    {
+      nombre: 'Jóvenes creaTIvos', color: '#406C9E', bg: 'rgba(64,108,158,0.10)',
+      cursos: jc, n: tJC.total_estudiantes_unicos || 0,
+      etiq: 'JC', icon: '🎓',
+    },
+    {
+      nombre: 'Mujeres ROFÉ', color: '#C12D4C', bg: 'rgba(193,45,76,0.10)',
+      cursos: mr, n: tMR.total_estudiantes_unicos || 0,
+      etiq: 'MR', icon: '💡',
+    },
+  ];
+  if(stand.length){
+    programas.push({
+      nombre: 'Stand-by', color: '#8A9BB0', bg: 'rgba(138,155,176,0.12)',
+      cursos: stand, n: tStand.total_estudiantes_unicos || 0,
+      etiq: 'STAND', icon: '⏸',
+    });
+  }
+
+  const resumenCards = programas.map(p=>`
+    <div class="kpi-card" style="border-top-color:${p.color}">
+      <div style="font-size:.7rem;font-weight:700;color:${p.color};margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em">${p.icon} ${esc(p.nombre)}</div>
+      <div style="display:flex;gap:18px;align-items:baseline">
+        <div>
+          <div class="kpi-val" style="color:${p.color}">${fmt(p.n)}</div>
+          <div class="kpi-sub">estudiantes únicos</div>
+        </div>
+        <div>
+          <div class="kpi-val" style="color:${p.color};font-size:1.5rem">${fmt(p.cursos.length)}</div>
+          <div class="kpi-sub">cursos</div>
+        </div>
+      </div>
+    </div>`).join('');
+
+  const kpiSection = `
+  <div class="card">
+    <div class="card-title">Resumen por programa</div>
+    <div style="display:grid;grid-template-columns:repeat(${programas.length},1fr);gap:12px">
+      ${resumenCards}
+    </div>
+  </div>`;
+
+  // ── Gráfico de barras horizontales — todos los cursos ──
+  const allCursos = [
+    ...jc.map(c=>({...c, color:'#406C9E', tag:'JC'})),
+    ...mr.map(c=>({...c, color:'#C12D4C', tag:'MR'})),
+    ...stand.map(c=>({...c, color:'#8A9BB0', tag:'STAND'})),
+  ].sort((a,b)=>b.estudiantes - a.estudiantes);
+
+  const maxEst = Math.max(...allCursos.map(c=>c.estudiantes), 1);
+  const filasBar = allCursos.map(c=>{
+    const pct = ((c.estudiantes / maxEst)*100).toFixed(1);
+    const promColor = c.promedio>=80 ? '#6EA050' : c.promedio>=60 ? '#B89500' : '#C12D4C';
+    return `
+    <div class="bar-row" style="grid-template-columns:240px 1fr 110px">
+      <div class="bar-lbl" title="${esc(c.curso)}">${esc(c.curso)}</div>
+      <div class="bar-track">
+        <div class="bar-fill" data-w="${pct}%" style="background:${c.color}"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+        <span style="font-size:.78rem;color:var(--muted);min-width:36px;text-align:right">${fmt(c.estudiantes)}</span>
+        <span style="font-size:.72rem;font-weight:700;padding:1px 7px;border-radius:4px;background:${c.color}1A;color:${c.color}">${esc(c.tag)}</span>
+        <span style="font-size:.78rem;font-weight:700;color:${promColor};min-width:38px;text-align:right">${fmtPct(c.promedio)}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const chartSection = `
+  <div class="card gap">
+    <div class="card-title">Estudiantes por curso — todos los programas</div>
+    ${filasBar || '<p style="color:var(--muted)">Sin datos</p>'}
+    <p class="chart-note" style="margin-top:16px">
+      Longitud de barra = nº de estudiantes (relativo al máximo) &nbsp;·&nbsp;
+      Porcentaje = avance promedio Q10 &nbsp;·&nbsp;
+      <span style="color:#406C9E;font-weight:700">■ JC</span> &nbsp;
+      <span style="color:#C12D4C;font-weight:700">■ MR</span>
+      ${stand.length ? '&nbsp;<span style="color:#8A9BB0;font-weight:700">■ Stand-by</span>' : ''}
+    </p>
+  </div>`;
+
+  // ── Tabla detalle ──
+  const filasTbl = allCursos.map((c,i)=>{
+    const s = sem(c.promedio||0);
+    const pct = (c.promedio||0).toFixed(1);
+    return `<tr>
+      <td><span style="font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:4px;background:${c.color}1A;color:${c.color}">${esc(c.tag)}</span></td>
+      <td>${esc(c.curso)}</td>
+      <td class="td-r">${fmt(c.estudiantes)}</td>
+      <td style="min-width:140px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="bar-track" style="flex:1;height:7px">
+            <div class="bar-fill" data-w="${pct}%" style="background:${s.c}"></div>
+          </div>
+          <span class="${s.cls}" style="width:38px;text-align:right;font-size:.8rem">${fmtPct(c.promedio)}</span>
+        </div>
+      </td>
+      <td><span class="tag ${s.tag}">${s.lbl}</span></td>
+    </tr>`;
+  }).join('');
+
+  const tablaSection = `
+  <div class="card gap">
+    <div class="card-title">Detalle por curso</div>
+    <table class="dt">
+      <thead><tr>
+        <th>Programa</th><th>Curso</th><th class="td-r">Estudiantes</th>
+        <th>Avance promedio</th><th>Estado</th>
+      </tr></thead>
+      <tbody>${filasTbl||'<tr><td colspan="5" style="color:var(--muted)">Sin datos</td></tr>'}</tbody>
+    </table>
+  </div>`;
+
+  const nota = `
+  <div class="info-box gap">
+    <strong>¿Cómo agregar o mover un curso?</strong><br>
+    Los programas se clasifican en <code>tools/course_config.json</code> (local) usando el panel Admin del GUI de riesgo.
+    Los cambios se reflejan aquí al próximo <em>export_stats.py</em>.
+  </div>`;
+
+  return kpiSection + chartSection + tablaSection + nota;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 5 — Tendencia histórica JC
+// ═══════════════════════════════════════════════════════════════════════════════
+function renderT5(hist) {
+  if (!hist || hist.length < 2) {
+    const n = hist?.length||0;
+    const msg = n===0
+      ? 'No hay historial aún. Ejecuta <code>bootstrap_history.py</code> y haz push para poblar el historial desde git.'
+      : `Hay 1 snapshot guardado (${hist[0].fecha}). Con el próximo registro automático (~4 días) aparecerá la gráfica.`;
+    return `<div class="card gap"><div class="card-title">📈 Tendencia histórica — Jóvenes creaTIvos</div><div class="info-box">${msg}</div></div>`;
+  }
+
+  const ul = hist[hist.length-1], pr = hist[0];
+  const delta = (ul.jc.promedio_global - pr.jc.promedio_global).toFixed(1);
+  const dc = Number(delta)>=0 ? 'var(--green)' : 'var(--red)';
+  const ds = (Number(delta)>=0?'+':'')+delta+'%';
+
+  return `
+  <div class="card gap">
+    <div class="card-title">📈 Tendencia histórica — Jóvenes creaTIvos</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;border-top:3px solid var(--primary)">
+        <div style="font-size:1.6rem;font-weight:700;color:var(--primary)">${fmtPct(ul.jc.promedio_global)}</div>
+        <div style="font-size:.78rem;color:var(--muted);margin-top:4px;font-weight:600">Último promedio global</div>
+        <div style="font-size:.72rem;color:var(--muted)">${ul.fecha}</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;border-top:3px solid ${dc}">
+        <div style="font-size:1.6rem;font-weight:700;color:${dc}">${ds}</div>
+        <div style="font-size:.78rem;color:var(--muted);margin-top:4px;font-weight:600">Δ desde el primer registro</div>
+        <div style="font-size:.72rem;color:var(--muted)">${pr.fecha} → ${ul.fecha}</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;border-top:3px solid var(--muted)">
+        <div style="font-size:1.6rem;font-weight:700;color:var(--text)">${hist.length}</div>
+        <div style="font-size:.78rem;color:var(--muted);margin-top:4px;font-weight:600">Snapshots registrados</div>
+        <div style="font-size:.72rem;color:var(--muted)">Cada ~4 días</div>
+      </div>
+    </div>
+    <div style="position:relative;height:300px"><canvas id="chart-jc"></canvas></div>
+    <p class="chart-note" style="margin-top:10px">
+      Línea azul sólida = promedio global ponderado &nbsp;·&nbsp;
+      Clic en leyenda para mostrar/ocultar cursos individuales
+    </p>
+  </div>`;
+}
+
+function iniciarChartJC(hist) {
+  const canvas = document.getElementById('chart-jc');
+  if (!canvas || typeof Chart==='undefined') return;
+
+  const labels = hist.map(h=>{
+    const d = new Date(h.fecha+'T12:00:00');
+    return d.toLocaleDateString('es-CO',{day:'2-digit',month:'short'});
+  });
+
+  const names = [...new Set(hist.flatMap(h=>(h.jc?.por_curso||[]).map(c=>c.curso)))];
+  const pal   = ['#6FA0BC','#D1793F','#6EA050','#EEC935','#9B59B6','#8A9BB0','#16A085','#E74C3C'];
+
+  new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Promedio global JC',
+          data: hist.map(h=>h.jc?.promedio_global??null),
+          borderColor: '#406C9E', backgroundColor: 'rgba(64,108,158,0.08)',
+          borderWidth: 3, pointRadius: 5, pointBackgroundColor: '#406C9E',
+          fill: true, tension: 0.3, order: 0,
+        },
+        ...names.map((n,i)=>({
+          label: n.length>45 ? n.slice(0,45)+'…' : n,
+          data: hist.map(h=>{ const c=(h.jc?.por_curso||[]).find(c=>c.curso===n); return c?c.promedio:null; }),
+          borderColor: pal[i%pal.length], borderWidth:1.5, borderDash:[5,3],
+          pointRadius:3, fill:false, tension:0.3, hidden:true, order:i+1,
+        })),
+      ],
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{ position:'bottom', labels:{ font:{size:11}, usePointStyle:true, padding:14 } },
+        tooltip:{ callbacks:{ label:ctx=>` ${ctx.dataset.label}: ${ctx.raw!=null?ctx.raw.toFixed(1)+'%':'—'}` } },
+      },
+      scales:{
+        y:{ min:0, max:100, ticks:{callback:v=>v+'%',font:{size:11}}, grid:{color:'rgba(64,108,158,0.06)'} },
+        x:{ ticks:{font:{size:11}}, grid:{display:false} },
+      },
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Init
 // ═══════════════════════════════════════════════════════════════════════════════
 function renderHeader(dashTs, asistTs, seg){
@@ -683,9 +921,12 @@ function renderHeader(dashTs, asistTs, seg){
 Promise.allSettled([
   fetch('./data.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }),
   fetch('../avance/data.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }),
-]).then(([r1,r2])=>{
+  fetch('./history.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }),
+]).then(([r1,r2,r3])=>{
   const dash  = r1.status==='fulfilled' ? r1.value : null;
   const asist = r2.status==='fulfilled' ? r2.value : null;
+  const hist  = r3.status==='fulfilled' ? r3.value : null;
+  window._histJC = hist;
 
   document.getElementById('loading').style.display = 'none';
 
@@ -705,6 +946,8 @@ Promise.allSettled([
   document.getElementById('t1').innerHTML = wHtml + (dash  ? renderT1(dash)  : '<p style="color:var(--muted);padding:24px">Sin datos Q10.</p>');
   document.getElementById('t2').innerHTML = wHtml + (asist ? renderT2(asist) : '<p style="color:var(--muted);padding:24px">Sin datos de avance.</p>');
   document.getElementById('t3').innerHTML = wHtml + renderT3(dash, asist);
+  document.getElementById('t4').innerHTML = wHtml + (dash  ? renderAdmin(dash) : '<p style="color:var(--muted);padding:24px">Sin datos Q10.</p>');
+  document.getElementById('t5').innerHTML = renderT5(hist);
 
   document.getElementById('t1').classList.add('active');
   animateBars();

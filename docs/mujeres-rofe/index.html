@@ -333,6 +333,9 @@
     <div class="header-sub">Panel de seguimiento académico · 2026</div>
   </div>
   <div class="header-spacer"></div>
+  <a href="../dashboard/" style="display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;color:#406C9E;text-decoration:none;padding:6px 14px;border-radius:20px;border:1px solid rgba(64,108,158,0.25);background:rgba(64,108,158,0.08);white-space:nowrap;flex-shrink:0">
+    🎓 Jóvenes creaTIvos ↗
+  </a>
   <div class="header-badge">
     <span class="dot"></span>
     <span id="hdr-upd">Cargando…</span>
@@ -442,6 +445,9 @@
   </div>
 </div>
 
+<!-- ── Sección de tendencia histórica ── -->
+<div id="trend-section" style="display:none;max-width:1060px;margin:0 auto 36px;padding:0 24px"></div>
+
 <!-- ── Footer ── -->
 <footer>
   <img src="../img/logo_rofe_aplicacion2.png" alt="Fundación ROFÉ" class="footer-logo" />
@@ -450,6 +456,7 @@
   <div class="footer-copy">Fundación ROFÉ · Mujeres ROFÉ · 2026 · Datos actualizados automáticamente vía Q10</div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
   // Cursos del programa Mujeres ROFÉ
   const CURSOS_MR = [
@@ -635,11 +642,137 @@
         }, 120);
       });
 
+      // ── Tendencia histórica (opcional — no bloquea el render principal) ──
+      try {
+        const hresp = await fetch('../dashboard/history.json');
+        if (hresp.ok) {
+          const hist = await hresp.json();
+          const trendEl = document.getElementById('trend-section');
+          if (trendEl) {
+            trendEl.innerHTML = renderTendenciaMR(hist);
+            trendEl.style.display = 'block';
+            if (hist.length >= 2) setTimeout(() => iniciarChartMR(hist), 150);
+          }
+        }
+      } catch {} // history.json es opcional
+
     } catch (err) {
       document.getElementById('loading-skeleton').style.display = 'none';
       document.getElementById('error-msg').textContent = err.message;
       document.getElementById('error-box').style.display = 'block';
     }
+  }
+
+  // ── Tendencia histórica ─────────────────────────────────────────────────────
+  function renderTendenciaMR(hist) {
+    if (!hist || hist.length < 2) {
+      const n = hist?.length || 0;
+      const msg = n === 0
+        ? 'No hay historial aún. Ejecuta <code>bootstrap_history.py</code> para generar el historial.'
+        : `Hay 1 snapshot registrado (${hist[0].fecha}). Con el próximo (~4 días) aparecerá la gráfica.`;
+      return `<div style="background:#FDF0F3;border:1px solid #E5C5CC;border-radius:12px;padding:22px 24px">
+        <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#C12D4C;margin-bottom:10px">📈 Tendencia histórica</div>
+        <div style="font-size:.85rem;color:#7A5C62">${msg}</div>
+      </div>`;
+    }
+
+    const ul = hist[hist.length - 1], pr = hist[0];
+    const delta = (ul.mr.promedio_global - pr.mr.promedio_global).toFixed(1);
+    const dc = Number(delta) >= 0 ? '#6EA050' : '#C12D4C';
+    const ds = (Number(delta) >= 0 ? '+' : '') + delta + '%';
+
+    return `
+    <div style="background:#FFFFFF;border:1px solid #E5C5CC;border-radius:12px;padding:26px 28px;box-shadow:0 2px 8px rgba(193,45,76,0.06)">
+      <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#C12D4C;margin-bottom:18px">
+        📈 Tendencia histórica — Mujeres ROFÉ
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+        <div style="background:#FDF0F3;border:1px solid #E5C5CC;border-radius:8px;padding:14px;border-top:3px solid #C12D4C">
+          <div style="font-size:1.6rem;font-weight:700;color:#C12D4C">${ul.mr.promedio_global.toFixed(1)}%</div>
+          <div style="font-size:.78rem;color:#7A5C62;margin-top:4px;font-weight:600">Último promedio global</div>
+          <div style="font-size:.72rem;color:#A88890">${ul.fecha}</div>
+        </div>
+        <div style="background:#FDF0F3;border:1px solid #E5C5CC;border-radius:8px;padding:14px;border-top:3px solid ${dc}">
+          <div style="font-size:1.6rem;font-weight:700;color:${dc}">${ds}</div>
+          <div style="font-size:.78rem;color:#7A5C62;margin-top:4px;font-weight:600">Δ desde el primer registro</div>
+          <div style="font-size:.72rem;color:#A88890">${pr.fecha} → ${ul.fecha}</div>
+        </div>
+        <div style="background:#FDF0F3;border:1px solid #E5C5CC;border-radius:8px;padding:14px;border-top:3px solid #A88890">
+          <div style="font-size:1.6rem;font-weight:700;color:#1A1215">${hist.length}</div>
+          <div style="font-size:.78rem;color:#7A5C62;margin-top:4px;font-weight:600">Snapshots registrados</div>
+          <div style="font-size:.72rem;color:#A88890">Cada ~4 días</div>
+        </div>
+      </div>
+      <div style="position:relative;height:280px"><canvas id="chart-mr"></canvas></div>
+      <p style="font-size:.76rem;color:#A88890;margin-top:10px">
+        Línea sólida = promedio global ponderado &nbsp;·&nbsp;
+        Clic en leyenda para mostrar/ocultar cursos individuales
+      </p>
+    </div>`;
+  }
+
+  function iniciarChartMR(hist) {
+    const canvas = document.getElementById('chart-mr');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const labels = hist.map(h => {
+      const d = new Date(h.fecha + 'T12:00:00');
+      return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+    });
+
+    const names = [...new Set(hist.flatMap(h => (h.mr?.por_curso || []).map(c => c.curso)))];
+    const pal   = ['#D1793F', '#6EA050', '#406C9E', '#EEC935', '#9B59B6', '#1ABC9C'];
+
+    new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Promedio global Mujeres ROFÉ',
+            data: hist.map(h => h.mr?.promedio_global ?? null),
+            borderColor: '#C12D4C', backgroundColor: 'rgba(193,45,76,0.07)',
+            borderWidth: 3, pointRadius: 5, pointBackgroundColor: '#C12D4C',
+            fill: true, tension: 0.3, order: 0,
+          },
+          ...names.map((n, i) => ({
+            label: n.length > 45 ? n.slice(0, 45) + '…' : n,
+            data: hist.map(h => {
+              const c = (h.mr?.por_curso || []).find(c => c.curso === n);
+              return c ? c.promedio : null;
+            }),
+            borderColor: pal[i % pal.length], borderWidth: 1.5, borderDash: [5, 3],
+            pointRadius: 3, fill: false, tension: 0.3, hidden: true, order: i + 1,
+          })),
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              font: { size: 11, family: "'Gilroy','Century Gothic','Trebuchet MS',Arial,sans-serif" },
+              usePointStyle: true, padding: 14,
+            },
+          },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.dataset.label}: ${ctx.raw != null ? ctx.raw.toFixed(1) + '%' : '—'}`,
+            },
+          },
+        },
+        scales: {
+          y: {
+            min: 0, max: 100,
+            ticks: { callback: v => v + '%', font: { size: 11 } },
+            grid: { color: 'rgba(193,45,76,0.05)' },
+          },
+          x: { ticks: { font: { size: 11 } }, grid: { display: false } },
+        },
+      },
+    });
   }
 
   init();
