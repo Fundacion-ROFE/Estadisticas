@@ -466,10 +466,12 @@
 // ═══════════════════════════════════════════════════════════════════
 const S = {
   userName: '', userKey: '',
-  workbook: null, fileName: '',
-  sheetConfig: {},   // { sheetName: { process, columns:[bool], headers:[str] } }
+  fileBuffer: null,   // Uint8Array crudo — NUNCA el workbook parseado completo
+  sheetNames: [],     // solo los nombres de pestañas
+  fileName: '',
+  sheetConfig: {},    // { sheetName: { process, columns:[bool], headers:[str] } }
   // decode
-  decWb: null, decKeyData: null, decFileName: '',
+  decBuffer: null, decSheetNames: [], decKeyData: null, decFileName: '',
   // search
   searchKeyData: null,
 };
@@ -582,18 +584,20 @@ async function processFile(file) {
     setStatus(`⚠️ Archivo grande (${(file.size / 1024 / 1024).toFixed(1)} MB) — puede tardar varios minutos.`);
   }
   try {
-    const buf = await readFileBuffer(file);
-    const wb  = XLSX.read(buf, { type: 'array', cellDates: true, cellFormula: false });
-    S.workbook = wb;
-    S.fileName = file.name;
+    const buf    = await readFileBuffer(file);
+    // Solo leer nombres de pestañas — NO parsear datos todavía
+    const metaWb = XLSX.read(buf, { bookSheets: true, bookVBA: false });
+    S.fileBuffer = buf;
+    S.sheetNames = metaWb.SheetNames;
+    S.fileName   = file.name;
 
     const fi = document.getElementById('file-info');
-    fi.textContent = `📄 ${file.name} — ${wb.SheetNames.length} pestaña(s)`;
+    fi.textContent = `📄 ${file.name} — ${S.sheetNames.length} pestaña(s)`;
     fi.classList.remove('hidden');
 
     lockCard('card-3', false);
     document.getElementById('sn-2').classList.add('done');
-    buildSheetsUI(wb);
+    await buildSheetsUI();
     setStatus(`Archivo cargado: ${file.name}`);
   } catch(err) {
     setStatus('❌ Error al leer el archivo: ' + err.message, true);
@@ -614,12 +618,12 @@ function readFileBuffer(file) {
 // ═══════════════════════════════════════════════════════════════════
 // CODIFICAR — Paso 3: pestañas y columnas
 // ═══════════════════════════════════════════════════════════════════
-function buildSheetsUI(wb) {
+async function buildSheetsUI() {
   const container = document.getElementById('sheets-config');
   container.innerHTML = '';
   S.sheetConfig = {};
 
-  const many = wb.SheetNames.length > 5;
+  const many = S.sheetNames.length > 5;
 
   // Barra de controles globales
   const gcDiv = document.createElement('div');
@@ -636,16 +640,27 @@ function buildSheetsUI(wb) {
   `;
   container.appendChild(gcDiv);
 
-  wb.SheetNames.forEach(name => {
-    const ws  = wb.Sheets[name];
-    // Leer solo 21 filas para UI y detección de PII — NO guardar aoa completo
-    const sample  = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', sheetRows: 21 });
+  for (let i = 0; i < S.sheetNames.length; i++) {
+    const name = S.sheetNames[i];
+
+    // Ceder hilo cada 5 pestañas para no bloquear UI
+    if (i % 5 === 0) {
+      setLoading(true, `Analizando pestañas… ${i + 1} / ${S.sheetNames.length}`);
+      await new Promise(r => setTimeout(r, 0));
+    }
+
+    // Parsear SOLO esta pestaña y solo 21 filas — la mini-wb se descarta al salir del bloque
+    const miniWb  = XLSX.read(S.fileBuffer, {
+      sheets: i, sheetRows: 21,
+      cellFormula: false, cellHTML: false, cellDates: false,
+    });
+    const ws      = miniWb.Sheets[name] || {};
+    const sample  = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
     const headers = (sample[0] || []).map(h => String(h || ''));
     const pii     = detectPIICols(sample);
-    // Obtener conteo real de filas desde el rango de la hoja sin parsear todo
-    const ref   = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : null;
-    const nRows = ref ? ref.e.r : Math.max(0, sample.length - 1);
-    const nPii  = pii.filter(Boolean).length;
+    // 21 filas leídas = al menos 20 de datos → mostrar "20+" si llegamos al límite
+    const nRows   = sample.length >= 21 ? '20+' : String(Math.max(0, sample.length - 1));
+    const nPii    = pii.filter(Boolean).length;
 
     S.sheetConfig[name] = { process: true, columns: [...pii], piiDetected: [...pii], headers };
 
@@ -662,7 +677,7 @@ function buildSheetsUI(wb) {
                  onchange="toggleSheet(${escHtml(JSON.stringify(name))}, this.checked)">
           📋 <strong>${escHtml(name)}</strong>
         </label>
-        <span class="sheet-count">${nRows.toLocaleString()} filas · ${headers.length} cols · ${nPii} PII</span>
+        <span class="sheet-count">${nRows} filas · ${headers.length} cols · ${nPii} PII</span>
         <button class="sheet-expand-btn" id="expand-btn-${safeId}"
                 onclick="toggleSheetExpand(${escHtml(JSON.stringify(name))})">
           ${expanded ? '▲ Colapsar' : `▼ ${nPii} col${nPii !== 1 ? 's' : ''} PII`}
@@ -673,7 +688,8 @@ function buildSheetsUI(wb) {
       </div>
     `;
     container.appendChild(div);
-  });
+    // miniWb sale de scope aquí → GC puede liberarla
+  }
 
   lockCard('card-4', false);
   document.getElementById('sn-3').classList.add('done');
@@ -710,7 +726,7 @@ function toggleColumn(name, idx) {
 
 function checkEncodeReady() {
   const identityOk = S.userName.length > 0 && S.userKey.length >= 8;
-  const fileOk     = !!S.workbook;
+  const fileOk     = !!S.fileBuffer;
   const anyCol     = Object.values(S.sheetConfig).some(c =>
     c.process && c.columns.some(Boolean)
   );
@@ -785,15 +801,19 @@ async function runEncode() {
 
   try {
     const ck = await makeCryptoKey(S.userKey);
-    const sheetsToProcess = S.workbook.SheetNames.filter(n => S.sheetConfig[n]?.process);
+    const sheetsToProcess = S.sheetNames.filter(n => S.sheetConfig[n]?.process);
 
     // ── Fase 1: recolectar valores únicos ─────────────────────────
+    // Cada pestaña se parsea por separado desde el buffer crudo y se descarta.
     const uniqueSet = new Set();
-    for (const sn of sheetsToProcess) {
-      setLoading(true, `Analizando… ${sn}`);
-      await new Promise(r => setTimeout(r, 0)); // cede hilo → GC puede actuar
-      const cfg = S.sheetConfig[sn];
-      const aoa = XLSX.utils.sheet_to_json(S.workbook.Sheets[sn], { header: 1, defval: '' });
+    for (let si = 0; si < S.sheetNames.length; si++) {
+      const sn = S.sheetNames[si];
+      if (!S.sheetConfig[sn]?.process) continue;
+      setLoading(true, `Analizando… (${si + 1}/${S.sheetNames.length}) ${sn}`);
+      await new Promise(r => setTimeout(r, 0));
+      const cfg    = S.sheetConfig[sn];
+      const miniWb = XLSX.read(S.fileBuffer, { sheets: si, cellFormula: false, cellDates: true });
+      const aoa    = XLSX.utils.sheet_to_json(miniWb.Sheets[sn] || {}, { header: 1, defval: '' });
       for (let r = 1; r < aoa.length; r++) {
         const row = aoa[r];
         for (let c = 0; c < row.length; c++) {
@@ -802,7 +822,7 @@ async function runEncode() {
           if (v !== '' && v !== null && v !== undefined) uniqueSet.add(String(v));
         }
       }
-      // aoa sale de scope aquí — GC puede liberarla
+      // miniWb y aoa salen de scope → GC puede liberarlos
     }
 
     const uniqueVals = [...uniqueSet];
@@ -827,24 +847,26 @@ async function runEncode() {
     }
 
     // ── Fase 3: reemplazo en pestañas ─────────────────────────────
+    // Cada pestaña se lee por separado del buffer crudo y se descarta tras procesarla.
     const newWb = XLSX.utils.book_new();
     let totalCells = 0, processedSheets = 0;
 
-    for (let si = 0; si < S.workbook.SheetNames.length; si++) {
-      const sheetName = S.workbook.SheetNames[si];
+    for (let si = 0; si < S.sheetNames.length; si++) {
+      const sheetName = S.sheetNames[si];
       const cfg = S.sheetConfig[sheetName];
-      const ws  = S.workbook.Sheets[sheetName];
+      setLoading(true, `Generando Excel… ${si + 1}/${S.sheetNames.length}: ${sheetName}`);
+      await new Promise(r => setTimeout(r, 0));
+
+      // Parsear SOLO esta pestaña desde el buffer crudo
+      const miniWb = XLSX.read(S.fileBuffer, { sheets: si, cellFormula: false, cellDates: true });
+      const ws     = miniWb.Sheets[sheetName] || {};
 
       if (!cfg?.process) {
         XLSX.utils.book_append_sheet(newWb, ws, sheetName);
-        continue;
+        continue; // miniWb sale de scope → GC
       }
 
-      setLoading(true, `Generando Excel… ${si + 1}/${S.workbook.SheetNames.length}: ${sheetName}`);
-      await new Promise(r => setTimeout(r, 0)); // cede hilo entre pestañas → GC
       processedSheets++;
-
-      // Materializar esta pestaña ahora, procesarla, y soltar la referencia
       const aoa    = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
       const newAoa = [];
       for (let r = 0; r < aoa.length; r++) {
@@ -861,7 +883,7 @@ async function runEncode() {
         newAoa.push(newRow);
       }
       XLSX.utils.book_append_sheet(newWb, XLSX.utils.aoa_to_sheet(newAoa), sheetName);
-      // aoa y newAoa salen de scope → GC puede liberar esta pestaña
+      // miniWb, aoa y newAoa salen de scope → GC puede liberar esta pestaña
     }
 
     // ── Generar archivos de descarga ──────────────────────────────
@@ -947,9 +969,11 @@ async function loadDecExcel(e) {
 }
 async function loadDecExcelFile(file) {
   try {
-    const buf = await readFileBuffer(file);
-    S.decWb       = XLSX.read(buf, { type: 'array' });
-    S.decFileName = file.name;
+    const buf        = await readFileBuffer(file);
+    const metaWb     = XLSX.read(buf, { bookSheets: true, bookVBA: false });
+    S.decBuffer      = buf;
+    S.decSheetNames  = metaWb.SheetNames;
+    S.decFileName    = file.name;
     const slot = document.getElementById('slot-excel');
     slot.classList.add('loaded');
     document.getElementById('slot-excel-name').textContent = file.name;
@@ -983,11 +1007,11 @@ async function loadDecKeyFile(file) {
 }
 
 function checkDecodeReady() {
-  document.getElementById('btn-decode').disabled = !(S.decWb && S.decKeyData);
+  document.getElementById('btn-decode').disabled = !(S.decBuffer && S.decKeyData);
 }
 
 async function runDecode() {
-  if (!S.decWb || !S.decKeyData) return;
+  if (!S.decBuffer || !S.decKeyData) return;
   setLoading(true, 'Restaurando datos…');
 
   try {
@@ -995,11 +1019,13 @@ async function runDecode() {
     const newWb  = XLSX.utils.book_new();
     let replaced = 0;
 
-    for (const sheetName of S.decWb.SheetNames) {
-      setLoading(true, `Restaurando… ${sheetName}`);
-      await new Promise(r => setTimeout(r, 0)); // cede hilo → GC
-      const ws  = S.decWb.Sheets[sheetName];
-      const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    for (let si = 0; si < S.decSheetNames.length; si++) {
+      const sheetName = S.decSheetNames[si];
+      setLoading(true, `Restaurando… (${si + 1}/${S.decSheetNames.length}) ${sheetName}`);
+      await new Promise(r => setTimeout(r, 0));
+      const miniWb = XLSX.read(S.decBuffer, { sheets: si, cellFormula: false, cellDates: true });
+      const ws     = miniWb.Sheets[sheetName] || {};
+      const aoa    = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
       const newAoa = aoa.map(row => row.map(cell => {
         const k = String(cell);
@@ -1008,7 +1034,7 @@ async function runDecode() {
       }));
 
       XLSX.utils.book_append_sheet(newWb, XLSX.utils.aoa_to_sheet(newAoa), sheetName);
-      // aoa y newAoa salen de scope → GC puede liberar esta pestaña
+      // miniWb, aoa y newAoa salen de scope → GC
     }
 
     if (replaced === 0) {
