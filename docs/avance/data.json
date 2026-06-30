@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-06-26T17:06:29.855550-05:00",
+  "ultima_actualizacion": "2026-06-30T09:19:26.420364-05:00",
   "segmento": "Logica-Nivel 2-2026",
   "por_curso": [
     {
@@ -33,14 +33,14 @@
     {
       "nombre": "IA",
       "estudiantes": 809,
-      "promedio": 93.98,
+      "promedio": 94.15,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "Lógica de Programación",
       "estudiantes": 806,
-      "promedio": 88.99,
+      "promedio": 91.47,
       "min": 0.0,
       "max": 100.0
     }
@@ -49,7 +49,7 @@
     "total_cursos": 6,
     "total_registros": 5048,
     "estudiantes_unicos_id": 863,
-    "promedio_general": 94.49
+    "promedio_general": 94.91
   },
   "anomalias": [
     {
@@ -58,7 +58,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 170
+      "cantidad": 167
     },
     {
       "categoria": "AVANCE IRREGULAR",
