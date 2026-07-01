@@ -760,38 +760,6 @@ function renderAdmin(d){
     </p>
   </div>`;
 
-  // ── Tabla detalle ──
-  const filasTbl = allCursos.map((c,i)=>{
-    const s = sem(c.promedio||0);
-    const pct = (c.promedio||0).toFixed(1);
-    return `<tr>
-      <td><span style="font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:4px;background:${c.color}1A;color:${c.color}">${esc(c.tag)}</span></td>
-      <td>${esc(c.curso)}</td>
-      <td class="td-r">${fmt(c.estudiantes)}</td>
-      <td style="min-width:140px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="bar-track" style="flex:1;height:7px">
-            <div class="bar-fill" data-w="${pct}%" style="background:${s.c}"></div>
-          </div>
-          <span class="${s.cls}" style="width:38px;text-align:right;font-size:.8rem">${fmtPct(c.promedio)}</span>
-        </div>
-      </td>
-      <td><span class="tag ${s.tag}">${s.lbl}</span></td>
-    </tr>`;
-  }).join('');
-
-  const tablaSection = `
-  <div class="card gap">
-    <div class="card-title">Detalle por curso</div>
-    <table class="dt">
-      <thead><tr>
-        <th>Programa</th><th>Curso</th><th class="td-r">Estudiantes</th>
-        <th>Avance promedio</th><th>Estado</th>
-      </tr></thead>
-      <tbody>${filasTbl||'<tr><td colspan="5" style="color:var(--muted)">Sin datos</td></tr>'}</tbody>
-    </table>
-  </div>`;
-
   const nota = `
   <div class="info-box gap">
     <strong>¿Cómo agregar o mover un curso?</strong><br>
@@ -799,7 +767,7 @@ function renderAdmin(d){
     Los cambios se reflejan aquí al próximo <em>export_stats.py</em>.
   </div>`;
 
-  return kpiSection + chartSection + tablaSection + nota;
+  return kpiSection + chartSection + nota;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
