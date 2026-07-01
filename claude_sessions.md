@@ -348,3 +348,36 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
 - **Decisión:** pseudónimos de 16 chars hex (64 bits de entropía HMAC-SHA256) — suficiente para evitar colisiones accidentales y opaco para la IA.
 - **Prueba con equipo y push a GitHub Pages pendientes para Fase 5.**
 
+
+## 2026-06-30 — [Pseudonimizador] Web Worker para archivos de 22 MB / 44 pestañas
+
+**Estado:** Completado
+**Proceso relacionado:** [[pseudonimizador]]
+
+- **Problema raíz identificado:** `runEncode` y `runDecode` acumulaban las 44 pestañas en el objeto `newWb` del hilo principal hasta que `XLSX.write` las serializaba todas juntas — pico de ~600 MB que reventaba el heap del navegador con OOM.
+- **Solución:** todo el procesamiento (fases Analizar → HMAC → Reemplazar → Escribir) migrado a un **Web Worker inline** (Blob URL generada en runtime). El Worker tiene su propio heap, aislado de la UI. `XLSX.write` usa `type:'uint8array'` para devolver un `ArrayBuffer` transferible sin copia.
+- **Barra de progreso** añadida al overlay de carga — muestra avance por pestaña en cada fase.
+- Commit `9c6ffb3` · deploy a GitHub Pages automático.
+- Pendiente: demo con el equipo (único ítem de Fase 5 sin completar).
+
+## 2026-07-01 — [Pseudonimizador] Auditoría de seguridad + 4 correcciones críticas
+
+**Estado:** Completado
+**Proceso relacionado:** [[pseudonimizador]]
+
+- **Auditoría externa** (Claude + ChatGPT + Gemini) sobre el archivo `_codificado.xlsx` real detectó fugas de PII: columna "Nombres" (plural) no encriptada, credenciales en texto plano, emails en campos de texto libre, y explosión de tamaño 22 MB → 202 MB.
+- **Fix 1 — detección PII ampliada:** `\bnombre\b` → `\bnombres?\b`; añadidos `contraseña`, `credencial`, `clave`, `password`, `foto`, `imagen`, `rostro`; valores: prefijos `+NNN` e URLs `http/https`.
+- **Fix 2 — emails en texto libre:** Fase 1 del Worker ahora escanea con regex en todas las columnas (no solo PII marcadas); Fase 3 los reemplaza inline.
+- **Fix 3 — explosión de tamaño:** reemplazo directo celda-a-celda (`for addr in ws`) en lugar de rebuild AoA con `defval:''`. Preserva estructura dispersa del xlsx original.
+- **Fix 4 — tipo XLSX.write:** `uint8array` no existe en SheetJS 0.18.5 → corregido a `buffer`.
+
+## 2026-07-01 — [Pseudonimizador] Tab "Pegar texto" con codificación y decodificación
+
+**Estado:** Completado
+**Proceso relacionado:** [[pseudonimizador]]
+
+- **Nuevo tab "📋 Pegar texto"** para rangos simples sin subir archivo completo.
+- **Codificar:** identidad → pegar TSV (Ctrl+C desde Excel/Sheets) → seleccionar columnas → copiar resultado codificado + descargar `.json`. Misma clave HMAC → pseudónimos compatibles con el flujo de archivo.
+- **Decodificar (misma pestaña):** cargar `.json` → pegar TSV codificado → restaurar → copiar. Incluye decodificación de pseudónimos embebidos dentro de texto (regex `[0-9a-f]{16,20}`).
+- Crypto corre en hilo principal (datos pequeños, no necesita Worker).
+- Commits `6888a8f` y `bd33d3a` · en producción GitHub Pages.

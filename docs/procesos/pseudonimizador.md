@@ -1,6 +1,6 @@
 # Pseudonimizador — Herramienta de privacidad para IA
 
-**Estado:** En progreso
+**Estado:** Completado (en producción)
 **Última actualización:** 2026-06-30
 **Procesos relacionados:** [[dashboard-web]] · [[q10-consolidacion]]
 
@@ -75,6 +75,36 @@ datos_modificado.xlsx (devuelto por la IA)
 - Output: siempre `.xlsx` (para preservar estructura multi-pestaña)
 - Librería: SheetJS (xlsx) desde CDN — sin instalación
 
+### Web Worker para archivos grandes (≥ 22 MB / 44 pestañas)
+- Todo el procesamiento pesado (fases 1-3 de codificación, decodificación) corre en un
+  **Web Worker inline** con heap propio, aislado del hilo de la UI.
+- El Worker se construye como `Blob URL` en tiempo de ejecución → sigue siendo un único
+  `.html` estático, sin dependencias adicionales.
+- Output usa `XLSX.write(..., {type:'buffer'})` → `Uint8Array` transferible sin copia
+  de vuelta al hilo principal. (`uint8array` no existe en SheetJS 0.18.5 — usar `buffer`.)
+- Si el Worker se queda sin memoria, el error llega como mensaje `{type:'error'}` al
+  manejador del hilo principal en vez de matar la pestaña completa.
+- Barra de progreso por fase: Analizando pestañas → Codificando valores → Generando Excel → Escribiendo.
+- Fase 3 usa reemplazo directo celda-a-celda en lugar de rebuild AoA — preserva estructura
+  dispersa del xlsx original y evita la explosión de tamaño (22 MB → 202 MB era el bug).
+
+### Detección PII ampliada (2026-07-01)
+Columnas detectadas automáticamente además de las originales:
+- `contraseña`, `credencial`, `clave`, `password` — credenciales en texto plano
+- `foto`, `imagen`, `rostro` — columnas con URLs de fotos biométricas
+- `\bnombres?\b` (antes `\bnombre\b`) — detecta tanto "Nombre" como "Nombres"
+- Valores: prefijos internacionales `+NNN...` y URLs `http/https` (fotos en Drive)
+- Emails embebidos en campos de texto libre (Novedades, Diagnóstico, etc.) se detectan
+  y pseudonimizan inline aunque la columna no esté marcada como PII
+
+### Tab "Pegar texto" (2026-07-01)
+Para rangos simples sin necesidad de subir un archivo completo:
+- Usuario copia celdas de Excel/Sheets con Ctrl+C → pega en textarea → codifica → copia resultado
+- Misma clave HMAC → pseudónimos idénticos y compatibles con el flujo de archivo
+- Sección de decodificación en el mismo tab: cargar .json + pegar TSV codificado → restaurar → copiar
+- El `.json` generado tiene `origen: 'pegado directo (texto)'` para distinguirlo del flujo de archivo
+- Crypto corre en el hilo principal (datos pequeños → no necesita Worker)
+
 ---
 
 ## Detección automática de columnas PII
@@ -131,11 +161,11 @@ El usuario puede desmarcar cualquier columna antes de procesar.
 - [x] Buscador bidireccional: valor real ↔ pseudónimo en el diccionario .json
 - [x] UX para usuarios no técnicos: pasos numerados, advertencias prominentes, drag-and-drop
 
-### Fase 5 — Deploy y entrega (pendiente)
-- [ ] Push a GitHub Pages → URL pública disponible
+### Fase 5 — Deploy y entrega (completada 2026-06-30)
+- [x] Push a GitHub Pages → URL pública disponible (commit `9c6ffb3`)
 - [ ] Demo con el equipo
-- [ ] Pruebas con archivos reales de 44 pestañas
-- [ ] Documentar gotchas adicionales encontrados en producción
+- [x] Soporte archivos reales de 44 pestañas / 22 MB — Web Worker implementado
+- [x] Documentar gotchas de producción (ver sección Gotchas)
 
 ---
 
@@ -159,12 +189,34 @@ docs/pseudonimizador/
 - **Columnas con datos mixtos** (ej: una columna "ID" que tiene cédulas y también textos
   como "N/A"): el sistema pseudonimiza TODO lo que encuentre, incluyendo los "N/A".
   Aclarar esto al usuario en la detección.
+- **OOM en archivos grandes (≥ 22 MB / 44 pestañas):** el problema raíz es que SheetJS
+  mantiene las 44 pestañas en el objeto `newWb` simultáneamente en memoria hasta que
+  `XLSX.write` las serializa. Con 44 pestañas el pico puede superar 600 MB en el heap
+  del hilo principal. **Solución:** Web Worker con heap propio (implementado en Fase 5).
+  Si el Worker también se queda sin memoria (archivos > ~150 MB), la siguiente solución
+  sería construir el XLSX como un ZIP con `fflate`, procesando una pestaña a la vez
+  sin acumular el workbook — no implementado porque no es necesario para 22 MB.
+- **Explosión de tamaño (22 MB → 202 MB):** `aoa_to_sheet` con `defval:''` crea entradas
+  XML para cada celda del rango, incluyendo vacías. Para una hoja de 1000×200 celdas
+  esto genera 200 000 nodos en vez de los ~10 000 no vacíos reales. **Solución:** reemplazo
+  directo celda-a-celda (`for addr in ws`) que preserva la estructura dispersa original.
+- **`type:'uint8array'` no existe en SheetJS 0.18.5** — usar `type:'buffer'` (devuelve
+  `Uint8Array` en browser, cuyo `.buffer` es el `ArrayBuffer` transferible al hilo principal).
+- **Columna "Nombres" (plural) no detectada:** regex original `\bnombre\b` no coincide
+  con "Nombres". Corregido a `\bnombres?\b`.
+- **Credenciales en texto plano:** columnas "Contraseña" y "Credencial" no estaban en la
+  lista de PII. Detectadas en auditoría de seguridad externa — añadidas en 2026-07-01.
+- **Emails en campos libres:** columnas de texto como "Novedades" o "Breve explicación"
+  pueden contener emails no estructurados. El sistema ahora los detecta con regex inline.
+- **Blob Worker y CSP:** si la organización tiene Content-Security-Policy que bloquea
+  `blob:` workers, el procesador no arrancará. En ese caso, servir el HTML desde un
+  servidor que permita `worker-src blob:` en sus cabeceras CSP.
 
 ---
 
 ## Pendiente / Próximos pasos
 
-- Implementar Fases 2-5 según el plan de la semana
+- Demo con el equipo (Fase 5, único ítem restante)
 - Evaluar si se necesita soporte para Google Sheets directamente (vía API) en una v2
 - Decidir si se agrega columna `Retirados` al flujo de Q10 (decisión pendiente del equipo)
   → si se agrega, actualizar los campos de detección automática de PII si aplica
