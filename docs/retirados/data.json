@@ -1,9 +1,9 @@
 {
-  "ultima_actualizacion": "2026-07-02T15:32:30.422009-05:00",
+  "ultima_actualizacion": "2026-07-02T15:41:04.701259-05:00",
   "totales": {
-    "total_retirados": 328,
+    "total_retirados": 353,
     "cancelados": 318,
-    "desertores": 9,
+    "desertores": 34,
     "aplazados": 1
   },
   "por_tipo": [
@@ -13,7 +13,7 @@
     },
     {
       "tipo": "Desertor",
-      "cantidad": 9
+      "cantidad": 34
     },
     {
       "tipo": "Aplazado",
@@ -30,6 +30,10 @@
       "cantidad": 148
     },
     {
+      "causa": "Decisión de la Institución",
+      "cantidad": 25
+    },
+    {
       "causa": "Enfermedad",
       "cantidad": 4
     }
@@ -37,7 +41,7 @@
   "por_programa": [
     {
       "programa": "Jóvenes creaTIvos",
-      "cantidad": 328
+      "cantidad": 353
     }
   ],
   "por_mes": [
@@ -95,7 +99,7 @@
     },
     {
       "mes": "2026-07",
-      "cantidad": 1
+      "cantidad": 26
     }
   ]
 }
