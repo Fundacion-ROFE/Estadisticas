@@ -24,7 +24,7 @@ Todo workflow en producción debe tener:
 | Google Sheets (Service Account) | q10-consolidacion | `q10-automatizacion@n8n-automatizacion-q10.iam.gserviceaccount.com` |
 | Telegram Bot                    | q10-consolidacion | ID credencial en n8n: `kGTAfWTTp4FATF66`                            |
 | Google Calendar                 | (pendiente)       |                                                                     |
-| Zoom (Server-to-Server OAuth)   | zoom-asistencia   | Scopes: pendiente confirmar                                         |
+| Zoom (Server-to-Server OAuth)   | zoom-asistencia   | Credenciales en `scripts/zoom-asistencia/.env` (gitignoreado). Scopes: `meeting:read:past_meeting:admin`, `meeting:read:list_past_participants:admin` |
 
 ## SSL corporativo
 
@@ -99,6 +99,39 @@ Patrón establecido en q10-consolidacion, reutilizable en otros procesos:
 - Borrar desde fila 2 antes de subir — nunca tocar fila 1 (headers).
 - Todo a string antes de subir (`df.astype(str)`).
 - Columna faltante → advertir en consola, no crashear.
+
+## Herramientas web estáticas (GitHub Pages)
+
+Patrón establecido en `docs/pseudonimizador/index.html`, reutilizable en cualquier herramienta de procesamiento en el navegador:
+
+- **Web Worker inline para archivos grandes:** cuando el procesamiento puede superar ~100 MB de RAM (archivos xlsx con muchas pestañas, transformaciones masivas), mover la lógica a un Worker con heap propio. Se construye como Blob URL en runtime para mantener el archivo como HTML único sin dependencias de servidor.
+  ```javascript
+  const code = [ /* líneas del worker como array de strings */ ].join('\n');
+  const url = URL.createObjectURL(new Blob([code], {type:'application/javascript'}));
+  const worker = new Worker(url);
+  // Al terminar: URL.revokeObjectURL(url); worker = null;
+  ```
+- **Transferibles vs clones:** `Uint8Array` y `ArrayBuffer` enviados vía `postMessage` sin listar en el tercer argumento se **clonan** (main conserva copia). Listarlos en `[transferables]` los **mueve** sin copia — destructivo para el emisor. Para archivos de 22 MB, clonar es aceptable.
+- **Salida de SheetJS en Worker:** usar `XLSX.write(wb, {type:'uint8array', bookType:'xlsx'})` → devuelve `Uint8Array` cuyo `.buffer` es un `ArrayBuffer` transferible sin copia de vuelta al hilo principal.
+- **`importScripts` en Blob Workers:** funciona con CDNs que tienen cabeceras CORS (ej. unpkg.com, cdn.jsdelivr.net). No funciona si el CSP corporativo bloquea `worker-src blob:`.
+
+---
+
+## Zoom Server-to-Server OAuth
+
+Patrón establecido en [[zoom-asistencia]], reutilizable en cualquier proceso que consuma la API de Zoom.
+
+- **Credenciales:** Account ID, Client ID, Client Secret — guardar en `.env` dentro de la carpeta del proceso (ej. `scripts/zoom-asistencia/.env`), nunca hardcodeadas. Ya cubierto por el `.gitignore` global (`.env` sin ruta, aplica a cualquier carpeta).
+- **Probar credenciales antes de construir el workflow:**
+  ```bash
+  curl -X POST "https://zoom.us/oauth/token?grant_type=account_credentials&account_id=$ZOOM_ACCOUNT_ID" \
+    -H "Authorization: Basic $(printf '%s:%s' "$ZOOM_CLIENT_ID" "$ZOOM_CLIENT_SECRET" | base64 -w0)"
+  ```
+  HTTP 200 con `access_token` en la respuesta = credenciales válidas.
+- **Scopes:** el catálogo granular de Zoom cambió varias veces en 2023-2024 — buscar por el string interno (ej. `past_meeting`), no por palabras sueltas en el buscador del Marketplace. Preferir siempre variantes `:admin` en apps Server-to-Server (no atadas a un usuario específico, necesitan alcance de cuenta completa).
+- **Event Subscriptions (webhooks) no es un feature de pago** — está incluido en cualquier app Server-to-Server OAuth. El texto que menciona "Challenge-response check" en esa pantalla es solo la descripción del mecanismo de validación (CRC), no una condición comercial.
+- **Publish/Activate ≠ configurar el webhook.** Son pasos independientes: Activate solo habilita las credenciales OAuth; el endpoint del webhook se agrega aparte en Event Subscriptions, y esa pantalla exige que la URL ya esté respondiendo (falla el CRC si no). Construir primero el Webhook Trigger en n8n, después pegar la URL en Zoom.
+- **UUID vs Meeting ID:** endpoints tipo `past_meetings/{uuid}` requieren el UUID de la instancia, no el ID numérico. Si el UUID empieza con `/` o contiene `//`, hay que URL-encodearlo dos veces en el path o la API responde 404 sin explicación.
 
 ## Patrones de integración con Workspace
 *(se documentan aquí decisiones que aplican a cualquier proceso que use Calendar/Sheets,

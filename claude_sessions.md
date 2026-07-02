@@ -381,3 +381,146 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
 - **Decodificar (misma pestaña):** cargar `.json` → pegar TSV codificado → restaurar → copiar. Incluye decodificación de pseudónimos embebidos dentro de texto (regex `[0-9a-f]{16,20}`).
 - Crypto corre en hilo principal (datos pequeños, no necesita Worker).
 - Commits `6888a8f` y `bd33d3a` · en producción GitHub Pages.
+
+---
+
+## 2026-07-01 — [Zoom Asistencia] Arquitectura revisada + credenciales S2S listas
+
+**Estado:** En progreso
+**Proceso relacionado:** [[zoom-asistencia]]
+
+- **Revisión de arquitectura:** trigger cambiado de Google Calendar a Webhook Zoom
+  (`meeting.ended`); endpoint cambiado de `/report/meetings/{id}/participants` (reportes
+  consolidados, lento) a `/past_meetings/{uuid}/participants` (timestamps individuales
+  `join_time`/`leave_time`, casi instantáneo).
+- **Requisito nuevo:** verificar 3 "momentos dorados" por alumno (min 10, mitad, 10 min
+  antes del fin). Se decidió NO filtrar a nadie — se registra a todos los participantes
+  con una columna nueva `Instancias` (`"0/3"`..`"3/3"`) como dato crudo; la penalización
+  es un proceso posterior. Nombre/Apellido se separan con heurística simple (primer
+  espacio) porque la validación fuerte del Sheet corre por Correo/Identificación.
+- Nodo Code `scripts/zoom-asistencia/nodo-calcular-momentos-dorados.js` escrito y
+  validado con `node --check` — agrupa sesiones por email (o nombre normalizado como
+  fallback, ver gotcha de correlación en la nota del proceso).
+- **App Server-to-Server OAuth creada y activada en Zoom Marketplace.** Credenciales
+  guardadas en `scripts/zoom-asistencia/.env` (gitignoreado) y probadas con `curl` contra
+  `zoom.us/oauth/token` → HTTP 200. Scopes identificados (cruzando doc oficial + Zoom
+  Community, no verificados 100% en pantalla real): `meeting:read:past_meeting:admin`,
+  `meeting:read:list_past_participants:admin`.
+- Documentado en `convenciones.md`: patrón Zoom S2S OAuth completo (credenciales, prueba
+  con curl, scopes, Event Subscriptions no es de pago, Publish ≠ configurar webhook,
+  UUID vs Meeting ID / doble URL-encode).
+- **Pendiente próxima sesión:** construir el workflow real en n8n (Webhook Trigger +
+  validación CRC/firma + el resto del flujo diseñado), exportar JSON a `n8n-workflows/`,
+  y solo entonces completar Event Subscriptions en Zoom con la URL de cloudflared vigente
+  (la URL es efímera, cambia en cada reinicio del túnel).
+
+---
+
+## 2026-07-01 — [Zoom Asistencia] Workflow construido y activo en n8n vía API
+
+**Estado:** En progreso
+**Proceso relacionado:** [[zoom-asistencia]]
+
+- Se construyó el workflow completo `Zoom - Asistencia` (14 nodos) directamente vía la API
+  de n8n (sin usar la UI), leyendo el código fuente instalado de `n8n-nodes-base` en
+  `C:/nvm4w/nodejs/node_modules/n8n/node_modules/n8n-nodes-base/dist` para obtener los
+  parámetros exactos de cada nodo (Webhook, Crypto, HTTP Request con paginación, Google
+  Sheets resourceMapper, etc.) sin adivinar.
+- Decisión clave: NO se usó el flujo OAuth2 "Client Credentials" nativo de n8n para Zoom
+  porque Zoom exige `grant_type=account_credentials` (propietario) y n8n fuerza
+  `client_credentials` en el body — en su lugar, HTTP Request manual con Basic Auth, igual
+  al patrón ya probado con curl.
+- Creadas 3 credenciales en n8n vía API: `Zoom S2S Basic Auth`, `Zoom Webhook HMAC Secret`
+  (con secreto placeholder, pendiente de actualizar manualmente en la UI cuando Zoom
+  entregue el Secret Token real — la API no permite editar credenciales existentes), y
+  reutilizado el Service Account de Q10 para Google Sheets.
+- El Sheet destino de pruebas es `H3Test` (ID `1VyXOYsnpD9ksKcJFHiiRR6fr4UUCea4WmGG96NV0WP0`),
+  confirmado por Samuel — sheet exclusivo de testing, sin `Validar`/`Seguimiento` todavía.
+- Probado con payloads sintéticos: validación CRC coincide byte a byte con cálculo
+  independiente en Python; el evento `meeting.ended` con firma válida confirmó ack inmediato
+  (~40ms) + fan-out a procesamiento en segundo plano + Wait 90s + OAuth Zoom real exitoso +
+  `Info Reunion` devolvió un 404 legítimo de la API real de Zoom (UUID inventado) — valida
+  toda la cadena de auth hasta ese punto.
+- JSON exportado a `n8n-workflows/zoom-asistencia.json`. Workflow activo.
+- **Pendiente próxima sesión:** configurar Event Subscriptions en Zoom Marketplace con la URL
+  de cloudflared vigente, actualizar el Secret Token real en la credencial `Zoom Webhook HMAC
+  Secret` (vía UI), y probar con una reunión Zoom real para validar `Participantes` → Code →
+  Google Sheets (aún no probado con datos reales).
+- **Bloqueo:** ninguno técnico — depende de que ocurra una clase Zoom real para la prueba
+  final, y de que Samuel complete el paso manual en Zoom Marketplace.
+
+---
+
+## 2026-07-01 — [Zoom Asistencia] Primera prueba real exitosa de punta a punta
+
+**Estado:** Funcional (casos límite pendientes)
+**Proceso relacionado:** [[zoom-asistencia]]
+
+- Se configuró Event Subscriptions en Zoom Marketplace con el Secret Token real
+  (`3c9DF8ArSpiKeQLj15l8lQ`). Dos gotchas resueltos en el camino: (1) el token se genera
+  *antes* de validar la URL — firmar con placeholder causa "URL validation failed" aunque el
+  endpoint responda bien; (2) la URL del webhook es `/webhook/zoom-asistencia`, no la URL
+  del editor `/workflow/<id>`.
+- Prueba con reunión Zoom real (36 min, 2 participantes): ejecución #36 falló en
+  `Obtener Token Zoom` (`invalid_client` — credencial Basic Auth corrupta por edición manual
+  en la UI de n8n que guardó el Secret Token encima del client secret). Se recreó la
+  credencial vía API (`Zoom S2S Basic Auth v2`) y se reintentó **reenviando el mismo evento
+  firmado localmente con el UUID real** — no hizo falta repetir la reunión.
+- Ejecución #37: éxito completo en los 11 nodos. 2 filas reales escritas en `H3Test` con
+  `Instancias 3/3`. La agrupación por reconexión (participante con 2 sesiones) funcionó como
+  se diseñó — quedó en una sola fila.
+- Credenciales viejas/corruptas eliminadas de n8n; JSON re-exportado a
+  `n8n-workflows/zoom-asistencia.json`.
+- **Pendiente:** Prueba 2 (reunión ≤20 min, caso límite de checkpoints) y Prueba 4
+  (invitado sin cuenta Zoom escribiendo "Nombre correo cédula" — valida el parseo de texto
+  libre, aún no ejercitado). Decidir Sheet de producción con Validar/Seguimiento.
+
+---
+
+## 2026-07-01 — [Zoom Asistencia] Columnas Curso y Fecha para coordinar con las clases
+
+**Estado:** Funcional
+**Proceso relacionado:** [[zoom-asistencia]]
+
+- Se identificó que las filas de asistencia no indicaban a qué clase pertenecían — crítico
+  con cursos en horarios distintos y 2 salas. Decisión (confirmada con Samuel): las clases
+  se programan una a una con el nombre del curso como tema de la reunión → se usa el topic
+  como columna `Curso` + columna `Fecha` (inicio real, hora Colombia UTC-5).
+- Cambio en el nodo Code (workflow vivo + `nodo-calcular-momentos-dorados.js` local) y
+  headers de `H3Test` ampliados a 7 columnas.
+- Validado reenviando el `meeting.ended` de la reunión de prueba (ejecución #38 exitosa):
+  filas con `Curso="Mi reunión"` y `Fecha="2026-07-01 16:14"` correctas. Se llenaron las
+  filas viejas y se eliminaron duplicados del Sheet de prueba.
+- Regla operativa nueva documentada: el equipo debe nombrar las reuniones de Zoom con el
+  nombre del curso — de ahí sale `Curso` literal. Alternativa futura si cambia el esquema:
+  mapeo por Meeting ID con reuniones recurrentes.
+- JSON re-exportado a `n8n-workflows/zoom-asistencia.json`.
+
+---
+
+## 2026-07-02 — [Zoom Asistencia] Columna "% Asistencia" con fusión de intervalos
+
+**Estado:** Funcional
+**Proceso relacionado:** [[zoom-asistencia]]
+
+- Nueva columna `% Asistencia` en el nodo Code: por participante se fusionan los intervalos
+  join→leave solapados/contiguos (las sesiones de reconexión pueden solaparse — no sumar
+  doble), se recorta cada intervalo a `[inicio, finReal]` (tope natural de 100%), se suman
+  los ms conectados, se divide por la duración real de `Info Reunion` y se redondea (`"NN%"`).
+- Cambio aplicado en AMBAS copias: `scripts/zoom-asistencia/nodo-calcular-momentos-dorados.js`
+  y el workflow vivo vía PUT `/api/v1/workflows/jkNaE51PKQ4TQzNq`; JSON re-exportado a
+  `n8n-workflows/zoom-asistencia.json`. Header `% Asistencia` agregado en `H1` de `H3Test`
+  vía gspread — el nodo Sheets no necesitó cambios (auto-map por nombre de columna).
+- Validado reenviando el `meeting.ended` firmado localmente con el UUID real de la reunión
+  de prueba (ejecución #44 exitosa): filas con `98%` y `96%`, coherentes con 36 min y una
+  reconexión sin doble conteo. Filas duplicadas viejas de esa prueba eliminadas del Sheet.
+- Hallazgo: la clase real "Desarrollo Web - GIT, HTML y CSS" del 2026-07-01 (ejecución #40,
+  51 filas) corrió antes del cambio → filas con `% Asistencia` vacío. Se rellenaron
+  retroactivamente: UUID desde los datos de la ejecución #40 en n8n
+  (`GET /api/v1/executions/40?includeData=true`), participantes re-consultados a la API
+  de Zoom (conserva datos de reuniones terminadas), misma lógica de fusión, match por
+  correo → 51/51 filas actualizadas, columna completa en el Sheet.
+  Ninguna fila de esa clase trae `Identificacion` — refuerza la urgencia de la Prueba 4
+  (parseo de "Nombre correo cédula" en texto libre).
+- **Pendientes (no de esta tarea):** filtro para reuniones no-clase (prefijo de nombre o
+  lista de cursos) antes de producción, Prueba 2 (reunión ≤20 min) y Prueba 4.

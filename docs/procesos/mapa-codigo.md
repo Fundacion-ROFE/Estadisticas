@@ -8,17 +8,20 @@
 
 ## Ubicaciones raíz
 
-| Carpeta | Contiene |
+| Carpeta / Archivo | Contiene |
 |---|---|
 | `scripts/q10-consolidacion/` | Scripts de extracción Q10 y exportación a Sheets/JSON |
 | `scripts/q10-consolidacion/organizador/` | App GUI standalone (.exe) para operadores |
-| `tools/` | Herramientas locales con PII — nunca a GitHub |
+| `tools/` | Herramientas locales — gitignoreado |
+| `tools/panel_riesgo_gui.py` | GUI de análisis de riesgo con PII |
+| `tools/course_config.json` | Clasificación JC/MR/Stand-by de cursos (editada desde GUI Admin) |
+| `docs/dashboard/` | Dashboard público GitHub Pages — solo JSON agregados |
 
 ---
 
 ## `q10_to_sheets.py`
 
-**Propósito:** Login multi-paso en Q10 → descarga Estudiantes + Consolidado (4 periodos) → LEFT JOIN por email → sube a Google Sheets.
+**Propósito:** Login multi-paso en Q10 → descarga Consolidado de los 3 periodos activos (21, 22, 23) → extrae info del estudiante directamente del Consolidado → sube a Google Sheets. Sin endpoint Estudiantes, sin JOIN.
 
 **Servicios:** Q10 (`site6.q10.com` — endpoints internos AJAX, no API pública) · Google Sheets API
 
@@ -36,28 +39,32 @@ python q10_to_sheets.py --grupo h2test   # → pestaña h2test (Sheet público)
 |---|---|---|---|
 | `login_q10()` | — | `requests.Session` | 7 pasos AJAX encadenados (ver [[convenciones#Q10 Login multi-paso]]) |
 | `leer_excel_bytes(contenido)` | `bytes` | `pd.DataFrame` | Parse xlsx, auto-detecta fila header por palabras clave |
+| `mapear_columnas(df_cons)` | `pd.DataFrame` | `pd.DataFrame` | Consolidado → formato H1Test (ID, Nombre, Celular, Email, Curso, Avance, Estado) |
 | `_q10_post_ajax(session, url, data, referer)` | — | `Response` | Helper AJAX POST con headers corporativos |
 
 **Variables clave en script:**
 ```
 MAPEO_GRUPOS: dict         # --grupo → nombre pestaña Sheets
 MAPEO_SHEET_IDS: dict      # --grupo → Sheet ID
-PERIODOS = [21, 22, 23, 1] # Periodos Q10 con datos (20 siempre vacío)
+PERIODOS = [21, 22, 23]    # Periodos 2026: Logica-Nivel 2, Habilidades-Nivel 1, Unico MR
 TAMANIO_LOTE = 500         # Filas por lote al subir (cuota API)
 PAUSA_LOTE = 1.2           # Segundos entre lotes
+COL_NOMBRES/APELLIDOS/ID/CELULAR/EMAIL/CURSO/AVANCE  # Columnas del Excel Consolidado
 ```
 
-**Gotcha:** Periodo 20 devuelve `not_results` — omitido sin error. URLs Azure Blob expiran en ~3 min, descargar inmediatamente.
+**Gotcha:** Periodos 20 y 24 devuelven `not_results` — omitidos sin error. URLs Azure Blob expiran en ~3 min. El Consolidado incluye toda la info del estudiante — no se necesita el endpoint `/Estudiantes`.
 
 ---
 
 ## `export_stats.py`
 
-**Propósito:** Lee pestaña `h2test` → agrega estadísticas por curso en Python → genera `docs/dashboard/data.json` → git commit + push.
+**Propósito:** Lee pestaña `h2test` → clasifica cursos por programa (JC/MR/Stand-by) → agrega estadísticas por curso → genera `docs/dashboard/data.json` → git commit + push.
 
 **Servicios:** Google Sheets API (read only)
 
 **Sheet:** `h2test` — ID `1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs`
+
+**Clasificación de cursos:** lee `tools/course_config.json` primero; si el curso no está en el config, usa keywords `["emprendedoras", "idea a la acci"]` → MR; todo lo demás → JC.
 
 **Comando:**
 ```bash
@@ -69,14 +76,17 @@ python export_stats.py
 | Función | Retorna | Descripción |
 |---|---|---|
 | `detectar_grupos(row0, row1)` | `list[dict]` | Detecta grupos de cursos desde doble encabezado (celdas fusionadas) |
-| `procesar_h2test(all_values)` | `(por_curso, anomalias, total_unicos)` | Agrega avance por curso, cuenta SIN MATCH / AVANCE 0% / IRREGULAR |
-| `generar_json(por_curso, anomalias, total)` | `dict` | Construye estructura JSON pública |
+| `_cargar_config_cursos()` | `dict` | Lee `tools/course_config.json`; retorna `{"jc":[], "mr":[], "stand":[]}` |
+| `_clasificar_curso(nombre, config)` | `"jc"\|"mr"\|"stand"` | Config tiene precedencia sobre keywords |
+| `_procesar_grupos(filas, grupos)` | `(por_curso, emails, habilitados, av0, avirr)` | Agrega estadísticas para un subconjunto de grupos |
+| `procesar_h2test(all_values)` | `(pc_jc, pc_mr, pc_stand, anom_jc, anom_mr, n_jc, hab_jc, n_mr, hab_mr, n_stand, hab_stand, total_db)` | Separa y procesa los tres programas |
+| `generar_json(...)` | `dict` | Construye JSON con secciones JC (top-level) + `mr` + `stand` |
 | `guardar_json(datos)` | — | Escribe `docs/dashboard/data.json` |
 | `git_commit_y_push(timestamp)` | — | `git add` + `commit` + `push origin main` |
 
-**Output JSON:** `docs/dashboard/data.json` — estructura `{por_curso[], anomalias[], totales{}}`
+**Output JSON:** `docs/dashboard/data.json` — estructura `{por_curso[] (JC), anomalias[], totales{}, mr:{...}, stand:{...}}`
 
-**Gotcha:** h2test tiene doble encabezado (fila 1 = nombres de cursos fusionados, fila 2 = sub-headers). `detectar_grupos()` detecta los grupos por la posición del sub-header "Identificacion" en fila 2.
+**Gotcha:** `total_estudiantes_unicos` en la sección `mr` es el count de emails únicos (dedup entre ambos cursos MR), no la suma de inscritas. El contador de anomalías "AVANCE 0%" es por matrícula, no por estudiante única.
 
 ---
 
@@ -199,6 +209,94 @@ build_exe.bat
 
 ---
 
+## `tools/panel_riesgo_gui.py`
+
+**Propósito:** GUI Tkinter de análisis de riesgo. Cruza h2test (Q10) × Avance (manual) por email, clasifica estudiantes y permite explorar los datos con tablas interactivas. Gestiona también la clasificación de cursos por programa.
+
+**Servicios:** Google Sheets API (read — ambos Sheets)
+
+**⚠ PRIVACIDAD:** Maneja PII en memoria. Nunca subir a GitHub. `tools/` está en `.gitignore`.
+
+**Comando:**
+```bash
+python tools/panel_riesgo_gui.py
+```
+
+**Arquitectura interna:**
+
+```
+_worker()  →  leer_h2test() + leer_avance() + cruzar()  →  queue
+_on_listos()  →  _build_resumen_jc() + _build_tab_mr() + _build_tab_admin()
+```
+
+**Tabs:**
+
+| Tab | Descripción |
+|---|---|
+| 🎓 Jóvenes creaTIvos | 6 KPI cards clickeables → tabla dinámica (ver vistas abajo) |
+| ⚠ Atención | Una fila por (estudiante, curso) con avance < umbral; doble clic → popup detalle |
+| 💡 Mujeres ROFÉ | 6 KPI cards clickeables → tabla dinámica (ver vistas abajo) |
+| ⚙ Admin | Lista de todos los cursos con ComboBox JC/MR/Stand-by; Guardar → `course_config.json` |
+
+**Vistas JC** (tarjeta activa se resalta; tabla cambia en tiempo real):
+
+| Vista | Fuente de datos | Columnas clave |
+|---|---|---|
+| EN Q10 JC | `q10_jc.values()` | Nombre · Email · # Cursos · Promedio Q10 % |
+| MATCH AMBAS | `casos["atencion"] + avance_0 + ok` | Nombre · Cédula · Email · Q10 % · Manual % · Estado |
+| ATENCIÓN | `casos["atencion"]` | Nombre · Cédula · Email · **Curso** · Q10 % · Manual % · Estado |
+| AVANCE 0% | `casos["avance_0_cruzado"]` | Nombre · Cédula · Email · # Cursos · Manual % · Diagnóstico |
+| SIN MATCH | `casos["sin_match_manual"]` | Nombre · Email · # Cursos · Promedio Q10 % |
+| OK ✓ | `casos["ok"]` cruzado con `q10_jc` | Nombre · Cédula · Email · Q10 % · Manual % |
+
+**Vistas MR:**
+
+| Vista | Columnas clave |
+|---|---|
+| MUJERES | Nombre · Cédula · Email · # Cursos · Promedio · Estado |
+| CURSOS | Nombre curso · Inscritas · Promedio · Mín · Máx · Estado |
+| PROMEDIO / OK / RIESGO | Nombre · Email · [Curso 1] · [Curso 2] · Promedio |
+| AVANCE 0% | Nombre · Email · [Curso 1] · [Curso 2] |
+
+**Componente `TablaFiltrable`:** búsqueda de texto en tiempo real · filtro por columna específica · ordenamiento por header · doble clic configurable · exportar CSV de la vista activa.
+
+**Funciones clave de datos:**
+
+| Función | Retorna | Descripción |
+|---|---|---|
+| `leer_h2test(gc)` | `(q10_jc, q10_mr, cursos_info)` | Lee h2test, clasifica por `course_config.json`, retorna dicts por programa + lista de cursos para Admin |
+| `leer_avance(gc)` | `dict[email→{cursos[]}]` | Lee pestaña Avance, colapsa por email |
+| `cruzar(q10, avance, umbral)` | `(casos, total_av, total_q)` | JOIN por email → atencion/avance_0_cruzado/sin_match_manual/ok |
+| `_build_resumen_jc(...)` | — | Construye tab JC con header + KPIs clickeables + frame de tabla |
+| `_set_jc_view(vista)` | — | Resalta tarjeta activa y regenera tabla según la vista |
+| `_build_tab_mr(q10_mr)` | — | Construye tab MR con header + KPIs clickeables + barras + frame de tabla |
+| `_set_mr_view(vista)` | — | Resalta tarjeta activa MR y regenera tabla |
+| `_build_tab_admin(cursos_info)` | — | Lista scrollable de cursos con ComboBox; lee config inicial |
+| `_guardar_admin()` | — | Lee todos los ComboBox → escribe `tools/course_config.json` |
+
+**Gotcha:** `cruzar()` solo ve estudiantes que están en Q10 JC. Los que solo están en el manual (no en Q10) no aparecen en ninguna vista JC — solo se cuenta su total en el header.
+
+---
+
+## `tools/course_config.json`
+
+**Propósito:** Fuente de verdad para la clasificación de cursos por programa. Editado desde el Tab Admin de `panel_riesgo_gui.py` — nunca a mano.
+
+**⚠ PRIVACIDAD:** No contiene PII, pero está en `tools/` (gitignoreado) porque es configuración operativa local que puede cambiar entre ciclos. No subir a GitHub.
+
+**Estructura:**
+```json
+{
+  "jc":    ["NOMBRE EXACTO DEL CURSO EN MAYÚSCULAS", ...],
+  "mr":    ["DE LA IDEA A LA ACCIÓN...", "HABILIDADES DEL SER..."],
+  "stand": []
+}
+```
+
+Los nombres deben coincidir exactamente con cómo aparecen en fila 1 de h2test (espacios normalizados, sin `\xa0`). Si el archivo no existe o un curso no aparece en ninguna lista, `_clasificar_curso()` en `export_stats.py` usa keywords de fallback.
+
+---
+
 ## `tools/panel_riesgo.py`
 
 **Propósito:** Cruza pestaña `Avance` (manual) × pestaña `h2test` (Q10) por email → identifica estudiantes en riesgo → 4 secciones de reporte en consola + CSV opcional.
@@ -234,6 +332,33 @@ python tools/panel_riesgo.py --umbral 50        # umbral de atención (default 6
 | `exportar_csv(casos, segmento, umbral)` | — | Escribe 3 CSVs en `tools/reportes/` |
 
 **Nota:** `leer_avance()` lee la pestaña `Avance` del Sheet manual (no la pestaña `asistencias`).
+
+---
+
+## `scripts/zoom-asistencia/`
+
+**Propósito:** Automatización de asistencia Zoom. Workflow n8n activo (`Zoom - Asistencia`,
+ID `jkNaE51PKQ4TQzNq`). Ver [[zoom-asistencia]] para detalle completo de nodos y pruebas.
+
+| Archivo | Contiene |
+|---|---|
+| `.env` | Credenciales Zoom S2S OAuth (`ZOOM_ACCOUNT_ID`, `ZOOM_CLIENT_ID`, `ZOOM_CLIENT_SECRET`, `ZOOM_WEBHOOK_SECRET_TOKEN`) — gitignoreado. Cargado como env vars del proceso n8n por `iniciar_n8n.bat`. |
+| `nodo-calcular-momentos-dorados.js` | Código del nodo Code `Calcular Momentos Dorados` en el workflow — calcula si cada participante estuvo conectado en los 3 "momentos dorados" (min 10, mitad, 10 min antes del fin) a partir de `join_time`/`leave_time` de `past_meetings/{uuid}/participants`. Copia de referencia — la fuente de verdad real es `n8n-workflows/zoom-asistencia.json`. |
+
+**Gotcha:** el script asume que el nodo "Info Reunion" (`GET /past_meetings/{uuid}`) y el nodo "Participantes" (`GET /past_meetings/{uuid}/participants`) ya existen en el workflow con esos nombres exactos — si se renombran en n8n, hay que actualizar las referencias `$('Info Reunion')` dentro del Code.
+
+## `n8n-workflows/zoom-asistencia.json`
+
+**Propósito:** Export del workflow `Zoom - Asistencia` (14 nodos: Webhook Trigger + validación
+CRC/firma HMAC vía nodos Crypto + fan-out ack-inmediato/procesamiento-en-fondo + Wait 90s +
+OAuth manual a Zoom + Info Reunion + Participantes paginado + Code + Google Sheets Append).
+
+**Credenciales n8n asociadas (creadas vía API, no en el JSON por seguridad):**
+- `Zoom S2S Basic Auth` (httpBasicAuth) — client_id/secret de Zoom.
+- `Zoom Webhook HMAC Secret` (crypto) — Secret Token de Zoom Webhook. Editar manualmente desde
+  la UI de n8n cuando Zoom lo entregue (la API pública no soporta editar credenciales).
+- `Q10 Automatizacion Service Account` (googleApi) — mismo Service Account de
+  `credenciales_service_account.json`, con acceso ya confirmado a `H3Test`.
 
 ---
 

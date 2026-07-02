@@ -84,6 +84,7 @@ Google Sheets Avance   ──┘     4 tabs interactivos (PII):
 | Consolidación Q10 | [[q10-consolidacion]] | 2026-06-25 | Schedule 4h + Telegram activos · 1,145 estudiantes 2026 · 4,553 total DB |
 | Dashboard web | [[dashboard-web]] | 2026-06-26 | GitHub Pages live · 4 tabs (JC/Avance/Comp/Admin) · panel MR · separación JC/MR en Python |
 | Panel de riesgo GUI | [[dashboard-web]] | 2026-06-26 | 4 tabs interactivos · KPIs clickeables · vistas dinámicas JC y MR · Tab Admin con course_config.json |
+| Pseudonimizador | [[pseudonimizador]] | 2026-06-30 | GitHub Pages live · 3 tabs · Web Worker para 22 MB / 44 pestañas · Pendiente demo con equipo |
 
 ---
 
@@ -91,8 +92,7 @@ Google Sheets Avance   ──┘     4 tabs interactivos (PII):
 
 | Proceso | Nota | Bloqueado por |
 |---|---|---|
-| Asistencia Zoom | [[zoom-asistencia]] | Confirmar cómo se captura Email/ID en sesiones reales |
-| Pseudonimizador | [[pseudonimizador]] | App completa lista (HTML único, 3 tabs) · Pendiente push a GitHub Pages y prueba con equipo |
+| Asistencia Zoom | [[zoom-asistencia]] | **Funcional** — probado de punta a punta con reunión real; columna `% Asistencia` agregada (2026-07-02). Pendiente: filtro de reuniones no-clase, casos límite (reunión corta, invitado sin correo) y Sheet de producción |
 
 ---
 

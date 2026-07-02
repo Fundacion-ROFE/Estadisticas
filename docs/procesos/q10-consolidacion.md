@@ -19,7 +19,7 @@ Dos triggers en paralelo — ver patrón en [[convenciones#Trigger dual: Schedul
 
 | Trigger | Cuándo corre | Notifica |
 |---|---|---|
-| **Schedule 12h** | Automático cada 12 horas (si n8n está corriendo) | No — errores visibles en log de n8n |
+| **Schedule 4h** | Automático cada 4 horas (si n8n está corriendo) | No — errores visibles en log de n8n |
 | **Telegram `/Actualizar Q10`** | On-demand por el equipo | Sí — respuesta con resumen en el chat |
 
 n8n arranca automáticamente al iniciar sesión en el PC de Samuel (Task Scheduler → `iniciar_n8n.bat`).
@@ -35,14 +35,12 @@ Para agregar nuevos grupos: editar `MAPEO_GRUPOS`, `MAPEO_SHEET_IDS` en `q10_to_
 **Fase 1 — Extracción Q10 → H1Test** (`q10_to_sheets.py --grupo h1test`):
 
 1. Login Q10 multi-paso (7 solicitudes AJAX encadenadas — ver [[convenciones#Q10 Login multi-paso]])
-2. POST endpoint Estudiantes → URL Azure Blob → GET Excel inmediato → `df_estudiantes`
-3. POST endpoint Consolidado para cada periodo `[21, 22, 23, 1]` → GET Excel → DataFrame por periodo
-4. Concatenar periodos → `df_consolidado`
-5. LEFT JOIN por email (`df_estudiantes.Correo ↔ df_consolidado.Email`)
-6. Renombrar columnas: `Identificacion, Nombre, Celular, Email, Curso, Avance`
-7. Filtrar archivados: solo `Estado = A` (activos)
-8. Limpiar H1Test desde fila 2 y subir en lotes de 500 con pausa 1.2s
-9. Imprimir `RESUMEN: grupo=h1test filas=N estado=exito`
+2. POST endpoint Consolidado para cada periodo `[21, 22, 23]` → GET Excel → DataFrame por periodo
+3. Concatenar los 3 DataFrames → `df_consolidado` (el Consolidado ya incluye ID, nombre, celular, email del estudiante)
+4. `mapear_columnas()`: extrae `Número identificación estudiante`, `Nombres/Apellidos estudiante`, `Celular`, `Email`, `Nombre asignatura`, `Porcentaje progreso` → formato H1Test
+5. Columnas finales: `Identificacion, Nombre, Celular, Email, Curso, Avance, Estado` (Estado="A" siempre — `archivado=false` filtra inactivos)
+6. Limpiar H1Test desde fila 2 y subir en lotes de 500 con pausa 1.2s
+7. Imprimir `RESUMEN: grupo=h1test filas=N estado=exito`
 
 **Fase 2 — Organizar H1Test → h2test** (`organizador_headless.py`): *(solo para `/actualizar h2test`)*
 
@@ -69,12 +67,11 @@ Q10 no es una API pública — son endpoints internos de la webapp (`site6.q10.c
 
 | Endpoint | Método | Devuelve |
 |---|---|---|
-| `/Reportes/Excel/Comunidad/Estudiantes` | POST | Código de matrícula, Nombre, Email, Celular |
-| `/Reportes/Excel/ExcelReporte/EducacionVirtual/ConsolidadoEducacionVirtual` | POST | Nombre asignatura, Porcentaje progreso |
+| `/Reportes/Excel/ExcelReporte/EducacionVirtual/ConsolidadoEducacionVirtual` | POST | ID estudiante, Nombres, Apellidos, Celular, Email, Nombre asignatura, Porcentaje progreso |
 
-Ambos devuelven `{"url": "https://q10storage.blob.core.windows.net/...xlsx?..."}` — URL de Azure Blob que **expira en ~3 min**. Descargar inmediatamente.
+Devuelve `{"url": "https://q10storage.blob.core.windows.net/...xlsx?..."}` — URL de Azure Blob que **expira en ~3 min**. Descargar inmediatamente.
 
-Periodos con datos confirmados: `21, 22, 23`. Periodo `1` incluido sin garantía. Periodo `20` siempre `not_results` (omitido).
+Periodos con datos confirmados: `21` (Logica-Nivel 2-2026), `22` (Habilidades-Nivel 1-2026), `23` (Unico MR-2026). Periodos `20` y `24` siempre `not_results` (omitidos). El endpoint `/Estudiantes` ya no se usa — el Consolidado contiene toda la información del estudiante.
 
 ## Destino de los datos
 
@@ -90,12 +87,13 @@ Periodos con datos confirmados: `21, 22, 23`. Periodo `1` incluido sin garantía
 
 ## Decisiones de diseño clave
 
-- **JOIN por Email, no por código.** El Consolidado no exporta el Código de matrícula.
-- **LEFT JOIN intencional.** Estudiantes sin cursos aparecen con Curso/Avance vacíos — significa matriculado en Q10 sin actividad virtual, o email no coincide entre sistemas.
+- **Consolidado como única fuente.** El endpoint `/ConsolidadoEducacionVirtual` incluye toda la información del estudiante (ID, nombres, apellidos, celular, email) además del progreso — no se necesita el endpoint `/Estudiantes`. Simplifica el flujo y elimina la fragilidad del LEFT JOIN por email.
+- **Sin JOIN.** Al usar solo el Consolidado, cada fila es directamente un registro estudiante × asignatura, sin necesidad de cruzar fuentes.
+- **`archivado=false` reemplaza el filtro `Estado=A`.** La exclusión de archivados ocurre en el payload del POST, no en pandas. Estado se fija en "A" en `mapear_columnas()`.
 - **Datos crudos, sin agrupación.** Una fila por estudiante × curso. El equipo reorganiza con fórmulas en Sheets.
-- **Borrar-y-resubir, no actualización por clave.** Válido mientras H1Test tenga solo las 6 columnas propias. Si el equipo agrega columnas a la derecha (fórmulas, notas), migrar a actualización por clave.
+- **Borrar-y-resubir, no actualización por clave.** Válido mientras H1Test tenga solo las 7 columnas propias. Si el equipo agrega columnas a la derecha (fórmulas, notas), migrar a actualización por clave.
 - **Script parametrizable `--grupo`.** Escalable a nuevas pestañas sin código nuevo.
-- **Trigger Telegram, no Schedule.** El equipo controla cuándo actualizar.
+- **Trigger dual Schedule + Telegram.** Schedule para actualizaciones silenciosas; Telegram para forzar on-demand.
 
 ## Gotchas / Limitaciones conocidas
 
@@ -107,6 +105,9 @@ Periodos con datos confirmados: `21, 22, 23`. Periodo `1` incluido sin garantía
 - **Dedup debe ser por Email, no Identificacion.** El mismo estudiante tiene `Codigo de matricula` diferente en cada período, pero siempre el mismo email.
 - **`ws_h2.clear()` vs `values_clear("A1:Z1000")`.** h2test tiene 9 bloques × 8 cols = 72 cols, y el bloque SIN CURSO puede tener 3400+ filas. El rango Z1000 solo cubre 26 cols × 1000 filas — datos viejos más allá de esos límites persisten y corrompen export_stats. Usar siempre `ws_h2.clear()`.
 - **Token del bot de Telegram estuvo expuesto** en un chat de desarrollo. Regenerar con BotFather antes de uso en producción real.
+- **`wmic` colgado en Windows 11.** `iniciar_n8n.bat` usaba `wmic process` para matar el n8n anterior — en Windows 11 `wmic` está deprecated y puede colgar indefinidamente. Reemplazado por `Get-CimInstance Win32_Process` vía PowerShell (2026-06-26). Síntoma: bat imprime [2/4] y no avanza.
+- **WEBHOOK_URL se inyecta al arrancar n8n.** Si cloudflared se reinicia y genera una URL nueva, n8n debe reiniciarse también para heredarla — de lo contrario el registro del webhook con Telegram falla con "Failed to resolve host". Siempre reiniciar con el bat completo, nunca solo cloudflared.
+- **Workflow quedó inactivo tras PUT de actualización.** Al actualizar el workflow vía API con el workflow activo se producía error; se desactivó, se actualizó, pero no se reactivó. El bat ya tiene loop que detecta esto y reactiva solo. Verificar con `GET /api/v1/workflows/Rblg81qifVshsRae` si se sospecha inactividad.
 - **Si se agregan columnas propias a H1Test o h2test** a la derecha de las columnas propias, la lógica borrar-y-resubir las destruiría.
 - **Nombre de pestaña h2test es minúsculas intencional.** Así está creada en Google Sheets. No cambiar a `H2Test` ni en el código ni en Sheets — rompería la conexión. `H1Test` usa CamelCase porque se creó primero con ese nombre; son convenciones distintas por origen histórico.
 
@@ -146,7 +147,7 @@ El equipo clasifica los registros bajo 4 categorías tras la carga:
 - [x] Service Account con acceso de Editor al Sheet de h2test (`1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs`)
 - [x] Headers fila 1 escritos en h2test: `python setup_headers.py --pestaña h2test --confirmar`
 - [x] h2test operativa: se actualiza vía `/Actualizar Q10` — datos subiendo correctamente
-- [x] Schedule 12h agregado al workflow (2026-06-25) — actualización automática sin intervención
+- [x] Schedule **4h** agregado al workflow (2026-06-25) — actualización automática sin intervención
 - [x] Task Scheduler configurado (2026-06-25) — n8n arranca al iniciar sesión de EstudiantesJC
 - [ ] Regenerar token del bot con BotFather (estaba expuesto — hacer antes de prod real)
 
