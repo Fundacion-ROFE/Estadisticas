@@ -1,45 +1,45 @@
 {
-  "ultima_actualizacion": "2026-07-02T11:01:37.300243-05:00",
+  "ultima_actualizacion": "2026-07-02T15:01:43.230939-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
-      "estudiantes": 862,
-      "promedio": 98.47,
+      "estudiantes": 808,
+      "promedio": 98.37,
       "min": 0.0,
       "max": 100.0
     },
     {
       "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
-      "estudiantes": 829,
-      "promedio": 94.51,
+      "estudiantes": 778,
+      "promedio": 98.74,
       "min": 0.0,
       "max": 101.0
     },
     {
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
-      "estudiantes": 805,
-      "promedio": 92.75,
+      "estudiantes": 777,
+      "promedio": 96.11,
       "min": 0.0,
       "max": 100.0
     },
     {
       "curso": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
-      "estudiantes": 853,
-      "promedio": 95.11,
+      "estudiantes": 799,
+      "promedio": 96.93,
       "min": 0.0,
       "max": 100.0
     },
     {
       "curso": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
-      "estudiantes": 861,
-      "promedio": 96.37,
+      "estudiantes": 807,
+      "promedio": 96.69,
       "min": 0.0,
       "max": 100.0
     },
     {
       "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
-      "estudiantes": 808,
-      "promedio": 94.48,
+      "estudiantes": 777,
+      "promedio": 98.16,
       "min": 0.0,
       "max": 100.0
     }
@@ -51,7 +51,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 157
+      "cantidad": 71
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -60,16 +60,16 @@
   ],
   "totales": {
     "total_cursos": 6,
-    "total_estudiantes_unicos": 862,
-    "total_habilitados": 862,
-    "total_db": 1145
+    "total_estudiantes_unicos": 808,
+    "total_habilitados": 808,
+    "total_db": 1091
   },
   "mr": {
     "por_curso": [
       {
         "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
         "estudiantes": 136,
-        "promedio": 20.82,
+        "promedio": 23.46,
         "min": 0.0,
         "max": 100.0
       },
