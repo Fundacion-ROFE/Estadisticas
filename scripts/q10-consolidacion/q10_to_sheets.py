@@ -56,10 +56,15 @@ PAUSA_LOTE        = 1.2   # segundos entre lotes (cuota API Sheets)
 
 PERIODOS = [21, 22, 23]  # períodos 2026 activos con datos
 
-# Nombres de columnas confirmados en primera corrida (2026-06-18)
-COL_CONS_EMAIL   = "Email"             # clave de JOIN con Estudiantes
-COL_CONS_CURSO   = "Nombre asignatura" # campo Curso en H1Test
-COL_CONS_AVANCE  = "Porcentaje progreso"  # campo Avance en H1Test
+# Columnas del Excel Consolidado (confirmadas en HAR 2026-06-26)
+# El Consolidado ya incluye toda la info del estudiante — no se necesita endpoint Estudiantes
+COL_NOMBRES   = "Nombres estudiante"
+COL_APELLIDOS = "Apellidos estudiante"
+COL_ID        = "Número identificación estudiante"
+COL_CELULAR   = "Celular"
+COL_EMAIL     = "Email"
+COL_CURSO     = "Nombre asignatura"
+COL_AVANCE    = "Porcentaje progreso"
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -251,83 +256,6 @@ def descargar_excel(session: requests.Session, url_azure: str) -> bytes:
     return resp.content
 
 
-def descargar_estudiantes(session: requests.Session) -> pd.DataFrame:
-    log("Descargando reporte Estudiantes desde Q10...")
-
-    url = f"{Q10_BASE_URL}/Reportes/Excel/Comunidad/Estudiantes"
-    payload = [
-        ("Titulo", "Estudiantes"),
-        ("Filtros[0].Name", "rangoFechas"),
-        ("Filtros[0].PartialName", "_DatesRangeFilter"),
-        ("rangoFechas.InitialDate", ""),
-        ("rangoFechas.FinalDate", ""),
-        ("Filtros[1].Name", "Sede"),
-        ("Filtros[1].PartialName", "_SelectFilter"),
-        ("Sede", ""),
-        ("Filtros[2].Name", "Programa"),
-        ("Filtros[2].PartialName", "_SelectFilter"),
-        ("Programa", ""),
-        ("Filtros[3].Name", "Estado"),
-        ("Filtros[3].PartialName", "_RadioFilter"),
-        ("Estado", ""),
-        ("Filtros[4].Name", "informacionAdicional"),
-        ("Filtros[4].PartialName", "_SelectFilter"),
-        ("informacionAdicional", ""),
-        ("Filtros[5].Name", "Personalizaciones"),
-        ("Filtros[5].PartialName", "_BooleanFilter"),
-        ("Personalizaciones", "false"),
-        ("Campos[mat_codigoP]", "Código de matrícula"),
-        ("Campos[per_primer_nombre]", "Primer nombre"),
-        ("Campos[per_segundo_nombre]", "Segundo nombre"),
-        ("Campos[per_primer_apellido]", "Primer apellido"),
-        ("Campos[per_segundo_apellido]", "Segundo apellido"),
-        ("Campos[per_celular]", "Celular"),
-        ("Campos[per_email]", "Correo electrónico"),
-        ("Campos[mat_estado]", "Estado"),
-        ("X-Requested-With", "XMLHttpRequest"),
-    ]
-
-    resp = session.post(url, data=payload, headers=_headers_reporte(), timeout=60)
-    resp.raise_for_status()
-
-    datos = resp.json()
-    url_excel = datos.get("url")
-    if not url_excel:
-        raise ValueError(
-            f"Respuesta inesperada del endpoint Estudiantes: {datos}\n"
-            "No se encontró campo 'url' en el JSON."
-        )
-
-    log("  URL de descarga obtenida. Descargando Excel...")
-    contenido = descargar_excel(session, url_excel)
-
-    df = leer_excel_bytes(contenido)
-    log(f"  Columnas del Excel Estudiantes: {df.columns.tolist()}")
-    log(f"  Filas descargadas: {len(df)}")
-
-    # Construir columna Nombre (concatenar partes ignorando vacíos)
-    partes_nombre = ["Primer nombre", "Segundo nombre", "Primer apellido", "Segundo apellido"]
-    partes_presentes = [c for c in partes_nombre if c in df.columns]
-    df["Nombre"] = df[partes_presentes].apply(
-        lambda row: " ".join(v.strip() for v in row if v.strip()),
-        axis=1,
-    )
-
-    # Renombrar columnas clave
-    df = df.rename(columns={
-        "Código de matrícula": "Codigo",
-        "Correo electrónico":  "Correo",
-        "Celular":             "Celular",
-    })
-
-    columnas_deseadas = ["Codigo", "Nombre", "Correo", "Celular", "Estado"]
-    ausentes = [c for c in columnas_deseadas if c not in df.columns]
-    if ausentes:
-        log(f"  ADVERTENCIA: columnas no encontradas en Estudiantes: {ausentes}")
-
-    return df[[c for c in columnas_deseadas if c in df.columns]]
-
-
 # ── Q10: Consolidado Educación Virtual ───────────────────────────────────────
 def descargar_consolidado_periodo(
     session: requests.Session, periodo_id: int
@@ -387,6 +315,34 @@ def descargar_todos_consolidados(session: requests.Session) -> pd.DataFrame:
     df_total = pd.concat(frames, ignore_index=True)
     log(f"Consolidado unificado: {len(df_total)} filas.")
     return df_total
+
+
+def mapear_columnas(df_cons: pd.DataFrame) -> pd.DataFrame:
+    """Convierte el Consolidado Q10 al formato H1Test (Identificacion|Nombre|Celular|Email|Curso|Avance|Estado)."""
+    df = df_cons.copy()
+
+    partes = [c for c in [COL_NOMBRES, COL_APELLIDOS] if c in df.columns]
+    df["Nombre"] = df[partes].apply(
+        lambda row: " ".join(v.strip() for v in row if v.strip()), axis=1
+    )
+
+    df = df.rename(columns={
+        COL_ID:      "Identificacion",
+        COL_CELULAR: "Celular",
+        COL_EMAIL:   "Email",
+        COL_CURSO:   "Curso",
+        COL_AVANCE:  "Avance",
+    })
+
+    # Estado siempre A: el Consolidado usa archivado=false — solo estudiantes activos
+    df["Estado"] = "A"
+
+    COLS_FINALES = ["Identificacion", "Nombre", "Celular", "Email", "Curso", "Avance", "Estado"]
+    ausentes = [c for c in COLS_FINALES if c not in df.columns]
+    if ausentes:
+        log(f"ADVERTENCIA: columnas faltantes del Consolidado: {ausentes}")
+
+    return df[[c for c in COLS_FINALES if c in df.columns]].reset_index(drop=True)
 
 
 # ── Google Sheets ─────────────────────────────────────────────────────────────
@@ -473,97 +429,50 @@ def main() -> None:
         # 1. Login Q10
         session = login_q10()
 
-        # 2. Reporte Estudiantes
-        df_est = descargar_estudiantes(session)
-
-        # 3. Consolidado Educación Virtual
+        # 2. Consolidado Educación Virtual — ya incluye toda la info del estudiante
         df_cons = descargar_todos_consolidados(session)
 
-        # 4. JOIN Estudiantes + Consolidado por Email
-        # El Consolidado no exporta Código de matrícula; la clave es el correo.
         if df_cons.empty:
-            log("Sin datos del Consolidado — subiendo solo Estudiantes.")
-            df_joined = df_est.copy()
-            df_joined["Curso"]  = ""
-            df_joined["Avance"] = ""
-        else:
-            ausentes_cons = [c for c in [COL_CONS_EMAIL, COL_CONS_CURSO, COL_CONS_AVANCE]
-                             if c not in df_cons.columns]
-            if ausentes_cons:
-                log(f"ADVERTENCIA: columnas no encontradas en Consolidado: {ausentes_cons}")
-                log("  Subiendo solo Estudiantes sin datos de progreso.")
-                df_joined = df_est.copy()
-                df_joined["Curso"]  = ""
-                df_joined["Avance"] = ""
-            else:
-                log(f"JOIN: Estudiantes.Correo ↔ Consolidado.{COL_CONS_EMAIL}")
-                df_cons_sel = (
-                    df_cons[[COL_CONS_EMAIL, COL_CONS_CURSO, COL_CONS_AVANCE]]
-                    .rename(columns={
-                        COL_CONS_EMAIL:  "Correo",
-                        COL_CONS_CURSO:  "Curso",
-                        COL_CONS_AVANCE: "Avance",
-                    })
-                )
-                df_joined = df_est.merge(df_cons_sel, on="Correo", how="left")
-                if "Curso"  not in df_joined.columns: df_joined["Curso"]  = ""
-                if "Avance" not in df_joined.columns: df_joined["Avance"] = ""
-                log(f"  Filas tras JOIN: {len(df_joined)} (estudiantes × asignaturas)")
+            log("ERROR: ningún periodo devolvió datos del Consolidado.")
+            sys.exit(1)
 
-        # 5. Renombrar a nombres finales y seleccionar en el orden exacto de H1Test
-        #    Identificacion | Nombre | Celular | Email | Curso | Avance
-        df_joined = df_joined.rename(columns={
-            "Codigo": "Identificacion",
-            "Correo": "Email",
-        })
-
-        COLS_FINALES = ["Identificacion", "Nombre", "Celular", "Email", "Curso", "Avance", "Estado"]
-        ausentes_final = [c for c in COLS_FINALES if c not in df_joined.columns]
-        if ausentes_final:
-            log(f"ADVERTENCIA: columnas faltantes en el DataFrame final: {ausentes_final}")
-
-        df_final = (
-            df_joined[[c for c in COLS_FINALES if c in df_joined.columns]]
-            .fillna("")
-            .astype(str)
-            .replace({"nan": "", "<NA>": ""})
-        )
+        # 3. Mapear columnas al formato H1Test
+        df_final = mapear_columnas(df_cons)
+        df_final = df_final.fillna("").astype(str).replace({"nan": "", "<NA>": ""})
 
         log(f"DataFrame final: {len(df_final)} filas × {len(df_final.columns)} columnas.")
         log(f"  Columnas: {df_final.columns.tolist()}")
 
-        # Previsualización de las primeras 5 filas
         log("Primeras 5 filas del DataFrame final:")
         for i, row in df_final.head(5).iterrows():
             log(f"  [{i+1}] " + " | ".join(f"{c}={str(v)[:20]!r}" for c, v in row.items()))
 
-        # 6. Conectar a Sheets y verificar que el header coincide
+        # 4. Conectar a Sheets y verificar header
         hoja = conectar_sheets()
 
+        cols_esperadas = df_final.columns.tolist()
         header_actual = hoja.row_values(1)
         if header_actual:
-            if header_actual != COLS_FINALES:
+            if header_actual != cols_esperadas:
                 log(f"AVISO: el header de la fila 1 en '{NOMBRE_HOJA}' NO coincide con el orden esperado.")
-                log(f"  Esperado : {COLS_FINALES}")
+                log(f"  Esperado : {cols_esperadas}")
                 log(f"  Actual   : {header_actual}")
                 log("  → Actualiza manualmente la fila 1 del Sheet antes de usar fórmulas.")
             else:
                 log(f"  Header de '{NOMBRE_HOJA}' verificado: coincide con el orden esperado.")
         else:
             log(f"AVISO: la fila 1 de '{NOMBRE_HOJA}' está vacía. Agrega los encabezados manualmente:")
-            log(f"  {COLS_FINALES}")
+            log(f"  {cols_esperadas}")
 
         subir_a_sheets(hoja, df_final)
 
-        # 7. Resumen
+        # 5. Resumen
         log("=" * 60)
         log("RESUMEN FINAL")
-        log(f"  Estudiantes descargados : {len(df_est)}")
-        log(f"  Filas del Consolidado   : {len(df_cons)}")
-        log(f"  Filas subidas a Sheets  : {len(df_final)}")
-        log(f"  Hoja actualizada        : {NOMBRE_HOJA}")
+        log(f"  Filas del Consolidado (3 periodos) : {len(df_cons)}")
+        log(f"  Filas subidas a Sheets             : {len(df_final)}")
+        log(f"  Hoja actualizada                   : {NOMBRE_HOJA}")
         log("=" * 60)
-        # Línea parseable para n8n (extrae grupo y filas con regex)
         print(f"RESUMEN: grupo={args.grupo} filas={len(df_final)} estado=exito", flush=True)
 
     except SystemExit:

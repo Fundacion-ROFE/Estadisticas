@@ -1,14 +1,25 @@
 {
+  "updatedAt": "2026-06-30T14:12:54.341Z",
+  "createdAt": "2026-06-22T15:18:02.327Z",
+  "id": "Rblg81qifVshsRae",
   "name": "Bot Q10 - Actualizar Grupos",
+  "description": null,
+  "active": false,
+  "isArchived": false,
   "nodes": [
     {
       "parameters": {
-        "updates": ["message"],
+        "updates": [
+          "message"
+        ],
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.1,
-      "position": [0, 300],
+      "position": [
+        0,
+        304
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000001",
       "name": "Telegram Trigger",
       "webhookId": "7f3a2b1c-4d5e-6f70-8901-2b3c4d5e6f7a",
@@ -25,16 +36,19 @@
           "interval": [
             {
               "field": "hours",
-              "hoursInterval": 12
+              "hoursInterval": 4
             }
           ]
         }
       },
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [0, -200],
+      "position": [
+        0,
+        -208
+      ],
       "id": "sched-node-0001-0001-0001-000000000001",
-      "name": "Schedule 12h"
+      "name": "Schedule 4h"
     },
     {
       "parameters": {
@@ -42,20 +56,31 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [220, 300],
+      "position": [
+        224,
+        304
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000002",
       "name": "Parsear Comando"
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "cond-valido-001",
               "leftValue": "={{ $json.valido }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals", "rightType": "any" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "rightType": "any"
+              }
             }
           ],
           "combinator": "and"
@@ -64,7 +89,10 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [440, 300],
+      "position": [
+        448,
+        304
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000003",
       "name": "Comando valido?"
     },
@@ -76,11 +104,18 @@
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [660, 460],
+      "position": [
+        672,
+        464
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000004",
       "name": "Enviar Ayuda",
+      "webhookId": "ba8f0ab3-359c-4beb-b72a-3bf6dff83812",
       "credentials": {
-        "telegramApi": { "id": "kGTAfWTTp4FATF66", "name": "Telegram Q10 Bot" }
+        "telegramApi": {
+          "id": "kGTAfWTTp4FATF66",
+          "name": "Telegram Q10 Bot"
+        }
       }
     },
     {
@@ -89,20 +124,30 @@
       },
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [660, 140],
+      "position": [
+        672,
+        144
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000005",
       "name": "Ejecutar q10_to_sheets"
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "cond-exito-001",
               "leftValue": "={{ $json.exitCode }}",
               "rightValue": 0,
-              "operator": { "type": "number", "operation": "equals" }
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -111,7 +156,10 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [900, 140],
+      "position": [
+        912,
+        144
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000006",
       "name": "Exito Q10?"
     },
@@ -123,11 +171,18 @@
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1120, 320],
+      "position": [
+        1120,
+        320
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000008",
       "name": "Responder Error Q10",
+      "webhookId": "2353600c-fd15-4efb-8c2d-9aa740d088d6",
       "credentials": {
-        "telegramApi": { "id": "kGTAfWTTp4FATF66", "name": "Telegram Q10 Bot" }
+        "telegramApi": {
+          "id": "kGTAfWTTp4FATF66",
+          "name": "Telegram Q10 Bot"
+        }
       }
     },
     {
@@ -136,20 +191,30 @@
       },
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [1120, 40],
+      "position": [
+        1120,
+        48
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000013",
       "name": "Ejecutar organizador"
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "cond-org-001",
               "leftValue": "={{ $json.exitCode }}",
               "rightValue": 0,
-              "operator": { "type": "number", "operation": "equals" }
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -158,7 +223,10 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1340, 40],
+      "position": [
+        1344,
+        48
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000014",
       "name": "Exito Organizador?"
     },
@@ -170,11 +238,18 @@
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1560, 220],
+      "position": [
+        1568,
+        224
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000015",
       "name": "Responder Error Organizador",
+      "webhookId": "4436a7fe-2d36-4109-a85d-c208aa6f276a",
       "credentials": {
-        "telegramApi": { "id": "kGTAfWTTp4FATF66", "name": "Telegram Q10 Bot" }
+        "telegramApi": {
+          "id": "kGTAfWTTp4FATF66",
+          "name": "Telegram Q10 Bot"
+        }
       }
     },
     {
@@ -183,7 +258,10 @@
       },
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [1560, -80],
+      "position": [
+        1568,
+        -80
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000010",
       "name": "Ejecutar export_stats"
     },
@@ -193,7 +271,10 @@
       },
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [1780, -80],
+      "position": [
+        1792,
+        -80
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000011",
       "name": "Ejecutar export_avance"
     },
@@ -205,11 +286,18 @@
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [2000, -80],
+      "position": [
+        2000,
+        -80
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000012",
       "name": "Responder OK",
+      "webhookId": "4e661c92-be02-445f-8bd4-ba74c9a0a9bd",
       "credentials": {
-        "telegramApi": { "id": "kGTAfWTTp4FATF66", "name": "Telegram Q10 Bot" }
+        "telegramApi": {
+          "id": "kGTAfWTTp4FATF66",
+          "name": "Telegram Q10 Bot"
+        }
       }
     },
     {
@@ -218,7 +306,10 @@
       },
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [220, -200],
+      "position": [
+        224,
+        -208
+      ],
       "id": "sched-node-0001-0001-0001-000000000002",
       "name": "Sched: q10_to_sheets"
     },
@@ -228,7 +319,10 @@
       },
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [440, -200],
+      "position": [
+        448,
+        -208
+      ],
       "id": "sched-node-0001-0001-0001-000000000003",
       "name": "Sched: organizador"
     },
@@ -238,7 +332,10 @@
       },
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [660, -200],
+      "position": [
+        672,
+        -208
+      ],
       "id": "sched-node-0001-0001-0001-000000000004",
       "name": "Sched: export_stats"
     },
@@ -248,66 +345,217 @@
       },
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [880, -200],
+      "position": [
+        880,
+        -208
+      ],
       "id": "sched-node-0001-0001-0001-000000000005",
       "name": "Sched: export_avance"
     }
   ],
   "connections": {
     "Telegram Trigger": {
-      "main": [[{ "node": "Parsear Comando", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Parsear Comando",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Parsear Comando": {
-      "main": [[{ "node": "Comando valido?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Comando valido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Comando valido?": {
       "main": [
-        [{ "node": "Ejecutar q10_to_sheets", "type": "main", "index": 0 }],
-        [{ "node": "Enviar Ayuda",           "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Ejecutar q10_to_sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar Ayuda",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Ejecutar q10_to_sheets": {
-      "main": [[{ "node": "Exito Q10?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Exito Q10?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Exito Q10?": {
       "main": [
-        [{ "node": "Ejecutar organizador",  "type": "main", "index": 0 }],
-        [{ "node": "Responder Error Q10",   "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Ejecutar organizador",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder Error Q10",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Ejecutar organizador": {
-      "main": [[{ "node": "Exito Organizador?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Exito Organizador?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Exito Organizador?": {
       "main": [
-        [{ "node": "Ejecutar export_stats",       "type": "main", "index": 0 }],
-        [{ "node": "Responder Error Organizador",  "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Ejecutar export_stats",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder Error Organizador",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Ejecutar export_stats": {
-      "main": [[{ "node": "Ejecutar export_avance", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Ejecutar export_avance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Ejecutar export_avance": {
-      "main": [[{ "node": "Responder OK", "type": "main", "index": 0 }]]
-    },
-    "Schedule 12h": {
-      "main": [[{ "node": "Sched: q10_to_sheets", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Responder OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Sched: q10_to_sheets": {
-      "main": [[{ "node": "Sched: organizador", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Sched: organizador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Sched: organizador": {
-      "main": [[{ "node": "Sched: export_stats", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Sched: export_stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Sched: export_stats": {
-      "main": [[{ "node": "Sched: export_avance", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Sched: export_avance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule 4h": {
+      "main": [
+        [
+          {
+            "node": "Sched: q10_to_sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
-  "settings": { "executionOrder": "v1" },
-  "id": "wf-q10-bot-001",
-  "meta": {
-    "instanceId": "local",
-    "notes": "Workflow ID en producción: Rblg81qifVshsRae. Telegram: /Actualizar Q10. Schedule: cada 12h automático (sin notificación Telegram — ver logs de n8n)."
-  }
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": {
+    "node:Schedule 4h": {
+      "recurrenceRules": [
+        16
+      ]
+    }
+  },
+  "meta": null,
+  "pinData": {},
+  "versionId": "ddd14e8e-95e1-4f38-8854-5e5d6ea2cbb3",
+  "activeVersionId": null,
+  "versionCounter": 721,
+  "triggerCount": 2,
+  "shared": [
+    {
+      "updatedAt": "2026-06-22T15:18:02.332Z",
+      "createdAt": "2026-06-22T15:18:02.332Z",
+      "role": "workflow:owner",
+      "workflowId": "Rblg81qifVshsRae",
+      "projectId": "sCDSlnWeaXfVGSdx",
+      "project": {
+        "updatedAt": "2026-06-18T19:33:43.567Z",
+        "createdAt": "2026-06-18T17:26:43.451Z",
+        "id": "sCDSlnWeaXfVGSdx",
+        "name": "Samuel Rojas <soportejunior@tocaunavida.org>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
 }
