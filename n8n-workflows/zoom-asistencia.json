@@ -1,0 +1,1045 @@
+{
+  "updatedAt": "2026-07-02T15:21:05.387Z",
+  "createdAt": "2026-07-01T19:54:39.991Z",
+  "id": "jkNaE51PKQ4TQzNq",
+  "name": "Zoom - Asistencia",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "zoom-asistencia",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "3c2011cd-bb36-47c6-bd94-0a01e54d9055",
+      "name": "Webhook Trigger",
+      "webhookId": "6ef94ad4-8f3c-420d-9b8a-c7a7e610703f"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-crc-001",
+              "leftValue": "={{ $json.body.event }}",
+              "rightValue": "endpoint.url_validation",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "332a5f63-826b-475a-a6c1-663096c419e4",
+      "name": "Es validacion CRC?"
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{ $json.body.payload.plainToken }}",
+        "dataPropertyName": "data",
+        "encoding": "hex"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        448,
+        -160
+      ],
+      "id": "5689c848-7652-4425-a41c-29c527d5559a",
+      "name": "Hash CRC",
+      "credentials": {
+        "crypto": {
+          "id": "J6gwIBkpDxHfEU92",
+          "name": "Zoom Webhook HMAC Secret (real)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"plainToken\": $('Webhook Trigger').item.json.body.payload.plainToken, \"encryptedToken\": $json.data } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        672,
+        -160
+      ],
+      "id": "2b3dfb74-1a6f-4339-9d0a-86754cc30d85",
+      "name": "Responder CRC"
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{ 'v0:' + $json.headers['x-zm-request-timestamp'] + ':' + JSON.stringify($json.body) }}",
+        "dataPropertyName": "data",
+        "encoding": "hex"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        448,
+        160
+      ],
+      "id": "0b4e7e08-4266-4d39-ab27-785e319321c4",
+      "name": "Hash Firma Zoom",
+      "credentials": {
+        "crypto": {
+          "id": "J6gwIBkpDxHfEU92",
+          "name": "Zoom Webhook HMAC Secret (real)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-firma-001",
+              "leftValue": "={{ 'v0=' + $json.data }}",
+              "rightValue": "={{ $('Webhook Trigger').item.json.headers['x-zm-signature'] }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        672,
+        160
+      ],
+      "id": "c95ee6cb-622b-4fbc-abe1-07ce6b087123",
+      "name": "Firma valida?"
+    },
+    {
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        896,
+        32
+      ],
+      "id": "90273f85-48c1-4174-9855-f4490167a282",
+      "name": "Responder OK"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Firma invalida",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        896,
+        320
+      ],
+      "id": "cbada773-cfa3-4d64-a3b3-181576129905",
+      "name": "Responder Firma Invalida"
+    },
+    {
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 90,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        160
+      ],
+      "id": "2ffb977e-f33c-4631-8654-323924f2396a",
+      "name": "Esperar 90s"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://zoom.us/oauth/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "account_credentials"
+            },
+            {
+              "name": "account_id",
+              "value": "u08qlWbRTR2VBSs0bRwZPQ"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        160
+      ],
+      "id": "5a8d1398-1100-43e8-99a6-6b79db018c34",
+      "name": "Obtener Token Zoom",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "QbO1Pa1R0lo6YdGK",
+          "name": "Zoom S2S Basic Auth v2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://api.zoom.us/v2/past_meetings/' + encodeURIComponent(encodeURIComponent($('Webhook Trigger').item.json.body.payload.object.uuid)) }}",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1344,
+        160
+      ],
+      "id": "46ffe6a6-6910-47f6-8095-df7f6d84bb9e",
+      "name": "Info Reunion"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://api.zoom.us/v2/past_meetings/' + encodeURIComponent(encodeURIComponent($('Webhook Trigger').item.json.body.payload.object.uuid)) + '/participants' }}",
+        "authentication": "none",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "page_size",
+              "value": "300"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $('Obtener Token Zoom').item.json.access_token }}"
+            }
+          ]
+        },
+        "options": {
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "next_page_token",
+                    "value": "={{ $response.body.next_page_token }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.next_page_token }}",
+              "limitPagesFetched": false,
+              "requestInterval": 0
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1568,
+        160
+      ],
+      "id": "4eb66901-1ca4-496b-869b-7f1cddf5d62c",
+      "name": "Participantes"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Nodo: Calcular Momentos Dorados\n// Requiere: nodo \"Info Reunion\" con { start_time, duration } reales (no programados)\n// Entrada: items de \"Participantes\" â€” cada item.json puede traer un array \"participants\"\n//\n// Copia de referencia del jsCode del nodo \"Calcular Momentos Dorados\" del workflow\n// \"Zoom - Asistencia\" (ID jkNaE51PKQ4TQzNq). Todo cambio va en AMBOS lados:\n// editar aquÃ­ â†’ PUT /api/v1/workflows/jkNaE51PKQ4TQzNq â†’ re-exportar a n8n-workflows/.\n\nconst MARGEN_MIN = 10;\nconst RE_EMAIL = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/;\nconst RE_CEDULA = /\\b\\d{6,10}\\b/;\n\n// 1. Metadata real de la reuniÃ³n\nconst info = $('Info Reunion').first().json;\nconst inicio = new Date(info.start_time);\nconst duracionMin = info.duration;\n\n// Curso = tema de la reuniÃ³n (las clases se programan una a una con nombre del curso).\n// Fecha en hora Colombia (UTC-5 fijo, sin DST) para coordinar filas con la clase.\nconst curso = (info.topic || $('Webhook Trigger').first().json.body.payload.object.topic || '').trim();\nfunction fechaBogota(d) {\n  return new Date(d.getTime() - 5 * 3600000).toISOString().slice(0, 16).replace('T', ' ');\n}\n\nif (isNaN(inicio.getTime())) {\n  throw new Error('start_time invÃ¡lido en \"Info Reunion\" â€” revisar respuesta de Zoom');\n}\nconst finReal = new Date(inicio.getTime() + duracionMin * 60000);\n\n// 2. Los 3 momentos dorados (instantes exactos)\nconst checkpoints = {\n  min10:   new Date(inicio.getTime() + MARGEN_MIN * 60000),\n  mitad:   new Date(inicio.getTime() + (duracionMin / 2) * 60000),\n  final10: new Date(inicio.getTime() + (duracionMin - MARGEN_MIN) * 60000),\n};\n\n// 3. Aplanar todas las sesiones join/leave (soporta 1 array grande o varias pÃ¡ginas)\nconst sesiones = [];\nfor (const item of $input.all()) {\n  const participantes = Array.isArray(item.json.participants) ? item.json.participants : [item.json];\n  for (const p of participantes) {\n    if (!p.join_time) continue;\n    sesiones.push({\n      nombreCrudo: (p.name || '').trim(),\n      emailCrudo: (p.user_email || '').trim(),\n      join: new Date(p.join_time),\n      leave: p.leave_time ? new Date(p.leave_time) : finReal, // sin leave_time â†’ sigue conectado hasta el fin\n    });\n  }\n}\n\n// 4. Extraer email/identificaciÃ³n reales desde \"name\" (texto libre manual â€” ver gotcha conocido)\nfunction extraerContacto(nombreCrudo, emailCrudo) {\n  const email = RE_EMAIL.test(emailCrudo)\n    ? emailCrudo.toLowerCase()\n    : (nombreCrudo.match(RE_EMAIL) || [''])[0].toLowerCase();\n  const cedula = (nombreCrudo.match(RE_CEDULA) || [''])[0];\n  const nombreLimpio = nombreCrudo.split(/[-|/]/)[0].trim();\n  return { email, cedula, nombreLimpio };\n}\n\n// 5. Agrupar sesiones por participante â€” clave = email si existe, si no nombre normalizado\nconst grupos = new Map();\nfor (const s of sesiones) {\n  const { email, cedula, nombreLimpio } = extraerContacto(s.nombreCrudo, s.emailCrudo);\n  const clave = email || nombreLimpio.toLowerCase().replace(/\\s+/g, ' ');\n  if (!grupos.has(clave)) {\n    grupos.set(clave, { nombreLimpio, email, cedula, intervalos: [] });\n  }\n  const g = grupos.get(clave);\n  g.intervalos.push([s.join, s.leave]);\n  if (!g.email && email) g.email = email;\n  if (!g.cedula && cedula) g.cedula = cedula;\n}\n\n// 6. Â¿Un instante cae dentro de alguna sesiÃ³n joinâ†’leave del participante?\nfunction estuvoConectado(instante, intervalos) {\n  return intervalos.some(([join, leave]) => instante >= join && instante <= leave);\n}\n\n// 6b. % de la clase que estuvo conectado: fusionar intervalos solapados/contiguos\n// (las sesiones de reconexiÃ³n pueden solaparse â€” no sumar doble), recortar a\n// [inicio, finReal] y dividir por la duraciÃ³n real de la reuniÃ³n.\nfunction porcentajeAsistencia(intervalos) {\n  const ordenados = [...intervalos].sort((a, b) => a[0] - b[0]);\n  const fusionados = [];\n  for (const [join, leave] of ordenados) {\n    const ultimo = fusionados[fusionados.length - 1];\n    if (ultimo && join <= ultimo[1]) {\n      if (leave > ultimo[1]) ultimo[1] = leave;\n    } else {\n      fusionados.push([join, leave]);\n    }\n  }\n  let msConectado = 0;\n  for (const [join, leave] of fusionados) {\n    const desde = Math.max(join.getTime(), inicio.getTime());\n    const hasta = Math.min(leave.getTime(), finReal.getTime());\n    if (hasta > desde) msConectado += hasta - desde;\n  }\n  const totalMs = duracionMin * 60000;\n  if (totalMs <= 0) return '0%';\n  return `${Math.round((msConectado / totalMs) * 100)}%`;\n}\n\n// 7. Nombre/Apellido: primer espacio separa, todo el resto va a Apellido\nfunction partirNombre(nombreCompleto) {\n  const idx = nombreCompleto.indexOf(' ');\n  if (idx === -1) return { nombre: nombreCompleto, apellido: '' };\n  return { nombre: nombreCompleto.slice(0, idx), apellido: nombreCompleto.slice(idx + 1) };\n}\n\n// 8. Evaluar los 3 momentos dorados por participante â€” SIN filtrar a nadie\nconst resultado = [];\nfor (const [, g] of grupos) {\n  const min10 = estuvoConectado(checkpoints.min10, g.intervalos);\n  const mitad = estuvoConectado(checkpoints.mitad, g.intervalos);\n  const final10 = estuvoConectado(checkpoints.final10, g.intervalos);\n  const totalInstancias = [min10, mitad, final10].filter(Boolean).length;\n  const { nombre, apellido } = partirNombre(g.nombreLimpio);\n\n  resultado.push({\n    json: {\n      Nombre: nombre,\n      Apellido: apellido,\n      'Correo electrÃ³nico': g.email,\n      Identificacion: g.cedula,\n      Instancias: `${totalInstancias}/3`,\n      Curso: curso,\n      Fecha: fechaBogota(inicio),\n      '% Asistencia': porcentajeAsistencia(g.intervalos),\n    },\n  });\n}\n\nreturn resultado;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        160
+      ],
+      "id": "4210c749-e596-40b2-bf6a-1a441e6524f5",
+      "name": "Calcular Momentos Dorados"
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1VyXOYsnpD9ksKcJFHiiRR6fr4UUCea4WmGG96NV0WP0"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "H3Test"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": null,
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {},
+        "authentication": "serviceAccount"
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2016,
+        160
+      ],
+      "id": "c17117c6-bfb8-47dc-a32a-a9983d1de4e7",
+      "name": "Escribir Asistencia H3Test",
+      "credentials": {
+        "googleApi": {
+          "id": "tlUqDZU4DbSd9bzU",
+          "name": "Q10 Automatizacion Service Account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Es validacion CRC?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Es validacion CRC?": {
+      "main": [
+        [
+          {
+            "node": "Hash CRC",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Hash Firma Zoom",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hash CRC": {
+      "main": [
+        [
+          {
+            "node": "Responder CRC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hash Firma Zoom": {
+      "main": [
+        [
+          {
+            "node": "Firma valida?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Firma valida?": {
+      "main": [
+        [
+          {
+            "node": "Responder OK",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Esperar 90s",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder Firma Invalida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar 90s": {
+      "main": [
+        [
+          {
+            "node": "Obtener Token Zoom",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Token Zoom": {
+      "main": [
+        [
+          {
+            "node": "Info Reunion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Info Reunion": {
+      "main": [
+        [
+          {
+            "node": "Participantes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Participantes": {
+      "main": [
+        [
+          {
+            "node": "Calcular Momentos Dorados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular Momentos Dorados": {
+      "main": [
+        [
+          {
+            "node": "Escribir Asistencia H3Test",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "e657feab-5630-47ab-abe8-bec242b8d028",
+  "activeVersionId": "e657feab-5630-47ab-abe8-bec242b8d028",
+  "versionCounter": 15,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-07-01T19:54:40.007Z",
+      "createdAt": "2026-07-01T19:54:40.007Z",
+      "role": "workflow:owner",
+      "workflowId": "jkNaE51PKQ4TQzNq",
+      "projectId": "sCDSlnWeaXfVGSdx",
+      "project": {
+        "updatedAt": "2026-06-18T19:33:43.567Z",
+        "createdAt": "2026-06-18T17:26:43.451Z",
+        "id": "sCDSlnWeaXfVGSdx",
+        "name": "Samuel Rojas <soportejunior@tocaunavida.org>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-07-02T15:21:05.391Z",
+    "createdAt": "2026-07-02T15:21:05.391Z",
+    "versionId": "e657feab-5630-47ab-abe8-bec242b8d028",
+    "workflowId": "jkNaE51PKQ4TQzNq",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "zoom-asistencia",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          0,
+          0
+        ],
+        "id": "3c2011cd-bb36-47c6-bd94-0a01e54d9055",
+        "name": "Webhook Trigger",
+        "webhookId": "6ef94ad4-8f3c-420d-9b8a-c7a7e610703f"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "cond-crc-001",
+                "leftValue": "={{ $json.body.event }}",
+                "rightValue": "endpoint.url_validation",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          224,
+          0
+        ],
+        "id": "332a5f63-826b-475a-a6c1-663096c419e4",
+        "name": "Es validacion CRC?"
+      },
+      {
+        "parameters": {
+          "action": "hmac",
+          "type": "SHA256",
+          "value": "={{ $json.body.payload.plainToken }}",
+          "dataPropertyName": "data",
+          "encoding": "hex"
+        },
+        "type": "n8n-nodes-base.crypto",
+        "typeVersion": 2,
+        "position": [
+          448,
+          -160
+        ],
+        "id": "5689c848-7652-4425-a41c-29c527d5559a",
+        "name": "Hash CRC",
+        "credentials": {
+          "crypto": {
+            "id": "J6gwIBkpDxHfEU92",
+            "name": "Zoom Webhook HMAC Secret (real)"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ { \"plainToken\": $('Webhook Trigger').item.json.body.payload.plainToken, \"encryptedToken\": $json.data } }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [
+          672,
+          -160
+        ],
+        "id": "2b3dfb74-1a6f-4339-9d0a-86754cc30d85",
+        "name": "Responder CRC"
+      },
+      {
+        "parameters": {
+          "action": "hmac",
+          "type": "SHA256",
+          "value": "={{ 'v0:' + $json.headers['x-zm-request-timestamp'] + ':' + JSON.stringify($json.body) }}",
+          "dataPropertyName": "data",
+          "encoding": "hex"
+        },
+        "type": "n8n-nodes-base.crypto",
+        "typeVersion": 2,
+        "position": [
+          448,
+          160
+        ],
+        "id": "0b4e7e08-4266-4d39-ab27-785e319321c4",
+        "name": "Hash Firma Zoom",
+        "credentials": {
+          "crypto": {
+            "id": "J6gwIBkpDxHfEU92",
+            "name": "Zoom Webhook HMAC Secret (real)"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "cond-firma-001",
+                "leftValue": "={{ 'v0=' + $json.data }}",
+                "rightValue": "={{ $('Webhook Trigger').item.json.headers['x-zm-signature'] }}",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          672,
+          160
+        ],
+        "id": "c95ee6cb-622b-4fbc-abe1-07ce6b087123",
+        "name": "Firma valida?"
+      },
+      {
+        "parameters": {
+          "respondWith": "noData",
+          "options": {
+            "responseCode": 200
+          }
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [
+          896,
+          32
+        ],
+        "id": "90273f85-48c1-4174-9855-f4490167a282",
+        "name": "Responder OK"
+      },
+      {
+        "parameters": {
+          "respondWith": "text",
+          "responseBody": "Firma invalida",
+          "options": {
+            "responseCode": 401
+          }
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [
+          896,
+          320
+        ],
+        "id": "cbada773-cfa3-4d64-a3b3-181576129905",
+        "name": "Responder Firma Invalida"
+      },
+      {
+        "parameters": {
+          "resume": "timeInterval",
+          "amount": 90,
+          "unit": "seconds"
+        },
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          896,
+          160
+        ],
+        "id": "2ffb977e-f33c-4631-8654-323924f2396a",
+        "name": "Esperar 90s"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://zoom.us/oauth/token",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpBasicAuth",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "grant_type",
+                "value": "account_credentials"
+              },
+              {
+                "name": "account_id",
+                "value": "u08qlWbRTR2VBSs0bRwZPQ"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1120,
+          160
+        ],
+        "id": "5a8d1398-1100-43e8-99a6-6b79db018c34",
+        "name": "Obtener Token Zoom",
+        "credentials": {
+          "httpBasicAuth": {
+            "id": "QbO1Pa1R0lo6YdGK",
+            "name": "Zoom S2S Basic Auth v2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "GET",
+          "url": "={{ 'https://api.zoom.us/v2/past_meetings/' + encodeURIComponent(encodeURIComponent($('Webhook Trigger').item.json.body.payload.object.uuid)) }}",
+          "authentication": "none",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "={{ 'Bearer ' + $json.access_token }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1344,
+          160
+        ],
+        "id": "46ffe6a6-6910-47f6-8095-df7f6d84bb9e",
+        "name": "Info Reunion"
+      },
+      {
+        "parameters": {
+          "method": "GET",
+          "url": "={{ 'https://api.zoom.us/v2/past_meetings/' + encodeURIComponent(encodeURIComponent($('Webhook Trigger').item.json.body.payload.object.uuid)) + '/participants' }}",
+          "authentication": "none",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "page_size",
+                "value": "300"
+              }
+            ]
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "={{ 'Bearer ' + $('Obtener Token Zoom').item.json.access_token }}"
+              }
+            ]
+          },
+          "options": {
+            "pagination": {
+              "pagination": {
+                "paginationMode": "updateAParameterInEachRequest",
+                "parameters": {
+                  "parameters": [
+                    {
+                      "type": "qs",
+                      "name": "next_page_token",
+                      "value": "={{ $response.body.next_page_token }}"
+                    }
+                  ]
+                },
+                "paginationCompleteWhen": "other",
+                "completeExpression": "={{ !$response.body.next_page_token }}",
+                "limitPagesFetched": false,
+                "requestInterval": 0
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1568,
+          160
+        ],
+        "id": "4eb66901-1ca4-496b-869b-7f1cddf5d62c",
+        "name": "Participantes"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Nodo: Calcular Momentos Dorados\n// Requiere: nodo \"Info Reunion\" con { start_time, duration } reales (no programados)\n// Entrada: items de \"Participantes\" â€” cada item.json puede traer un array \"participants\"\n//\n// Copia de referencia del jsCode del nodo \"Calcular Momentos Dorados\" del workflow\n// \"Zoom - Asistencia\" (ID jkNaE51PKQ4TQzNq). Todo cambio va en AMBOS lados:\n// editar aquÃ­ â†’ PUT /api/v1/workflows/jkNaE51PKQ4TQzNq â†’ re-exportar a n8n-workflows/.\n\nconst MARGEN_MIN = 10;\nconst RE_EMAIL = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/;\nconst RE_CEDULA = /\\b\\d{6,10}\\b/;\n\n// 1. Metadata real de la reuniÃ³n\nconst info = $('Info Reunion').first().json;\nconst inicio = new Date(info.start_time);\nconst duracionMin = info.duration;\n\n// Curso = tema de la reuniÃ³n (las clases se programan una a una con nombre del curso).\n// Fecha en hora Colombia (UTC-5 fijo, sin DST) para coordinar filas con la clase.\nconst curso = (info.topic || $('Webhook Trigger').first().json.body.payload.object.topic || '').trim();\nfunction fechaBogota(d) {\n  return new Date(d.getTime() - 5 * 3600000).toISOString().slice(0, 16).replace('T', ' ');\n}\n\nif (isNaN(inicio.getTime())) {\n  throw new Error('start_time invÃ¡lido en \"Info Reunion\" â€” revisar respuesta de Zoom');\n}\nconst finReal = new Date(inicio.getTime() + duracionMin * 60000);\n\n// 2. Los 3 momentos dorados (instantes exactos)\nconst checkpoints = {\n  min10:   new Date(inicio.getTime() + MARGEN_MIN * 60000),\n  mitad:   new Date(inicio.getTime() + (duracionMin / 2) * 60000),\n  final10: new Date(inicio.getTime() + (duracionMin - MARGEN_MIN) * 60000),\n};\n\n// 3. Aplanar todas las sesiones join/leave (soporta 1 array grande o varias pÃ¡ginas)\nconst sesiones = [];\nfor (const item of $input.all()) {\n  const participantes = Array.isArray(item.json.participants) ? item.json.participants : [item.json];\n  for (const p of participantes) {\n    if (!p.join_time) continue;\n    sesiones.push({\n      nombreCrudo: (p.name || '').trim(),\n      emailCrudo: (p.user_email || '').trim(),\n      join: new Date(p.join_time),\n      leave: p.leave_time ? new Date(p.leave_time) : finReal, // sin leave_time â†’ sigue conectado hasta el fin\n    });\n  }\n}\n\n// 4. Extraer email/identificaciÃ³n reales desde \"name\" (texto libre manual â€” ver gotcha conocido)\nfunction extraerContacto(nombreCrudo, emailCrudo) {\n  const email = RE_EMAIL.test(emailCrudo)\n    ? emailCrudo.toLowerCase()\n    : (nombreCrudo.match(RE_EMAIL) || [''])[0].toLowerCase();\n  const cedula = (nombreCrudo.match(RE_CEDULA) || [''])[0];\n  const nombreLimpio = nombreCrudo.split(/[-|/]/)[0].trim();\n  return { email, cedula, nombreLimpio };\n}\n\n// 5. Agrupar sesiones por participante â€” clave = email si existe, si no nombre normalizado\nconst grupos = new Map();\nfor (const s of sesiones) {\n  const { email, cedula, nombreLimpio } = extraerContacto(s.nombreCrudo, s.emailCrudo);\n  const clave = email || nombreLimpio.toLowerCase().replace(/\\s+/g, ' ');\n  if (!grupos.has(clave)) {\n    grupos.set(clave, { nombreLimpio, email, cedula, intervalos: [] });\n  }\n  const g = grupos.get(clave);\n  g.intervalos.push([s.join, s.leave]);\n  if (!g.email && email) g.email = email;\n  if (!g.cedula && cedula) g.cedula = cedula;\n}\n\n// 6. Â¿Un instante cae dentro de alguna sesiÃ³n joinâ†’leave del participante?\nfunction estuvoConectado(instante, intervalos) {\n  return intervalos.some(([join, leave]) => instante >= join && instante <= leave);\n}\n\n// 6b. % de la clase que estuvo conectado: fusionar intervalos solapados/contiguos\n// (las sesiones de reconexiÃ³n pueden solaparse â€” no sumar doble), recortar a\n// [inicio, finReal] y dividir por la duraciÃ³n real de la reuniÃ³n.\nfunction porcentajeAsistencia(intervalos) {\n  const ordenados = [...intervalos].sort((a, b) => a[0] - b[0]);\n  const fusionados = [];\n  for (const [join, leave] of ordenados) {\n    const ultimo = fusionados[fusionados.length - 1];\n    if (ultimo && join <= ultimo[1]) {\n      if (leave > ultimo[1]) ultimo[1] = leave;\n    } else {\n      fusionados.push([join, leave]);\n    }\n  }\n  let msConectado = 0;\n  for (const [join, leave] of fusionados) {\n    const desde = Math.max(join.getTime(), inicio.getTime());\n    const hasta = Math.min(leave.getTime(), finReal.getTime());\n    if (hasta > desde) msConectado += hasta - desde;\n  }\n  const totalMs = duracionMin * 60000;\n  if (totalMs <= 0) return '0%';\n  return `${Math.round((msConectado / totalMs) * 100)}%`;\n}\n\n// 7. Nombre/Apellido: primer espacio separa, todo el resto va a Apellido\nfunction partirNombre(nombreCompleto) {\n  const idx = nombreCompleto.indexOf(' ');\n  if (idx === -1) return { nombre: nombreCompleto, apellido: '' };\n  return { nombre: nombreCompleto.slice(0, idx), apellido: nombreCompleto.slice(idx + 1) };\n}\n\n// 8. Evaluar los 3 momentos dorados por participante â€” SIN filtrar a nadie\nconst resultado = [];\nfor (const [, g] of grupos) {\n  const min10 = estuvoConectado(checkpoints.min10, g.intervalos);\n  const mitad = estuvoConectado(checkpoints.mitad, g.intervalos);\n  const final10 = estuvoConectado(checkpoints.final10, g.intervalos);\n  const totalInstancias = [min10, mitad, final10].filter(Boolean).length;\n  const { nombre, apellido } = partirNombre(g.nombreLimpio);\n\n  resultado.push({\n    json: {\n      Nombre: nombre,\n      Apellido: apellido,\n      'Correo electrÃ³nico': g.email,\n      Identificacion: g.cedula,\n      Instancias: `${totalInstancias}/3`,\n      Curso: curso,\n      Fecha: fechaBogota(inicio),\n      '% Asistencia': porcentajeAsistencia(g.intervalos),\n    },\n  });\n}\n\nreturn resultado;\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1792,
+          160
+        ],
+        "id": "4210c749-e596-40b2-bf6a-1a441e6524f5",
+        "name": "Calcular Momentos Dorados"
+      },
+      {
+        "parameters": {
+          "resource": "sheet",
+          "operation": "append",
+          "documentId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "1VyXOYsnpD9ksKcJFHiiRR6fr4UUCea4WmGG96NV0WP0"
+          },
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "H3Test"
+          },
+          "columns": {
+            "mappingMode": "autoMapInputData",
+            "value": null,
+            "matchingColumns": [],
+            "schema": []
+          },
+          "options": {},
+          "authentication": "serviceAccount"
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          2016,
+          160
+        ],
+        "id": "c17117c6-bfb8-47dc-a32a-a9983d1de4e7",
+        "name": "Escribir Asistencia H3Test",
+        "credentials": {
+          "googleApi": {
+            "id": "tlUqDZU4DbSd9bzU",
+            "name": "Q10 Automatizacion Service Account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook Trigger": {
+        "main": [
+          [
+            {
+              "node": "Es validacion CRC?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Es validacion CRC?": {
+        "main": [
+          [
+            {
+              "node": "Hash CRC",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Hash Firma Zoom",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hash CRC": {
+        "main": [
+          [
+            {
+              "node": "Responder CRC",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hash Firma Zoom": {
+        "main": [
+          [
+            {
+              "node": "Firma valida?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Firma valida?": {
+        "main": [
+          [
+            {
+              "node": "Responder OK",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Esperar 90s",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Responder Firma Invalida",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Esperar 90s": {
+        "main": [
+          [
+            {
+              "node": "Obtener Token Zoom",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Obtener Token Zoom": {
+        "main": [
+          [
+            {
+              "node": "Info Reunion",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Info Reunion": {
+        "main": [
+          [
+            {
+              "node": "Participantes",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Participantes": {
+        "main": [
+          [
+            {
+              "node": "Calcular Momentos Dorados",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Calcular Momentos Dorados": {
+        "main": [
+          [
+            {
+              "node": "Escribir Asistencia H3Test",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Samuel Rojas",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-07-02T15:21:05.478Z",
+        "id": 976,
+        "workflowId": "jkNaE51PKQ4TQzNq",
+        "versionId": "e657feab-5630-47ab-abe8-bec242b8d028",
+        "event": "activated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-02T15:21:05.456Z",
+        "id": 975,
+        "workflowId": "jkNaE51PKQ4TQzNq",
+        "versionId": "e657feab-5630-47ab-abe8-bec242b8d028",
+        "event": "deactivated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      }
+    ]
+  }
+}

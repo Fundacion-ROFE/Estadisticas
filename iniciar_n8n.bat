@@ -19,10 +19,20 @@ for /f "usebackq tokens=1,* delims==" %%A in ("%ENV_FILE%") do (
     )
 )
 
+:: Leer variables del .env de zoom-asistencia (ZOOM_WEBHOOK_SECRET_TOKEN, etc.)
+set "ENV_FILE_ZOOM=%~dp0scripts\zoom-asistencia\.env"
+for /f "usebackq tokens=1,* delims==" %%A in ("%ENV_FILE_ZOOM%") do (
+    if not "%%A"=="" (
+        echo %%A | findstr /b "#" >nul 2>&1 || set "%%A=%%B"
+    )
+)
+
 :: NODES_EXCLUDE=[] re-habilita executeCommand (desactivado por defecto en n8n 2.x)
 set "NODES_EXCLUDE=[]"
 :: Necesario para redes con proxy corporativo que intercepta HTTPS
 set "NODE_TLS_REJECT_UNAUTHORIZED=0"
+:: Desactiva telemetría de PostHog (us.i.posthog.com bloqueado en red corporativa)
+set "N8N_DIAGNOSTICS_ENABLED=false"
 
 echo [1/4] Iniciando Cloudflare Tunnel...
 del /f /q "%CF_LOG%" >nul 2>&1
@@ -53,10 +63,7 @@ echo   Editor remoto: %CF_URL%
 echo.
 
 :: Matar instancia anterior de n8n si existe (para que la nueva herede WEBHOOK_URL correcto)
-for /f "tokens=2" %%P in ('tasklist /FI "IMAGENAME eq node.exe" /FO CSV /NH 2^>nul') do (
-    wmic process where "ProcessId=%%~P" get CommandLine 2>nul | findstr /i "n8n" >nul 2>&1
-    if not errorlevel 1 taskkill /PID %%~P /F >nul 2>&1
-)
+powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"name='node.exe'\" | Where-Object { $_.CommandLine -like '*n8n*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
 timeout /t 2 /nobreak >nul
 
 start /B "" "C:\nvm4w\nodejs\n8n.cmd" start
@@ -90,10 +97,31 @@ echo.
 
 :loop
 timeout /t 60 /nobreak >nul
+
 curl -s http://localhost:5678/healthz >nul 2>&1
 if %errorlevel% NEQ 0 (
-    echo AVISO: n8n no responde. Reinicia el script.
+    echo [%time%] AVISO: n8n no responde. Reinicia el script.
     pause
     exit /b 1
 )
+
+tasklist /FI "IMAGENAME eq cloudflared.exe" /NH 2>nul | findstr /i "cloudflared" >nul 2>&1
+if %errorlevel% NEQ 0 (
+    echo [%time%] cloudflared caido. Reiniciando tunel ^(espera 20s^)...
+    del /f /q "%CF_LOG%" >nul 2>&1
+    start /B "" "%CF_EXE%" tunnel --url http://localhost:5678 --no-autoupdate >> "%CF_LOG%" 2>&1
+    timeout /t 20 /nobreak >nul
+    set "CF_URL="
+    for /f "delims=" %%U in ('powershell -NoProfile -Command "$m=Select-String -Path \"%CF_LOG%\" -Pattern \"https://[a-z0-9-]+\.trycloudflare\.com\"; if($m){$m.Matches[0].Value}"') do set "CF_URL=%%U"
+    if defined CF_URL (echo [%time%] Tunel recuperado: %CF_URL%) else (echo [%time%] Sin URL de tunel. Bot Telegram puede no responder.)
+)
+
+curl -s "http://localhost:5678/api/v1/workflows/Rblg81qifVshsRae" -H "X-N8N-API-KEY: %N8N_API_KEY%" -o "%TEMP%\wf_check.json" 2>nul
+findstr /i "active" "%TEMP%\wf_check.json" | findstr "false" >nul 2>&1
+if %errorlevel% EQU 0 (
+    echo [%time%] Workflow inactivo. Reactivando...
+    curl -s -X POST "http://localhost:5678/api/v1/workflows/Rblg81qifVshsRae/activate" -H "X-N8N-API-KEY: %N8N_API_KEY%" -H "Content-Type: application/json" -d "{}" >nul 2>&1
+    echo [%time%] Workflow reactivado.
+)
+
 goto :loop

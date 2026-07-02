@@ -1,44 +1,203 @@
 # Asistencia Zoom
 
-**Estado:** En progreso (bloqueado por 4 preguntas pendientes a jefatura)
-**Última actualización:** 2026-06-22
+**Estado:** Funcional — **probado extremo a extremo con una reunión Zoom real** (2026-07-01,
+ejecución #37): webhook real → firma validada → token → `past_meetings` → momentos dorados →
+2 filas escritas en `H3Test`. Workflow `Zoom - Asistencia` (ID `jkNaE51PKQ4TQzNq`) activo,
+Event Subscriptions configurado en Zoom Marketplace con el Secret Token real. Quedan
+pendientes las pruebas de casos límite (reunión ≤20 min, participante sin correo) y la
+decisión del Sheet de producción.
+**Última actualización:** 2026-07-02
 **Procesos relacionados:** —
 
 ## Qué hace
 Automatiza la toma de asistencia de clases virtuales en Zoom (2 salas, plan Business,
-100 usuarios c/u), extrayendo 4 de las ~20 columnas del reporte de participantes y
-enviándolas a Google Sheets para validación contra lista maestra de inscritos.
+100 usuarios c/u). Registra a **todos** los que se conectaron (sin descartar a nadie) y
+además calcula cuántos de los 3 momentos dorados de la clase (minuto 10, mitad, 10 min
+antes del fin) cumplió cada uno, como dato crudo adicional — la penalización/acción sobre
+ese dato es un proceso posterior, no de esta automatización.
 
-## Disparador (Trigger)
-Por definir: Google Calendar Trigger (si el evento de la clase está en Calendar) vs
-Schedule/Cron Trigger. Pendiente confirmar si Calendar y Zoom están integrados de forma
-consistente (¿el link/Meeting ID siempre queda en la descripción del evento?).
+## Disparador (Trigger) — REVISADO 2026-07-01
+Ya no se usa Google Calendar (desfases de horario). Trigger real: **Webhook de Zoom**
+suscrito al evento `meeting.ended` (Event Subscriptions de la app Server-to-Server OAuth).
+Requiere manejar el handshake `endpoint.url_validation` (CRC) y validar la firma
+`x-zm-signature` en cada request.
 
-## Flujo resumido (diseño preliminar, sujeto a cambios)
-1. Trigger dispara al finalizar la clase (con margen de tiempo, el reporte no es
-   instantáneo).
-2. Resolver el Meeting ID de la sesión (los IDs NO son fijos/recurrentes).
-3. Llamar a Zoom Reports API → `/report/meetings/{meetingId}/participants`.
-4. Parsear/limpiar los datos de Email e Identificación (capturados como texto plano
-   manual por los estudiantes — no estructurado).
-5. Filtrar a las 4 columnas necesarias: Nombre, Apellido, Correo, Identificación.
-6. Escribir a Google Sheets (hoja de asistencia / Seguimiento).
+## Flujo resumido (diseño revisado 2026-07-01)
+1. Webhook recibe `meeting.ended` → responde 200 de inmediato (Zoom reintenta si tarda).
+2. `Wait` ~90s de margen + `Retry On Fail` en las llamadas HTTP (no hay garantía de
+   disponibilidad instantánea, aunque este endpoint es mucho más rápido que el de Reports).
+3. `GET /past_meetings/{uuid}` → horas **reales** de inicio/duración (no las programadas).
+4. `GET /past_meetings/{uuid}/participants` (paginado) → arreglos de `join_time`/`leave_time`
+   por sesión de cada participante. **Ya no se usa** `/report/meetings/{id}/participants`
+   (API de reportes consolidados) porque no trae timestamps individuales y puede tardar
+   en generarse.
+5. Nodo Code calcula los 3 checkpoints (`inicio+10min`, `inicio+duracion/2`,
+   `inicio+duracion-10min`), verifica por participante si cada checkpoint cae dentro de
+   alguna de sus sesiones join→leave, parsea Nombre/Apellido/Correo/Identificación (texto
+   libre manual, ver Gotchas), arma la columna `Instancias` ("0/3".."3/3") y calcula
+   `% Asistencia`: fusiona los intervalos join→leave solapados/contiguos del participante
+   (las sesiones de reconexión pueden solaparse — no se suma doble), recorta cada intervalo
+   a `[inicio, finReal]`, suma los minutos conectados, divide por la duración real de la
+   reunión y redondea a entero (`"NN%"`).
+6. Escribir **todos** los participantes a Google Sheets — no se filtra a nadie, la
+   columna `Instancias` es el dato crudo que un proceso posterior usará para decidir
+   acción/penalización.
 
 ## Fuentes de datos / APIs usadas
-- Zoom API — Server-to-Server OAuth (pendiente crear app en Marketplace y confirmar
-  scopes exactos: `report:read`, `meeting:read`, etc.)
-- Google Calendar (lectura de evento)
-- Google Sheets (escritura)
+- Zoom API — Server-to-Server OAuth. Endpoints: `GET /past_meetings/{uuid}`,
+  `GET /past_meetings/{uuid}/participants`. Scopes identificados (ver `docs/convenciones.md`):
+  `meeting:read:past_meeting:admin` y `meeting:read:list_past_participants:admin`.
+- Zoom Webhook (Event Subscriptions) — evento `meeting.ended`. **No es un feature de pago**
+  — incluido en cualquier app Server-to-Server OAuth, confundible con el texto genérico de
+  la pantalla que menciona el Challenge-response check (CRC).
+- Google Sheets (escritura).
+- ~~Google Calendar~~ — descartado como trigger.
 
 ## Destino de los datos
-Hoja con columnas: Nombre, Apellido, Correo electrónico, Identificación, Validar.
-La columna "Validar" usa fórmula existente que compara contra hoja `Seguimiento` (columnas
-E:F = Correo e Identificación de la lista maestra de inscritos). La automatización NO
-necesita calcular "Validar" — solo alimentar las 4 columnas crudas.
+**Sheet de pruebas (2026-07-01):** `H3Test` — ID `1VyXOYsnpD9ksKcJFHiiRR6fr4UUCea4WmGG96NV0WP0`,
+pestaña única `H3Test`. Headers en fila 1: `Nombre | Apellido | Correo electrónico |
+Identificacion | Instancias | Curso | Fecha | % Asistencia`. Es un sheet exclusivo de testing — **sin**
+columna `Validar` ni hoja `Seguimiento` todavía (decisión explícita: no adaptar la DB
+principal mientras se prueba la automatización). El destino final de producción (con
+`Validar` + `Seguimiento`) queda pendiente de decidir cuando se salga de fase de pruebas.
+
+**Coordinación con las clases (agregado 2026-07-01):** como cada clase se programa una a una
+en Zoom con el nombre del curso como tema, el nodo Code agrega a cada fila:
+- `Curso` = topic de la reunión (de `Info Reunion`, fallback al payload del webhook).
+- `Fecha` = fecha/hora de inicio **real** en hora Colombia (UTC-5 fijo, formato
+  `YYYY-MM-DD HH:MM`).
+Así las filas de cursos distintos (o del mismo curso en fechas distintas) quedan
+distinguibles aunque caigan en la misma hoja. **Regla operativa:** quien programe las salas
+debe nombrar la reunión con el nombre del curso de forma consistente — el valor de `Curso`
+sale literal de ahí. Si en el futuro se cambia a reuniones recurrentes por curso, evaluar
+mapeo por Meeting ID (más robusto que el topic).
+
+Diseño final esperado en producción: Nombre, Apellido, Correo electrónico, Identificación,
+**Instancias** (formato `"N/3"`), Validar. La columna "Validar" usaría fórmula existente que
+compara contra hoja `Seguimiento` (columnas E:F = Correo e Identificación de la lista maestra
+de inscritos). La automatización NO necesita calcular "Validar" — solo alimentar las 4
+columnas crudas + `Instancias`. Se escribe una fila por participante único, sin filtrar por
+cuántos momentos cumplió.
 
 ## Decisiones de diseño clave
 - Server-to-Server OAuth elegido sobre OAuth clásico para evitar flujo de consentimiento
   de usuario (proceso desatendido). [Confirmar al implementar]
+- **2026-07-01 — Trigger:** Webhook `meeting.ended` en vez de Google Calendar. Motivo:
+  Calendar introducía desfases de horario y dependía de que el link/Meeting ID quedara
+  siempre en la descripción del evento (no garantizado).
+- **2026-07-01 — Endpoint de participantes:** `past_meetings/{uuid}/participants` en vez de
+  `report/meetings/{id}/participants`. Motivo: el endpoint de reportes consolida asistencia
+  total pero no expone `join_time`/`leave_time` por sesión individual, que es lo que se
+  necesita para verificar los 3 momentos dorados. `past_meetings` sí los expone y está
+  disponible mucho más rápido tras el fin de la reunión.
+- **2026-07-01 — Requisito de 3 instancias:** un alumno solo cuenta como presente si estuvo
+  conectado en minuto 10, mitad de la clase y 10 min antes del fin — no basta con
+  aparecer en el reporte consolidado. Cálculo hecho en un nodo Code (ver script en sesión
+  2026-07-01), horas basadas en `start_time`/`duration` **reales** de `/past_meetings/{uuid}`
+  (no en los programados que trae el webhook).
+- **2026-07-01 — Sin filtrado, columna Instancias:** se registran todos los participantes
+  conectados, sin excepción. En vez de descartar a quien no cumple los 3 momentos, se
+  agrega la columna `Instancias` con el conteo (`"0/3"`..`"3/3"`). La decisión de qué
+  hacer con asistencias parciales queda para un proceso posterior, no esta automatización.
+- **2026-07-01 — Separación Nombre/Apellido:** heurística simple — primer espacio del
+  nombre completo separa Nombre de Apellido (todo lo demás va a Apellido). No se
+  complica más porque la validación fuerte del Sheet corre por Correo/Identificación,
+  no por el nombre.
+- **2026-07-02 — Columna `% Asistencia`:** porcentaje de la clase que el estudiante estuvo
+  conectado, como dato crudo adicional a `Instancias`. Cálculo en el mismo nodo Code
+  (`porcentajeAsistencia()`): ordenar intervalos por join, fusionar solapados/contiguos
+  (`join <= leave` del anterior), recortar cada intervalo fusionado a `[inicio, finReal]`
+  (esto además garantiza que nunca supere 100%), sumar ms conectados / duración real,
+  `Math.round`, formato `"NN%"`. El nodo Sheets no requirió cambios (auto-map por nombre
+  de columna) — solo se agregó el header `% Asistencia` en `H1` vía gspread.
+
+## Implementación en n8n (sesión 2026-07-01)
+
+Workflow `Zoom - Asistencia` (ID `jkNaE51PKQ4TQzNq`), activo. JSON exportado a
+`n8n-workflows/zoom-asistencia.json`.
+
+**Nodos (14):**
+`Webhook Trigger` → `Es validacion CRC?` (IF) →
+- rama TRUE (CRC): `Hash CRC` (Crypto/Hmac) → `Responder CRC` (Respond to Webhook, JSON con
+  `plainToken`+`encryptedToken`)
+- rama FALSE (evento real): `Hash Firma Zoom` (Crypto/Hmac sobre
+  `v0:{timestamp}:{JSON.stringify(body)}`, igual al ejemplo oficial de Zoom) → `Firma valida?`
+  (IF, compara `"v0=" + hash` contra header `x-zm-signature`) →
+  - TRUE: fan-out a dos ramas paralelas desde el mismo nodo — `Responder OK` (ack 200
+    inmediato, sin esperar el resto) **y** `Esperar 90s` (Wait) → `Obtener Token Zoom`
+    (HTTP POST a `zoom.us/oauth/token`, Basic Auth con client_id/secret, query
+    `grant_type=account_credentials&account_id=...`) → `Info Reunion` → `Participantes`
+    (paginado nativo del nodo HTTP Request, parámetro `next_page_token`) →
+    `Calcular Momentos Dorados` (Code, mismo archivo que
+    `scripts/zoom-asistencia/nodo-calcular-momentos-dorados.js`) → `Escribir Asistencia
+    H3Test` (Google Sheets Append, auto-map por nombre de columna)
+  - FALSE: `Responder Firma Invalida` (401)
+
+**Credenciales creadas en n8n (vía API, no vía UI):**
+- `Zoom S2S Basic Auth` (httpBasicAuth) — client_id/client_secret de Zoom, usada solo por
+  `Obtener Token Zoom`.
+- `Zoom Webhook HMAC Secret (real)` (tipo `crypto`) — **Secret Token real** de Zoom
+  (`3c9DF8ArSpiKeQLj15l8lQ`), configurado 2026-07-01. Reemplazó a la credencial placeholder
+  original: como la API pública de n8n no permite editar credenciales existentes, se creó una
+  credencial nueva vía API y se reapuntaron los nodos `Hash CRC` y `Hash Firma Zoom` a ella
+  (también vía API, actualizando el JSON del workflow) — la credencial placeholder vieja se
+  borró. Verificado con una prueba CRC sintética: el hash calculado coincide exactamente con
+  el valor esperado usando el secreto real.
+- `Q10 Automatizacion Service Account` (tipo `googleApi`) — reutiliza el mismo Service Account
+  de `credenciales_service_account.json` que ya usan los scripts Python de Q10. Confirmado con
+  acceso de escritura a `H3Test` antes de construir el nodo.
+
+**Decisión de diseño — por qué NO se usó el flujo OAuth2 "Client Credentials" nativo de n8n
+para Zoom:** Zoom exige `grant_type=account_credentials` (propietario, no estándar), mientras
+que el flujo Client Credentials genérico de n8n fuerza `grant_type=client_credentials` en el
+body. En vez de pelear con esa incompatibilidad, se usa un nodo HTTP Request manual
+(`Obtener Token Zoom`) con Basic Auth + query params explícitos — mismo patrón que ya se había
+probado con `curl` en la sesión anterior. Los nodos siguientes leen
+`$('Obtener Token Zoom').item.json.access_token` vía expresión.
+
+**Pruebas realizadas (payloads sintéticos, sin tocar una reunión Zoom real):**
+1. CRC (`endpoint.url_validation`) — HMAC calculado por el nodo coincidió byte a byte con el
+   valor calculado independientemente en Python. ✅
+2. `meeting.ended` con firma válida — ack en ~40ms (antes de que corriera el resto), y la
+   ejecución en segundo plano confirmó: `Esperar 90s` pausó y resumió correctamente, el fan-out
+   desde `Firma valida?` a dos ramas en paralelo funciona, `Obtener Token Zoom` obtuvo un
+   `access_token` real y válido (Zoom lo aceptó), `Info Reunion` construyó la URL con doble
+   `encodeURIComponent` y devolvió un 404 **legítimo de la API real** de Zoom
+   (`"Meeting does not exist: fake-uuid-test-123"`) — confirma que la cadena de auth y
+   construcción de URL es correcta; solo falló por ser un UUID inventado. ✅ hasta ese punto.
+3. **Prueba real completa (2026-07-01, reunión de 36 min con 2 participantes):** ejecución
+   #37 exitosa en todos los nodos. Hallazgos que validan el diseño:
+   - **Agrupación por reconexión funcionó:** un participante se desconectó y reconectó
+     (2 sesiones de Zoom con 1 segundo de diferencia) y quedó como **una sola fila** con sus
+     intervalos combinados — exactamente el comportamiento diseñado para el gotcha de
+     `user_id` cambiante.
+   - **Momentos dorados correctos:** reunión 21:14:56Z + 36 min → checkpoints en min 10,
+     mitad y min 26; ambos participantes conectados todo el tiempo → `3/3`. ✅
+   - **Doble URL-encode del UUID confirmado:** el UUID real terminaba en `==` y la API lo
+     aceptó con el doble encode que usa el workflow (no devolvió 404).
+   - **La primera ejecución real (#36) falló en `Obtener Token Zoom`** con `invalid_client`:
+     la credencial Basic Auth en n8n quedó corrupta tras una edición manual en la UI (el
+     Secret Token del webhook se guardó encima del client secret). Se recreó como
+     `Zoom S2S Basic Auth v2` vía API y se reintentó **reenviando el mismo `meeting.ended`
+     firmado localmente con el Secret Token y el UUID real** — patrón útil: no hace falta
+     repetir la reunión para reintentar, Zoom conserva los datos del meeting terminado.
+   - Limitación de esta prueba: ambos participantes tenían cuenta Zoom con sesión iniciada
+     (por eso `user_email` vino lleno y no hubo que parsear del nombre). El escenario real de
+     estudiantes invitados que escriben "Nombre correo cédula" en texto libre queda por
+     probar (Prueba 4 del plan).
+4. **Validación de `% Asistencia` (2026-07-02, ejecución #44):** se reenvió el mismo
+   `meeting.ended` firmado localmente (UUID real de la reunión de prueba — Zoom conserva
+   los datos del meeting terminado). Filas escritas con `98%` y `96%`, coherentes con la
+   reunión de 36 min; el participante con reconexión no sumó doble ni superó 100%. Se
+   eliminaron del Sheet las filas viejas duplicadas de esa reunión de prueba. ✅
+   Nota: la clase real "Desarrollo Web - GIT, HTML y CSS" del 2026-07-01 (51 filas,
+   ejecución #40) corrió *antes* de agregar la columna y sus filas quedaron con
+   `% Asistencia` vacío. Se rellenaron retroactivamente el 2026-07-02 con un script
+   puntual: UUID sacado de los datos de la ejecución #40
+   (`GET /api/v1/executions/40?includeData=true`), participantes re-consultados a
+   `past_meetings/{uuid}/participants` (Zoom conserva los datos) y misma lógica de
+   fusión de intervalos del nodo Code; match por correo contra las filas del Sheet —
+   51/51 emparejadas. Patrón reutilizable si vuelve a faltar un dato retroactivo.
 
 ## Gotchas / Limitaciones conocidas
 - **Crítico, sin resolver:** Email e Identificación se capturan como texto libre manual
@@ -46,10 +205,50 @@ necesita calcular "Validar" — solo alimentar las 4 columnas crudas.
   Esto implica parseo de texto sucio, alto riesgo de error de formato humano.
   Escenarios posibles: (A) todo en el campo "nombre", (B) campos de registro de Zoom
   estructurados, (C) fuente separada (Form/chat). Aún sin confirmar cuál aplica.
+- **Correlación de sesiones por participante:** Zoom asigna un `id`/`user_id` nuevo cada
+  vez que un invitado sin login se reconecta, por lo que no sirve como clave de
+  agrupación entre reingresos. El diseño agrupa por email extraído (si aparece) o por
+  nombre normalizado como fallback — impreciso si el estudiante escribe su nombre
+  distinto entre reingresos.
 - Meeting IDs no son fijos — hay que resolverlos dinámicamente, no se puede hardcodear.
+  Para `past_meetings` se necesita además el **UUID** (no el ID numérico), y si el UUID
+  empieza con `/` o contiene `//` hay que URL-encodearlo **dos veces** en el path o la
+  API responde 404 sin explicación.
 - El reporte de participantes de Zoom puede no estar disponible inmediatamente al
-  terminar la reunión — necesita margen de espera o reintento.
+  terminar la reunión — mitigado con `Wait` 90s + `Retry On Fail` en las llamadas HTTP,
+  no hay garantía absoluta de tiempos.
+- Clases muy cortas (duración ≤ 20 min) hacen que los 3 checkpoints colapsen o se
+  inviertan en el cálculo — caso límite sin manejo especial todavía.
+- Zoom cambió el catálogo de scopes granulares varias veces en 2023-2024 — confirmados
+  `meeting:read:past_meeting:admin` y `meeting:read:list_past_participants:admin` cruzando
+  doc oficial + hilo de Zoom Community (no verificado 100% contra la pantalla real del
+  Marketplace, la doc de Zoom es una SPA que no se puede scrapear directo).
+- **La URL pública de cloudflared es efímera** — cambia cada vez que se reinicia el túnel
+  (y `iniciar_n8n.bat` lo reinicia solo si detecta que cayó). Si esto pasa después de
+  configurar el Event Subscription en Zoom, el CRC deja de validar hasta que se actualice
+  la URL manualmente en el Marketplace. Evaluar túnel nombrado (no efímero) antes de
+  producción real.
+- Activar Event Subscriptions no pide la URL del webhook durante el Publish/Activate de
+  la app — son pasos independientes. Publish solo habilita las credenciales OAuth; el
+  webhook se configura aparte en el tab Feature → Event Subscriptions, y esa pantalla
+  necesita una URL que ya esté respondiendo (o falla el CRC) — por eso hay que construir
+  el workflow de n8n con el Webhook Trigger *antes* de pegar la URL en Zoom.
 - Infraestructura: n8n corre local en PC de Samuel (EstudiantesJC) + cloudflared para tunnel; decisión pendiente sobre mover a máquina dedicada para estabilidad en horario laboral.
+- **Nodo Crypto (v2) exige credencial dedicada para Hmac:** a diferencia de otros nodos, el
+  secreto no va como parámetro de texto plano en el nodo — n8n obliga a crear una credencial
+  de tipo `crypto` (campo `hmacSecret`) y asociarla. Como la API pública de n8n no permite
+  editar credenciales existentes, actualizar el Secret Token real de Zoom requiere entrar a la
+  UI (Credentials → `Zoom Webhook HMAC Secret` → editar `hmacSecret`) — no se puede hacer con
+  un curl más.
+- **`iniciar_n8n.bat` ahora también carga `scripts/zoom-asistencia/.env`** como variables de
+  entorno del proceso n8n (antes solo cargaba el `.env` de q10-consolidacion). No se usó para
+  el Secret Token final (se optó por credencial `crypto` en vez de `$env` en un Code node),
+  pero queda disponible por si se necesita en el futuro. Requiere reiniciar n8n para tomar
+  cambios del `.env`.
+- **El endpoint de ejecuciones de n8n no muestra ejecuciones en estado "esperando"
+  inmediatamente** en `GET /api/v1/executions` (ni con `status=waiting`) — solo aparecen una
+  vez que se resuelven (tras el `Wait` de 90s). Para verificar una ejecución en curso hay que
+  consultar `GET /api/v1/executions/{id}` directo si se conoce el ID, o esperar a que termine.
 
 ## Contingencia manual
 
@@ -64,9 +263,45 @@ el paso manual equivalente si n8n falla durante una sesión Zoom.
 - [[dashboard-web]] — si se decide publicar estadísticas de asistencia, este proceso alimentaría un tab adicional
 
 ## Pendiente / Próximos pasos
+- [x] Crear app Server-to-Server OAuth en Zoom Marketplace y publicarla/activarla —
+  credenciales guardadas en `scripts/zoom-asistencia/.env` (gitignoreado), probadas con
+  `curl` contra `zoom.us/oauth/token` → HTTP 200, token obtenido correctamente (2026-07-01).
+- [x] Confirmar en la pantalla real de Scopes que `meeting:read:past_meeting:admin` y
+  `meeting:read:list_past_participants:admin` existen tal cual y marcarlos — confirmado por
+  Samuel (2026-07-01).
 - [ ] Confirmar cómo se captura hoy Email/ID en la sesión real (revisar un CSV de
   asistencia exportado de una clase pasada).
-- [ ] Confirmar si Calendar trae el Meeting ID de forma consistente.
-- [ ] Crear app Server-to-Server OAuth en Zoom Marketplace y confirmar scopes.
+- [x] ID del Google Sheet destino (de pruebas) — `H3Test`,
+  `1VyXOYsnpD9ksKcJFHiiRR6fr4UUCea4WmGG96NV0WP0`. El destino de producción con
+  `Validar`/`Seguimiento` sigue pendiente de decidir.
+- [x] Implementar el workflow en n8n — hecho vía API (`n8n-workflows/zoom-asistencia.json`),
+  workflow `Zoom - Asistencia` activo. Ver sección "Implementación en n8n" arriba.
+- [x] Event Subscriptions configurado en Zoom Marketplace, Secret Token real obtenido
+  (`3c9DF8ArSpiKeQLj15l8lQ`) y aplicado en `scripts/zoom-asistencia/.env` +
+  credencial `Zoom Webhook HMAC Secret (real)` en n8n (2026-07-01). Verificado con CRC
+  sintético. **Gotcha aprendido:** el Secret Token de Zoom se genera al activar Event
+  Subscriptions, *antes* de guardar la URL — hay que copiarlo primero, si no la validación
+  de la URL falla con "URL validation failed. Try again later." aunque el endpoint esté
+  respondiendo bien (firma con secreto equivocado, no problema de red).
+- [x] Validación de URL en Zoom Marketplace pasó en verde y `meeting.ended` suscrito
+  (2026-07-01). **Gotcha adicional:** la URL correcta es
+  `https://<cloudflared>/webhook/zoom-asistencia` — un primer intento falló por pegar la URL
+  del editor (`/workflow/<id>`), que no recibe eventos.
+- [x] Prueba 1 (camino feliz con reunión real) — exitosa, ejecución #37. Ver sección de
+  pruebas arriba. La Prueba 3 (salir y reentrar) quedó validada de paso en la misma reunión.
+- [ ] Decidir filtro para reuniones que NO son clase (por prefijo del nombre de la reunión
+  o por lista de cursos válidos) antes de producción — hoy el workflow escribe asistencia
+  de *cualquier* reunión que termine en la cuenta.
+- [ ] Prueba 2 del plan: reunión corta (≤20 min) para observar el caso límite de checkpoints
+  colapsados/invertidos.
+- [ ] Prueba 4 del plan: participante invitado sin sesión Zoom que escriba
+  "Nombre correo cédula" en el campo de nombre — valida el parseo de texto libre
+  (`RE_EMAIL`/`RE_CEDULA` del nodo Code), aún no ejercitado con datos reales.
+- [ ] Probar con una reunión Zoom real (`meeting.ended` real) para validar `Participantes`,
+  el nodo Code y la escritura en `Escribir Asistencia H3Test` — solo se probó hasta
+  `Info Reunion` con datos sintéticos.
 - [ ] Decidir infraestructura final (portátil vs Raspberry Pi).
 - [ ] Definir manejo de errores (ver `docs/convenciones.md`).
+- [ ] Recordar rotar `ZOOM_CLIENT_SECRET` si se considera necesario — se pegó una vez en
+  texto plano en el chat de una sesión de Claude Code (2026-07-01); no se subió a git,
+  pero es buena práctica regenerarlo antes de ir a producción.
