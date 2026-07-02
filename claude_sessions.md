@@ -524,3 +524,30 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
   (parseo de "Nombre correo cédula" en texto libre).
 - **Pendientes (no de esta tarea):** filtro para reuniones no-clase (prefijo de nombre o
   lista de cursos) antes de producción, Prueba 2 (reunión ≤20 min) y Prueba 4.
+
+---
+
+## 2026-07-02 — [Zoom Asistencia] Pestaña ZOOM-ASISTANCE + CUPOS + ZOOM-STATS
+
+**Estado:** Funcional
+**Proceso relacionado:** [[zoom-asistencia]]
+
+- Nuevo destino del workflow: pestaña `ZOOM-ASISTANCE` (mismo spreadsheet H3Test). Nodo
+  renombrado a `Escribir Asistencia ZOOM-ASISTANCE` vía API; 104 filas históricas migradas;
+  `H3Test` queda congelada. Probado end-to-end con reenvío firmado (ejecución #48, 2 filas
+  a la pestaña nueva) y filas de prueba eliminadas.
+- Formato condicional automático: fila roja si `% Asistencia` < 70%, celda verde si >= 70%.
+- Análisis profundo de la BD Seguimiento de Monitorias (xlsx pseudonimizado): 777 estudiantes
+  activos asignados en columnas `Horario *` de `Seguimiento` → 89 clases con cupos de 32-63.
+  Script `tools/analizar_cupos_bd.py` → `tools/cupos_clases.json` (sin PII).
+- Pestaña `CUPOS` (clase → inscritos + columna `Alias Zoom` editable, preservada al
+  regenerar) y `ZOOM-STATS` (solo fórmulas: por sesión — conectados, "X de Y estudiantes",
+  % del cupo, promedio % estancia, alumnos <70%; y por semana ISO). Setup idempotente en
+  `scripts/zoom-asistencia/setup_zoom_asistance.py`.
+- **Gotcha nuevo (a convenciones):** el spreadsheet es locale `es_ES` — fórmulas vía API con
+  `;` y arrays `{...}` con `\`; aplica también a CUSTOM_FORMULA de formato condicional.
+- Hallazgo: el `meeting.ended` real de la clase de las 10 llegó solo a las 12:24 al cerrarse
+  la sala (ejecución #46, 51 filas) — el evento tarda pero llega; confundió la validación
+  del cambio porque corrió en paralelo con la prueba sintética.
+- **Pendiente:** llenar `Alias Zoom` en CUPOS (los topics de Zoom no matchean los nombres de
+  clase de la BD), decidir Sheet de producción, filtro de reuniones no-clase.

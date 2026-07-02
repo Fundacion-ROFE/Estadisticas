@@ -1,11 +1,11 @@
 # Asistencia Zoom
 
-**Estado:** Funcional — **probado extremo a extremo con una reunión Zoom real** (2026-07-01,
-ejecución #37): webhook real → firma validada → token → `past_meetings` → momentos dorados →
-2 filas escritas en `H3Test`. Workflow `Zoom - Asistencia` (ID `jkNaE51PKQ4TQzNq`) activo,
-Event Subscriptions configurado en Zoom Marketplace con el Secret Token real. Quedan
-pendientes las pruebas de casos límite (reunión ≤20 min, participante sin correo) y la
-decisión del Sheet de producción.
+**Estado:** Funcional — probado extremo a extremo con reunión real (ejecución #37) y con el
+`meeting.ended` real de una clase de 51 estudiantes (#46). Desde 2026-07-02 el workflow
+escribe en la pestaña **`ZOOM-ASISTANCE`** (mismo spreadsheet H3Test), con formato
+condicional <70% y pestañas `CUPOS` + `ZOOM-STATS` (estadísticas por sesión y por semana,
+denominadores "X de Y" desde la BD de Monitorias). Quedan pendientes las pruebas de casos
+límite (reunión ≤20 min, participante sin correo) y la decisión del Sheet de producción.
 **Última actualización:** 2026-07-02
 **Procesos relacionados:** —
 
@@ -54,12 +54,40 @@ Requiere manejar el handshake `endpoint.url_validation` (CRC) y validar la firma
 - ~~Google Calendar~~ — descartado como trigger.
 
 ## Destino de los datos
-**Sheet de pruebas (2026-07-01):** `H3Test` — ID `1VyXOYsnpD9ksKcJFHiiRR6fr4UUCea4WmGG96NV0WP0`,
-pestaña única `H3Test`. Headers en fila 1: `Nombre | Apellido | Correo electrónico |
-Identificacion | Instancias | Curso | Fecha | % Asistencia`. Es un sheet exclusivo de testing — **sin**
-columna `Validar` ni hoja `Seguimiento` todavía (decisión explícita: no adaptar la DB
-principal mientras se prueba la automatización). El destino final de producción (con
-`Validar` + `Seguimiento`) queda pendiente de decidir cuando se salga de fase de pruebas.
+**Desde 2026-07-02:** pestaña **`ZOOM-ASISTANCE`** del spreadsheet `H3Test` — ID
+`1VyXOYsnpD9ksKcJFHiiRR6fr4UUCea4WmGG96NV0WP0`. Headers en fila 1: `Nombre | Apellido |
+Correo electrónico | Identificacion | Instancias | Curso | Fecha | % Asistencia`
+(idénticos a la antigua pestaña `H3Test`, que queda congelada como histórico de pruebas —
+sus 104 filas se migraron a `ZOOM-ASISTANCE`). Objetivo: reemplazar la lógica manual de la
+pestaña `Asistencia` de la BD Seguimiento de Monitorias (bloques horizontales por clase,
+4-6 columnas por sesión, columna `Validar` manual).
+
+**Indicadores de color (formato condicional, automático):**
+- Fila completa en **rojo** cuando `% Asistencia < 70%` — el estudiante no tomó bien la clase.
+- Celda del % en **verde** cuando `>= 70%`.
+- El umbral (70) es una constante `UMBRAL` en `scripts/zoom-asistencia/setup_zoom_asistance.py`.
+
+**Pestañas complementarias (mismo spreadsheet):**
+- **`CUPOS`** — 89 clases con su cantidad de inscritos (denominador del "X de Y
+  estudiantes conectados"), extraída de la BD de Monitorias pseudonimizada con
+  `tools/analizar_cupos_bd.py` → `tools/cupos_clases.json` (777 estudiantes activos:
+  15-16 grupos por área en HTML/Lógica/IA/Emprendimiento/HE, 6 de Hackea, 5 de
+  Bienvenida; cupos de 32 a 63). Columna D `Alias Zoom`: editable por el equipo para
+  mapear el topic de la reunión Zoom → clase de la BD cuando los nombres no coinciden
+  (hoy: "Desarrollo Web - GIT, HTML y CSS" no matchea ningún nombre de clase de la BD).
+  El setup preserva los alias al regenerar la pestaña.
+- **`ZOOM-STATS`** — solo fórmulas, se actualiza sola con cada toma de asistencia:
+  - *Por sesión* (cols A:I): Semana ISO, Curso, Fecha, Conectados, Cupo, "X de Y
+    estudiantes", % del cupo, Promedio % estancia, Alumnos <70%. Rojo si % del cupo o
+    promedio de estancia <70%, naranja si hay alumnos <70%.
+  - *Por semana* (cols K:O): clases dictadas, conexiones totales, promedio de conectados
+    por clase, promedio % estancia.
+  - Columnas helper ocultas R:U aplanan `ZOOM-ASISTANCE` (con % normalizado a número y
+    semana ISO); todas las tablas se derivan de ahí con COUNTIFS/AVERAGEIFS.
+
+El destino final de producción (con `Validar` + hoja `Seguimiento` reales) sigue pendiente —
+cuando se decida, `setup_zoom_asistance.py` puede reconstruir las 3 pestañas en ese
+spreadsheet cambiando `SHEET_ID`.
 
 **Coordinación con las clases (agregado 2026-07-01):** como cada clase se programa una a una
 en Zoom con el nombre del curso como tema, el nodo Code agrega a cada fila:
@@ -103,6 +131,14 @@ cuántos momentos cumplió.
   nombre completo separa Nombre de Apellido (todo lo demás va a Apellido). No se
   complica más porque la validación fuerte del Sheet corre por Correo/Identificación,
   no por el nombre.
+- **2026-07-02 — Pestaña `ZOOM-ASISTANCE` + `CUPOS` + `ZOOM-STATS`:** el destino de escritura
+  pasó de `H3Test` a `ZOOM-ASISTANCE` (nodo renombrado a `Escribir Asistencia ZOOM-ASISTANCE`
+  vía API). Las estadísticas se hacen con **fórmulas en el propio Sheet** (no script Python +
+  JSON como el dashboard) para que se actualicen solas con cada asistencia sin depender de
+  ejecutar nada — el equipo las ve donde ya trabaja. Los cupos por clase salen del análisis
+  local de la BD pseudonimizada (sin PII: solo nombre de clase + conteo). El match
+  topic-Zoom → clase-BD es por nombre exacto o por la columna `Alias Zoom` de `CUPOS`
+  (editable a mano) — mapeo por Meeting ID sigue como alternativa futura.
 - **2026-07-02 — Columna `% Asistencia`:** porcentaje de la clase que el estudiante estuvo
   conectado, como dato crudo adicional a `Instancias`. Cálculo en el mismo nodo Code
   (`porcentajeAsistencia()`): ordenar intervalos por join, fusionar solapados/contiguos
@@ -130,7 +166,8 @@ Workflow `Zoom - Asistencia` (ID `jkNaE51PKQ4TQzNq`), activo. JSON exportado a
     (paginado nativo del nodo HTTP Request, parámetro `next_page_token`) →
     `Calcular Momentos Dorados` (Code, mismo archivo que
     `scripts/zoom-asistencia/nodo-calcular-momentos-dorados.js`) → `Escribir Asistencia
-    H3Test` (Google Sheets Append, auto-map por nombre de columna)
+    ZOOM-ASISTANCE` (Google Sheets Append, auto-map por nombre de columna; hasta el
+    2026-07-02 se llamaba `Escribir Asistencia H3Test` y escribía en la pestaña `H3Test`)
   - FALSE: `Responder Firma Invalida` (401)
 
 **Credenciales creadas en n8n (vía API, no vía UI):**
@@ -219,6 +256,26 @@ probado con `curl` en la sesión anterior. Los nodos siguientes leen
   no hay garantía absoluta de tiempos.
 - Clases muy cortas (duración ≤ 20 min) hacen que los 3 checkpoints colapsen o se
   inviertan en el cálculo — caso límite sin manejo especial todavía.
+- **Confirmado 2026-07-02 (clase de las 10, caso real):** el webhook no se disparó porque la
+  reunión seguía técnicamente abierta — un participante quedó conectado (se durmió) sin salir
+  ni ser removido, y el host no cerró con "Finalizar reunión para todos". `meeting.ended` solo
+  llega cuando la sala queda realmente vacía o el host la fuerza a terminar; una clase que
+  "ya terminó" en la práctica pero sigue con alguien conectado no genera el evento, y por lo
+  tanto no se registra asistencia hasta que alguien cierre la reunión de verdad. Sin mitigación
+  automática todavía — a evaluar si conviene una alerta operativa o límite de tiempo.
+  **Desenlace (mismo día):** la sala se cerró a las 12:24 y el `meeting.ended` real llegó solo
+  — ejecución #46 escribió las 51 filas correctamente (duración real registrada: 148 min para
+  una clase de ~2h). El evento llega tarde, pero llega; no hubo que reenviar nada.
+- **Locale del spreadsheet es `es_ES`:** toda fórmula escrita vía API (values USER_ENTERED
+  **y** `CUSTOM_FORMULA` de formato condicional) debe usar `;` como separador de argumentos
+  y `\` como separador de columnas dentro de literales de array `{...}` — con `,` la API
+  responde 400 (`Invalid ConditionValue.userEnteredValue`) o la fórmula queda rota. Los
+  nombres de función sí van en inglés. Ver helper `loc()` en `setup_zoom_asistance.py`.
+- **Al validar por polling de ejecuciones, no asumir que la primera "success" reciente es la
+  tuya:** durante la prueba del cambio de pestaña, el evento real tardío de la clase de las 10
+  (#46) llegó en paralelo con el reenvío sintético (#48) y confundió la verificación — además
+  las ejecuciones en `Wait` no aparecen en la lista hasta resolverse. Confirmar por el body
+  del Webhook Trigger o por el conteo de items, no por timestamp.
 - Zoom cambió el catálogo de scopes granulares varias veces en 2023-2024 — confirmados
   `meeting:read:past_meeting:admin` y `meeting:read:list_past_participants:admin` cruzando
   doc oficial + hilo de Zoom Community (no verificado 100% contra la pantalla real del
@@ -300,6 +357,12 @@ el paso manual equivalente si n8n falla durante una sesión Zoom.
 - [ ] Probar con una reunión Zoom real (`meeting.ended` real) para validar `Participantes`,
   el nodo Code y la escritura en `Escribir Asistencia H3Test` — solo se probó hasta
   `Info Reunion` con datos sintéticos.
+- [ ] **Llenar la columna `Alias Zoom` de `CUPOS`** (o nombrar las reuniones Zoom con el
+  nombre exacto de la clase en la BD) para que `ZOOM-STATS` pueda mostrar el "X de Y
+  estudiantes" — hoy "Desarrollo Web - GIT, HTML y CSS" no matchea ninguna clase.
+- [ ] Cuando se decida el Sheet de producción: re-ejecutar `setup_zoom_asistance.py` con el
+  `SHEET_ID` nuevo (reconstruye ZOOM-ASISTANCE/CUPOS/ZOOM-STATS) y reapuntar el nodo del
+  workflow.
 - [ ] Decidir infraestructura final (portátil vs Raspberry Pi).
 - [ ] Definir manejo de errores (ver `docs/convenciones.md`).
 - [ ] Recordar rotar `ZOOM_CLIENT_SECRET` si se considera necesario — se pegó una vez en

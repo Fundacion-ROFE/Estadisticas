@@ -92,7 +92,7 @@ Google Sheets Avance   ──┘     4 tabs interactivos (PII):
 
 | Proceso | Nota | Bloqueado por |
 |---|---|---|
-| Asistencia Zoom | [[zoom-asistencia]] | **Funcional** — probado de punta a punta con reunión real; columna `% Asistencia` agregada (2026-07-02). Pendiente: filtro de reuniones no-clase, casos límite (reunión corta, invitado sin correo) y Sheet de producción |
+| Asistencia Zoom | [[zoom-asistencia]] | **Funcional** — escribe en pestaña `ZOOM-ASISTANCE` con colores <70%, pestañas `CUPOS` (inscritos por clase, desde BD Monitorias) y `ZOOM-STATS` (stats por sesión/semana, "X de Y") (2026-07-02). Pendiente: llenar `Alias Zoom` en CUPOS, filtro de reuniones no-clase, casos límite y Sheet de producción |
 
 ---
 

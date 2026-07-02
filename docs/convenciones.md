@@ -92,6 +92,20 @@ Fila 3+:        datos
 
 Ya implementado en `export_stats.py` y `export_avance.py`. Al crear un script para una hoja nueva con este patrón, reutilizar `detectar_grupos()`.
 
+## Fórmulas vía Sheets API en spreadsheets con locale es_ES
+
+Descubierto en zoom-asistencia (spreadsheet `H3Test`, locale `es_ES`). Aplica a **toda**
+fórmula enviada por API — tanto `values.update` con `USER_ENTERED` como las
+`CUSTOM_FORMULA` de reglas de formato condicional (`batchUpdate` responde 400
+`Invalid ConditionValue.userEnteredValue` si el separador está mal):
+
+- Separador de argumentos: `;` (no `,`) — `VLOOKUP(A1;B:C;2;FALSE)`.
+- Separador de **columnas** en literales de array `{...}`: `\` (no `,`) — `{A:A\B:B}`.
+- Los nombres de función van en inglés igual (la API los acepta en cualquier locale).
+- Si la fórmula no usa comas literales dentro de strings, basta un `replace(",", ";")`
+  (helper `loc()` en `scripts/zoom-asistencia/setup_zoom_asistance.py`).
+- Verificar el locale antes de escribir fórmulas: `sh.fetch_sheet_metadata()['properties']['locale']`.
+
 ## Subida a Google Sheets (estándar)
 
 Patrón establecido en q10-consolidacion, reutilizable en otros procesos:
