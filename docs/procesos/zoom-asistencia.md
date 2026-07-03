@@ -319,6 +319,23 @@ probado con `curl` en la sesión anterior. Los nodos siguientes leen
   configurar el Event Subscription en Zoom, el CRC deja de validar hasta que se actualice
   la URL manualmente en el Marketplace. Evaluar túnel nombrado (no efímero) antes de
   producción real.
+  **Incidente real (2026-07-02/03):** el quick tunnel murió en silencio (probablemente al
+  dormirse el PC en la tarde) — el registro DNS del hostname desapareció de Cloudflare
+  aunque el proceso cloudflared local seguía "conectado" según sus métricas, y n8n además
+  dejó de disparar sus schedules. Resultado: los `meeting.ended` de al menos 2 reuniones
+  ("Entrevista Nova", "Mi vida sí importa") rebotaron y no se registró asistencia. Zoom
+  reintenta pocas veces y desiste, pero **conserva los datos**: la asistencia es
+  recuperable con el patrón de reenvío sintético si se consigue el Meeting ID/UUID (portal
+  de Zoom → Reports, o agregar scopes `user:read:list_users:admin` +
+  `meeting:read:list_meetings:admin` para listarlas por API). Diagnóstico útil: comparar
+  el hostname de `http://127.0.0.1:20241/quicktunnel` contra DNS real (`Resolve-DnsName
+  ... -Server 1.1.1.1`) y revisar si el Schedule 4h de Q10 se saltó ticks. **Cada logon de
+  Windows re-corre `iniciar_n8n.bat` (Task Scheduler) → URL nueva → hay que actualizar el
+  Marketplace de Zoom cada vez** — el túnel nombrado dejó de ser opcional, es urgente.
+- **`iniciar_n8n.bat` no corre desatendido:** `timeout /t` falla con "No es compatible la
+  redirección de entradas" cuando el bat corre sin consola interactiva (WMI, background) —
+  las esperas se vuelven no-ops y el watchdog queda en loop apretado. Para arranques
+  desatendidos usar esperas con `powershell -Command "Start-Sleep N"`.
 - Activar Event Subscriptions no pide la URL del webhook durante el Publish/Activate de
   la app — son pasos independientes. Publish solo habilita las credenciales OAuth; el
   webhook se configura aparte en el tab Feature → Event Subscriptions, y esa pantalla

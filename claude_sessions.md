@@ -659,3 +659,27 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
   mañana de ese día y los marcaron en la tarde; es desfase de snapshot, no error.
 - Gotcha: la BD `_codificado_restaurado_codificado.xlsx` tiene TODO pseudonimizado
   (IDs incluidos) — cualquier cruce requiere la clave `clave_*.json` de Downloads.
+
+---
+
+## 2026-07-03 — [Zoom Asistencia] Incidente: túnel muerto — asistencia de 2 reuniones perdida y sistema restaurado
+
+**Estado:** Restaurado (requiere acción manual de Samuel en Zoom Marketplace)
+**Proceso relacionado:** [[zoom-asistencia]]
+
+- Reporte de Samuel: "Entrevista Nova" y "Mi vida sí importa" no registraron asistencia.
+  Diagnóstico: el quick tunnel de cloudflared murió en silencio (~tarde del 07-02, PC
+  dormido) — DNS del hostname eliminado en Cloudflare aunque el proceso local reportaba
+  conexión; n8n además se saltó los schedules de Q10 de 00:00Z y 04:00Z. Los meeting.ended
+  rebotaron: no llegó NI una ejecución fallida.
+- Hallazgo colateral grave: `.gitignore`, `CLAUDE.md`, `claude_sessions.md` e
+  `iniciar_n8n.bat` aparecieron BORRADOS del working tree (causa desconocida, ~1:20 AM).
+  Restaurados con `git checkout -- <archivos>`.
+- Restauración: matado cloudflared zombie, relanzado stack vía bat temporal sin watchdog
+  (WMI para sobrevivir a la sesión; `timeout /t` no funciona desatendido — gotcha nuevo).
+  Túnel nuevo: `https://championship-benz-initiative-agency.trycloudflare.com`. Workflows
+  Q10 y Zoom reactivados; CRC probado por el túnel público con hash correcto. ✅
+- **Pendiente Samuel:** pegar la URL nueva en Zoom Marketplace (Event Subscriptions);
+  conseguir Meeting IDs de las 2 reuniones perdidas (o agregar scopes de listado) para
+  recuperar su asistencia con reenvío sintético; decidir túnel nombrado — cada logon
+  regenera la URL y rompe el webhook (ya no es opcional).
