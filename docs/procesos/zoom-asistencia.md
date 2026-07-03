@@ -72,14 +72,26 @@ pestaña `Asistencia` de la BD Seguimiento de Monitorias (bloques horizontales p
   estudiantes conectados"), extraída de la BD de Monitorias pseudonimizada con
   `tools/analizar_cupos_bd.py` → `tools/cupos_clases.json` (777 estudiantes activos:
   15-16 grupos por área en HTML/Lógica/IA/Emprendimiento/HE, 6 de Hackea, 5 de
-  Bienvenida; cupos de 32 a 63). Columna D `Alias Zoom`: editable por el equipo para
-  mapear el topic de la reunión Zoom → clase de la BD cuando los nombres no coinciden
-  (hoy: "Desarrollo Web - GIT, HTML y CSS" no matchea ningún nombre de clase de la BD).
-  El setup preserva los alias al regenerar la pestaña.
+  Bienvenida; cupos de 32 a 63). Columnas E:F `Día`/`Hora` parseadas del nombre de la
+  clase (la primera hora es siempre COL/ECU/PAN). Columna D `Alias Zoom` editable
+  (preservada al regenerar) y tabla H:I `Palabra clave → Área` editable para inferir
+  el área desde el topic de la reunión.
 - **`ZOOM-STATS`** — solo fórmulas, se actualiza sola con cada toma de asistencia:
-  - *Por sesión* (cols A:I): Semana ISO, Curso, Fecha, Conectados, Cupo, "X de Y
-    estudiantes", % del cupo, Promedio % estancia, Alumnos <70%. Rojo si % del cupo o
-    promedio de estancia <70%, naranja si hay alumnos <70%.
+  - *Por sesión* (cols A:J): Semana ISO, Curso, Fecha, Conectados, Cupo, "X de Y
+    estudiantes", % del cupo, Promedio % estancia, Alumnos <70%, Match cupo. Rojo si
+    % del cupo o promedio de estancia <70%, naranja si hay alumnos <70%.
+  - **Resolución del cupo ("cantidad que debería haber"), en cascada (2026-07-02):**
+    1. topic de Zoom == nombre exacto de clase en `CUPOS`;
+    2. topic == `Alias Zoom` (columna D);
+    3. **por horario**: área inferida del topic con las palabras clave de `CUPOS!H:I`
+       + día de la semana y hora de la `Fecha` real del evento (tolerancia ±45 min)
+       → SUMA de inscritos de las clases de esa área en esa franja. Con esto el
+       "51 de 51" salió solo para "Desarrollo Web - GIT, HTML y CSS" (jueves 9:54 →
+       HTML - Jueves 10:00 A.M.) sin tocar alias. La columna `Match cupo` indica cuál
+       de los 3 niveles resolvió (o "sin match").
+    ⚠ Si varios grupos de la misma área comparten franja (ej. "Sábado 8:00 - Uno/Dos/
+    Avanzado"), el cupo por horario los **suma** — si en la práctica cada grupo tiene
+    su propia reunión Zoom, usar `Alias Zoom` para separar los denominadores.
   - *Por semana* (cols K:O): clases dictadas, conexiones totales, promedio de conectados
     por clase, promedio % estancia.
   - Columnas helper ocultas R:U aplanan `ZOOM-ASISTANCE` (con % normalizado a número y
@@ -357,9 +369,12 @@ el paso manual equivalente si n8n falla durante una sesión Zoom.
 - [ ] Probar con una reunión Zoom real (`meeting.ended` real) para validar `Participantes`,
   el nodo Code y la escritura en `Escribir Asistencia H3Test` — solo se probó hasta
   `Info Reunion` con datos sintéticos.
-- [ ] **Llenar la columna `Alias Zoom` de `CUPOS`** (o nombrar las reuniones Zoom con el
-  nombre exacto de la clase en la BD) para que `ZOOM-STATS` pueda mostrar el "X de Y
-  estudiantes" — hoy "Desarrollo Web - GIT, HTML y CSS" no matchea ninguna clase.
+- [x] ~~Llenar `Alias Zoom` para el "X de Y"~~ — resuelto con el match por horario
+  (área + día + hora del evento, 2026-07-02). El alias queda como override manual para
+  casos ambiguos (grupos de la misma área que comparten franja horaria).
+- [ ] Verificar con el equipo si grupos "Uno/Dos/Avanzado" de una misma franja se dictan
+  en reuniones Zoom separadas — si es así, el cupo por horario los suma de más y hay que
+  usar `Alias Zoom` para separar.
 - [ ] Cuando se decida el Sheet de producción: re-ejecutar `setup_zoom_asistance.py` con el
   `SHEET_ID` nuevo (reconstruye ZOOM-ASISTANCE/CUPOS/ZOOM-STATS) y reapuntar el nodo del
   workflow.

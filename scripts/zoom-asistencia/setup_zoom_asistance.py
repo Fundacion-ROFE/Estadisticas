@@ -15,6 +15,7 @@ Uso:  python setup_zoom_asistance.py [--sin-migrar]
 """
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -52,6 +53,41 @@ AREAS = {
     "Horario Hackea": "Hackea tu cerebro",
     "Horario de Bienvenida": "Bienvenida",
 }
+
+# Palabras clave (minúsculas) para inferir el área desde el topic de la reunión Zoom.
+# Editable por el equipo directamente en CUPOS!H:I — esto es solo el valor inicial.
+# Orden importa: la primera que aparezca en el topic gana.
+KEYWORDS_AREA = [
+    ("desarrollo web", "HTML"),
+    ("html", "HTML"),
+    ("css", "HTML"),
+    ("lógica", "Lógica"),
+    ("logica", "Lógica"),
+    ("inteligencia artificial", "IA"),
+    ("emprendimiento", "Emprendimiento"),
+    ("habilidades", "Habilidades Esenciales"),
+    ("hackea", "Hackea tu cerebro"),
+    ("bienvenida", "Bienvenida"),
+]
+
+RE_DIA = re.compile(r"(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)", re.I)
+RE_HORA = re.compile(r"(\d{1,2}):(\d{2})\s*([AP])\.?\s*\.?M", re.I)
+DIAS_NORM = {"miercoles": "miércoles", "sabado": "sábado"}
+
+
+def parsear_horario(nombre_clase):
+    """Extrae (día, hora decimal 24h COL) del nombre de clase de la BD.
+    Ej: 'Lógica - Sábado 4:00 P.M. COL/ECU/PAN | 6:00 P.M. UY - Dos' → ('sábado', 16).
+    La primera hora del nombre es siempre la de COL/ECU/PAN. Retorna ("", "") si no parsea
+    (ej. Bienvenida usa fechas puntuales, no franjas semanales)."""
+    m_dia = RE_DIA.search(nombre_clase)
+    m_hora = RE_HORA.search(nombre_clase)
+    if not m_dia or not m_hora:
+        return "", ""
+    dia = m_dia.group(1).lower()
+    dia = DIAS_NORM.get(dia, dia)
+    h = int(m_hora.group(1)) % 12 + (12 if m_hora.group(3).upper() == "P" else 0)
+    return dia, h + int(m_hora.group(2)) / 60
 
 # % Asistencia puede venir numérico (0.98, escrito por n8n con USER_ENTERED) o
 # texto "98%" (escrituras manuales/retroactivas) — ambas formas se normalizan.
@@ -151,20 +187,25 @@ def construir_cupos(sh):
     except gspread.WorksheetNotFound:
         pass
 
-    filas = [["Área", "Clase", "Inscritos", "Alias Zoom (topic exacto de la reunión)"]]
+    filas = [["Área", "Clase", "Inscritos", "Alias Zoom (topic exacto de la reunión)",
+              "Día", "Hora (24h COL)"]]
     resumen = [["Área", "Clases", "Total estudiantes"]]
     for col_horario, area in AREAS.items():
         clases = cupos.get(col_horario, {})
         for clase, n in sorted(clases.items(), key=lambda kv: (-kv[1], kv[0])):
-            filas.append([area, clase, n, alias_previos.get(clase, "")])
+            dia, hora = parsear_horario(clase)
+            filas.append([area, clase, n, alias_previos.get(clase, ""), dia, hora])
         resumen.append([area, len(clases), sum(clases.values())])
 
-    ws = recrear(sh, TAB_CUPOS, max(len(filas) + 10, 120), 8)
+    ws = recrear(sh, TAB_CUPOS, max(len(filas) + 10, 120), 13)
     ws.update(values=filas, range_name="A1", value_input_option="USER_ENTERED")
-    ws.update(values=resumen, range_name="E1", value_input_option="USER_ENTERED")
+    ws.update(values=[["Palabra clave (en el topic, minúsculas)", "Área"]]
+              + [[kw, area] for kw, area in KEYWORDS_AREA],
+              range_name="H1", value_input_option="USER_ENTERED")
+    ws.update(values=resumen, range_name="K1", value_input_option="USER_ENTERED")
     ws.update(values=[[f"Fuente: {datos['fuente']} — análisis {datos['fecha_analisis']}. "
                        "Regenerar con tools/analizar_cupos_bd.py y re-ejecutar este setup."]],
-              range_name="E{}".format(len(resumen) + 2),
+              range_name="K{}".format(len(resumen) + 2),
               value_input_option="USER_ENTERED")
 
     sh.batch_update({"requests": [
@@ -204,26 +245,54 @@ def construir_zoom_stats(sh):
     ws.update(values=[["📊 POR SESIÓN — cada clase dictada (se actualiza sola con cada toma de asistencia)"]],
               range_name="A1", value_input_option="USER_ENTERED")
     ws.update(values=[["Semana", "Curso", "Fecha", "Conectados", "Cupo", "Conexión",
-                       "% del cupo", "Prom. % estancia", f"Alumnos <{UMBRAL}%"]],
+                       "% del cupo", "Prom. % estancia", f"Alumnos <{UMBRAL}%", "Match cupo"]],
               range_name="A2", value_input_option="USER_ENTERED")
+    # Helpers por sesión (P: área inferida del topic, Q: cupo por día+hora)
+    ws.update(values=[["área detectada", "cupo por horario"]], range_name="P2",
+              value_input_option="USER_ENTERED")
     # En es_ES el separador de columnas dentro de {arrays} es "\" (no coma)
     ws.update(values=loc_filas([["=IFERROR(SORT(UNIQUE(FILTER({$U$2:$U\\$R$2:$R\\$S$2:$S}, $R$2:$R<>\"\")), 3, FALSE),)"]]),
               range_name="A3", value_input_option="USER_ENTERED")
 
+    C = TAB_CUPOS
     filas_sesion = []
+    filas_pq = []
     for i in range(3, FILAS_SESIONES + 3):
         filas_sesion.append([
             f"=IF($B{i}=\"\",,COUNTIFS($R:$R,$B{i},$S:$S,$C{i}))",
-            (f"=IF($B{i}=\"\",,IFERROR(VLOOKUP($B{i},{TAB_CUPOS}!$B:$C,2,FALSE),"
-             f"IFERROR(INDEX({TAB_CUPOS}!$C:$C,MATCH($B{i},{TAB_CUPOS}!$D:$D,0)),\"—\")))"),
+            # Cupo en cascada: nombre exacto → alias → suma por área+día+hora → "—"
+            (f"=IF($B{i}=\"\",,IF(COUNTIF({C}!$B:$B,$B{i})>0,"
+             f"VLOOKUP($B{i},{C}!$B:$C,2,FALSE),"
+             f"IF(COUNTIF({C}!$D:$D,$B{i})>0,"
+             f"INDEX({C}!$C:$C,MATCH($B{i},{C}!$D:$D,0)),"
+             f"IF(N($Q{i})>0,$Q{i},\"—\"))))"),
             (f"=IF($B{i}=\"\",,IF(ISNUMBER($E{i}),"
              f"$D{i}&\" de \"&$E{i}&\" estudiantes\","
-             f"$D{i}&\" conectados (clase sin cupo en {TAB_CUPOS})\"))"),
+             f"$D{i}&\" conectados (sin cupo identificado)\"))"),
             f"=IF(ISNUMBER($E{i}),ROUND($D{i}/$E{i}*100)&\"%\",\"\")",
             f"=IF($B{i}=\"\",,ROUND(AVERAGEIFS($T:$T,$R:$R,$B{i},$S:$S,$C{i}),1)&\"%\")",
             f"=IF($B{i}=\"\",,COUNTIFS($R:$R,$B{i},$S:$S,$C{i},$T:$T,\"<{UMBRAL}\"))",
+            # Cómo se resolvió el cupo (trazabilidad para el equipo)
+            (f"=IF($B{i}=\"\",,IF(COUNTIF({C}!$B:$B,$B{i})>0,\"nombre exacto\","
+             f"IF(COUNTIF({C}!$D:$D,$B{i})>0,\"alias\","
+             f"IF(N($Q{i})>0,\"horario: \"&$P{i}&\" \"&TEXT($C{i},\"dddd\"),"
+             f"\"sin match\"))))"),
         ])
-    ws.update(values=loc_filas(filas_sesion), range_name=f"D3:I{FILAS_SESIONES + 2}",
+        filas_pq.append([
+            # P: área inferida buscando las palabras clave de CUPOS!H:I en el topic
+            (f"=IF($B{i}=\"\",,IFERROR(INDEX({C}!$I$2:$I$40,"
+             f"MATCH(TRUE,ARRAYFORMULA(IF({C}!$H$2:$H$40=\"\",FALSE,"
+             f"ISNUMBER(SEARCH({C}!$H$2:$H$40,LOWER($B{i}))))),0)),\"\"))"),
+            # Q: suma de inscritos de las clases de esa área en la franja día+hora
+            # del evento (tolerancia ±45 min = 3/4 de hora, evita decimales por locale)
+            (f"=IFERROR(IF(OR($P{i}=\"\",$C{i}=\"\"),,"
+             f"SUMIFS({C}!$C:$C,{C}!$A:$A,$P{i},{C}!$E:$E,TEXT($C{i},\"dddd\"),"
+             f"{C}!$F:$F,\">=\"&(MOD($C{i},1)*24-3/4),"
+             f"{C}!$F:$F,\"<=\"&(MOD($C{i},1)*24+3/4))),)"),
+        ])
+    ws.update(values=loc_filas(filas_sesion), range_name=f"D3:J{FILAS_SESIONES + 2}",
+              value_input_option="USER_ENTERED")
+    ws.update(values=loc_filas(filas_pq), range_name=f"P3:Q{FILAS_SESIONES + 2}",
               value_input_option="USER_ENTERED")
 
     # ---- Tabla por semana (K:O) ----
@@ -256,9 +325,9 @@ def construir_zoom_stats(sh):
         {"repeatCell": {"range": {"sheetId": ws.id, "startRowIndex": 0, "endRowIndex": 2},
                         "cell": {"userEnteredFormat": {"textFormat": {"bold": True}}},
                         "fields": "userEnteredFormat.textFormat"}},
-        # Columnas helper ocultas
+        # Columnas helper ocultas (P:Q por sesión + R:U aplanado)
         {"updateDimensionProperties": {"range": {"sheetId": ws.id, "dimension": "COLUMNS",
-                                                 "startIndex": 17, "endIndex": 21},
+                                                 "startIndex": 15, "endIndex": 21},
                                        "properties": {"hiddenByUser": True},
                                        "fields": "hiddenByUser"}},
         {"updateDimensionProperties": {"range": {"sheetId": ws.id, "dimension": "COLUMNS",

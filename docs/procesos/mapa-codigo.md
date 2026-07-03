@@ -29,8 +29,9 @@
 
 **Comando:**
 ```bash
-python q10_to_sheets.py --grupo h1test   # → pestaña H1Test (Sheet interno)
-python q10_to_sheets.py --grupo h2test   # → pestaña h2test (Sheet público)
+python q10_to_sheets.py --grupo h1test     # → pestaña H1Test (Sheet interno)
+python q10_to_sheets.py --grupo h2test     # → pestaña h2test (Sheet público)
+python q10_to_sheets.py --grupo retirados  # → pestaña Retirados (reporte Estudiantes cancelados)
 ```
 
 **Funciones principales:**
@@ -40,7 +41,11 @@ python q10_to_sheets.py --grupo h2test   # → pestaña h2test (Sheet público)
 | `login_q10()` | — | `requests.Session` | 7 pasos AJAX encadenados (ver [[convenciones#Q10 Login multi-paso]]) |
 | `leer_excel_bytes(contenido)` | `bytes` | `pd.DataFrame` | Parse xlsx, auto-detecta fila header por palabras clave |
 | `mapear_columnas(df_cons)` | `pd.DataFrame` | `pd.DataFrame` | Consolidado → formato H1Test (ID, Nombre, Celular, Email, Curso, Avance, Estado) |
+| `descargar_retirados(session)` | — | `pd.DataFrame` | Reporte `GestionAcademica/EstudiantesCancelados` — histórico completo, sin filtros |
+| `mapear_columnas_retirados(df)` | `pd.DataFrame` | `pd.DataFrame` | Reporte cancelados → formato Retirados (10 columnas, ver abajo) |
 | `_q10_post_ajax(session, url, data, referer)` | — | `Response` | Helper AJAX POST con headers corporativos |
+
+**Grupo `retirados`:** usa el reporte `Estudiantes cancelados` (no el Consolidado). Columnas de la pestaña `Retirados`: `Identificacion | Nombre | TipoDocumento | Telefono | Programa | Sede | FechaCancelacion | Causa | Descripcion | Tipo`. `Tipo` ∈ {Cancelado, Desertor, Aplazado}. **El reporte NO incluye Email ni Curso** — no se puede cruzar por email con h2test/Avance. La pestaña se autocrea si no existe.
 
 **Variables clave en script:**
 ```
@@ -134,6 +139,25 @@ python export_asistencia.py --segmento "Logica-Nivel 2-2026"
 
 ---
 
+## `export_retirados.py`
+
+**Propósito:** Lee pestaña `Retirados` → agrega por tipo/causa/programa/mes → genera `docs/retirados/data.json` (sin PII) → git commit + push.
+
+**Servicios:** Google Sheets API (read only)
+
+**Sheet:** `Retirados` — mismo Sheet que h2test (`1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs`)
+
+**Comando:**
+```bash
+python export_retirados.py
+```
+
+**Output JSON:** `docs/retirados/data.json` — estructura `{totales{total_retirados, cancelados, desertores, aplazados}, por_tipo[], por_causa[], por_programa[], por_mes[]}`
+
+**Consumidor:** `docs/retirados/index.html` (panel público, botón "Retirados ↗" en el dashboard).
+
+---
+
 ## `setup_headers.py`
 
 **Propósito:** Escribe la fila 1 de headers en H1Test o h2test. **Uso único** (inicialización). Modo diagnóstico por defecto — requiere `--confirmar` para escribir.
@@ -146,9 +170,10 @@ python setup_headers.py --pestaña h2test              # diagnóstico
 python setup_headers.py --pestaña h2test --confirmar  # escribe
 ```
 
-**Pestañas configuradas:** `H1Test` · `h2test`
+**Pestañas configuradas:** `H1Test` · `h2test` · `Retirados`
 
-**Headers escritos (ambas pestañas):** `Identificacion | Nombre | Celular | Email | Curso | Avance`
+**Headers escritos (H1Test/h2test):** `Identificacion | Nombre | Celular | Email | Curso | Avance`
+**Headers de Retirados:** `Identificacion | Nombre | TipoDocumento | Telefono | Programa | Sede | FechaCancelacion | Causa | Descripcion | Tipo`
 
 ---
 
@@ -184,6 +209,26 @@ RESUMEN: cursos=N estudiantes=M promedio=P estado=exito
 ```
 
 **Formato h2test:** cada curso es un bloque de 5 columnas (`Identificacion, Nombre, Celular, Email, Avance`) con fila 0 = nombre del curso en mayúsculas. Los bloques se concatenan horizontalmente con 2 columnas vacías de separación. Esta estructura es la que leen `detectar_grupos()` en `export_stats.py`.
+
+---
+
+## `organizador/retirados_headless.py`
+
+**Propósito:** Lee pestaña `Retirados` (cruda) → limpia fechas/duplicados → escribe `Retirados-complete` en bloques horizontales por Tipo (CANCELADO / DESERTOR / APLAZADO) + bloque RESUMEN (totales por tipo y causa). Sin GUI — para n8n.
+
+**Servicios:** Google Sheets API (read Retirados + write Retirados-complete, mismo Sheet de h2test)
+
+**Comando:**
+```bash
+python organizador/retirados_headless.py
+```
+
+**Formato Retirados-complete:** cada tipo es un bloque de 8 columnas (`Identificacion, Nombre, TipoDocumento, Telefono, Programa, FechaCancelacion, Causa, Descripcion`) con fila 0 = tipo en mayúsculas, fila 1 = sub-headers, ordenado por fecha desc. Bloques concatenados horizontalmente con 2 columnas de separación (mismo patrón que h2test). Último bloque = RESUMEN (Metrica | Valor).
+
+**Output parseable para n8n:**
+```
+RESUMEN: retirados=N cancelados=X desertores=Y aplazados=Z estado=exito
+```
 
 ---
 
@@ -237,6 +282,7 @@ _on_listos()  →  _build_resumen_jc() + _build_tab_mr() + _build_tab_admin()
 | ⚠ Atención | Una fila por (estudiante, curso) con avance < umbral; doble clic → popup detalle |
 | 💡 Mujeres ROFÉ | 6 KPI cards clickeables → tabla dinámica (ver vistas abajo) |
 | ⚙ Admin | Lista de todos los cursos con ComboBox JC/MR/Stand-by; Guardar → `course_config.json` |
+| 🚪 Retirados | 5 KPI cards clickeables (Todos/Cancelados/Desertores/Aplazados/Causas) → tabla con info completa del retiro; doble clic → popup detalle; lee pestaña `Retirados` |
 
 **Vistas JC** (tarjeta activa se resalta; tabla cambia en tiempo real):
 
@@ -266,6 +312,7 @@ _on_listos()  →  _build_resumen_jc() + _build_tab_mr() + _build_tab_admin()
 |---|---|---|
 | `leer_h2test(gc)` | `(q10_jc, q10_mr, cursos_info)` | Lee h2test, clasifica por `course_config.json`, retorna dicts por programa + lista de cursos para Admin |
 | `leer_avance(gc)` | `dict[email→{cursos[]}]` | Lee pestaña Avance, colapsa por email |
+| `leer_retirados(gc)` | `list[dict]` | Lee pestaña Retirados; lista vacía si la pestaña no existe (no bloquea el panel) |
 | `cruzar(q10, avance, umbral)` | `(casos, total_av, total_q)` | JOIN por email → atencion/avance_0_cruzado/sin_match_manual/ok |
 | `_build_resumen_jc(...)` | — | Construye tab JC con header + KPIs clickeables + frame de tabla |
 | `_set_jc_view(vista)` | — | Resalta tarjeta activa y regenera tabla según la vista |
@@ -344,7 +391,7 @@ ID `jkNaE51PKQ4TQzNq`). Ver [[zoom-asistencia]] para detalle completo de nodos y
 |---|---|
 | `.env` | Credenciales Zoom S2S OAuth (`ZOOM_ACCOUNT_ID`, `ZOOM_CLIENT_ID`, `ZOOM_CLIENT_SECRET`, `ZOOM_WEBHOOK_SECRET_TOKEN`) — gitignoreado. Cargado como env vars del proceso n8n por `iniciar_n8n.bat`. |
 | `nodo-calcular-momentos-dorados.js` | Código del nodo Code `Calcular Momentos Dorados` en el workflow — calcula si cada participante estuvo conectado en los 3 "momentos dorados" (min 10, mitad, 10 min antes del fin) a partir de `join_time`/`leave_time` de `past_meetings/{uuid}/participants`. Copia de referencia — la fuente de verdad real es `n8n-workflows/zoom-asistencia.json`. |
-| `setup_zoom_asistance.py` | Setup (idempotente) de las pestañas `ZOOM-ASISTANCE` (destino del workflow, formato condicional <70% rojo / >=70% verde), `CUPOS` (inscritos por clase desde `tools/cupos_clases.json`, columna `Alias Zoom` editable que se preserva al regenerar) y `ZOOM-STATS` (estadísticas por sesión y por semana ISO, solo fórmulas). Constantes clave: `SHEET_ID`, `UMBRAL=70`, `FILAS_ASIST=20000`. **Gotcha:** el spreadsheet es locale `es_ES` — helper `loc()` convierte `,`→`;` en fórmulas; los arrays `{...}` usan `\` como separador de columnas. |
+| `setup_zoom_asistance.py` | Setup (idempotente) de las pestañas `ZOOM-ASISTANCE` (destino del workflow, formato condicional <70% rojo / >=70% verde), `CUPOS` (inscritos por clase desde `tools/cupos_clases.json` + `Día`/`Hora` parseados con `parsear_horario()` + tabla `Palabra clave → Área`; columna `Alias Zoom` editable que se preserva al regenerar) y `ZOOM-STATS` (estadísticas por sesión y por semana ISO, solo fórmulas; cupo resuelto en cascada: nombre exacto → alias → área+día+hora del evento con tolerancia ±45 min). Constantes clave: `SHEET_ID`, `UMBRAL=70`, `FILAS_ASIST=20000`, `KEYWORDS_AREA`. **Gotcha:** el spreadsheet es locale `es_ES` — helper `loc()` convierte `,`→`;` en fórmulas; los arrays `{...}` usan `\` como separador de columnas; evitar decimales literales en fórmulas (usar `3/4`, no `0.75`). |
 
 ## `tools/analizar_cupos_bd.py` (local, gitignoreado)
 

@@ -551,3 +551,26 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
   del cambio porque corrió en paralelo con la prueba sintética.
 - **Pendiente:** llenar `Alias Zoom` en CUPOS (los topics de Zoom no matchean los nombres de
   clase de la BD), decidir Sheet de producción, filtro de reuniones no-clase.
+
+---
+
+## 2026-07-02 — [Zoom Asistencia] Cupo por horario: "cantidad que debería haber vs la que entró"
+
+**Estado:** Funcional
+**Proceso relacionado:** [[zoom-asistencia]]
+
+- El "X de Y estudiantes" de ZOOM-STATS ya no depende de que el topic de Zoom coincida con
+  el nombre de clase de la BD. Cascada: nombre exacto → Alias Zoom → **match por horario**
+  (área inferida del topic vía tabla editable `CUPOS!H:I` de palabras clave + día/hora de
+  la Fecha real del evento, tolerancia ±45 min, suma de inscritos de la franja).
+- CUPOS ganó columnas `Día`/`Hora` parseadas del nombre de clase (`parsear_horario()` —
+  la primera hora del nombre es siempre COL/ECU/PAN). ZOOM-STATS ganó columna `Match cupo`
+  (trazabilidad: nombre exacto / alias / horario / sin match) y helpers ocultos P:Q.
+- Validado con datos reales: "Desarrollo Web - GIT, HTML y CSS" jueves 9:54 → "51 de 51
+  estudiantes" (100% del cupo) vía HTML - Jueves 10:00 A.M.; miércoles 17:36 → HTML 6:00
+  P.M. por la tolerancia. "Mi reunión" → sin match, como corresponde.
+- Gotcha es_ES adicional: no usar decimales literales en fórmulas (`0.75` no parsea) —
+  usar fracciones (`3/4`).
+- Caveat documentado: si varios grupos de la misma área comparten franja (Sábado 8:00
+  Uno/Dos/Avanzado) el cupo por horario los suma — verificar con el equipo si van en
+  reuniones separadas; en ese caso usar Alias Zoom.
