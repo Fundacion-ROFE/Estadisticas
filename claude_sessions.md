@@ -683,3 +683,34 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
   conseguir Meeting IDs de las 2 reuniones perdidas (o agregar scopes de listado) para
   recuperar su asistencia con reenvío sintético; decidir túnel nombrado — cada logon
   regenera la URL y rompe el webhook (ya no es opcional).
+
+---
+
+## 2026-07-03 — [Infraestructura] Investigación: borrado recurrente de archivos raíz
+
+**Estado:** Investigado — causa probable identificada, confirmación pendiente en UI de Avast
+**Proceso relacionado:** [[zoom-asistencia]] (incidente del túnel)
+
+- Hechos del incidente (03-jul 1:22-1:27 AM): los 4 archivos SUELTOS de la raíz del repo
+  (.gitignore, CLAUDE.md, claude_sessions.md, iniciar_n8n.bat) borrados sin pasar por la
+  Papelera; carpetas intactas. iniciar_n8n.bat desapareció exactamente entre su lanzamiento
+  con Start-Process (1:25:11, sin error) y 90 s después, sin ejecutar ni una línea (el log
+  viejo quedó intacto) — firma de bloqueo-en-ejecución de antivirus.
+- Descartados con evidencia: Storage Sense (limpieza de Downloads desactivada), OneDrive
+  (sin redirección), tareas programadas de limpieza (ninguna), Defender (pasivo, 0
+  detecciones), las dos sesiones de Claude Code (transcripts auditados comando por comando:
+  solo lecturas/appends), borrado manual vía Explorer (no está en la Papelera).
+- Sospechoso principal: **Avast** (activo desde el 24-jun, Defender en pasivo). Cuadra:
+  remediación al ejecutar un .bat sin firma que lanza cloudflared (herramienta muy abusada
+  por malware); SecurityCenter re-registró el estado de Avast a la 1:28:32 (4 min después);
+  chest/logs no accesibles sin admin para confirmación programática.
+- Ocasiones ANTERIORES (Papelera): son otra cosa — borrados manuales vía Explorer de
+  archivos similares (README/.gitignore 27-abr, AI_CONTEXT_*.md 01-jun, CLAUDE.md y
+  otro-proceso-si-aplica.md 24-jun). PC compartido: alguien "limpia" archivos que le
+  parecen basura.
+- Mitigación aplicada: git como red de seguridad (restauración inmediata con checkout).
+- **Pendiente Samuel:** (1) abrir Avast → Historial de protección y buscar entradas del
+  03-jul ~1:22-1:28 AM — confirmación definitiva; (2) agregar el repo como excepción de
+  Avast; (3) decidir mover el repo FUERA de Downloads (zona objetivo de todos los
+  limpiadores) a p.ej. C:\ROFE\ — requiere actualizar Task Scheduler y rutas hardcodeadas;
+  (4) preguntar al equipo por los borrados manuales históricos.
