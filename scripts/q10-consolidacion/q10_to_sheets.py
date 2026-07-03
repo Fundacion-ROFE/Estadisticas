@@ -42,14 +42,16 @@ FILA_INICIO       = 2
 # Mapa argumento --grupo → nombre de pestaña en Google Sheets
 # NOTA: "h2test" es minúsculas intencional — así está nombrada la pestaña en Google Sheets
 MAPEO_GRUPOS: dict[str, str] = {
-    "h1test": "H1Test",
-    "h2test": "h2test",
+    "h1test":    "H1Test",
+    "h2test":    "h2test",
+    "retirados": "Retirados",
 }
 
 # Mapa argumento --grupo → Sheet ID de Google Sheets (cada grupo puede vivir en un Sheet distinto)
 MAPEO_SHEET_IDS: dict[str, str] = {
-    "h1test": "1d3S41J9nlVI3qCy-WF_D3ZezTwRCW17vnL7u284XDG0",
-    "h2test": "1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs",
+    "h1test":    "1d3S41J9nlVI3qCy-WF_D3ZezTwRCW17vnL7u284XDG0",
+    "h2test":    "1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs",
+    "retirados": "1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs",
 }
 TAMANIO_LOTE      = 500
 PAUSA_LOTE        = 1.2   # segundos entre lotes (cuota API Sheets)
@@ -65,6 +67,25 @@ COL_CELULAR   = "Celular"
 COL_EMAIL     = "Email"
 COL_CURSO     = "Nombre asignatura"
 COL_AVANCE    = "Porcentaje progreso"
+
+# Columnas del Excel "Estudiantes cancelados" (reporte GestionAcademica, confirmado 2026-07-02)
+# El reporte NO incluye Email ni Curso — solo datos de la persona y del retiro.
+# "Tipo" trae el estado del retiro: Cancelado, Desertor o Aplazado.
+COLS_RETIRADOS = {
+    "Número identificación":       "Identificacion",
+    "Nombre completo estudiante":  "Nombre",
+    "Tipo documento":              "TipoDocumento",
+    "Teléfono":                    "Telefono",
+    "Programa":                    "Programa",
+    "Sede - jornada":              "Sede",
+    "Fecha cancelación":           "FechaCancelacion",
+    "Causa cancelación":           "Causa",
+    "Descripción":                 "Descripcion",
+    "Tipo":                        "Tipo",
+}
+HEADERS_RETIRADOS = ["Identificacion", "Nombre", "TipoDocumento", "Telefono",
+                     "Programa", "Sede", "FechaCancelacion", "Causa",
+                     "Descripcion", "Tipo"]
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -317,6 +338,62 @@ def descargar_todos_consolidados(session: requests.Session) -> pd.DataFrame:
     return df_total
 
 
+# ── Q10: Estudiantes cancelados (retirados) ──────────────────────────────────
+def descargar_retirados(session: requests.Session) -> pd.DataFrame:
+    """Descarga el reporte 'Estudiantes cancelados' (GestionAcademica).
+
+    Sin filtro de fechas ni sede/programa → trae el histórico completo.
+    Incluye los 3 tipos de retiro: Cancelado, Desertor y Aplazado.
+    """
+    log("Descargando reporte Estudiantes cancelados...")
+    url = (
+        f"{Q10_BASE_URL}/Reportes/Excel/ExcelReporte/"
+        "GestionAcademica/EstudiantesCancelados"
+    )
+    payload = [
+        (
+            "Tipo",
+            "Q10.Jack.Areas.ReportesExcel.GestionAcademica."
+            "ServicioReporteEstudiantesCancelados",
+        ),
+        ("sedeJornada",             ""),
+        ("programa",                ""),
+        ("rangoFechas.InitialDate", ""),
+        ("rangoFechas.FinalDate",   ""),
+    ]
+
+    resp = session.post(url, data=payload, headers=_headers_reporte(), timeout=60)
+    resp.raise_for_status()
+    datos = resp.json()
+
+    if datos.get("not_results"):
+        log("  → sin datos (not_results).")
+        return pd.DataFrame()
+
+    url_excel = datos.get("url")
+    if not url_excel:
+        log(f"  → respuesta sin URL ni not_results: {datos}")
+        return pd.DataFrame()
+
+    contenido = descargar_excel(session, url_excel)
+    df = leer_excel_bytes(contenido)
+    log(f"  → {len(df)} filas. Columnas: {df.columns.tolist()}")
+    return df
+
+
+def mapear_columnas_retirados(df_ret: pd.DataFrame) -> pd.DataFrame:
+    """Convierte el reporte Estudiantes cancelados al formato de la pestaña Retirados."""
+    df = df_ret.rename(columns=COLS_RETIRADOS).copy()
+
+    ausentes = [c for c in HEADERS_RETIRADOS if c not in df.columns]
+    if ausentes:
+        log(f"ADVERTENCIA: columnas faltantes del reporte de cancelados: {ausentes}")
+        for c in ausentes:
+            df[c] = ""
+
+    return df[HEADERS_RETIRADOS].reset_index(drop=True)
+
+
 def mapear_columnas(df_cons: pd.DataFrame) -> pd.DataFrame:
     """Convierte el Consolidado Q10 al formato H1Test (Identificacion|Nombre|Celular|Email|Curso|Avance|Estado)."""
     df = df_cons.copy()
@@ -357,7 +434,17 @@ def conectar_sheets() -> gspread.Worksheet:
     creds = Credentials.from_service_account_file(ruta_creds, scopes=SCOPES)
     gc = gspread.authorize(creds)
     sh = gc.open_by_key(SHEET_ID)
-    hoja = sh.worksheet(NOMBRE_HOJA)
+    try:
+        hoja = sh.worksheet(NOMBRE_HOJA)
+    except gspread.exceptions.WorksheetNotFound:
+        # La pestaña Retirados se autocrea (pipeline sin intervención manual)
+        if NOMBRE_HOJA != "Retirados":
+            raise
+        log(f"  Pestaña '{NOMBRE_HOJA}' no existe — creándola...")
+        hoja = sh.add_worksheet(title=NOMBRE_HOJA, rows="1000",
+                                cols=str(len(HEADERS_RETIRADOS) + 2))
+        hoja.update(values=[HEADERS_RETIRADOS], range_name="A1",
+                    value_input_option="RAW")
     log(f"  Conectado a '{NOMBRE_HOJA}' — Sheet ID: {SHEET_ID}")
     return hoja
 
@@ -429,15 +516,21 @@ def main() -> None:
         # 1. Login Q10
         session = login_q10()
 
-        # 2. Consolidado Educación Virtual — ya incluye toda la info del estudiante
-        df_cons = descargar_todos_consolidados(session)
-
-        if df_cons.empty:
-            log("ERROR: ningún periodo devolvió datos del Consolidado.")
-            sys.exit(1)
-
-        # 3. Mapear columnas al formato H1Test
-        df_final = mapear_columnas(df_cons)
+        # 2-3. Descargar y mapear según el grupo
+        if args.grupo == "retirados":
+            # Reporte Estudiantes cancelados (Cancelado / Desertor / Aplazado)
+            df_cons = descargar_retirados(session)
+            if df_cons.empty:
+                log("ERROR: el reporte de Estudiantes cancelados no devolvió datos.")
+                sys.exit(1)
+            df_final = mapear_columnas_retirados(df_cons)
+        else:
+            # Consolidado Educación Virtual — ya incluye toda la info del estudiante
+            df_cons = descargar_todos_consolidados(session)
+            if df_cons.empty:
+                log("ERROR: ningún periodo devolvió datos del Consolidado.")
+                sys.exit(1)
+            df_final = mapear_columnas(df_cons)
         df_final = df_final.fillna("").astype(str).replace({"nan": "", "<NA>": ""})
 
         log(f"DataFrame final: {len(df_final)} filas × {len(df_final.columns)} columnas.")
@@ -469,7 +562,8 @@ def main() -> None:
         # 5. Resumen
         log("=" * 60)
         log("RESUMEN FINAL")
-        log(f"  Filas del Consolidado (3 periodos) : {len(df_cons)}")
+        origen = "reporte cancelados" if args.grupo == "retirados" else "Consolidado (3 periodos)"
+        log(f"  Filas del {origen} : {len(df_cons)}")
         log(f"  Filas subidas a Sheets             : {len(df_final)}")
         log(f"  Hoja actualizada                   : {NOMBRE_HOJA}")
         log("=" * 60)

@@ -574,3 +574,30 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
 - Caveat documentado: si varios grupos de la misma área comparten franja (Sábado 8:00
   Uno/Dos/Avanzado) el cupo por horario los suma — verificar con el equipo si van en
   reuniones separadas; en ese caso usar Alias Zoom.
+
+---
+
+## 2026-07-02 — [Q10] Fase 4: Retirados (Cancelado/Desertor/Aplazado) → Sheets + panel público + GUI
+
+**Estado:** Completado
+**Procesos relacionados:** [[q10-consolidacion]] · [[dashboard-web]]
+
+- El Consolidado NO trae estado de matrícula (verificado con archivado=true/false: idéntico).
+  Los retirados viven en el reporte `GestionAcademica/EstudiantesCancelados` — descubierto
+  explorando `/Informes`. Payload simple (sede/programa/rangoFechas vacíos = histórico completo).
+  **El reporte no incluye Email ni Curso** → no se puede cruzar por email con h2test/Avance.
+- `q10_to_sheets.py --grupo retirados` → pestaña `Retirados` (Sheet h2test, autocreada,
+  10 cols con `Tipo` ∈ Cancelado/Desertor/Aplazado). `setup_headers.py` actualizado.
+- Nuevo `organizador/retirados_headless.py` → `Retirados-complete`: bloques horizontales
+  por Tipo (patrón h2test) + bloque RESUMEN. Emite `RESUMEN: retirados=N ... estado=exito`.
+- Nuevo `export_retirados.py` → `docs/retirados/data.json` (solo agregados: por tipo, causa,
+  programa y mes) → git push. Panel público `docs/retirados/index.html` (acento naranja) +
+  botón "Retirados ↗" en el dashboard junto a Mujeres ROFÉ.
+- `panel_riesgo_gui.py`: nueva tab 🚪 Retirados con 5 KPI clickeables (Todos/Cancelados/
+  Desertores/Aplazados/Causas), tabla filtrable con info individual completa, popup de
+  detalle y export CSV. `leer_retirados()` tolera pestaña inexistente.
+- Workflow n8n `Rblg81qifVshsRae` actualizado vía API (desactivar→PUT→reactivar): +6 nodos
+  (3 en rama Telegram con mensaje OK ampliado, 3 en rama Schedule 4h). Export sincronizado
+  en `n8n-workflows/q10-consolidacion.json`.
+- Probado end-to-end 2 veces: 328 → 353 registros en minutos (el equipo estaba marcando
+  desertores en Q10 durante la sesión). Decisión: incluir los 3 tipos, no solo "Cancelado".

@@ -26,6 +26,7 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 │   │   └── plantilla-proceso.md
 │   ├── dashboard/              ← Tab 1: stats Q10 (data.json ← export_stats.py)
 │   ├── avance/                 ← Tab 2: avance manual (data.json ← export_avance.py)
+│   ├── retirados/              ← Panel retirados (data.json ← export_retirados.py)
 │   ├── asistencia/             ← Standalone backup (no en dashboard activo)
 │   └── diferencias/            ← Standalone backup (no en dashboard activo)
 │
@@ -33,6 +34,7 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 │   ├── q10_to_sheets.py        ← Extracción Q10 → Google Sheets (bot Telegram)
 │   ├── export_stats.py         ← h2test → docs/dashboard/data.json → git push
 │   ├── export_avance.py        ← pestaña Avance → docs/avance/data.json → git push
+│   ├── export_retirados.py     ← pestaña Retirados → docs/retirados/data.json → git push
 │   ├── export_asistencia.py    ← pestaña asistencias → docs/asistencia/data.json (backup)
 │   ├── setup_headers.py        ← Inicialización headers fila 1 (uso único)
 │   └── organizador/            ← App GUI .exe para operadores no técnicos
@@ -54,6 +56,8 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 | `q10_to_sheets.py` | [[q10-consolidacion]] | [[q10-actualizar]] | — |
 | `export_stats.py` | [[dashboard-web]] | — | `docs/dashboard/data.json` |
 | `export_avance.py` | [[dashboard-web]] | — | `docs/avance/data.json` |
+| `export_retirados.py` | [[q10-consolidacion]] · [[dashboard-web]] | — | `docs/retirados/data.json` |
+| `retirados_headless.py` | [[q10-consolidacion]] | — | — |
 | `panel_riesgo.py` | [[dashboard-web]] | — | Local solamente |
 | `setup_headers.py` | [[q10-consolidacion]] | — | — |
 | n8n workflow | [[q10-consolidacion]] | [[q10-actualizar]] | — |

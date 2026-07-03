@@ -50,14 +50,22 @@ Tab 1 Q10    Tab 2 Avance   Tab 3 Comp.   Tab 4 Admin
 (solo JC)    (solo JC)     (JC vs JC)   (JC+MR+Stand)
 
 + docs/mujeres-rofe/ → lee data.mr del mismo JSON
++ docs/retirados/   → botón "Retirados ↗" en el dashboard
+
+Rama Retirados (mismo pipeline n8n, Fase 4):
+q10_to_sheets.py --grupo retirados ──► reporte "Estudiantes cancelados"
+    ▼ pestaña Retirados (cruda, Sheet h2test)
+retirados_headless.py ──► pestaña Retirados-complete (bloques por Tipo)
+    ▼ export_retirados.py
+docs/retirados/data.json (solo agregados) ──► panel público de retirados
 ```
 
 ```
 (solo local, nunca GitHub)
-Google Sheets h2test   ──┐
-                          ├──► panel_riesgo_gui.py
-Google Sheets Avance   ──┘     4 tabs interactivos (PII):
-                               🎓 JC  |  ⚠ Atención  |  💡 MR  |  ⚙ Admin
+Google Sheets h2test    ──┐
+Google Sheets Avance    ──┼──► panel_riesgo_gui.py
+Pestaña Retirados       ──┘     5 tabs interactivos (PII):
+                               🎓 JC | 💡 MR | ⚙ Admin | 🔀 Diferencias | 🚪 Retirados
                                ↑ KPIs clickeables → tabla dinámica
                                Admin guarda → tools/course_config.json
 ```
@@ -83,7 +91,8 @@ Google Sheets Avance   ──┘     4 tabs interactivos (PII):
 |---|---|---|---|
 | Consolidación Q10 | [[q10-consolidacion]] | 2026-06-25 | Schedule 4h + Telegram activos · 1,145 estudiantes 2026 · 4,553 total DB |
 | Dashboard web | [[dashboard-web]] | 2026-06-26 | GitHub Pages live · 4 tabs (JC/Avance/Comp/Admin) · panel MR · separación JC/MR en Python |
-| Panel de riesgo GUI | [[dashboard-web]] | 2026-06-26 | 4 tabs interactivos · KPIs clickeables · vistas dinámicas JC y MR · Tab Admin con course_config.json |
+| Panel de riesgo GUI | [[dashboard-web]] | 2026-06-26 | 5 tabs interactivos · KPIs clickeables · vistas dinámicas JC y MR · Tab Admin con course_config.json · Tab Retirados |
+| Retirados Q10 | [[q10-consolidacion]] | 2026-07-02 | Fase 4 del pipeline · reporte Estudiantes cancelados → Retirados/Retirados-complete → panel público · 353 retirados (318 cancelados) |
 | Pseudonimizador | [[pseudonimizador]] | 2026-06-30 | GitHub Pages live · 3 tabs · Web Worker para 22 MB / 44 pestañas · Pendiente demo con equipo |
 
 ---

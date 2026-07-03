@@ -10,6 +10,7 @@ Expone estadísticas agregadas (sin datos personales) de todos los programas de 
 
 - **h2test** (Sheet Q10) → `docs/dashboard/data.json` — avance por curso, separado por programa
 - **Avance** (Sheet manual) → `docs/avance/data.json` — avance por curso (% progreso)
+- **Retirados** (Sheet Q10, misma hoja de h2test) → `docs/retirados/data.json` — retiros agregados por tipo/causa/programa/mes
 
 Un panel local (GUI) cruza ambas fuentes con PII para análisis interno sin publicar nada personal.
 
@@ -19,6 +20,7 @@ Un panel local (GUI) cruza ambas fuentes con PII para análisis interno sin publ
 |---|---|
 | Actualizar stats Q10 | `python export_stats.py` — lee h2test, genera JSON, push |
 | Actualizar avance manual | `python export_avance.py` — lee pestaña Avance, genera JSON, push |
+| Actualizar retirados | `python export_retirados.py` — lee pestaña Retirados, genera JSON, push |
 | Panel de riesgo local | `python tools/panel_riesgo_gui.py` — GUI con PII, sin push |
 
 ## Arquitectura
@@ -96,9 +98,33 @@ La clasificación de cursos en JC / MR / Stand-by se controla en **`tools/course
 | Avance Manual | `avance/data.json` | KPIs · tabla por curso · anomalías manuales |
 | Comparativo | Ambos JSONs | Tabla Manual vs Q10 · Δ diferencia · anomalías cruzadas |
 | Admin | `data.json` (todos) | Resumen por programa (JC/MR/Stand-by) · barras por curso · tabla detalle |
+| Retirados ↗ | Link a panel retirados | Navega a `docs/retirados/index.html` |
 | Mujeres ROFÉ ↗ | Link a panel MR | Navega a `docs/mujeres-rofe/index.html` |
 
 El Tab Admin lee las tres secciones del JSON (`por_curso`, `mr.por_curso`, `stand.por_curso`) y los muestra juntos con código de color por programa.
+
+## Panel Retirados — docs/retirados/index.html
+
+Panel independiente con acento naranja. Lee `./data.json` (generado por `export_retirados.py`).
+Botón "← Dashboard" para volver.
+
+KPIs: Total retirados · Cancelados · Desertores · Aplazados. Barras: distribución por tipo,
+causas de cancelación, retirados por programa, retiros por mes.
+
+**Solo agregados** — la info individual de cada retirado (nombre, ID, teléfono, descripción)
+se consulta en el tab 🚪 Retirados del `panel_riesgo_gui.py` local.
+
+**Estructura de data.json (export_retirados.py):**
+```json
+{
+  "ultima_actualizacion": "ISO8601",
+  "totales": {"total_retirados": 353, "cancelados": 318, "desertores": 34, "aplazados": 1},
+  "por_tipo":     [{"tipo": "Cancelado", "cantidad": 318}],
+  "por_causa":    [{"causa": "Voluntario", "cantidad": 176}],
+  "por_programa": [{"programa": "Jóvenes creaTIvos", "cantidad": 353}],
+  "por_mes":      [{"mes": "2023-10", "cantidad": 120}]
+}
+```
 
 ## Panel Mujeres ROFÉ — docs/mujeres-rofe/index.html
 
@@ -201,6 +227,7 @@ GUI Tkinter con datos individuales (PII). Nunca sube a GitHub.
 | 💡 Mujeres ROFÉ | 6 KPI cards clickeables → tabla dinámica por vista |
 | ⚙ Admin | Clasificación de cursos JC/MR/Stand-by · Guardar → course_config.json |
 | 🔀 Diferencias | Comparativa cruzada Manual vs Q10 · 3 vistas: Solo Q10, Solo Manual, En Ambas |
+| 🚪 Retirados | 5 KPI cards (Todos/Cancelados/Desertores/Aplazados/Causas) → tabla con info completa del retiro (nombre, ID, teléfono, fecha, causa, descripción) · doble clic → popup · exportar CSV · lee pestaña `Retirados` |
 
 ### Vistas del tab 🎓 Jóvenes creaTIvos
 

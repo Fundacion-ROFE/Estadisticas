@@ -32,14 +32,18 @@ SCOPES = [
 # Mapa: pestaña → Sheet ID
 # NOTA: "h2test" es minúsculas intencional — así está nombrada la pestaña en Google Sheets
 SHEET_IDS_POR_PESTANA = {
-    "H1Test": "1d3S41J9nlVI3qCy-WF_D3ZezTwRCW17vnL7u284XDG0",
-    "h2test": "1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs",
+    "H1Test":    "1d3S41J9nlVI3qCy-WF_D3ZezTwRCW17vnL7u284XDG0",
+    "h2test":    "1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs",
+    "Retirados": "1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs",
 }
 
 # Mapa: pestaña → headers esperados (en orden exacto)
 HEADERS_POR_PESTANA = {
     "H1Test": ["Identificacion", "Nombre", "Celular", "Email", "Curso", "Avance"],
     "h2test": ["Identificacion", "Nombre", "Celular", "Email", "Curso", "Avance"],
+    "Retirados": ["Identificacion", "Nombre", "TipoDocumento", "Telefono",
+                  "Programa", "Sede", "FechaCancelacion", "Causa",
+                  "Descripcion", "Tipo"],
 }
 
 

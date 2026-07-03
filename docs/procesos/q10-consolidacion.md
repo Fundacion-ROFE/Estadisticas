@@ -59,7 +59,13 @@ Para agregar nuevos grupos: editar `MAPEO_GRUPOS`, `MAPEO_SHEET_IDS` en `q10_to_
 16. `export_stats.py`: lee h2test → agrega en Python → escribe `docs/dashboard/data.json` → git push
 17. `export_avance.py`: lee pestaña Avance (Sheet manual) → agrega → escribe `docs/avance/data.json` → git push
 
-**Tiempo estimado total (`/actualizar h2test`):** ~3-4 minutos.
+**Fase 4 — Retirados (2026-07-02):** mismo patrón crudo → organizado → publicado:
+
+18. `q10_to_sheets.py --grupo retirados`: reporte `Estudiantes cancelados` (GestionAcademica) → pestaña `Retirados` (Sheet de h2test). Incluye los 3 tipos: Cancelado, Desertor, Aplazado. Histórico completo (sin filtro de fechas).
+19. `organizador/retirados_headless.py`: Retirados → `Retirados-complete` (bloques horizontales por Tipo + bloque RESUMEN).
+20. `export_retirados.py`: agrega por tipo/causa/programa/mes → `docs/retirados/data.json` (sin PII) → git push → panel `docs/retirados/index.html`.
+
+**Tiempo estimado total (`/actualizar h2test`):** ~4-5 minutos.
 
 ## Fuentes de datos / APIs usadas
 
@@ -68,6 +74,7 @@ Q10 no es una API pública — son endpoints internos de la webapp (`site6.q10.c
 | Endpoint | Método | Devuelve |
 |---|---|---|
 | `/Reportes/Excel/ExcelReporte/EducacionVirtual/ConsolidadoEducacionVirtual` | POST | ID estudiante, Nombres, Apellidos, Celular, Email, Nombre asignatura, Porcentaje progreso |
+| `/Reportes/Excel/ExcelReporte/GestionAcademica/EstudiantesCancelados` | POST | Nombre completo, Tipo documento, Nº identificación, Teléfono, Programa, Sede, Fecha cancelación, Causa, Descripción, Tipo (Cancelado/Desertor/Aplazado). **Sin Email ni Curso.** Payload: `Tipo=...ServicioReporteEstudiantesCancelados`, `sedeJornada`, `programa`, `rangoFechas.InitialDate/FinalDate` (vacíos = todo el histórico) |
 
 Devuelve `{"url": "https://q10storage.blob.core.windows.net/...xlsx?..."}` — URL de Azure Blob que **expira en ~3 min**. Descargar inmediatamente.
 
@@ -79,6 +86,7 @@ Periodos con datos confirmados: `21` (Logica-Nivel 2-2026), `22` (Habilidades-Ni
 |---|---|---|---|
 | `h1test` | `1d3S41J9nlVI3qCy-WF_D3ZezTwRCW17vnL7u284XDG0` | `H1Test` | Revisión interna del equipo |
 | `h2test` | `1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs` | `h2test` | Fuente para dashboard GitHub Pages |
+| `retirados` | `1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs` | `Retirados` (cruda) → `Retirados-complete` (organizada) | Retirados de Q10 (Cancelado/Desertor/Aplazado) → panel público de retirados |
 
 - **Service Account:** `q10-automatizacion@n8n-automatizacion-q10.iam.gserviceaccount.com`
 - **Columnas (A→F, ambas pestañas):** `Identificacion | Nombre | Celular | Email | Curso | Avance`
@@ -110,6 +118,8 @@ Periodos con datos confirmados: `21` (Logica-Nivel 2-2026), `22` (Habilidades-Ni
 - **Workflow quedó inactivo tras PUT de actualización.** Al actualizar el workflow vía API con el workflow activo se producía error; se desactivó, se actualizó, pero no se reactivó. El bat ya tiene loop que detecta esto y reactiva solo. Verificar con `GET /api/v1/workflows/Rblg81qifVshsRae` si se sospecha inactividad.
 - **Si se agregan columnas propias a H1Test o h2test** a la derecha de las columnas propias, la lógica borrar-y-resubir las destruiría.
 - **Nombre de pestaña h2test es minúsculas intencional.** Así está creada en Google Sheets. No cambiar a `H2Test` ni en el código ni en Sheets — rompería la conexión. `H1Test` usa CamelCase porque se creó primero con ese nombre; son convenciones distintas por origen histórico.
+- **El reporte Estudiantes cancelados NO trae Email ni Curso** — solo identificación, teléfono y datos del retiro. No se puede cruzar por email con h2test/Avance (el cruce estándar del proyecto). El análisis de retirados es sobre sus propios campos (tipo, causa, fecha, programa).
+- **El Consolidado no tiene columna de estado de matrícula** — verificado 2026-07-02 con `archivado=true/false`: mismas filas y columnas. Los retirados solo existen en el reporte `EstudiantesCancelados`.
 
 ## Reglas de Anomalías
 
@@ -131,6 +141,8 @@ El equipo clasifica los registros bajo 4 categorías tras la carga:
 | `organizador_Q10.py` | `scripts/q10-consolidacion/organizador/` | Versión GUI del organizador (revisión manual / .exe) |
 | `export_stats.py` | `scripts/q10-consolidacion/` | Fase 3a — h2test → `docs/dashboard/data.json` → git push |
 | `export_avance.py` | `scripts/q10-consolidacion/` | Fase 3b — pestaña Avance → `docs/avance/data.json` → git push |
+| `retirados_headless.py` | `scripts/q10-consolidacion/organizador/` | Fase 4 — Retirados → Retirados-complete (bloques por Tipo + RESUMEN) |
+| `export_retirados.py` | `scripts/q10-consolidacion/` | Fase 4 — Retirados → `docs/retirados/data.json` → git push |
 | `setup_headers.py` | `scripts/q10-consolidacion/` | Escribe headers fila 1 en H1Test/h2test (uso único) |
 | `requirements.txt` | `scripts/q10-consolidacion/` | Dependencias Python |
 | `q10-consolidacion.json` | `n8n-workflows/` | Workflow n8n (ID en producción: `Rblg81qifVshsRae`) |
@@ -212,8 +224,14 @@ Si el bot de Telegram falla o n8n no está corriendo:
    python scripts/q10-consolidacion/export_stats.py
    python scripts/q10-consolidacion/export_avance.py
    ```
-6. Si Q10 da error de login: verificar que credenciales en el script están vigentes y que la red corporativa no bloquea `site6.q10.com`.
-7. Si el Sheet no se actualiza: verificar que el Service Account tiene rol Editor en el Sheet destino.
+6. Fase 4 — retirados:
+   ```bash
+   python scripts/q10-consolidacion/q10_to_sheets.py --grupo retirados
+   python scripts/q10-consolidacion/organizador/retirados_headless.py
+   python scripts/q10-consolidacion/export_retirados.py
+   ```
+7. Si Q10 da error de login: verificar que credenciales en el script están vigentes y que la red corporativa no bloquea `site6.q10.com`.
+8. Si el Sheet no se actualiza: verificar que el Service Account tiene rol Editor en el Sheet destino.
 
 Ver runbook [[q10-actualizar]] para pasos detallados sin terminal (operadores no técnicos).
 
