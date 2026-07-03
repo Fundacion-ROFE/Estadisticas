@@ -92,6 +92,17 @@ pestaña `Asistencia` de la BD Seguimiento de Monitorias (bloques horizontales p
     ⚠ Si varios grupos de la misma área comparten franja (ej. "Sábado 8:00 - Uno/Dos/
     Avanzado"), el cupo por horario los **suma** — si en la práctica cada grupo tiene
     su propia reunión Zoom, usar `Alias Zoom` para separar los denominadores.
+  - **Exclusión de cuentas staff (2026-07-03):** los conteos de Conectados, promedio de
+    estancia y alumnos <70% **excluyen** a los participantes cuyo email contenga alguno
+    de los textos de la lista `CUPOS!G` (default: `tocaunavida.org` — preservada al
+    regenerar). Motivo: auditoría del "51 de 51" reveló que incluía cuentas de la
+    fundación (`comunicaciones@`, `soporte.it@`, `jovenescreativos@`) — el valor real
+    era 50 de 51. Las filas staff siguen quedando en `ZOOM-ASISTANCE` (registro crudo),
+    solo se excluyen de las estadísticas.
+  - **Límite conocido:** "Conectados = Cupo" compara *cantidades*, no *personas* — la
+    verificación de que los conectados sean exactamente los inscritos (columna `Validar`
+    contra `Seguimiento`) requiere el Sheet de producción con correos reales; con la BD
+    pseudonimizada local no se puede cruzar por email.
   - *Por semana* (cols K:O): clases dictadas, conexiones totales, promedio de conectados
     por clase, promedio % estancia.
   - Columnas helper ocultas R:U aplanan `ZOOM-ASISTANCE` (con % normalizado a número y

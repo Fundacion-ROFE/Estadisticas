@@ -177,13 +177,17 @@ def construir_cupos(sh):
     datos = json.loads(CUPOS_JSON.read_text(encoding="utf-8"))
     cupos = datos["cupos_por_columna"]
 
-    # Preservar los alias Zoom escritos a mano por el equipo (columna D)
+    # Preservar lo editado a mano por el equipo: alias Zoom (col D) y exclusiones (col G)
     alias_previos = {}
+    exclusiones = ["tocaunavida.org"]
     try:
         previa = sh.worksheet(TAB_CUPOS).get_all_values()
         for f in previa[1:]:
             if len(f) >= 4 and f[1].strip() and f[3].strip():
                 alias_previos[f[1].strip()] = f[3].strip()
+        previas_g = [f[6].strip() for f in previa[1:] if len(f) >= 7 and f[6].strip()]
+        if previas_g:
+            exclusiones = previas_g
     except gspread.WorksheetNotFound:
         pass
 
@@ -199,6 +203,10 @@ def construir_cupos(sh):
 
     ws = recrear(sh, TAB_CUPOS, max(len(filas) + 10, 120), 13)
     ws.update(values=filas, range_name="A1", value_input_option="USER_ENTERED")
+    # Cuentas staff/monitores: si el email del participante contiene alguno de estos
+    # textos, ZOOM-STATS no lo cuenta como estudiante conectado
+    ws.update(values=[["Excluir de conteos (email contiene)"]] + [[e] for e in exclusiones],
+              range_name="G1", value_input_option="USER_ENTERED")
     ws.update(values=[["Palabra clave (en el topic, minúsculas)", "Área"]]
               + [[kw, area] for kw, area in KEYWORDS_AREA],
               range_name="H1", value_input_option="USER_ENTERED")
@@ -225,7 +233,7 @@ def construir_cupos(sh):
 
 def construir_zoom_stats(sh):
     filas_helper = FILAS_ASIST + 5
-    ws = recrear(sh, TAB_STATS, filas_helper, 21)
+    ws = recrear(sh, TAB_STATS, filas_helper, 23)
 
     q = f"'{TAB_ASIST}'"
     # Helpers R:U — aplanan ZOOM-ASISTANCE con % numérico y semana ISO
@@ -236,9 +244,16 @@ def construir_zoom_stats(sh):
               "YEAR(DATEVALUE(LEFT(S2:S,10)))&\"-S\"&TEXT(ISOWEEKNUM(DATEVALUE(LEFT(S2:S,10))),\"00\")"
               "),\"\")))")
 
-    ws.update(values=[["curso", "fecha", "pct_num", "semana"]], range_name="R1",
-              value_input_option="USER_ENTERED")
-    ws.update(values=loc_filas([[f"=ARRAYFORMULA({q}!F2:F)", f"=ARRAYFORMULA({q}!G2:G)", pct, semana]]),
+    # W: TRUE si el email es cuenta staff/monitor (lista editable en CUPOS!G) —
+    # esas filas quedan en ZOOM-ASISTANCE pero no cuentan como estudiantes
+    excluido = ("=ARRAYFORMULA(IF($R$2:$R=\"\",,"
+                "IF(TEXTJOIN(\"|\",TRUE,{c}!$G$2:$G$30)=\"\",FALSE,"
+                "REGEXMATCH(LOWER($V$2:$V&\"\"),"
+                "LOWER(TEXTJOIN(\"|\",TRUE,{c}!$G$2:$G$30))))))").format(c=TAB_CUPOS)
+    ws.update(values=[["curso", "fecha", "pct_num", "semana", "email", "excluido"]],
+              range_name="R1", value_input_option="USER_ENTERED")
+    ws.update(values=loc_filas([[f"=ARRAYFORMULA({q}!F2:F)", f"=ARRAYFORMULA({q}!G2:G)",
+                                 pct, semana, f"=ARRAYFORMULA({q}!C2:C)", excluido]]),
               range_name="R2", value_input_option="USER_ENTERED")
 
     # ---- Tabla por sesión (A:I) ----
@@ -259,7 +274,7 @@ def construir_zoom_stats(sh):
     filas_pq = []
     for i in range(3, FILAS_SESIONES + 3):
         filas_sesion.append([
-            f"=IF($B{i}=\"\",,COUNTIFS($R:$R,$B{i},$S:$S,$C{i}))",
+            f"=IF($B{i}=\"\",,COUNTIFS($R:$R,$B{i},$S:$S,$C{i},$W:$W,FALSE))",
             # Cupo en cascada: nombre exacto → alias → suma por área+día+hora → "—"
             (f"=IF($B{i}=\"\",,IF(COUNTIF({C}!$B:$B,$B{i})>0,"
              f"VLOOKUP($B{i},{C}!$B:$C,2,FALSE),"
@@ -270,8 +285,10 @@ def construir_zoom_stats(sh):
              f"$D{i}&\" de \"&$E{i}&\" estudiantes\","
              f"$D{i}&\" conectados (sin cupo identificado)\"))"),
             f"=IF(ISNUMBER($E{i}),ROUND($D{i}/$E{i}*100)&\"%\",\"\")",
-            f"=IF($B{i}=\"\",,ROUND(AVERAGEIFS($T:$T,$R:$R,$B{i},$S:$S,$C{i}),1)&\"%\")",
-            f"=IF($B{i}=\"\",,COUNTIFS($R:$R,$B{i},$S:$S,$C{i},$T:$T,\"<{UMBRAL}\"))",
+            (f"=IF($B{i}=\"\",,IFERROR(ROUND(AVERAGEIFS($T:$T,$R:$R,$B{i},"
+             f"$S:$S,$C{i},$W:$W,FALSE),1)&\"%\",\"\"))"),
+            (f"=IF($B{i}=\"\",,COUNTIFS($R:$R,$B{i},$S:$S,$C{i},"
+             f"$T:$T,\"<{UMBRAL}\",$W:$W,FALSE))"),
             # Cómo se resolvió el cupo (trazabilidad para el equipo)
             (f"=IF($B{i}=\"\",,IF(COUNTIF({C}!$B:$B,$B{i})>0,\"nombre exacto\","
              f"IF(COUNTIF({C}!$D:$D,$B{i})>0,\"alias\","
@@ -307,9 +324,10 @@ def construir_zoom_stats(sh):
     for i in range(3, FILAS_SEMANAS + 3):
         filas_semana.append([
             f"=IF($K{i}=\"\",,COUNTA(UNIQUE(FILTER($R$2:$R&\"§\"&$S$2:$S,$U$2:$U=$K{i}))))",
-            f"=IF($K{i}=\"\",,COUNTIF($U:$U,$K{i}))",
+            f"=IF($K{i}=\"\",,COUNTIFS($U:$U,$K{i},$W:$W,FALSE))",
             f"=IF($K{i}=\"\",,ROUND($M{i}/$L{i},1))",
-            f"=IF($K{i}=\"\",,ROUND(AVERAGEIFS($T:$T,$U:$U,$K{i}),1)&\"%\")",
+            (f"=IF($K{i}=\"\",,IFERROR(ROUND(AVERAGEIFS($T:$T,$U:$U,$K{i},"
+             f"$W:$W,FALSE),1)&\"%\",\"\"))"),
         ])
     ws.update(values=loc_filas(filas_semana), range_name=f"L3:O{FILAS_SEMANAS + 2}",
               value_input_option="USER_ENTERED")
@@ -325,9 +343,9 @@ def construir_zoom_stats(sh):
         {"repeatCell": {"range": {"sheetId": ws.id, "startRowIndex": 0, "endRowIndex": 2},
                         "cell": {"userEnteredFormat": {"textFormat": {"bold": True}}},
                         "fields": "userEnteredFormat.textFormat"}},
-        # Columnas helper ocultas (P:Q por sesión + R:U aplanado)
+        # Columnas helper ocultas (P:Q por sesión + R:W aplanado)
         {"updateDimensionProperties": {"range": {"sheetId": ws.id, "dimension": "COLUMNS",
-                                                 "startIndex": 15, "endIndex": 21},
+                                                 "startIndex": 15, "endIndex": 23},
                                        "properties": {"hiddenByUser": True},
                                        "fields": "hiddenByUser"}},
         {"updateDimensionProperties": {"range": {"sheetId": ws.id, "dimension": "COLUMNS",

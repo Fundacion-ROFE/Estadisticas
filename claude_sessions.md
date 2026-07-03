@@ -601,3 +601,23 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
   en `n8n-workflows/q10-consolidacion.json`.
 - Probado end-to-end 2 veces: 328 → 353 registros en minutos (el equipo estaba marcando
   desertores en Q10 durante la sesión). Decisión: incluir los 3 tipos, no solo "Cancelado".
+
+---
+
+## 2026-07-03 — [Zoom Asistencia] Auditoría del "51 de 51" → exclusión de cuentas staff
+
+**Estado:** Funcional
+**Proceso relacionado:** [[zoom-asistencia]]
+
+- Samuel cuestionó el "51 de 51 estudiantes" — auditoría con los datos reales: los 51
+  conectados eran únicos y sin solapamiento entre sesiones, PERO incluían cuentas de la
+  fundación (comunicaciones@, soporte.it@, jovenescreativos@). Valor real: 50 de 51
+  (jueves) y 49 de 51 (miércoles). No era asistencia perfecta ni error de fórmula: era
+  conteo inflado por staff.
+- Fix: lista editable `CUPOS!G` "Excluir de conteos (email contiene)" (default
+  tocaunavida.org, preservada al regenerar) + helpers V:W en ZOOM-STATS (email +
+  REGEXMATCH) → Conectados, prom. % estancia y alumnos <70% (sesión y semana) ahora
+  excluyen staff. Las filas staff siguen en ZOOM-ASISTANCE como registro crudo.
+- "Mi reunión" (prueba, 2 cuentas staff) bajó a 0 conectados — confirma la exclusión.
+- Límite documentado: el "X de Y" compara cantidades, no personas — el cruce persona a
+  persona (Validar vs Seguimiento) necesita el Sheet de producción con correos reales.
