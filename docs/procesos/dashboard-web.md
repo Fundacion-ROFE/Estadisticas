@@ -331,6 +331,7 @@ Requiere acceso Viewer al Sheet h2test y al Sheet Avance desde el Service Accoun
 - **Doble encabezado en h2test y Avance:** fila 1 = nombres de cursos fusionados, fila 2 = sub-headers. `detectar_grupos()` lo maneja en todos los scripts. Ver [[convenciones#Doble encabezado en Google Sheets]].
 - **Cruce por email, no por ID:** las dos fuentes usan IDs incompatibles (cédula vs código interno Q10). Si un estudiante tiene emails distintos en cada sistema queda como SIN MATCH.
 - **tools/ está gitignoreado:** `course_config.json` vive en `tools/` y nunca sube a GitHub. Si se pierde, reconstruirlo desde el Tab Admin del GUI (los cursos se cargan de h2test en tiempo real).
+- **`.nojekyll` obligatorio en `docs/`:** el sitio son dashboards HTML estáticos, pero GitHub Pages procesa `docs/` con Jekyll por defecto. Las notas de Obsidian con sintaxis Liquid (p.ej. expresiones n8n `{{ ... $json.var }}` en `convenciones.md`) rompen el build → "pages build and deployment failed" en cada push. `docs/.nojekyll` (archivo vacío) desactiva Jekyll y arregla todos los fallos de una vez. No borrar. (2026-07-03)
 
 ---
 
