@@ -401,6 +401,10 @@ ID `jkNaE51PKQ4TQzNq`). Ver [[zoom-asistencia]] para detalle completo de nodos y
 
 **Propósito:** Análisis de la BD Seguimiento de Monitorias (xlsx pseudonimizado en Downloads) — cuenta estudiantes asignados por clase en las columnas `Horario *` de la pestaña `Seguimiento` → escribe `tools/cupos_clases.json` (89 clases, sin PII: nombre de clase + conteo). Re-ejecutar cuando cambie la BD y luego correr `setup_zoom_asistance.py` para refrescar `CUPOS`.
 
+## `tools/verificar_retirados_bd.py` (local, gitignoreado)
+
+**Propósito:** Verificación de coherencia de retirados — cruza la pestaña `S Retirados` de la BD Seguimiento de Monitorias (pseudonimizada; restaura ID/nombre/email en memoria con la clave del pseudonimizador `clave_samuel_2026-07-02.json` de Downloads) contra el reporte `Estudiantes cancelados` de Q10 (descarga fresca vía `q10_to_sheets`). Match por cédula normalizada, fallback por nombre. Reporta: en ambas / en BD sin Q10 (→ CSV en `tools/reportes/`) / en Q10-2026 sin BD (informativo). ⚠ Imprime PII en consola — solo local. Última corrida (2026-07-03): 55/55 retirados de la BD confirmados en Q10 por cédula. `python tools/verificar_retirados_bd.py` — actualizar las rutas `RUTA_BD`/`RUTA_CLAVE` cuando cambie la versión del archivo.
+
 **Gotcha:** el script asume que el nodo "Info Reunion" (`GET /past_meetings/{uuid}`) y el nodo "Participantes" (`GET /past_meetings/{uuid}/participants`) ya existen en el workflow con esos nombres exactos — si se renombran en n8n, hay que actualizar las referencias `$('Info Reunion')` dentro del Code.
 
 ## `n8n-workflows/zoom-asistencia.json`

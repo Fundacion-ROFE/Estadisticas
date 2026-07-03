@@ -640,3 +640,22 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
 - Conclusión: no hubo asistencia perfecta ni error de fórmula — 49 de 51 con ~85-90% de
   identidad verificada. El cruce fino por grupo de horario queda para el Sheet de
   producción; cupos por horario (BD Monitorias) marcados como provisionales.
+
+---
+
+## 2026-07-03 — [Q10] Verificación de coherencia: BD S Retirados vs extracción de retirados
+
+**Estado:** Completado
+**Procesos relacionados:** [[q10-consolidacion]]
+
+- Nuevo `tools/verificar_retirados_bd.py` (local, PII): restaura la pestaña `S Retirados`
+  de la BD Seguimiento de Monitorias (pseudonimizada) con la clave del pseudonimizador
+  y la cruza contra el reporte `Estudiantes cancelados` de Q10 descargado en vivo.
+- **Resultado: 100% coherente.** Los 55 retirados de la BD están todos en Q10,
+  matcheados por cédula (0 por fallback de nombre, 0 faltantes). No hubo que ajustar
+  la extracción ni agregar usuarios.
+- Informativo (dirección inversa): 25 desertores marcados en Q10 el 2026-07-02
+  ("Decisión de la Institución") aún no aparecen en la BD — la BD exportada es de la
+  mañana de ese día y los marcaron en la tarde; es desfase de snapshot, no error.
+- Gotcha: la BD `_codificado_restaurado_codificado.xlsx` tiene TODO pseudonimizado
+  (IDs incluidos) — cualquier cruce requiere la clave `clave_*.json` de Downloads.
