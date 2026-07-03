@@ -621,3 +621,22 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
 - "Mi reunión" (prueba, 2 cuentas staff) bajó a 0 conectados — confirma la exclusión.
 - Límite documentado: el "X de Y" compara cantidades, no personas — el cruce persona a
   persona (Validar vs Seguimiento) necesita el Sheet de producción con correos reales.
+
+---
+
+## 2026-07-03 — [Zoom Asistencia] Corroboración persona por persona contra h2test (Q10)
+
+**Estado:** Funcional
+**Proceso relacionado:** [[zoom-asistencia]] · [[q10-consolidacion]]
+
+- Pedido de Samuel: validar que los asistentes de H3Test sean coherentes con quienes
+  deberían estar, SIN usar la BD pseudonimizada. Como Q10 no tiene grupos de horario ni
+  curso "Desarrollo Web", el cruce factible es de identidad: correo del asistente vs
+  correos reales de h2test → `tools/corroborar_asistencia_h3test.py` (PII, solo local).
+- Resultado clases reales: miércoles 44/49 verificados (90%), jueves 42/50 (84%).
+  Los no encontrados: bot notetaker fred@fireflies.ai (agregado a exclusiones CUPOS!G,
+  jueves quedó "49 de 51"), typos de correo al entrar a Zoom (vbuesaquilloo@ doble o) y
+  estudiantes con correo distinto al de Q10.
+- Conclusión: no hubo asistencia perfecta ni error de fórmula — 49 de 51 con ~85-90% de
+  identidad verificada. El cruce fino por grupo de horario queda para el Sheet de
+  producción; cupos por horario (BD Monitorias) marcados como provisionales.

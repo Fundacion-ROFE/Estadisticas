@@ -103,6 +103,17 @@ pestaña `Asistencia` de la BD Seguimiento de Monitorias (bloques horizontales p
     verificación de que los conectados sean exactamente los inscritos (columna `Validar`
     contra `Seguimiento`) requiere el Sheet de producción con correos reales; con la BD
     pseudonimizada local no se puede cruzar por email.
+  - **Corroboración persona por persona disponible hoy (2026-07-03):**
+    `tools/corroborar_asistencia_h3test.py` cruza los correos de los asistentes contra
+    `h2test` (Q10, correos reales, refresco 4h). Resultado con las 2 clases reales:
+    **90% y 84% de los asistentes verificados como estudiantes matriculados**; los no
+    encontrados fueron una mezcla de bot notetaker (`fred@fireflies.ai` — agregado a la
+    lista de exclusión `CUPOS!G`), typos evidentes del correo al entrar a Zoom
+    (`vbuesaquilloo@` con doble o) y estudiantes que probablemente usan un correo
+    distinto al registrado en Q10. Decisión: cupos por horario siguen saliendo de la
+    BD de Monitorias (único origen con grupos de horario) pero quedan marcados como
+    provisionales hasta el Sheet de producción; la validación de *identidad* se hace
+    contra Q10.
   - *Por semana* (cols K:O): clases dictadas, conexiones totales, promedio de conectados
     por clase, promedio % estancia.
   - Columnas helper ocultas R:U aplanan `ZOOM-ASISTANCE` (con % normalizado a número y

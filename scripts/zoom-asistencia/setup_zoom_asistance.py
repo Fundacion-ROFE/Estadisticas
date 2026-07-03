@@ -179,7 +179,7 @@ def construir_cupos(sh):
 
     # Preservar lo editado a mano por el equipo: alias Zoom (col D) y exclusiones (col G)
     alias_previos = {}
-    exclusiones = ["tocaunavida.org"]
+    exclusiones = ["tocaunavida.org", "fireflies.ai"]  # staff + bots notetaker
     try:
         previa = sh.worksheet(TAB_CUPOS).get_all_values()
         for f in previa[1:]:
