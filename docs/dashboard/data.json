@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-04T07:01:32.850596-05:00",
+  "ultima_actualizacion": "2026-07-04T11:01:23.185566-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -18,7 +18,7 @@
     {
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
       "estudiantes": 777,
-      "promedio": 96.47,
+      "promedio": 96.49,
       "min": 0.0,
       "max": 100.0
     },
@@ -39,7 +39,7 @@
     {
       "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
       "estudiantes": 777,
-      "promedio": 98.23,
+      "promedio": 98.25,
       "min": 0.0,
       "max": 100.0
     }
@@ -69,7 +69,7 @@
       {
         "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
         "estudiantes": 136,
-        "promedio": 27.04,
+        "promedio": 27.12,
         "min": 0.0,
         "max": 100.0
       },
