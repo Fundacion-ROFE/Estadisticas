@@ -1,10 +1,10 @@
 {
-  "ultima_actualizacion": "2026-07-02T15:01:43.230939-05:00",
+  "ultima_actualizacion": "2026-07-03T19:01:37.032946-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
-      "estudiantes": 808,
-      "promedio": 98.37,
+      "estudiantes": 780,
+      "promedio": 99.65,
       "min": 0.0,
       "max": 100.0
     },
@@ -18,28 +18,28 @@
     {
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
       "estudiantes": 777,
-      "promedio": 96.11,
+      "promedio": 96.4,
       "min": 0.0,
       "max": 100.0
     },
     {
       "curso": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
-      "estudiantes": 799,
-      "promedio": 96.93,
+      "estudiantes": 779,
+      "promedio": 99.42,
       "min": 0.0,
       "max": 100.0
     },
     {
       "curso": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
-      "estudiantes": 807,
-      "promedio": 96.69,
+      "estudiantes": 779,
+      "promedio": 99.57,
       "min": 0.0,
       "max": 100.0
     },
     {
       "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
       "estudiantes": 777,
-      "promedio": 98.16,
+      "promedio": 98.23,
       "min": 0.0,
       "max": 100.0
     }
@@ -51,7 +51,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 71
+      "cantidad": 27
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -60,16 +60,16 @@
   ],
   "totales": {
     "total_cursos": 6,
-    "total_estudiantes_unicos": 808,
-    "total_habilitados": 808,
-    "total_db": 1091
+    "total_estudiantes_unicos": 780,
+    "total_habilitados": 780,
+    "total_db": 1063
   },
   "mr": {
     "por_curso": [
       {
         "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
         "estudiantes": 136,
-        "promedio": 23.46,
+        "promedio": 26.84,
         "min": 0.0,
         "max": 100.0
       },
@@ -84,7 +84,7 @@
     "anomalias": [
       {
         "categoria": "AVANCE 0%",
-        "cantidad": 205
+        "cantidad": 202
       },
       {
         "categoria": "AVANCE IRREGULAR",
