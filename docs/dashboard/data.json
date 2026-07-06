@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-06T07:01:51.827234-05:00",
+  "ultima_actualizacion": "2026-07-06T11:02:11.565018-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -11,7 +11,7 @@
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
       "estudiantes": 777,
-      "promedio": 52.4,
+      "promedio": 52.71,
       "min": 0.0,
       "max": 100.0
     },
@@ -58,7 +58,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 183
+      "cantidad": 182
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -76,7 +76,7 @@
       {
         "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
         "estudiantes": 136,
-        "promedio": 27.36,
+        "promedio": 27.46,
         "min": 0.0,
         "max": 100.0
       },
