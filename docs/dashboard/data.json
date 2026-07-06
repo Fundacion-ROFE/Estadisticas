@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-05T23:01:33.407261-05:00",
+  "ultima_actualizacion": "2026-07-06T03:01:38.984801-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -11,7 +11,7 @@
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
       "estudiantes": 777,
-      "promedio": 52.35,
+      "promedio": 52.4,
       "min": 0.0,
       "max": 100.0
     },
