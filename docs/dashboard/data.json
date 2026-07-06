@@ -1,54 +1,82 @@
 {
-  "ultima_actualizacion": "2026-07-06T15:01:52.819468-05:00",
+  "ultima_actualizacion": "2026-07-06T16:25:09.259015-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
       "estudiantes": 780,
+      "finalizados": 776,
       "promedio": 99.65,
       "min": 0.0,
-      "max": 100.0
+      "max": 100.0,
+      "inscritos": 863,
+      "promedio_pico": 98.47,
+      "finalizado": true
     },
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
       "estudiantes": 777,
-      "promedio": 53.45,
+      "finalizados": 244,
+      "promedio": 54.38,
       "min": 0.0,
-      "max": 100.0
+      "max": 100.0,
+      "inscritos": 777,
+      "promedio_pico": 54.38,
+      "finalizado": false
     },
     {
       "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
       "estudiantes": 778,
+      "finalizados": 697,
       "promedio": 98.75,
       "min": 0.0,
-      "max": 101.0
+      "max": 101.0,
+      "inscritos": 830,
+      "promedio_pico": 94.43,
+      "finalizado": true
     },
     {
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
       "estudiantes": 777,
-      "promedio": 96.72,
+      "finalizados": 715,
+      "promedio": 96.74,
       "min": 0.0,
-      "max": 100.0
+      "max": 100.0,
+      "inscritos": 806,
+      "promedio_pico": 89.13,
+      "finalizado": true
     },
     {
       "curso": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
       "estudiantes": 779,
+      "finalizados": 735,
       "promedio": 99.42,
       "min": 0.0,
-      "max": 100.0
+      "max": 100.0,
+      "inscritos": 854,
+      "promedio_pico": 95.1,
+      "finalizado": true
     },
     {
       "curso": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
       "estudiantes": 779,
+      "finalizados": 773,
       "promedio": 99.57,
       "min": 0.0,
-      "max": 100.0
+      "max": 100.0,
+      "inscritos": 862,
+      "promedio_pico": 96.37,
+      "finalizado": true
     },
     {
       "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
       "estudiantes": 777,
+      "finalizados": 745,
       "promedio": 98.33,
       "min": 0.0,
-      "max": 100.0
+      "max": 100.0,
+      "inscritos": 809,
+      "promedio_pico": 93.98,
+      "finalizado": true
     }
   ],
   "anomalias": [
@@ -58,7 +86,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 176
+      "cantidad": 170
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -76,16 +104,24 @@
       {
         "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
         "estudiantes": 136,
-        "promedio": 27.51,
+        "finalizados": 17,
+        "promedio": 28.08,
         "min": 0.0,
-        "max": 100.0
+        "max": 100.0,
+        "inscritos": 136,
+        "promedio_pico": 13.49,
+        "finalizado": false
       },
       {
         "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
         "estudiantes": 244,
+        "finalizados": 70,
         "promedio": 30.98,
         "min": 0.0,
-        "max": 100.0
+        "max": 100.0,
+        "inscritos": 244,
+        "promedio_pico": 30.55,
+        "finalizado": false
       }
     ],
     "anomalias": [
