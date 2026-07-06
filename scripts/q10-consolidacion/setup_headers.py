@@ -9,6 +9,7 @@ Uso: python setup_headers.py [--pestaña NOMBRE] [--confirmar]
 """
 
 import argparse
+import io
 import os
 import sys
 
@@ -17,6 +18,12 @@ try:
     truststore.inject_into_ssl()
 except ImportError:
     pass
+
+# UTF-8 en consola Windows (evita UnicodeEncodeError con → y acentos en cp1252)
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+if sys.stderr.encoding and sys.stderr.encoding.lower() != "utf-8":
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 import gspread
 from google.oauth2.service_account import Credentials
@@ -39,7 +46,7 @@ SHEET_IDS_POR_PESTANA = {
 
 # Mapa: pestaña → headers esperados (en orden exacto)
 HEADERS_POR_PESTANA = {
-    "H1Test": ["Identificacion", "Nombre", "Celular", "Email", "Curso", "Avance"],
+    "H1Test": ["Identificacion", "Nombre", "Celular", "Email", "Curso", "Avance", "Estado"],
     "h2test": ["Identificacion", "Nombre", "Celular", "Email", "Curso", "Avance"],
     "Retirados": ["Identificacion", "Nombre", "TipoDocumento", "Telefono",
                   "Programa", "Sede", "FechaCancelacion", "Causa",

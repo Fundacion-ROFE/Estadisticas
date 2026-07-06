@@ -196,8 +196,11 @@ python setup_headers.py --pestaña h2test --confirmar  # escribe
 
 **Pestañas configuradas:** `H1Test` · `h2test` · `Retirados`
 
-**Headers escritos (H1Test/h2test):** `Identificacion | Nombre | Celular | Email | Curso | Avance`
+**Headers escritos (H1Test):** `Identificacion | Nombre | Celular | Email | Curso | Avance | Estado` (7 cols — `Estado` alinea con lo que sube `q10_to_sheets.mapear_columnas()`; `organizador_headless` lo lee por nombre vía `get_all_records`)
+**Headers escritos (h2test):** `Identificacion | Nombre | Celular | Email | Curso | Avance` (config legacy; hoy h2test se escribe en bloques por curso desde `organizador_headless`)
 **Headers de Retirados:** `Identificacion | Nombre | TipoDocumento | Telefono | Programa | Sede | FechaCancelacion | Causa | Descripcion | Tipo`
+
+**Gotcha:** la guarda de `main()` solo escribe si la fila 1 está **vacía** o ya coincide — nunca sobrescribe un header con contenido distinto (por seguridad). Para *agregar* una columna a un header existente, escribir la celda directamente (ej. `G1`). El script ahora fuerza stdout/stderr a UTF-8 para no crashear con `→`/acentos en consolas cp1252.
 
 ---
 

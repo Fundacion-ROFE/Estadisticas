@@ -807,5 +807,13 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
   conteo de años previos.
 - Prueba en vivo: incluye [20,21,22,23,24], descarta [18,19]; 9 cursos, 1063 cédulas únicas,
   Desarrollo Web con 777. Docs actualizados: mapa-codigo (tabla de periodos + firmas).
-- **Pendiente:** correr `q10_to_sheets --grupo h1test` → `organizador_headless` →
-  `export_stats`/`export_avance` para que Desarrollo Web aparezca en dashboard y panel de riesgo.
+- **Cadena corrida a producción:** `q10_to_sheets --grupo h1test` (5827 filas) →
+  `organizador_headless` (9 cursos, Desarrollo Web 777) → `export_stats` (JC 6→7 cursos, push).
+  Desarrollo Web ya en el dashboard público (777, 52.22% — coherente con el 50.53% del manual).
+  El panel de riesgo lo toma solo (lee h2test en vivo). Commits `510afad` (data.json) y `81d2dae`
+  (código + docs).
+- **Fix header H1Test:** el header tenía 6 cols y `mapear_columnas()` sube 7 (con `Estado`).
+  No era bug activo (`organizador` repone `Estado="A"` por defecto y todas las filas son "A"),
+  pero se alineó: agregado `Estado` a `HEADERS_POR_PESTANA["H1Test"]` en `setup_headers.py` y
+  escrito en `G1`. La guarda del script no sobrescribe headers con contenido → se escribió la
+  celda directa. De paso, agregado wrapper UTF-8 a `setup_headers.py` (crasheaba con `→` en cp1252).
