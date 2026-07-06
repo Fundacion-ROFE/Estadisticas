@@ -10,6 +10,7 @@ import os
 import re
 import sys
 import time
+from datetime import datetime
 
 # truststore: en Windows con interceptación SSL corporativa, usa el cert store del SO
 try:
@@ -56,10 +57,19 @@ MAPEO_SHEET_IDS: dict[str, str] = {
 TAMANIO_LOTE      = 500
 PAUSA_LOTE        = 1.2   # segundos entre lotes (cuota API Sheets)
 
-PERIODOS = [21, 22, 23]  # períodos 2026 activos con datos
+# ── Autodescubrimiento de periodos por año ───────────────────────────────────
+# Q10 asigna IDs incrementales a cada periodo académico. No hay lista fija: se
+# sondea un rango de IDs, se lee la columna "Período" (autoetiquetada con el año,
+# ej. "Logica-Nivel 2-2026") y se conservan SOLO los periodos del AÑO_OBJETIVO.
+# Así entra cualquier curso/cohorte nuevo del año en curso (p. ej. Desarrollo Web,
+# periodos 20 y 24) sin tocar código, y nunca se mezclan años previos.
+# Los IDs inexistentes devuelven not_results y se descartan sin costo.
+RANGO_PERIODOS = range(18, 41)                 # IDs a sondear (ampliar si Q10 supera 40)
+AÑO_OBJETIVO   = str(datetime.now().year)      # año en curso; override con --anio
 
 # Columnas del Excel Consolidado (confirmadas en HAR 2026-06-26)
 # El Consolidado ya incluye toda la info del estudiante — no se necesita endpoint Estudiantes
+COL_PERIODO   = "Período"      # texto autoetiquetado, ej. "Logica-Nivel 2-2026"
 COL_NOMBRES   = "Nombres estudiante"
 COL_APELLIDOS = "Apellidos estudiante"
 COL_ID        = "Número identificación estudiante"
@@ -321,20 +331,50 @@ def descargar_consolidado_periodo(
     return df
 
 
-def descargar_todos_consolidados(session: requests.Session) -> pd.DataFrame:
-    log("Descargando Consolidado Educación Virtual (todos los periodos)...")
+def _etiqueta_periodo(df: pd.DataFrame) -> str:
+    """Devuelve el texto de la columna 'Período' (ej. 'Logica-Nivel 2-2026')."""
+    if COL_PERIODO not in df.columns:
+        return ""
+    vals = df[COL_PERIODO].dropna().astype(str).str.strip()
+    return vals.iloc[0] if not vals.empty else ""
+
+
+def _periodo_es_del_anio(etiqueta: str, anio: str) -> bool:
+    """El año va como último token tras el guión final: 'Unico MR-2026' → '2026'."""
+    return etiqueta.rsplit("-", 1)[-1].strip() == anio
+
+
+def descargar_todos_consolidados(session: requests.Session, anio: str) -> pd.DataFrame:
+    log(f"Autodescubriendo periodos del año {anio} "
+        f"(sondeando IDs {RANGO_PERIODOS.start}–{RANGO_PERIODOS.stop - 1})...")
     frames = []
-    for pid in PERIODOS:
+    incluidos = []   # (pid, etiqueta) del AÑO_OBJETIVO
+    otros     = []   # (pid, etiqueta) de otros años → descartados
+
+    for pid in RANGO_PERIODOS:
         df = descargar_consolidado_periodo(session, pid)
-        if df is not None:
+        if df is None or df.empty:
+            continue
+        etiqueta = _etiqueta_periodo(df)
+        if _periodo_es_del_anio(etiqueta, anio):
             frames.append(df)
+            incluidos.append((pid, etiqueta))
+            log(f"    ✓ incluido — {etiqueta}")
+        else:
+            otros.append((pid, etiqueta))
+            log(f"    ✗ descartado (otro año) — {etiqueta or '¿sin etiqueta?'}")
 
     if not frames:
-        log("ADVERTENCIA: ningún periodo devolvió datos del Consolidado.")
+        log(f"ADVERTENCIA: ningún periodo del año {anio} devolvió datos del Consolidado.")
         return pd.DataFrame()
 
+    log(f"Periodos {anio} incluidos ({len(incluidos)}): "
+        f"{[p for p, _ in incluidos]} — {[e for _, e in incluidos]}")
+    if otros:
+        log(f"Descartados por año: {otros}")
+
     df_total = pd.concat(frames, ignore_index=True)
-    log(f"Consolidado unificado: {len(df_total)} filas.")
+    log(f"Consolidado unificado: {len(df_total)} filas de {len(frames)} periodos.")
     return df_total
 
 
@@ -498,6 +538,11 @@ def main() -> None:
         default="h1test",
         help=f"Grupo a actualizar. Opciones: {', '.join(MAPEO_GRUPOS)} (default: h1test)",
     )
+    parser.add_argument(
+        "--anio",
+        default=AÑO_OBJETIVO,
+        help=f"Año de los periodos a incluir (default: {AÑO_OBJETIVO}, el año en curso)",
+    )
     args = parser.parse_args()
 
     if args.grupo not in MAPEO_GRUPOS:
@@ -526,7 +571,7 @@ def main() -> None:
             df_final = mapear_columnas_retirados(df_cons)
         else:
             # Consolidado Educación Virtual — ya incluye toda la info del estudiante
-            df_cons = descargar_todos_consolidados(session)
+            df_cons = descargar_todos_consolidados(session, args.anio)
             if df_cons.empty:
                 log("ERROR: ningún periodo devolvió datos del Consolidado.")
                 sys.exit(1)
@@ -562,7 +607,7 @@ def main() -> None:
         # 5. Resumen
         log("=" * 60)
         log("RESUMEN FINAL")
-        origen = "reporte cancelados" if args.grupo == "retirados" else "Consolidado (3 periodos)"
+        origen = "reporte cancelados" if args.grupo == "retirados" else f"Consolidado (periodos {args.anio})"
         log(f"  Filas del {origen} : {len(df_cons)}")
         log(f"  Filas subidas a Sheets             : {len(df_final)}")
         log(f"  Hoja actualizada                   : {NOMBRE_HOJA}")

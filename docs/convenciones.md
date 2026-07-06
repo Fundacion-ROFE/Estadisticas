@@ -61,6 +61,21 @@ resolución de subdominio → institución → rol → 2FA/verificación → con
 
 Usar `requests.Session()` durante toda la cadena. Ya implementado en `scripts/q10-consolidacion/q10_to_sheets.py`. No reescribir desde cero.
 
+## Autodescubrimiento de periodos por año
+
+Q10 asigna a cada periodo académico un **ID incremental** (18, 19, 20…). No están agrupados por
+año de forma contigua (ej. IDs 18/19 = 2025, pero 20 = 2026). Nunca hardcodear la lista de IDs:
+se desactualiza sola cuando la Fundación abre un curso o cohorte nuevo, y perderlo es silencioso.
+
+**Patrón:** sondear un rango de IDs, leer la columna `Período` de cada Consolidado (se autoetiqueta
+con el año, ej. `Logica-Nivel 2-2026`) y conservar **solo los del año en curso**. El año es el último
+token tras el guión: `etiqueta.rsplit("-", 1)[-1] == AÑO_OBJETIVO`. Los IDs inexistentes devuelven
+`not_results` y se descartan sin costo. Implementado en `descargar_todos_consolidados(session, anio)`.
+
+**No usar "todos los periodos con datos"** como criterio: mezclaría años y duplicaría estudiantes
+del mismo curso entre cohortes (verificado: 2025 y 2026 tienen los mismos nombres de curso). El
+filtro por año es obligatorio. `AÑO_OBJETIVO` = año en curso por defecto; override con `--anio YYYY`.
+
 ## Expresiones en n8n 2.x
 
 Reglas críticas — los errores aquí son silenciosos y difíciles de debuggear:

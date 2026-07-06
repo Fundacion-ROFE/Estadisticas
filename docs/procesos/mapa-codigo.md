@@ -29,9 +29,10 @@
 
 **Comando:**
 ```bash
-python q10_to_sheets.py --grupo h1test     # → pestaña H1Test (Sheet interno)
-python q10_to_sheets.py --grupo h2test     # → pestaña h2test (Sheet público)
-python q10_to_sheets.py --grupo retirados  # → pestaña Retirados (reporte Estudiantes cancelados)
+python q10_to_sheets.py --grupo h1test          # → pestaña H1Test (Sheet interno)
+python q10_to_sheets.py --grupo h2test          # → pestaña h2test (Sheet público)
+python q10_to_sheets.py --grupo retirados       # → pestaña Retirados (reporte Estudiantes cancelados)
+python q10_to_sheets.py --grupo h1test --anio 2025  # forzar año distinto al actual
 ```
 
 **Funciones principales:**
@@ -40,6 +41,8 @@ python q10_to_sheets.py --grupo retirados  # → pestaña Retirados (reporte Est
 |---|---|---|---|
 | `login_q10()` | — | `requests.Session` | 7 pasos AJAX encadenados (ver [[convenciones#Q10 Login multi-paso]]) |
 | `leer_excel_bytes(contenido)` | `bytes` | `pd.DataFrame` | Parse xlsx, auto-detecta fila header por palabras clave |
+| `descargar_todos_consolidados(session, anio)` | `Session, str` | `pd.DataFrame` | **Autodescubre** periodos: sondea `RANGO_PERIODOS`, conserva solo los del `anio` (columna `Período`), concatena |
+| `_periodo_es_del_anio(etiqueta, anio)` | `str, str` | `bool` | Año = último token tras el guión: `Unico MR-2026` → `2026` |
 | `mapear_columnas(df_cons)` | `pd.DataFrame` | `pd.DataFrame` | Consolidado → formato H1Test (ID, Nombre, Celular, Email, Curso, Avance, Estado) |
 | `descargar_retirados(session)` | — | `pd.DataFrame` | Reporte `GestionAcademica/EstudiantesCancelados` — histórico completo, sin filtros |
 | `mapear_columnas_retirados(df)` | `pd.DataFrame` | `pd.DataFrame` | Reporte cancelados → formato Retirados (10 columnas, ver abajo) |
@@ -51,13 +54,34 @@ python q10_to_sheets.py --grupo retirados  # → pestaña Retirados (reporte Est
 ```
 MAPEO_GRUPOS: dict         # --grupo → nombre pestaña Sheets
 MAPEO_SHEET_IDS: dict      # --grupo → Sheet ID
-PERIODOS = [21, 22, 23]    # Periodos 2026: Logica-Nivel 2, Habilidades-Nivel 1, Unico MR
+RANGO_PERIODOS = range(18,41)  # IDs de periodo a sondear (ampliar si Q10 supera 40)
+AÑO_OBJETIVO = str(año actual) # solo periodos de este año; override con --anio
 TAMANIO_LOTE = 500         # Filas por lote al subir (cuota API)
 PAUSA_LOTE = 1.2           # Segundos entre lotes
+COL_PERIODO = "Período"    # texto autoetiquetado con el año, ej. "Logica-Nivel 2-2026"
 COL_NOMBRES/APELLIDOS/ID/CELULAR/EMAIL/CURSO/AVANCE  # Columnas del Excel Consolidado
 ```
 
-**Gotcha:** Periodos 20 y 24 devuelven `not_results` — omitidos sin error. URLs Azure Blob expiran en ~3 min. El Consolidado incluye toda la info del estudiante — no se necesita el endpoint `/Estudiantes`.
+**Autodescubrimiento por año (desde 2026-07-05):** en vez de una lista fija de periodos, el script
+sondea `RANGO_PERIODOS`, lee la columna `Período` de cada uno y conserva **solo los del año en curso**
+(o `--anio YYYY`). Así entra cualquier curso/cohorte nuevo del año sin tocar código, y nunca se mezclan
+años previos (evita doble conteo). Mapa de periodos verificado 2026-07-05:
+
+| ID | Período | Programa/Curso | ¿Incluido? |
+|---|---|---|---|
+| 18 | Logica-Nivel 2-**2025** | JC (año viejo) | ❌ descartado |
+| 19 | Habilidades-Nivel 1-**2025** | JC (año viejo) | ❌ descartado |
+| 20 | Desarrollo-Nivel 3-2026 | **Desarrollo Web HTML** (502) | ✅ |
+| 21 | Logica-Nivel 2-2026 | Lógica + IA (777) | ✅ |
+| 22 | Habilidades-Nivel 1-2026 | Bienvenida/Hackea/Emprend/Habilid (780) | ✅ |
+| 23 | Unico MR-2026 | Mujeres ROFÉ (283) | ✅ |
+| 24 | Desarrollo-Avanzado-2026 | **Desarrollo Web HTML** (275) | ✅ |
+
+Las periodos 20 y 24 comparten el mismo `Nombre asignatura` (`Desarrollo Web Front-End - HTML - 2026`),
+cédulas disjuntas → el `organizador` las fusiona en un bloque de **777** (= columna HTML del manual).
+
+**Gotcha:** IDs 25–40 devuelven `not_results` — descartados sin error. URLs Azure Blob expiran en ~3 min.
+El Consolidado incluye toda la info del estudiante — no se necesita el endpoint `/Estudiantes`.
 
 ---
 

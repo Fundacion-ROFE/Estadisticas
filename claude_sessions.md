@@ -714,3 +714,98 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
   Avast; (3) decidir mover el repo FUERA de Downloads (zona objetivo de todos los
   limpiadores) a p.ej. C:\ROFE\ — requiere actualizar Task Scheduler y rutas hardcodeadas;
   (4) preguntar al equipo por los borrados manuales históricos.
+
+---
+
+## 2026-07-03 — [zoom-asistencia] Rotación de túnel cloudflared + re-registro de webhooks
+
+**Estado:** Resuelto en el lado de n8n — pendiente confirmar Zoom Marketplace (externo)
+**Proceso relacionado:** [[zoom-asistencia]] · [[q10-consolidacion]]
+
+- Rotó el quick tunnel a `https://based-disco-yale-traveller.trycloudflare.com` (confirmado
+  contra `http://127.0.0.1:20241/quicktunnel`). Samuel reportó haber actualizado "el nodo de
+  Telegram" con la URL — pero la URL es la del webhook de Zoom (`.../webhook/zoom-asistencia`).
+- Aclaración de topología: el nodo n8n NO almacena la URL pública. `iniciar_n8n.bat` fija
+  `WEBHOOK_URL=<túnel>` y mata la instancia vieja; Webhook de Zoom y Telegram Trigger heredan
+  la URL nueva al reiniciar. No había nada literal que "editar" en un nodo.
+- Verificado: POST dummy al webhook público de Zoom → HTTP 401 (firma inválida) = el túnel
+  nuevo enruta correctamente a n8n. Ambos workflows activos.
+- Acción hecha por API: desactivar+activar `Bot Q10` (ID `Rblg81qifVshsRae`) para forzar
+  `setWebhook` de Telegram contra la URL nueva; `activate` → 200 (Telegram aceptó). No se
+  necesitó el token del bot.
+- **Único paso NO automatizable / pendiente Samuel:** actualizar la URL del Event Subscription
+  en el **Zoom Marketplace** a `.../webhook/zoom-asistencia` (la API pública de n8n no toca
+  eso). Es probablemente lo que Samuel ya hizo cuando dijo "actualizamos con [URL]".
+- Doc del proceso actualizada con el procedimiento de rotación en la sección de gotchas.
+
+---
+
+## 2026-07-03 — [zoom-youtube] Nuevo proceso documentado: grabaciones Zoom → YouTube
+
+**Estado:** Idea / En diseño — solo documentado, sin implementar
+**Proceso relacionado:** [[zoom-asistencia]] (misma app Zoom S2S OAuth)
+
+- Samuel preguntó si es viable subir automáticamente las grabaciones de Zoom a YouTube.
+  Confirmado: sí, caso estándar de n8n. Por ahora **solo documentar**.
+- Parámetros de negocio confirmados: Zoom de **pago** (grabación en la nube) y videos
+  **públicos** en YouTube con autorización previa de la Fundación por video.
+- Diseño: trigger webhook `recording.completed` (distinto de `meeting.ended`) → descargar
+  MP4 vía `download_url` + token → `videos.insert` de YouTube Data API v3. Reusa la app Zoom
+  S2S OAuth, el CRC + firma y el túnel cloudflared de zoom-asistencia; solo suma el scope de
+  cloud recording y el evento nuevo.
+- Gotchas anticipadas documentadas: cuota YouTube (1.600 u/subida, ~6/día por defecto),
+  OAuth de usuario obligatorio (Service Account NO sirve para canales) + publicar la app para
+  que el refresh_token no expire, PII (rostros de jóvenes → evaluar unlisted + revisión humana
+  antes de público), tamaño/tiempo de descarga-subida, y el mismo túnel efímero.
+- Creada nota `docs/procesos/zoom-youtube.md`; enlazada bidireccionalmente con zoom-asistencia
+  y agregada a "Procesos identificados" en la visión global.
+- **Pendiente Samuel:** decidir visibilidad final (público directo vs unlisted→humano→público);
+  crear OAuth Client de YouTube en Google Cloud; solicitar ampliación de cuota si >6 videos/día.
+
+---
+
+## 2026-07-03 — [dashboard-web] Fix build de GitHub Pages: `.nojekyll`
+
+**Estado:** Resuelto y en producción
+**Proceso relacionado:** [[dashboard-web]]
+
+- Samuel reportó "pages build and deployment failed" repetido en el repo `Fundacion-ROFE/
+  Estadisticas` (runs #87, #90, #92, #96). No era problema de datos ni de código.
+- Causa raíz: GitHub Pages procesaba `docs/` con Jekyll (default). Jekyll intenta renderizar
+  todos los `.md`, incluidas las notas de Obsidian. La línea 70 de `docs/convenciones.md`
+  tiene una expresión n8n `{{ 'texto ' + $json.var }}`; el parser Liquid la evalúa,
+  `$json.var` no es válido → el build entero falla en cada push.
+- Solución: creado `docs/.nojekyll` (archivo vacío) → desactiva Jekyll por completo. El sitio
+  son dashboards HTML estáticos (`index.html` + `data.json`), no pierde nada; deploys más
+  rápidos y sin fallos. Commit `5287241`, push a main.
+- Nota: primer push dio "Connection was reset" (red transitoria, posible relación con la red
+  corporativa/Avast ya investigada); reintento OK.
+- Gotcha documentado en `docs/procesos/dashboard-web.md`: `.nojekyll` es obligatorio, NO
+  borrar (si el borrado recurrente de archivos raíz lo elimina, los fallos vuelven).
+
+---
+
+## 2026-07-05 — [q10-consolidacion] Autodescubrimiento de periodos por año + curso Desarrollo Web
+
+**Estado:** Implementado y validado en vivo (falta correr cadena a producción)
+**Proceso relacionado:** [[q10-consolidacion]] · [[dashboard-web]]
+
+- Samuel notó 7 cursos en el panel manual (Avance) vs 6 en Q10 (h2test): el faltante era
+  **HTML** (777 estudiantes, 50.53%). Confirmado leyendo h2test: no existía columna HTML.
+- Sondeo en vivo de Q10 (periodos 18–40): el curso SÍ existe como **"Desarrollo Web Front-End
+  - HTML - 2026"**, en los periodos **20 (Desarrollo-Nivel 3, 502) y 24 (Desarrollo-Avanzado,
+  275)** — ambos 2026, ambos fuera de la lista fija `PERIODOS = [21, 22, 23]`. 502+275=777,
+  cédulas disjuntas → cuadra exacto con el manual.
+- Verificado que 18/19 son cohortes **2025** (traslape 0 con 21/22) → estaban bien excluidos;
+  la lista fija solo fallaba con Desarrollo Web. El gotcha viejo ("periodos 20 y 24 dan
+  not_results") era **falso** — corregido en mapa-codigo.
+- **Cambio:** `q10_to_sheets.py` pasa de `PERIODOS` fija a **autodescubrimiento por año**:
+  sondea `RANGO_PERIODOS = range(18,41)`, lee la columna `Período` y conserva solo los del
+  `AÑO_OBJETIVO` (año en curso; override `--anio YYYY`). Nuevos helpers `_etiqueta_periodo()`,
+  `_periodo_es_del_anio()`; `descargar_todos_consolidados(session, anio)` reescrita con log de
+  incluidos/descartados. Adaptativo a cursos/cohortes nuevos sin tocar código y sin doble
+  conteo de años previos.
+- Prueba en vivo: incluye [20,21,22,23,24], descarta [18,19]; 9 cursos, 1063 cédulas únicas,
+  Desarrollo Web con 777. Docs actualizados: mapa-codigo (tabla de periodos + firmas).
+- **Pendiente:** correr `q10_to_sheets --grupo h1test` → `organizador_headless` →
+  `export_stats`/`export_avance` para que Desarrollo Web aparezca en dashboard y panel de riesgo.

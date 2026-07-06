@@ -1,7 +1,7 @@
 # Consolidación Q10
 
 **Estado:** Completado
-**Última actualización:** 2026-06-24
+**Última actualización:** 2026-07-05
 **Procesos relacionados:** [[dashboard-web]]
 
 ## Qué hace
@@ -35,8 +35,8 @@ Para agregar nuevos grupos: editar `MAPEO_GRUPOS`, `MAPEO_SHEET_IDS` en `q10_to_
 **Fase 1 — Extracción Q10 → H1Test** (`q10_to_sheets.py --grupo h1test`):
 
 1. Login Q10 multi-paso (7 solicitudes AJAX encadenadas — ver [[convenciones#Q10 Login multi-paso]])
-2. POST endpoint Consolidado para cada periodo `[21, 22, 23]` → GET Excel → DataFrame por periodo
-3. Concatenar los 3 DataFrames → `df_consolidado` (el Consolidado ya incluye ID, nombre, celular, email del estudiante)
+2. **Autodescubrir periodos del año en curso**: sondear `RANGO_PERIODOS` (18–40), leer la columna `Período` de cada uno y conservar solo los del `AÑO_OBJETIVO` → GET Excel → DataFrame por periodo (ver [[convenciones#Autodescubrimiento de periodos por año]])
+3. Concatenar los DataFrames del año → `df_consolidado` (el Consolidado ya incluye ID, nombre, celular, email del estudiante)
 4. `mapear_columnas()`: extrae `Número identificación estudiante`, `Nombres/Apellidos estudiante`, `Celular`, `Email`, `Nombre asignatura`, `Porcentaje progreso` → formato H1Test
 5. Columnas finales: `Identificacion, Nombre, Celular, Email, Curso, Avance, Estado` (Estado="A" siempre — `archivado=false` filtra inactivos)
 6. Limpiar H1Test desde fila 2 y subir en lotes de 500 con pausa 1.2s
@@ -78,7 +78,7 @@ Q10 no es una API pública — son endpoints internos de la webapp (`site6.q10.c
 
 Devuelve `{"url": "https://q10storage.blob.core.windows.net/...xlsx?..."}` — URL de Azure Blob que **expira en ~3 min**. Descargar inmediatamente.
 
-Periodos con datos confirmados: `21` (Logica-Nivel 2-2026), `22` (Habilidades-Nivel 1-2026), `23` (Unico MR-2026). Periodos `20` y `24` siempre `not_results` (omitidos). El endpoint `/Estudiantes` ya no se usa — el Consolidado contiene toda la información del estudiante.
+Periodos 2026 con datos (verificado 2026-07-05): `20` (Desarrollo-Nivel 3), `21` (Logica-Nivel 2), `22` (Habilidades-Nivel 1), `23` (Unico MR), `24` (Desarrollo-Avanzado). Los IDs `18`/`19` son **2025** (se descartan por año); `25`–`40` devuelven `not_results`. **Corrección:** la versión previa de esta nota afirmaba que `20` y `24` daban `not_results` — es falso: contienen el curso **Desarrollo Web Front-End - HTML** (502 + 275 = 777 estudiantes, cédulas disjuntas). El endpoint `/Estudiantes` ya no se usa — el Consolidado contiene toda la información del estudiante.
 
 ## Destino de los datos
 
@@ -108,8 +108,9 @@ Periodos con datos confirmados: `21` (Logica-Nivel 2-2026), `22` (Habilidades-Ni
 - **Login NO es un simple POST.** Son 7 AJAX encadenados. Ver [[convenciones#Q10 Login multi-paso]].
 - **SSL corporativo.** Ver [[convenciones#SSL corporativo]] — aplica a Python y a n8n.
 - **URLs Azure Blob expiran en ~3 min.** Descargar inmediatamente tras recibir la URL.
-- **Periodo 20 siempre vacío.** Q10 devuelve `not_results` — se omite sin error.
-- **Periodos 2026 confirmados:** IDs 21 (`Logica-Nivel 2-2026`), 22 (`Habilidades-Nivel 1-2026`), 23 (`Unico MR-2026`). Periodo 1 no tiene datos — no incluir en `PERIODOS`.
+- **No hay lista fija de periodos (desde 2026-07-05).** El script autodescubre por año: sondea `RANGO_PERIODOS` (18–40) y conserva solo los del `AÑO_OBJETIVO`. Si Q10 crea IDs > 40, ampliar `RANGO_PERIODOS`. Un curso/cohorte nuevo del año entra solo; años previos (ej. 2025: IDs 18, 19) se descartan automáticamente para no duplicar.
+- **El año lo da la columna `Período`** (`Logica-Nivel 2-2026` → `2026`), no el ID. Los IDs NO están agrupados por año de forma contigua (18/19 = 2025, pero 20 = 2026).
+- **Cuidado con "bajar todos los periodos con datos".** Sería incorrecto: mezclaría 2025 con 2026 y duplicaría estudiantes de Lógica/Habilidades. El filtro por año es obligatorio.
 - **Dedup debe ser por Email, no Identificacion.** El mismo estudiante tiene `Codigo de matricula` diferente en cada período, pero siempre el mismo email.
 - **`ws_h2.clear()` vs `values_clear("A1:Z1000")`.** h2test tiene 9 bloques × 8 cols = 72 cols, y el bloque SIN CURSO puede tener 3400+ filas. El rango Z1000 solo cubre 26 cols × 1000 filas — datos viejos más allá de esos límites persisten y corrompen export_stats. Usar siempre `ws_h2.clear()`.
 - **Token del bot de Telegram estuvo expuesto** en un chat de desarrollo. Regenerar con BotFather antes de uso en producción real.
