@@ -196,7 +196,9 @@ python export_aprobacion.py --anio 2026
 
 **Output JSON:** `docs/aprobacion/data.json` — por curso: `cursaron`, `activos`, `aprobados`, `no_aprobados`, `sin_finalizar`, `retirados`, `pct_aprobados`, `promedio`, `finalizado` (promedio ≥ 90).
 
-**Consumidor:** `docs/aprobacion/index.html` (panel público, botón "Aprobación ↗" en el dashboard).
+**Consumidor:** `docs/aprobacion/index.html` (panel público, botón "Aprobación ↗" en el dashboard) y los tabs 1–3 de `docs/dashboard/index.html`.
+
+**Automatización (2026-07-07):** integrado al workflow n8n `Bot Q10 - Actualizar Grupos` (ID `Rblg81qifVshsRae`) en ambas ramas: `Sched: export_aprobacion` (Schedule 4h, tras `Sched: export_retirados`) y `Ejecutar export_aprobacion` (comando Telegram, antes de `Responder OK` — el bot reporta "Aprobación → GitHub Pages (% aprobó)").
 
 **Gotchas (hallazgos de la exploración 2026-07-07):**
 - El switch **"¿Incluir archivados?"** (`archivado=true`) del Consolidado de Educación Virtual **NO devuelve a los inhabilitados** — retorna exactamente los mismos activos. Los inhabilitados solo salen por el reporte de Matriculados.

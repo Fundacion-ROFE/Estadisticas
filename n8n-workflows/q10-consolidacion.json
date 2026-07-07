@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-02T20:40:08.034Z",
+  "updatedAt": "2026-07-07T23:24:07.957Z",
   "createdAt": "2026-06-22T15:18:02.327Z",
   "id": "Rblg81qifVshsRae",
   "name": "Bot Q10 - Actualizar Grupos",
@@ -281,13 +281,13 @@
     {
       "parameters": {
         "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
-        "text": "={{ (() => {\n  const stdoutQ10 = $('Ejecutar q10_to_sheets').first().json.stdout || '';\n  const stdoutOrg = $('Ejecutar organizador').first().json.stdout || '';\n  const stdoutRet = $('Organizar retirados').first().json.stdout || '';\n  const mQ10 = stdoutQ10.match(/RESUMEN: grupo=\\S+ filas=(\\d+) estado=exito/);\n  const mOrg = stdoutOrg.match(/RESUMEN: cursos=(\\d+) estudiantes=(\\d+) habilitados=(\\d+) promedio=([\\d.]+)/);\n  const mRet = stdoutRet.match(/RESUMEN: retirados=(\\d+) cancelados=(\\d+) desertores=(\\d+) aplazados=(\\d+)/);\n  const filasQ10    = mQ10 ? mQ10[1] : '?';\n  const cursos      = mOrg ? mOrg[1] : '?';\n  const estudiantes = mOrg ? mOrg[2] : '?';\n  const habilitados = mOrg ? mOrg[3] : '?';\n  const promedio    = mOrg ? mOrg[4] : '?';\n  const retirados   = mRet ? mRet[1] : '?';\n  const cancelados  = mRet ? mRet[2] : '?';\n  const statsOk  = $('Ejecutar export_stats').first().json.exitCode === 0;\n  const avanceOk = $('Ejecutar export_avance').first().json.exitCode === 0;\n  const retOk    = $json.exitCode === 0;\n  const ok = (v) => v ? '\\u2705' : '\\u26A0\\uFE0F';\n  return '\\u2705 Q10 actualizado\\n\\n' +\n    '\\ud83d\\udce5 Filas Q10: ' + filasQ10 + '\\n' +\n    '\\ud83d\\udcca Cursos: ' + cursos + ' | Activos: ' + habilitados + ' | Total: ' + estudiantes + ' | Prom: ' + promedio + '%\\n' +\n    '\\ud83d\\udeaa Retirados: ' + retirados + ' (' + cancelados + ' cancelados)\\n' +\n    ok(statsOk) + ' Stats \\u2192 GitHub Pages\\n' +\n    ok(avanceOk) + ' Avance \\u2192 GitHub Pages\\n' +\n    ok(retOk) + ' Retirados \\u2192 GitHub Pages\\n' +\n    '\\n\\ud83c\\udf10 fundacion-rofe.github.io/Estadisticas/dashboard/';\n})() }}",
+        "text": "={{ (() => {\n  const stdoutQ10 = $('Ejecutar q10_to_sheets').first().json.stdout || '';\n  const stdoutOrg = $('Ejecutar organizador').first().json.stdout || '';\n  const stdoutRet = $('Organizar retirados').first().json.stdout || '';\n  const mQ10 = stdoutQ10.match(/RESUMEN: grupo=\\S+ filas=(\\d+) estado=exito/);\n  const mOrg = stdoutOrg.match(/RESUMEN: cursos=(\\d+) estudiantes=(\\d+) habilitados=(\\d+) promedio=([\\d.]+)/);\n  const mRet = stdoutRet.match(/RESUMEN: retirados=(\\d+) cancelados=(\\d+) desertores=(\\d+) aplazados=(\\d+)/);\n  const filasQ10    = mQ10 ? mQ10[1] : '?';\n  const cursos      = mOrg ? mOrg[1] : '?';\n  const estudiantes = mOrg ? mOrg[2] : '?';\n  const habilitados = mOrg ? mOrg[3] : '?';\n  const promedio    = mOrg ? mOrg[4] : '?';\n  const retirados   = mRet ? mRet[1] : '?';\n  const cancelados  = mRet ? mRet[2] : '?';\n  const statsOk  = $('Ejecutar export_stats').first().json.exitCode === 0;\n  const avanceOk = $('Ejecutar export_avance').first().json.exitCode === 0;\n  const retOk    = $('Ejecutar export_retirados').first().json.exitCode === 0;\n  const aprobOk  = $json.exitCode === 0;\n  const mAprob   = ($json.stdout || '').match(/EXPORT: cursos=\\d+ matriculas=(\\d+) aprobados=(\\d+) estado=exito/);\n  const pctAprob = mAprob ? (100 * mAprob[2] / mAprob[1]).toFixed(1) + '%' : '?';\n  const ok = (v) => v ? '\\u2705' : '\\u26A0\\uFE0F';\n  return '\\u2705 Q10 actualizado\\n\\n' +\n    '\\ud83d\\udce5 Filas Q10: ' + filasQ10 + '\\n' +\n    '\\ud83d\\udcca Cursos: ' + cursos + ' | Activos: ' + habilitados + ' | Total: ' + estudiantes + ' | Prom: ' + promedio + '%\\n' +\n    '\\ud83d\\udeaa Retirados: ' + retirados + ' (' + cancelados + ' cancelados)\\n' +\n    ok(statsOk) + ' Stats \\u2192 GitHub Pages\\n' +\n    ok(avanceOk) + ' Avance \\u2192 GitHub Pages\\n' +\n    ok(retOk) + ' Retirados \\u2192 GitHub Pages\\n' +\n    ok(aprobOk) + ' Aprobaci\\u00f3n \\u2192 GitHub Pages (' + pctAprob + ' aprob\\u00f3)\\n' +\n    '\\n\\ud83c\\udf10 fundacion-rofe.github.io/Estadisticas/dashboard/';\n})() }}",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        2624,
+        2832,
         -80
       ],
       "id": "a1b2c3d4-0001-0001-0001-000000000012",
@@ -429,6 +429,32 @@
       ],
       "id": "ret-node-0001-0001-0001-000000000006",
       "name": "Sched: export_retirados"
+    },
+    {
+      "parameters": {
+        "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python export_aprobacion.py"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1712,
+        -208
+      ],
+      "id": "aprob-node-0001-0001-0001-000000000001",
+      "name": "Sched: export_aprobacion"
+    },
+    {
+      "parameters": {
+        "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python export_aprobacion.py"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2624,
+        -80
+      ],
+      "id": "aprob-node-0001-0001-0001-000000000002",
+      "name": "Ejecutar export_aprobacion"
     }
   ],
   "connections": {
@@ -622,7 +648,7 @@
       "main": [
         [
           {
-            "node": "Responder OK",
+            "node": "Ejecutar export_aprobacion",
             "type": "main",
             "index": 0
           }
@@ -661,6 +687,28 @@
           }
         ]
       ]
+    },
+    "Sched: export_retirados": {
+      "main": [
+        [
+          {
+            "node": "Sched: export_aprobacion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ejecutar export_aprobacion": {
+      "main": [
+        [
+          {
+            "node": "Responder OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -671,15 +719,15 @@
   "staticData": {
     "node:Schedule 4h": {
       "recurrenceRules": [
-        16
+        12
       ]
     }
   },
   "meta": null,
   "pinData": {},
-  "versionId": "cb9508b5-cad0-4c39-a16a-8291d4ae7ad0",
-  "activeVersionId": "cb9508b5-cad0-4c39-a16a-8291d4ae7ad0",
-  "versionCounter": 1315,
+  "versionId": "d188f8d6-873a-4aa6-b3e7-44242711c732",
+  "activeVersionId": "d188f8d6-873a-4aa6-b3e7-44242711c732",
+  "versionCounter": 1886,
   "triggerCount": 2,
   "shared": [
     {
@@ -702,9 +750,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-07-02T20:40:08.035Z",
-    "createdAt": "2026-07-02T20:40:08.035Z",
-    "versionId": "cb9508b5-cad0-4c39-a16a-8291d4ae7ad0",
+    "updatedAt": "2026-07-07T23:24:07.954Z",
+    "createdAt": "2026-07-07T23:24:07.954Z",
+    "versionId": "d188f8d6-873a-4aa6-b3e7-44242711c732",
     "workflowId": "Rblg81qifVshsRae",
     "nodes": [
       {
@@ -981,13 +1029,13 @@
       {
         "parameters": {
           "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
-          "text": "={{ (() => {\n  const stdoutQ10 = $('Ejecutar q10_to_sheets').first().json.stdout || '';\n  const stdoutOrg = $('Ejecutar organizador').first().json.stdout || '';\n  const stdoutRet = $('Organizar retirados').first().json.stdout || '';\n  const mQ10 = stdoutQ10.match(/RESUMEN: grupo=\\S+ filas=(\\d+) estado=exito/);\n  const mOrg = stdoutOrg.match(/RESUMEN: cursos=(\\d+) estudiantes=(\\d+) habilitados=(\\d+) promedio=([\\d.]+)/);\n  const mRet = stdoutRet.match(/RESUMEN: retirados=(\\d+) cancelados=(\\d+) desertores=(\\d+) aplazados=(\\d+)/);\n  const filasQ10    = mQ10 ? mQ10[1] : '?';\n  const cursos      = mOrg ? mOrg[1] : '?';\n  const estudiantes = mOrg ? mOrg[2] : '?';\n  const habilitados = mOrg ? mOrg[3] : '?';\n  const promedio    = mOrg ? mOrg[4] : '?';\n  const retirados   = mRet ? mRet[1] : '?';\n  const cancelados  = mRet ? mRet[2] : '?';\n  const statsOk  = $('Ejecutar export_stats').first().json.exitCode === 0;\n  const avanceOk = $('Ejecutar export_avance').first().json.exitCode === 0;\n  const retOk    = $json.exitCode === 0;\n  const ok = (v) => v ? '\\u2705' : '\\u26A0\\uFE0F';\n  return '\\u2705 Q10 actualizado\\n\\n' +\n    '\\ud83d\\udce5 Filas Q10: ' + filasQ10 + '\\n' +\n    '\\ud83d\\udcca Cursos: ' + cursos + ' | Activos: ' + habilitados + ' | Total: ' + estudiantes + ' | Prom: ' + promedio + '%\\n' +\n    '\\ud83d\\udeaa Retirados: ' + retirados + ' (' + cancelados + ' cancelados)\\n' +\n    ok(statsOk) + ' Stats \\u2192 GitHub Pages\\n' +\n    ok(avanceOk) + ' Avance \\u2192 GitHub Pages\\n' +\n    ok(retOk) + ' Retirados \\u2192 GitHub Pages\\n' +\n    '\\n\\ud83c\\udf10 fundacion-rofe.github.io/Estadisticas/dashboard/';\n})() }}",
+          "text": "={{ (() => {\n  const stdoutQ10 = $('Ejecutar q10_to_sheets').first().json.stdout || '';\n  const stdoutOrg = $('Ejecutar organizador').first().json.stdout || '';\n  const stdoutRet = $('Organizar retirados').first().json.stdout || '';\n  const mQ10 = stdoutQ10.match(/RESUMEN: grupo=\\S+ filas=(\\d+) estado=exito/);\n  const mOrg = stdoutOrg.match(/RESUMEN: cursos=(\\d+) estudiantes=(\\d+) habilitados=(\\d+) promedio=([\\d.]+)/);\n  const mRet = stdoutRet.match(/RESUMEN: retirados=(\\d+) cancelados=(\\d+) desertores=(\\d+) aplazados=(\\d+)/);\n  const filasQ10    = mQ10 ? mQ10[1] : '?';\n  const cursos      = mOrg ? mOrg[1] : '?';\n  const estudiantes = mOrg ? mOrg[2] : '?';\n  const habilitados = mOrg ? mOrg[3] : '?';\n  const promedio    = mOrg ? mOrg[4] : '?';\n  const retirados   = mRet ? mRet[1] : '?';\n  const cancelados  = mRet ? mRet[2] : '?';\n  const statsOk  = $('Ejecutar export_stats').first().json.exitCode === 0;\n  const avanceOk = $('Ejecutar export_avance').first().json.exitCode === 0;\n  const retOk    = $('Ejecutar export_retirados').first().json.exitCode === 0;\n  const aprobOk  = $json.exitCode === 0;\n  const mAprob   = ($json.stdout || '').match(/EXPORT: cursos=\\d+ matriculas=(\\d+) aprobados=(\\d+) estado=exito/);\n  const pctAprob = mAprob ? (100 * mAprob[2] / mAprob[1]).toFixed(1) + '%' : '?';\n  const ok = (v) => v ? '\\u2705' : '\\u26A0\\uFE0F';\n  return '\\u2705 Q10 actualizado\\n\\n' +\n    '\\ud83d\\udce5 Filas Q10: ' + filasQ10 + '\\n' +\n    '\\ud83d\\udcca Cursos: ' + cursos + ' | Activos: ' + habilitados + ' | Total: ' + estudiantes + ' | Prom: ' + promedio + '%\\n' +\n    '\\ud83d\\udeaa Retirados: ' + retirados + ' (' + cancelados + ' cancelados)\\n' +\n    ok(statsOk) + ' Stats \\u2192 GitHub Pages\\n' +\n    ok(avanceOk) + ' Avance \\u2192 GitHub Pages\\n' +\n    ok(retOk) + ' Retirados \\u2192 GitHub Pages\\n' +\n    ok(aprobOk) + ' Aprobaci\\u00f3n \\u2192 GitHub Pages (' + pctAprob + ' aprob\\u00f3)\\n' +\n    '\\n\\ud83c\\udf10 fundacion-rofe.github.io/Estadisticas/dashboard/';\n})() }}",
           "additionalFields": {}
         },
         "type": "n8n-nodes-base.telegram",
         "typeVersion": 1.2,
         "position": [
-          2624,
+          2832,
           -80
         ],
         "id": "a1b2c3d4-0001-0001-0001-000000000012",
@@ -1129,6 +1177,32 @@
         ],
         "id": "ret-node-0001-0001-0001-000000000006",
         "name": "Sched: export_retirados"
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python export_aprobacion.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          1712,
+          -208
+        ],
+        "id": "aprob-node-0001-0001-0001-000000000001",
+        "name": "Sched: export_aprobacion"
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python export_aprobacion.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          2624,
+          -80
+        ],
+        "id": "aprob-node-0001-0001-0001-000000000002",
+        "name": "Ejecutar export_aprobacion"
       }
     ],
     "connections": {
@@ -1322,7 +1396,7 @@
         "main": [
           [
             {
-              "node": "Responder OK",
+              "node": "Ejecutar export_aprobacion",
               "type": "main",
               "index": 0
             }
@@ -1361,6 +1435,28 @@
             }
           ]
         ]
+      },
+      "Sched: export_retirados": {
+        "main": [
+          [
+            {
+              "node": "Sched: export_aprobacion",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ejecutar export_aprobacion": {
+        "main": [
+          [
+            {
+              "node": "Responder OK",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "authors": "Samuel Rojas",
@@ -1369,11 +1465,67 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-07-02T20:40:09.219Z",
-        "id": 980,
+        "createdAt": "2026-07-07T23:24:09.842Z",
+        "id": 1511,
         "workflowId": "Rblg81qifVshsRae",
-        "versionId": "cb9508b5-cad0-4c39-a16a-8291d4ae7ad0",
+        "versionId": "d188f8d6-873a-4aa6-b3e7-44242711c732",
         "event": "activated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-07T23:24:23.263Z",
+        "id": 1513,
+        "workflowId": "Rblg81qifVshsRae",
+        "versionId": "d188f8d6-873a-4aa6-b3e7-44242711c732",
+        "event": "activated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-07T23:25:25.683Z",
+        "id": 1515,
+        "workflowId": "Rblg81qifVshsRae",
+        "versionId": "d188f8d6-873a-4aa6-b3e7-44242711c732",
+        "event": "activated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-07T23:26:27.478Z",
+        "id": 1517,
+        "workflowId": "Rblg81qifVshsRae",
+        "versionId": "d188f8d6-873a-4aa6-b3e7-44242711c732",
+        "event": "activated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-07T23:24:08.646Z",
+        "id": 1510,
+        "workflowId": "Rblg81qifVshsRae",
+        "versionId": "d188f8d6-873a-4aa6-b3e7-44242711c732",
+        "event": "deactivated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-07T23:24:22.135Z",
+        "id": 1512,
+        "workflowId": "Rblg81qifVshsRae",
+        "versionId": "d188f8d6-873a-4aa6-b3e7-44242711c732",
+        "event": "deactivated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-07T23:25:24.415Z",
+        "id": 1514,
+        "workflowId": "Rblg81qifVshsRae",
+        "versionId": "d188f8d6-873a-4aa6-b3e7-44242711c732",
+        "event": "deactivated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-07T23:26:26.299Z",
+        "id": 1516,
+        "workflowId": "Rblg81qifVshsRae",
+        "versionId": "d188f8d6-873a-4aa6-b3e7-44242711c732",
+        "event": "deactivated",
         "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
       }
     ]

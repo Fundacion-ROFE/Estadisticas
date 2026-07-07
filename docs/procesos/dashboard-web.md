@@ -21,7 +21,7 @@ Un panel local (GUI) cruza ambas fuentes con PII para análisis interno sin publ
 | Actualizar stats Q10 | `python export_stats.py` — lee h2test, genera JSON, push |
 | Actualizar avance manual | `python export_avance.py` — lee pestaña Avance, genera JSON, push |
 | Actualizar retirados | `python export_retirados.py` — lee pestaña Retirados, genera JSON, push |
-| Actualizar aprobación | `python export_aprobacion.py` — descarga directa Q10 (3 reportes), genera JSON, push |
+| Actualizar aprobación | `python export_aprobacion.py` — descarga directa Q10 (3 reportes), genera JSON, push. **Automático cada 4 h** vía workflow n8n `Bot Q10 - Actualizar Grupos` y con el comando del bot Telegram (desde 2026-07-07) |
 | Panel de riesgo local | `python tools/panel_riesgo_gui.py` — GUI con PII, sin push |
 
 ## Arquitectura

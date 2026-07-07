@@ -1034,3 +1034,22 @@ Event Subscription de Zoom comunicaciones y pulsa Validate.
 - **Extra:** deep-link por hash (`/dashboard/#t3`) para abrir una pestaña directa.
 - Tab 4 Admin sigue con `data.json` (export_stats.py). Los cambios de zoom/ngrok/MR del working
   tree quedaron fuera del commit.
+
+---
+
+## 2026-07-07 — [q10-consolidacion] export_aprobacion.py integrado al workflow n8n (cada 4 h)
+
+**Estado:** Integrado vía API, verificado de punta a punta y comiteado.
+**Proceso relacionado:** [[q10-consolidacion]] · [[dashboard-web]]
+
+- **Workflow:** `Bot Q10 - Actualizar Grupos` (`Rblg81qifVshsRae`) — 24 → 26 nodos, sigue activo.
+- **Rama Schedule 4h:** `Sched: export_retirados` (antes terminal) → nuevo `Sched: export_aprobacion`.
+- **Rama Telegram:** `Ejecutar export_retirados` → nuevo `Ejecutar export_aprobacion` → `Responder OK`.
+- **Responder OK:** al insertar el nodo antes, `$json` dejó de apuntar a retirados — se reancló
+  `retOk` a `$('Ejecutar export_retirados')` y se agregó línea "Aprobación → GitHub Pages (X% aprobó)"
+  parseando el `EXPORT:` del stdout.
+- **Verificación:** se corrió el comando exacto del nodo bajo cmd (`cd ... && python export_aprobacion.py`)
+  → descarga, cruce, commit y push OK (datos frescos: HTML 268 aprobados, IA 745).
+- **Gotcha:** en el JS de los nodos Telegram las flechas/emoji van como texto literal `→` (no el
+  carácter) — al editar expresiones por API hay que matchear esos escapes literales.
+- JSON re-exportado a `n8n-workflows/q10-consolidacion.json` (26 nodos).
