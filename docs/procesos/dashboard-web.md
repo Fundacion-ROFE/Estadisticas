@@ -21,6 +21,7 @@ Un panel local (GUI) cruza ambas fuentes con PII para análisis interno sin publ
 | Actualizar stats Q10 | `python export_stats.py` — lee h2test, genera JSON, push |
 | Actualizar avance manual | `python export_avance.py` — lee pestaña Avance, genera JSON, push |
 | Actualizar retirados | `python export_retirados.py` — lee pestaña Retirados, genera JSON, push |
+| Actualizar aprobación | `python export_aprobacion.py` — descarga directa Q10 (3 reportes), genera JSON, push |
 | Panel de riesgo local | `python tools/panel_riesgo_gui.py` — GUI con PII, sin push |
 
 ## Arquitectura
@@ -68,6 +69,36 @@ Los datos individuales solo existen en `tools/` (gitignoreado) y en RAM del `pan
 
 ---
 
+## Cursos finalizados — marca de agua (inscritos → finalizados)
+
+**Problema:** el Consolidado de Q10 usa `archivado=false` (solo estudiantes activos). Cuando alguien
+se inhabilita/retira, desaparece del Consolidado → de h2test → y el conteo del curso **encoge** con el
+tiempo (Bienvenida cayó de 863 a 780). Para cursos ya **finalizados** eso subrepresenta el logro real.
+
+**Solución (2026-07-06):** `export_stats.py` mantiene una **marca de agua** por curso en
+`docs/dashboard/maximos_cursos.json` (monótona, nunca baja). En cada corrida:
+
+- `inscritos` = máximo histórico de `estudiantes` (matrícula pico 2026 — nunca decae).
+- `finalizados` = máximo histórico de estudiantes con `avance >= 100` (cubre los casos de 101).
+- `promedio_pico` = promedio al momento del pico de matrícula.
+- `finalizado` (bool) = `promedio >= 90%` **y** `estudiantes_hoy <= inscritos * 0.98` (la matrícula
+  ya bajó del pico → Q10 empezó a archivar la cohorte al terminar el curso). Constantes:
+  `UMBRAL_AVANCE_FIN`, `UMBRAL_PROMEDIO_FIN`, `MARGEN_DECLIVE` en `export_stats.py`.
+
+**Q10 no expone un flag de "curso cerrado"** — el Consolidado solo trae activos + avance. Por eso la
+detección es por avance + declive de matrícula, no por un campo de Q10.
+
+**Semilla inicial:** si `maximos_cursos.json` no existe, se siembra desde `history.json` (el pico de
+matrícula ya registrado desde el 26-jun). Limitación: cursos cuyo pico real fue **antes** del 26-jun y
+que ya habían encogido no se pueden recuperar exactamente; `finalizados` arranca en 0 hasta la primera
+corrida real (history.json no guarda el conteo al 100%).
+
+**En el dashboard (Tab 1):** los cursos con `finalizado:true` muestran badge "✓ Finalizado" y la celda
+`863 inscritos → 820 finalizaron` (congelado); los abiertos muestran `estudiantes activos` en vivo.
+El render es retrocompatible: si faltan los campos nuevos (data.json viejo) trata el curso como abierto.
+
+---
+
 ## Separación de programas — course_config.json
 
 La clasificación de cursos en JC / MR / Stand-by se controla en **`tools/course_config.json`** (archivo local, no va a GitHub). Tiene precedencia sobre los keywords de fallback en el código.
@@ -92,13 +123,21 @@ La clasificación de cursos en JC / MR / Stand-by se controla en **`tools/course
 
 ## Dashboard público — docs/dashboard/index.html
 
+**Rediseño 2026-07-07** (pedido del supervisor: la vista de solo-activos no servía): los tabs 1–3
+ahora usan la **cohorte completa** de `aprobacion/data.json` como fuente Q10.
+
 | Tab | Fuente | Contenido |
 |---|---|---|
-| Estadísticas Q10 | `data.json` top-level | KPIs · tabla por curso con semáforo · anomalías — **solo JC** |
-| Avance Manual | `avance/data.json` | KPIs · tabla por curso · anomalías manuales |
-| Comparativo | Ambos JSONs | Tabla Manual vs Q10 · Δ diferencia · anomalías cruzadas |
-| Admin | `data.json` (todos) | Resumen por programa (JC/MR/Stand-by) · barras por curso · tabla detalle |
+| Estadísticas Q10 | `../aprobacion/data.json` | KPIs cohorte 2026 (habilitados + inhabilitados) · barras apiladas % aprobó por curso (verde/ámbar/rojo) · tabla detalle cursaron/aprobaron/retirados |
+| Avance Manual | `avance/data.json` | Mismo formato: KPI % aprobación manual · barras apiladas aprobó/sin completar · tabla · anomalías manuales |
+| Comparativo | `aprobacion` + `avance` | % aprobación Manual vs Q10 cohorte por curso · Δ diferencia (grupos manuales homónimos se fusionan, ej. 3× HTML) |
+| Admin | `data.json` (todos) | Resumen por programa (JC/MR/Stand-by) · barras por curso · tabla detalle — sigue usando export_stats.py |
+| Tendencia | `history.json` | Línea de promedio global JC + cursos individuales · **snapshots diarios** desde 2026-06-26 (regenerado con intervalo 1 día desde git) |
+| Aprobación ↗ | Link a panel aprobación | Navega a `docs/aprobacion/index.html` |
 | Retirados ↗ | Link a panel retirados | Navega a `docs/retirados/index.html` |
+
+Deep-link por hash: `/dashboard/#t3` abre directamente esa pestaña (t1–t5).
+`data.json` (export_stats.py, solo activos) sigue alimentando el Tab Admin y el header.
 | Mujeres ROFÉ ↗ | Link a panel MR | Navega a `docs/mujeres-rofe/index.html` |
 
 El Tab Admin lee las tres secciones del JSON (`por_curso`, `mr.por_curso`, `stand.por_curso`) y los muestra juntos con código de color por programa.
@@ -126,6 +165,32 @@ se consulta en el tab 🚪 Retirados del `panel_riesgo_gui.py` local.
 }
 ```
 
+## Panel Aprobación por Curso — docs/aprobacion/index.html
+
+Panel independiente con acento verde (2026-07-07). Lee `./data.json` (generado por
+`export_aprobacion.py` — directo desde Q10, sin pasar por Sheets). Botón "Aprobación ↗" en el dashboard.
+
+**Por qué existe:** el Tab 1 del dashboard solo muestra a los estudiantes *activos* (el Consolidado
+virtual excluye a los inhabilitados), así que no respondía "¿qué % de los que cursaron aprobó?".
+Este panel reconstruye la **cohorte completa 2026** (habilitados + inhabilitados) cruzando por cédula
+el reporte de Matriculados (Detallado) con el Consolidado virtual y el reporte de retirados.
+
+**Regla de aprobación:** avance ≥ 100 (hay pocos casos de 101 por actividades extra).
+Retirado/inhabilitado = no aprobó (verificado: los 80 inhabilitados del periodo 22 están todos
+en el reporte de cancelados).
+
+KPIs: Estudiantes cohorte 2026 · Matrículas en cursos · % Aprobación global · Retirados 2026.
+Por curso: barra apilada 100% (Aprobaron verde `#6EA050` / Sin completar ámbar `#B8860B` /
+Retirados rojo `#C12D4C` — paleta validada CVD y contraste ≥3:1 sobre blanco), badge
+✓ Finalizado / En curso, tooltip por segmento, tabla detalle y resumen por programa.
+
+En cursos **finalizados** el % es definitivo; en cursos **en curso**, "sin completar" = aún avanzando.
+
+**Estructura de data.json (export_aprobacion.py):** ver [[mapa-codigo#export_aprobacion.py]].
+Estado persistente (marca de agua) en `docs/aprobacion/maximos.json`.
+
+---
+
 ## Panel Mujeres ROFÉ — docs/mujeres-rofe/index.html
 
 Panel independiente con identidad visual MR (paleta rose/warm). Lee `../dashboard/data.json` y accede a `data.mr`. No filtra con JS — la separación ya viene hecha desde Python.
@@ -151,7 +216,8 @@ KPIs: Mujeres inscritas (`mr.totales.total_estudiantes_unicos`) · # Cursos · P
   "ultima_actualizacion": "2026-06-26T15:45:55-05:00",
 
   "por_curso": [
-    {"curso": "BIENVENIDOS A JÓVENES CREATIVOS", "estudiantes": 863, "promedio": 98.47, "min": 0.0, "max": 100.0}
+    {"curso": "BIENVENIDOS A JÓVENES CREATIVOS", "estudiantes": 780, "promedio": 99.65, "min": 0.0, "max": 100.0,
+     "inscritos": 863, "finalizados": 820, "promedio_pico": 98.47, "finalizado": true}
   ],
   "anomalias": [
     {"categoria": "SIN MATCH",        "cantidad": 0},

@@ -817,3 +817,220 @@ Al iniciar una sesión nueva, lee al menos las últimas 3-5 entradas antes de co
   pero se alineó: agregado `Estado` a `HEADERS_POR_PESTANA["H1Test"]` en `setup_headers.py` y
   escrito en `G1`. La guarda del script no sobrescribe headers con contenido → se escribió la
   celda directa. De paso, agregado wrapper UTF-8 a `setup_headers.py` (crasheaba con `→` en cp1252).
+
+---
+
+## 2026-07-04 — [zoom-asistencia] Flujo secundario: control temprano al minuto 10 (trigger dual)
+
+**Estado:** Código listo y desplegado (workflow en vivo, 20 nodos) — pendiente activar evento
++ scope en Zoom Marketplace y prueba real (punto 4 y 5 del plan)
+**Proceso relacionado:** [[zoom-asistencia]]
+
+- Objetivo pedido: además de la toma completa al `meeting.ended`, un snapshot temprano de
+  quién ya ingresó ~10 min después de iniciar, para control rápido de la clase.
+- Diseño: el webhook pasa a **trigger dual**. Tras validar firma, un IF `Evento
+  meeting.started?` bifurca — `meeting.ended` → rama completa **intacta**; `meeting.started`
+  → `Esperar 10 min` → `Obtener Token Zoom 2` → `Participantes en Vivo` → `Presentes @10min`
+  → `Escribir ASISTENCIA-10MIN`.
+- Reto clave resuelto: con la reunión en curso `past_meetings` no existe → se usa la
+  **Dashboard API** `GET /metrics/meetings/{uuid}/participants?type=live` (requiere plan
+  Business ✓ + scope `dashboard_meetings:read:admin`). Curso/Fecha salen del payload del
+  webhook, no de una llamada extra.
+- Implementado (pasos 1-3): `setup_zoom_asistance.py` +función `construir_asistencia_10min()`
+  y flag `--solo-10min`; **pestaña `ASISTENCIA-10MIN` creada** (7 cols, append); nodo Code
+  `scripts/zoom-asistencia/nodo-presentes-10min.js` (sin %, dedup por email/nombre); workflow
+  editado vía API n8n (PUT `jkNaE51PKQ4TQzNq`) y re-exportado. Sigue **activo**.
+- Seguro por diseño: la rama nueva queda **inerte** hasta que Zoom envíe `meeting.started`, así
+  que la rama `meeting.ended` de producción no corrió ningún riesgo al editar en vivo.
+- Verificado: `py_compile` OK, `node --check` OK, grafo en vivo correcto, tab creada.
+- **Pendiente Samuel (punto 4):** en la app S2S OAuth agregar evento `meeting.started` +
+  scope `dashboard_meetings:read:admin` y re-activar; luego prueba real (punto 5).
+- Docs: sección "Flujo secundario" + 5 gotchas anticipadas en la nota del proceso.
+
+---
+
+## 2026-07-06 — [zoom-asistencia] Prueba real del 10-min: bloqueo Dashboard API + hallazgo 2 cuentas
+
+**Estado:** Rama `meeting.started` corre completa pero bloqueada en `Participantes en Vivo`
+(Dashboard API). Descubierto que la cuenta **soporte** no está cubierta. Ambos = pendientes.
+**Proceso relacionado:** [[zoom-asistencia]]
+
+- **Túnel rotado tras reinicio de PC:** el `cloudflared` del logon murió en silencio (proceso vivo,
+  `/quicktunnel` reportaba hostname viejo pero ya sin DNS). Se levantó túnel nuevo
+  `automotive-cluster-amp-shared.trycloudflare.com`, se reinició n8n con ese `WEBHOOK_URL` y se
+  re-activó Bot Q10 (Telegram OK). Ruteo verificado con **handshake CRC completo** (encryptedToken
+  de n8n == HMAC con el Secret real). URL pegada en el Event Subscription del Marketplace.
+- **Config Zoom (Samuel):** agregado evento `meeting.started` + scope. **Scope correcto confirmado
+  leyendo el token:** el granular es `dashboard:read:list_meeting_participants:admin` (NO el clásico
+  `dashboard_meetings:read:admin` que era tentativo).
+- **Prueba real (ejecución #85, "TEST TOMA TEMPRANA AUTOMATICA N 1"):** el flujo corrió de punta a
+  punta — evento recibido, `Esperar 10 min` exacto (14:50→15:00Z), token OK, doble-encode UUID OK —
+  y **solo falló `Participantes en Vivo` con 400**: *"…Business or higher accounts that have enabled
+  the Dashboard feature."* Reproducido con `type=live` y `type=past` (mismo token/scope) → **no es
+  scope ni código ni timing: es un flag de cuenta**. Confirmado: plan **Business** ✓, **Panel web
+  funciona** ✓, permiso de rol "Panel de control → Reuniones" ya marcado ✓. → **Requiere ticket a
+  soporte de Zoom** para habilitar el acceso por API al Dashboard. Ticket redactado (EN) en el chat.
+- **HALLAZGO grande — 2 cuentas Zoom:** la operación usa **comunicaciones** (us06web) y **soporte**
+  (us02web), cuentas Business independientes. Cruzadas las **38 ejecuciones**: todos los eventos
+  reales son `account_id=u08qlWbRTR2VBSs0bRwZPQ` (comunicaciones); **ningún** meeting ID de soporte
+  aparece. Los 2 `host_id` vistos son 2 usuarios de comunicaciones, no 2 cuentas. → **Las clases de
+  soporte no se automatizan** (ni `meeting.ended` ni 10 min). Cubrirlo pide 2º app S2S + workflow
+  multi-cuenta (firma y token por `account_id`, secretos distintos). Documentado en la nota del proceso.
+- **Plan acordado:** (1) ticket Zoom → habilitar Dashboard API; (2) probar 10-min en comunicaciones;
+  (3) cubrir soporte; (4) túnel permanente.
+- **Cobertura soporte — bloqueada en acceso:** la cuenta Zoom de soporte la **facilita Colegio Colombia
+  2020** (`colegiocolombia2020@gmail.com`); Samuel no tiene permiso de desarrollador ahí. Se redactó
+  **carta formal HTML** con membrete ROFÉ (Artifact) y un **borrador de correo** (Gmail de Samuel →
+  `soportejunior@`, HTML email-safe con logo desde GitHub Pages) pidiendo el permiso "Aplicación de
+  OAuth de servidor a servidor" para `soportejunior@` (Opción A) o los 4 valores del app (Opción B).
+  Pendiente que Samuel lo reenvíe a Colegio. Diseño para cuando haya acceso: workflow **clonado
+  aislado**, path `…/webhook/zoom-asistencia-soporte`, sin tocar comunicaciones.
+- **Túnel permanente resuelto con ngrok** (en vez del subdominio de tocaunavida.org — el DNS estaba en
+  el hosting y delegar era enredado; como la URL solo la usa Zoom, un dominio ngrok da igual). Dominio
+  estático gratis **`ergonomic-absinthe-refract.ngrok-free.dev`**; config `%LOCALAPPDATA%\ngrok\ngrok.yml`
+  (tunnel `n8n`→5678). Gotchas: agente ≥3.20 (update 3.3.1→3.39.9); `ngrok service install` pide admin
+  (falló) → irá por `iniciar_n8n.bat`. n8n reiniciado con `WEBHOOK_URL`=dominio fijo; Telegram
+  re-registrado solo (tráfico `91.108.*` en log). Memoria [[reference-ngrok-tunel-fijo]]. **Falta:**
+  repegar URL fija en Zoom comunicaciones + validar, retirar cloudflared, editar `iniciar_n8n.bat`.
+- Cambios de código/docs de estas sesiones siguen **sin comitear** en el working tree.
+
+
+---
+
+## 2026-07-06 — [dashboard-web] Cursos finalizados: marca de agua inscritos → finalizados
+
+**Estado:** Implementado en código y docs. **Pendiente que Samuel corra `python export_stats.py`**
+(hace commit+push a producción; no lo ejecuté yo por ser acción de cara al público).
+**Proceso relacionado:** [[dashboard-web]]
+
+- **Problema (pedido nuevo):** el panel encogía los cursos ya finalizados. Q10 usa `archivado=false`
+  (solo activos), así que al inhabilitar/retirar gente el conteo baja (Bienvenida 863 → 780). Pidieron
+  mostrar el logro real de cursos terminados (ej. 830 inscritos → 820 finalizaron) y dejar en tiempo
+  real solo los cursos abiertos.
+- **Hallazgos clave:** (1) el filtro "solo 2026" ya está resuelto río arriba en `q10_to_sheets.py`
+  (autodescubre periodos y descarta años viejos), no hay que filtrar reciclados. (2) **Q10 NO expone un
+  flag de "curso cerrado"** — el Consolidado solo trae activos + avance. (3) history.json ya tenía el
+  pico (863 el 26-jun) → sirve de semilla.
+- **Solución — marca de agua (`export_stats.py`):** nuevo `docs/dashboard/maximos_cursos.json`
+  monótono. Por curso: `inscritos`=máx histórico de estudiantes, `finalizados`=máx de avance>=100,
+  `promedio_pico`, y flag `finalizado` = promedio>=90% y matrícula ya bajó del pico (>=2%). Se
+  siembra desde history.json si no existe. Funciones nuevas: `enriquecer_con_maximos`,
+  `_enriquecer_curso`, `_seed_maximos_desde_history`, `guardar_maximos`. Conteo `finalizados`
+  agregado en `_procesar_grupos`.
+- **Dashboard (Tab 1):** cursos finalizados → badge "✓ Finalizado" + celda "863 inscritos → 820
+  finalizaron" (congelado); abiertos → "activos hoy". Render retrocompatible con data.json viejo.
+- **Verificación offline (sin red):** simulado con data.json+history.json → Bienvenida recupera 863 y
+  marca FINALIZADO; Desarrollo Web (53%) queda ABIERTO. Correcto.
+- **Límite conocido:** cursos con pico anterior al 26-jun ya encogido no se recuperan; `finalizados`
+  arranca en 0 hasta la 1ª corrida real (history no guarda el conteo al 100%).
+
+---
+
+## 2026-07-07 — [zoom-asistencia] Migración a ngrok cerrada: iniciar_n8n.bat sin cloudflared
+
+**Estado:** Hecho y verificado end-to-end. **Pendiente solo:** Samuel repega la URL fija en el
+Event Subscription de Zoom comunicaciones y pulsa Validate.
+**Proceso relacionado:** [[zoom-asistencia]] · [[q10-consolidacion]]
+
+- **Contexto:** al encender el PC, el bat seguía arrancando cloudflared (paso 3 pendiente de ayer)
+  y ngrok NO corría — la URL fija estaba muerta y n8n arrancó con URL rotativa otra vez.
+- **Cambio en `iniciar_n8n.bat`:** bloque cloudflared reemplazado por `ngrok start n8n` (con guard
+  de agente único — free tier), `WEBHOOK_URL` hardcodeada al dominio fijo, espera del túnel vía API
+  local `:4040`, y watchdog del loop ahora vigila/revive ngrok. Gotcha batch: dentro de bloques `()`
+  usar `if errorlevel 1` (dinámico), no `%errorlevel%` ni `!…!` sin delayed expansion.
+- **Aplicado en vivo:** matado bat viejo + cloudflared, relanzado bat nuevo. Verificado: túnel
+  `ergonomic-absinthe-refract.ngrok-free.dev` arriba, healthz público 200, workflows Bot Q10 y
+  Zoom-Asistencia activos, y handshake CRC de Zoom OK (POST `endpoint.url_validation` devolvió
+  `encryptedToken`) → el Validate de Zoom pasará.
+- **Docs actualizados:** convenciones (tunnel estándar ahora ngrok; nota histórica del x509 viejo),
+  zoom-asistencia (migración cerrada), q10-consolidacion (gotcha WEBHOOK_URL), CLAUDE.md (árbol).
+- **Nota:** `TELEGRAM_BOT_TOKEN` del `.env` da 401 contra api.telegram.org — parece desactualizado
+  (n8n usa su credencial interna, el bot no se afecta; el bat tampoco lo usa para el registro).
+
+---
+
+## 2026-07-07 — [q10-consolidacion] Diagnóstico /actualizar simultáneos + token .env sincronizado
+
+**Estado:** Diagnóstico documentado; sin cambios de código. **Proceso relacionado:** [[q10-consolidacion]]
+- **Consulta:** qué pasó con el `/actualizar Q10` de ~09:05. Respuesta: llegaron DOS — Cristian
+  (09:05:04, ejecución #101, exitosa en 3m19s, datos actualizados) y Samuel 35 s después
+  (#102, falló con `HTTP 444` de Q10 al bajar el Consolidado: sesión concurrente con la misma
+  cuenta rechazada). Inofensivo — la primera dejó todo al día. Gotcha nuevo en la doc.
+- **Corridas programadas 03:00 y 07:00 fallaron** ("server closed the connection unexpectedly");
+  la de 23:00 pasó bien. Se observa la de 11:00 — si falla de nuevo, investigar.
+- **`.env` q10-consolidacion:** Samuel sincronizó `TELEGRAM_BOT_TOKEN` con el token vigente de la
+  credencial de n8n (daba 401). La regeneración con BotFather sigue pendiente.
+- **Pendiente nuevo:** candado anti-concurrencia en el workflow Bot Q10 (responder "ya hay una
+  actualización corriendo" si hay ejecución en curso).
+
+---
+
+## 2026-07-07 — [mr-actualizacion-datos] Form MR2024 → BD-Mujeres ROFÉ (proceso nuevo, completado)
+
+**Estado:** Completado — script + backfill + workflow n8n activo.
+**Proceso:** [[mr-actualizacion-datos]]
+
+- Pedido: actualizar la pestaña `General` de BD-Mujeres ROFÉ 2026 con lo que llega del form
+  "Actualización de datos MR2024" + columna con la fecha de actualización del dato.
+- Decisiones de Samuel: actualizar TODO lo que traiga el form; sin match → fila nueva al final
+  con color; fecha = fecha de la corrida; automatizar con n8n diario.
+- Script nuevo `scripts/mr-actualizacion-datos/actualizar_bd_mr.py`: cruce por cédula (5,109
+  únicas en General), diff por celda **insensible a tildes** (el form llega sin acentos — sin esto
+  degradaba nombres correctos), vacío nunca sobreescribe, `--dry-run`, RESUMEN parseable.
+- Backfill: 286 filas actualizadas, 24 nuevas (filas 5112–5135, fondo naranja — varias parecen
+  typos de cédula o inactivas → revisión humana), 37 respuestas sin cédula omitidas.
+  Columna `Fecha Actualización` creada en AL. Re-corrida = 0 cambios (idempotente ✓).
+- Workflow n8n `mr-actualizacion-datos` (ID `LgkDbNPERYgKMrYj`) creado vía API y activo:
+  Schedule diario 7:30 → Execute Command → IF estado=exito → Stop-and-Error si falla.
+  Export en `n8n-workflows/mr-actualizacion-datos.json`.
+- Ambas hojas compartidas al Service Account (destino Editor, fuente Lector).
+
+---
+
+## 2026-07-07 — [dashboard-web] Panel público "Aprobación por Curso" (cohorte completa 2026)
+
+**Estado:** Implementado y verificado local. **Pendiente que Samuel corra `python export_aprobacion.py`**
+(hace commit+push a producción) y suba `docs/aprobacion/index.html` + botón del dashboard con git.
+**Proceso relacionado:** [[dashboard-web]] · [[q10-consolidacion]]
+
+- **Pedido:** ver por curso cuántos lo cursaron en 2026 (habilitados + inhabilitados) y qué % aprobó
+  (aprobado = avance >= 100, hay casos de 101). El panel actual solo muestra activos.
+- **Exploración Q10:** el switch "¿Incluir archivados?" del Consolidado virtual NO trae inhabilitados
+  (mismos datos con true/false — verificado). El reporte ConsolidadoNotasCuantitativo es por
+  logro (~16k filas Bienvenida) y Q10 corta en 5.000 registros → inviable. La fuente correcta:
+  **Consolidado Estudiantes Matriculados (modo Detallado)** — sí incluye inhabilitados; el POST debe
+  replicar los hidden Filtros[i].Name/PartialName o da 400.
+- **Cruce por cédula (verificado):** p22 = 860 matriculados vs 780 activos → 80 inhabilitados, y los
+  80 están TODOS en el reporte de cancelados → inhabilitado = retirado = no aprobó.
+- **Nuevo `export_aprobacion.py`:** Q10 directo (sin Sheets) → cruza 3 reportes → 
+  `docs/aprobacion/data.json` (solo agregados). Marca de agua en `docs/aprobacion/maximos.json`.
+  Corrida real: 9 cursos, 1.143 estudiantes cohorte, 6.183 matrículas, 77,5% aprobación global
+  (Bienvenida 90,2% · Emprendimiento 81,2% · MR en curso 29%/14%).
+- **Panel `docs/aprobacion/index.html`:** barras apiladas 100% (verde/ámbar/rojo — paleta validada
+  CVD + contraste), badges Finalizado/En curso, tablas por curso y programa, tooltips.
+  Botón "Aprobación ↗" agregado al dashboard. Verificado con captura headless de Edge.
+- **Gotchas** documentados en [[mapa-codigo]] (límite 5000, archivado inútil, headers del Excel de
+  matriculados, cohorte 860 vs pico 863, `inhabilitados_sin_retiro`=5 a vigilar).
+
+---
+
+## 2026-07-07 — [dashboard-web] Dashboard rediseñado sobre la cohorte completa + tendencia diaria
+
+**Estado:** Implementado, verificado con capturas headless y **publicado (commit+push de este alcance)**.
+**Proceso relacionado:** [[dashboard-web]]
+
+- **Pedido (supervisor):** la vista de Q10 con solo activos no satisface; usar los datos de
+  aprobación (cohorte completa) en todo el dashboard y alimentar la tendencia con el histórico.
+- **Tab 1 Estadísticas Q10:** ahora lee `../aprobacion/data.json` — KPIs de cohorte 2026, barras
+  apiladas % aprobó por curso y tabla detalle. Reemplaza la vista de activos + marca de agua.
+- **Tab 2 Avance Manual:** mismo formato. `export_avance.py` ahora exporta `aprobados`/`pct_aprobados`
+  por curso (avance >= 100) + `--sin-push`. Aprobación manual global: 73,1%.
+- **Tab 3 Comparativo:** % aprobación Manual vs Q10 cohorte con Δ por curso (alias en `ALIAS_APROB`,
+  reemplaza `ALIAS_Q10`; los 3 grupos HTML del manual se fusionan). Δ positiva esperable (el manual
+  no incluye retirados).
+- **Tab 5 Tendencia:** `history.json` regenerado con **snapshots diarios** desde git (9 puntos,
+  26-jun → 7-jul; se excluyeron 24–25 jun por estar contaminados con años previos, 4.563 est).
+  El appender de export_stats.py sigue con su cadencia — regenerar con el script si se quiere densidad diaria.
+- **Extra:** deep-link por hash (`/dashboard/#t3`) para abrir una pestaña directa.
+- Tab 4 Admin sigue con `data.json` (export_stats.py). Los cambios de zoom/ngrok/MR del working
+  tree quedaron fuera del commit.

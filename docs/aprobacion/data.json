@@ -1,0 +1,212 @@
+{
+  "ultima_actualizacion": "2026-07-07T10:42:13.691138-05:00",
+  "anio": "2026",
+  "nota_metodo": "Cohorte = matriculados del periodo (habilitados + inhabilitados). Aprobado = avance >= 100. Los retirados cuentan como no aprobados.",
+  "por_curso": [
+    {
+      "curso": "Bienvenidos a Jóvenes creaTIvos",
+      "programa": "Jóvenes creaTIvos",
+      "periodos": [
+        "Habilidades-Nivel 1-2026"
+      ],
+      "activos": 780,
+      "aprobados": 776,
+      "retirados": 80,
+      "cursaron": 860,
+      "no_aprobados": 84,
+      "sin_finalizar": 4,
+      "promedio": 99.65,
+      "pct_aprobados": 90.2,
+      "pct_no_aprobados": 9.8,
+      "finalizado": true
+    },
+    {
+      "curso": "Habilidades esenciales para ser un emprendedor exitoso",
+      "programa": "Jóvenes creaTIvos",
+      "periodos": [
+        "Habilidades-Nivel 1-2026"
+      ],
+      "activos": 779,
+      "aprobados": 735,
+      "retirados": 80,
+      "cursaron": 859,
+      "no_aprobados": 124,
+      "sin_finalizar": 44,
+      "promedio": 99.42,
+      "pct_aprobados": 85.6,
+      "pct_no_aprobados": 14.4,
+      "finalizado": true
+    },
+    {
+      "curso": "Hackea tu cerebro: Aprende en menos tiempo y sin sufrir",
+      "programa": "Jóvenes creaTIvos",
+      "periodos": [
+        "Habilidades-Nivel 1-2026"
+      ],
+      "activos": 779,
+      "aprobados": 773,
+      "retirados": 80,
+      "cursaron": 859,
+      "no_aprobados": 86,
+      "sin_finalizar": 6,
+      "promedio": 99.57,
+      "pct_aprobados": 90.0,
+      "pct_no_aprobados": 10.0,
+      "finalizado": true
+    },
+    {
+      "curso": "Emprendimiento: Idea de Negocio JC",
+      "programa": "Jóvenes creaTIvos",
+      "periodos": [
+        "Habilidades-Nivel 1-2026"
+      ],
+      "activos": 778,
+      "aprobados": 697,
+      "retirados": 80,
+      "cursaron": 858,
+      "no_aprobados": 161,
+      "sin_finalizar": 81,
+      "promedio": 98.75,
+      "pct_aprobados": 81.2,
+      "pct_no_aprobados": 18.8,
+      "finalizado": true
+    },
+    {
+      "curso": "Fundamentos Lógica de Programación - 2026",
+      "programa": "Jóvenes creaTIvos",
+      "periodos": [
+        "Logica-Nivel 2-2026"
+      ],
+      "activos": 777,
+      "aprobados": 718,
+      "retirados": 17,
+      "cursaron": 794,
+      "no_aprobados": 76,
+      "sin_finalizar": 59,
+      "promedio": 96.83,
+      "pct_aprobados": 90.4,
+      "pct_no_aprobados": 9.6,
+      "finalizado": true
+    },
+    {
+      "curso": "Introducción a la IA Generativa - 2026",
+      "programa": "Jóvenes creaTIvos",
+      "periodos": [
+        "Logica-Nivel 2-2026"
+      ],
+      "activos": 777,
+      "aprobados": 745,
+      "retirados": 17,
+      "cursaron": 794,
+      "no_aprobados": 49,
+      "sin_finalizar": 32,
+      "promedio": 98.33,
+      "pct_aprobados": 93.8,
+      "pct_no_aprobados": 6.2,
+      "finalizado": true
+    },
+    {
+      "curso": "Desarrollo Web Front-End - HTML - 2026",
+      "programa": "Jóvenes creaTIvos",
+      "periodos": [
+        "Desarrollo-Nivel 3-2026",
+        "Desarrollo-Avanzado-2026"
+      ],
+      "activos": 777,
+      "aprobados": 259,
+      "retirados": 2,
+      "cursaron": 779,
+      "no_aprobados": 520,
+      "sin_finalizar": 518,
+      "promedio": 56.73,
+      "pct_aprobados": 33.2,
+      "pct_no_aprobados": 66.8,
+      "finalizado": false
+    },
+    {
+      "curso": "Habilidades del ser para Emprendedoras del Siglo XXI",
+      "programa": "Mujeres ROFÉ",
+      "periodos": [
+        "Unico MR-2026"
+      ],
+      "activos": 244,
+      "aprobados": 71,
+      "retirados": 0,
+      "cursaron": 244,
+      "no_aprobados": 173,
+      "sin_finalizar": 173,
+      "promedio": 31.01,
+      "pct_aprobados": 29.1,
+      "pct_no_aprobados": 70.9,
+      "finalizado": false
+    },
+    {
+      "curso": "De la idea a la acción, tu guía para emprender con éxito",
+      "programa": "Mujeres ROFÉ",
+      "periodos": [
+        "Unico MR-2026"
+      ],
+      "activos": 136,
+      "aprobados": 19,
+      "retirados": 0,
+      "cursaron": 136,
+      "no_aprobados": 117,
+      "sin_finalizar": 117,
+      "promedio": 29.35,
+      "pct_aprobados": 14.0,
+      "pct_no_aprobados": 86.0,
+      "finalizado": false
+    }
+  ],
+  "por_programa": [
+    {
+      "programa": "Jóvenes creaTIvos",
+      "cursos": 7,
+      "cursaron": 5803,
+      "aprobados": 4703,
+      "retirados": 356,
+      "pct_aprobados": 81.0
+    },
+    {
+      "programa": "Mujeres ROFÉ",
+      "cursos": 2,
+      "cursaron": 380,
+      "aprobados": 90,
+      "retirados": 0,
+      "pct_aprobados": 23.7
+    }
+  ],
+  "totales": {
+    "total_cursos": 9,
+    "total_matriculas": 6183,
+    "total_aprobados": 4793,
+    "total_retirados_2026": 85,
+    "estudiantes_cohorte_2026": 1143
+  },
+  "anomalias": {
+    "inhabilitados_sin_retiro": 5,
+    "retirados_unicos_2026": 85
+  },
+  "periodos": [
+    {
+      "periodo": "Desarrollo-Nivel 3-2026",
+      "matriculados": 503
+    },
+    {
+      "periodo": "Logica-Nivel 2-2026",
+      "matriculados": 794
+    },
+    {
+      "periodo": "Habilidades-Nivel 1-2026",
+      "matriculados": 860
+    },
+    {
+      "periodo": "Unico MR-2026",
+      "matriculados": 283
+    },
+    {
+      "periodo": "Desarrollo-Avanzado-2026",
+      "matriculados": 276
+    }
+  ]
+}

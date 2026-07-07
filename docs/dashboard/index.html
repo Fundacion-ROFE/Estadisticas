@@ -20,6 +20,9 @@
       --green-bg:   rgba(110,160,80,0.12);
       --blue-light: #6FA0BC;
       --celeste:    #83B6DD;
+      --amber:      #B8860B;   /* "sin completar" — validado 3:1 sobre blanco */
+      --amber-bg:   rgba(184,134,11,0.12);
+      --green-dark: #4E7A36;
 
       /* UI */
       --bg:         #FFFFFF;
@@ -127,6 +130,42 @@
     .kpi-val { font-size: 2rem; font-weight: 700; line-height: 1; color: var(--primary); }
     .kpi-lbl { font-size: 0.8rem; font-weight: 600; margin-top: 7px; color: var(--text); }
     .kpi-sub { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
+
+    /* ── Barras apiladas 100% (aprobación por curso) ── */
+    .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 16px; }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: .78rem; color: var(--text); }
+    .legend-dot  { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+    .grupo-titulo {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--muted);
+      margin: 18px 0 10px; padding-bottom: 4px; border-bottom: 1px solid var(--border);
+    }
+    .curso-row  { margin-bottom: 16px; }
+    .curso-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 5px; }
+    .curso-nom  { font-size: .85rem; font-weight: 600; }
+    .curso-pct  { font-size: .85rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--green-dark); }
+    .curso-n    { font-size: .74rem; color: var(--muted); }
+    .badge-mini {
+      font-size: .64rem; font-weight: 700; padding: 2px 9px; border-radius: 10px;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .badge-fin   { background: var(--green-bg); color: var(--green-dark); }
+    .badge-curso { background: var(--amber-bg); color: var(--amber); }
+    .stack {
+      display: flex; height: 22px; border-radius: 4px; overflow: hidden;
+      background: var(--border); gap: 2px;   /* separador de 2px entre segmentos */
+    }
+    .seg { height: 100%; min-width: 0; width: 0; position: relative; cursor: default; }
+    .seg-aprobado { background: var(--green); border-radius: 4px 0 0 4px; }
+    .seg-sinfin   { background: var(--amber); }
+    .seg-retirado { background: var(--red); border-radius: 0 4px 4px 0; }
+    .seg:hover { filter: brightness(1.12); }
+    #tip {
+      position: fixed; z-index: 50; pointer-events: none; display: none;
+      background: var(--text); color: #fff; font-size: .74rem;
+      padding: 6px 10px; border-radius: 6px; white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
 
     /* ── Semáforo ── */
     .sem-green  { color: var(--green); }
@@ -268,7 +307,11 @@
   <button class="tab-btn"        onclick="switchTab('t3',this)">Comparativo</button>
   <button class="tab-btn"        onclick="switchTab('t4',this)">Admin</button>
   <button class="tab-btn"        onclick="switchTab('t5',this)">📈 Tendencia</button>
-  <a href="../retirados/" style="margin-left:auto;align-self:center;display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;color:var(--orange);text-decoration:none;padding:6px 14px;border-radius:20px;border:1px solid var(--orange-bg);background:var(--orange-bg);white-space:nowrap">
+  <a href="../aprobacion/" style="margin-left:auto;align-self:center;display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;color:var(--green);text-decoration:none;padding:6px 14px;border-radius:20px;border:1px solid var(--green-bg);background:var(--green-bg);white-space:nowrap">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+    Aprobación ↗
+  </a>
+  <a href="../retirados/" style="margin-left:10px;align-self:center;display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;color:var(--orange);text-decoration:none;padding:6px 14px;border-radius:20px;border:1px solid var(--orange-bg);background:var(--orange-bg);white-space:nowrap">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
     Retirados ↗
   </a>
@@ -294,6 +337,7 @@
 </main>
 
 <div id="footer-root"></div>
+<div id="tip"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
@@ -339,101 +383,149 @@ function animateBars(){
     });
   }));
 }
+function animateSegs(){
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.querySelectorAll('.seg[data-w]').forEach((el,i)=>{
+      setTimeout(()=>{ el.style.width=el.dataset.w; el.style.transition=`width .55s ease ${i*35}ms`; }, 0);
+    });
+  }));
+}
+
+// tooltip que sigue al cursor sobre los segmentos apilados
+document.addEventListener('mousemove', e=>{
+  const tip = document.getElementById('tip');
+  if(!tip) return;
+  const seg = e.target.closest('.seg[data-tip]');
+  if(seg){
+    tip.textContent = seg.dataset.tip;
+    tip.style.display = 'block';
+    tip.style.left = Math.min(e.clientX+12, innerWidth-tip.offsetWidth-8)+'px';
+    tip.style.top  = (e.clientY+14)+'px';
+  } else {
+    tip.style.display = 'none';
+  }
+});
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// TAB 1 — Estadísticas Q10
+// TAB 1 — Estadísticas Q10 (cohorte completa: habilitados + inhabilitados)
+// Fuente: ../aprobacion/data.json (export_aprobacion.py)
 // ═══════════════════════════════════════════════════════════════════════════════
-function renderT1(d){
-  const t = d.totales||{};
 
-  // KPIs
-  const totalAnoms = (d.anomalias||[]).reduce((a,x)=>a+(x.cantidad||0),0);
-  const promedioGlobal = (d.por_curso||[]).length
-    ? ((d.por_curso||[]).reduce((a,c)=>a+(c.promedio||0),0)/(d.por_curso||[]).length).toFixed(1)
-    : null;
-  const sg = promedioGlobal != null ? sem(promedioGlobal) : null;
+/* Barra apilada 100% de un curso: aprobados | sin completar | retirados */
+function stackRow(c){
+  const total = c.cursaron || 1;
+  const segs = [
+    { k:'aprobado', n:c.aprobados,     lbl:'Aprobaron (avance ≥ 100)' },
+    { k:'sinfin',   n:c.sin_finalizar, lbl: c.finalizado ? 'No completaron el curso' : 'Aún cursando (avance < 100)' },
+    { k:'retirado', n:c.retirados,     lbl:'Se retiraron / inhabilitados' },
+  ].filter(s=>s.n>0);
+
+  const html = segs.map(s=>{
+    const pct = (s.n/total*100);
+    return `<div class="seg seg-${s.k}" data-w="${pct.toFixed(2)}%"
+      data-tip="${esc(s.lbl)}: ${fmt(s.n)} de ${fmt(c.cursaron)} (${pct.toFixed(1)}%)"></div>`;
+  }).join('');
+
+  const badge = c.finalizado
+    ? '<span class="badge-mini badge-fin">✓ Finalizado</span>'
+    : '<span class="badge-mini badge-curso">En curso</span>';
+
+  return `
+  <div class="curso-row">
+    <div class="curso-head">
+      <span class="curso-nom">${esc(c.curso)}</span>
+      ${badge}
+      <span class="curso-pct">${c.pct_aprobados}% aprobó</span>
+      <span class="curso-n">· ${fmt(c.cursaron)} lo cursaron</span>
+    </div>
+    <div class="stack">${html}</div>
+  </div>`;
+}
+
+const LEGEND_APROB = `
+  <div class="legend">
+    <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>Aprobaron (≥ 100)</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span>Sin completar</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--red)"></span>Retirados</span>
+  </div>`;
+
+function renderT1(ap){
+  const t = ap.totales||{};
+  const pctGlobal = t.total_matriculas ? (100*t.total_aprobados/t.total_matriculas) : null;
+  const sg = pctGlobal!=null ? sem(pctGlobal) : null;
 
   const kpis = `
   <div class="kpi-grid">
     <div class="kpi-card">
-      <div class="kpi-val">${fmt(t.total_cursos)}</div>
-      <div class="kpi-lbl">Cursos activos</div>
-      <div class="kpi-sub">En plataforma Q10</div>
+      <div class="kpi-val">${fmt(t.estudiantes_cohorte_2026)}</div>
+      <div class="kpi-lbl">Estudiantes ${esc(ap.anio)}</div>
+      <div class="kpi-sub">Cohorte completa: habilitados + inhabilitados</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-val">${fmt(t.total_habilitados ?? t.total_estudiantes_unicos)}</div>
-      <div class="kpi-lbl">Estudiantes activos 2026</div>
-      <div class="kpi-sub">de ${fmt(t.total_estudiantes_unicos)} en plataforma este año</div>
+      <div class="kpi-val">${fmt(t.total_matriculas)}</div>
+      <div class="kpi-lbl">Matrículas en cursos</div>
+      <div class="kpi-sub">Un estudiante cuenta en cada curso que tomó</div>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-val ${sg?sg.cls:''}">${promedioGlobal!=null?promedioGlobal+'%':'—'}</div>
-      <div class="kpi-lbl">Avance promedio global</div>
-      <div class="kpi-sub">${sg?`<span class="tag ${sg.tag}">${sg.lbl}</span>`:'—'}</div>
+    <div class="kpi-card" style="border-top-color:var(--green)">
+      <div class="kpi-val ${sg?sg.cls:''}">${pctGlobal!=null?pctGlobal.toFixed(1)+'%':'—'}</div>
+      <div class="kpi-lbl">Aprobación global</div>
+      <div class="kpi-sub">${fmt(t.total_aprobados)} matrículas con avance ≥ 100</div>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-val sem-red">${fmt(totalAnoms)}</div>
-      <div class="kpi-lbl">Total anomalías</div>
-      <div class="kpi-sub">${t.total_db ? fmt(t.total_db)+' en histórico total DB' : 'SIN MATCH + AVANCE 0% + IRREGULAR'}</div>
+    <div class="kpi-card" style="border-top-color:var(--red)">
+      <div class="kpi-val sem-red">${fmt(t.total_retirados_2026)}</div>
+      <div class="kpi-lbl">Retirados ${esc(ap.anio)}</div>
+      <div class="kpi-sub">Estudiantes inhabilitados de la cohorte</div>
     </div>
   </div>`;
 
-  // Tabla POR CURSO con semáforo
-  const filas = (d.por_curso||[]).map(c=>{
-    const s   = sem(c.promedio||0);
-    const pct = ((c.promedio||0)/100*100).toFixed(1);
-    return `<tr>
-      <td>${esc(c.curso)}</td>
-      <td class="td-r">${fmt(c.estudiantes)}</td>
-      <td style="min-width:160px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="bar-track" style="flex:1;height:8px">
-            <div class="bar-fill" data-w="${pct}%" style="background:${s.c}"></div>
-          </div>
-          <span class="${s.cls}" style="width:40px;text-align:right;font-size:.82rem">${fmtPct(c.promedio)}</span>
-        </div>
-      </td>
-      <td class="td-r" style="color:var(--muted);font-size:.78rem">${fmtPct(c.min)}</td>
-      <td class="td-r" style="color:var(--muted);font-size:.78rem">${fmtPct(c.max)}</td>
-      <td><span class="tag ${s.tag}">${s.lbl}</span></td>
-    </tr>`;
-  }).join('');
+  // barras apiladas agrupadas por programa
+  const porPrograma = {};
+  (ap.por_curso||[]).forEach(c=>{
+    (porPrograma[c.programa||'Sin programa'] ??= []).push(c);
+  });
+  const grupos = Object.entries(porPrograma).map(([prog, cursos])=>`
+    <div class="grupo-titulo">${esc(prog)} — ${cursos.length} curso${cursos.length!==1?'s':''}</div>
+    ${cursos.map(stackRow).join('')}`).join('');
 
-  const tabla = `
+  const barras = `
   <div class="card gap">
-    <div class="card-title">Avance por curso</div>
-    <table class="dt">
-      <thead><tr>
-        <th>Curso</th><th class="td-r">Estudiantes</th>
-        <th>Promedio</th><th class="td-r">Mín</th><th class="td-r">Máx</th><th>Estado</th>
-      </tr></thead>
-      <tbody>${filas||'<tr><td colspan="6" style="color:var(--muted)">Sin datos</td></tr>'}</tbody>
-    </table>
+    <div class="card-title">¿Qué porcentaje aprobó cada curso?</div>
+    ${LEGEND_APROB}
+    ${grupos}
     <p class="chart-note">
-      🔴 Atención &lt;60% &nbsp;·&nbsp; 🟡 En riesgo 60–79% &nbsp;·&nbsp; 🟢 Satisfactorio ≥80%
+      Se aprueba únicamente con avance de 100 o más (hay casos de 101 por actividades extra).
+      En cursos <strong>finalizados</strong> el % es definitivo; en cursos <strong>en curso</strong>,
+      "sin completar" son estudiantes que aún están avanzando. &nbsp;
+      <a href="../aprobacion/" style="color:var(--green-dark);font-weight:700">Panel completo ↗</a>
     </p>
   </div>`;
 
-  // Anomalías
-  const ANOM_DESC = {
-    'NO HABILITADO':    'Estudiantes importados de Q10 con Estado I (inactivo)',
-    'SIN MATCH':        'Estudiantes con ID en Q10 pero sin curso asignado — dato incompleto en la extracción',
-    'AVANCE 0%':        'Matriculados en curso con avance registrado en cero — nunca abrieron el contenido',
-    'AVANCE IRREGULAR': 'Avance superior al 100% — error de sincronización en Q10',
-  };
-  const anoms = (d.anomalias||[]).map(a=>`
-    <div class="anom-card">
-      <div class="anom-val">${fmt(a.cantidad)}</div>
-      <div class="anom-lbl">${esc(a.categoria)}</div>
-      <div class="anom-desc">${esc(ANOM_DESC[a.categoria]||'')}</div>
-    </div>`).join('');
+  const filas = (ap.por_curso||[]).map(c=>`
+    <tr>
+      <td>${esc(c.curso)}</td>
+      <td class="td-r">${fmt(c.cursaron)}</td>
+      <td class="td-r" style="color:var(--green-dark);font-weight:700">${fmt(c.aprobados)}</td>
+      <td class="td-r">${fmt(c.sin_finalizar)}</td>
+      <td class="td-r" style="color:var(--red)">${fmt(c.retirados)}</td>
+      <td class="td-r" style="color:var(--green-dark);font-weight:700">${c.pct_aprobados}%</td>
+      <td>${c.finalizado?'<span class="tag tag-green">Finalizado</span>':'<span class="tag tag-yellow">En curso</span>'}</td>
+    </tr>`).join('');
 
-  const anomSec = anoms ? `
+  const tabla = `
   <div class="card gap">
-    <div class="card-title" style="color:var(--red)">Anomalías detectadas</div>
-    <div class="anom-grid">${anoms}</div>
-  </div>` : '';
+    <div class="card-title">Detalle por curso — cohorte ${esc(ap.anio)}</div>
+    <table class="dt">
+      <thead><tr>
+        <th>Curso</th><th class="td-r">Cursaron</th><th class="td-r">Aprobaron</th>
+        <th class="td-r">Sin completar</th><th class="td-r">Retirados</th>
+        <th class="td-r">% Aprobó</th><th>Estado</th>
+      </tr></thead>
+      <tbody>${filas||'<tr><td colspan="7" style="color:var(--muted)">Sin datos</td></tr>'}</tbody>
+    </table>
+    <p class="chart-note">${esc(ap.nota_metodo||'')}</p>
+  </div>`;
 
-  return kpis + tabla + anomSec;
+  return kpis + barras + tabla;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -441,7 +533,9 @@ function renderT1(d){
 // ═══════════════════════════════════════════════════════════════════════════════
 function renderT2(a){
   const t  = a.totales||{};
-  const sg = t.promedio_general!=null ? sem(t.promedio_general) : null;
+  const pctManual = (t.total_aprobados!=null && t.total_registros)
+    ? (100*t.total_aprobados/t.total_registros) : null;
+  const sg = pctManual!=null ? sem(pctManual) : null;
 
   const kpis = `
   <div class="kpi-grid">
@@ -455,50 +549,72 @@ function renderT2(a){
       <div class="kpi-lbl">Estudiantes únicos</div>
       <div class="kpi-sub">Por número de ID</div>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-val ${sg?sg.cls:''}">${t.promedio_general!=null?t.promedio_general+'%':'—'}</div>
-      <div class="kpi-lbl">Promedio general</div>
-      <div class="kpi-sub">${sg?`<span class="tag ${sg.tag}">${sg.lbl}</span>`:'Ponderado entre cursos'}</div>
+    <div class="kpi-card" style="border-top-color:var(--green)">
+      <div class="kpi-val ${sg?sg.cls:''}">${pctManual!=null?pctManual.toFixed(1)+'%':'—'}</div>
+      <div class="kpi-lbl">Aprobación manual</div>
+      <div class="kpi-sub">${t.total_aprobados!=null?fmt(t.total_aprobados)+' registros con avance ≥ 100':'Requiere export_avance.py actualizado'}</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-val">${fmt(t.total_registros)}</div>
-      <div class="kpi-lbl">Total registros</div>
-      <div class="kpi-sub">Filas en hoja manual</div>
+      <div class="kpi-val">${t.promedio_general!=null?t.promedio_general+'%':'—'}</div>
+      <div class="kpi-lbl">Promedio general</div>
+      <div class="kpi-sub">Ponderado entre cursos</div>
     </div>
   </div>`;
 
+  // Barras apiladas (mismo formato que Tab 1): aprobados | sin completar.
+  // La hoja manual no registra retirados — solo 2 segmentos.
+  const conAprobados = (a.por_curso||[]).filter(c=>c.aprobados!=null);
+  const stacks = conAprobados.map(c=>stackRow({
+    curso:         c.nombre,
+    cursaron:      c.estudiantes,
+    aprobados:     c.aprobados,
+    sin_finalizar: c.estudiantes - c.aprobados,
+    retirados:     0,
+    pct_aprobados: c.pct_aprobados,
+    finalizado:    false,
+  })).join('');
+
+  const barras = conAprobados.length ? `
+  <div class="card gap">
+    <div class="card-title">¿Qué porcentaje aprobó cada curso? — hoja manual</div>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>Aprobaron (≥ 100)</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span>Sin completar</span>
+    </div>
+    ${stacks}
+    <p class="chart-note">
+      La hoja manual solo registra estudiantes activos — no incluye retirados.
+      El % de aprobación de la cohorte completa está en la pestaña "Estadísticas Q10".
+    </p>
+  </div>` : '';
+
   const filas = (a.por_curso||[]).map(c=>{
-    const s   = sem(c.promedio||0);
-    const pct = (c.promedio||0).toFixed(1);
+    const s = sem(c.pct_aprobados ?? c.promedio ?? 0);
     return `<tr>
       <td>${esc(c.nombre)}</td>
       <td class="td-r">${fmt(c.estudiantes)}</td>
-      <td style="min-width:160px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="bar-track" style="flex:1;height:8px">
-            <div class="bar-fill" data-w="${pct}%" style="background:${s.c}"></div>
-          </div>
-          <span class="${s.cls}" style="width:40px;text-align:right;font-size:.82rem">${fmtPct(c.promedio)}</span>
-        </div>
-      </td>
-      <td class="td-r" style="color:var(--muted);font-size:.78rem">${fmtPct(c.min)}</td>
-      <td class="td-r" style="color:var(--muted);font-size:.78rem">${fmtPct(c.max)}</td>
+      <td class="td-r" style="color:var(--green-dark);font-weight:700">${c.aprobados!=null?fmt(c.aprobados):'—'}</td>
+      <td class="td-r">${c.aprobados!=null?fmt(c.estudiantes-c.aprobados):'—'}</td>
+      <td class="td-r" style="color:var(--green-dark);font-weight:700">${c.pct_aprobados!=null?c.pct_aprobados+'%':'—'}</td>
+      <td class="td-r" style="color:var(--muted);font-size:.78rem">${fmtPct(c.promedio)}</td>
       <td><span class="tag ${s.tag}">${s.lbl}</span></td>
     </tr>`;
   }).join('');
 
   const tabla = `
   <div class="card gap">
-    <div class="card-title">Avance por curso — hoja manual</div>
+    <div class="card-title">Detalle por curso — hoja manual</div>
     <table class="dt">
       <thead><tr>
-        <th>Curso</th><th class="td-r">Estudiantes</th>
-        <th>Promedio</th><th class="td-r">Mín</th><th class="td-r">Máx</th><th>Estado</th>
+        <th>Curso</th><th class="td-r">Estudiantes</th><th class="td-r">Aprobaron</th>
+        <th class="td-r">Sin completar</th><th class="td-r">% Aprobó</th>
+        <th class="td-r">Promedio</th><th>Estado</th>
       </tr></thead>
-      <tbody>${filas||'<tr><td colspan="6" style="color:var(--muted)">Sin datos</td></tr>'}</tbody>
+      <tbody>${filas||'<tr><td colspan="7" style="color:var(--muted)">Sin datos</td></tr>'}</tbody>
     </table>
     <p class="chart-note">
-      🔴 Atención &lt;60% &nbsp;·&nbsp; 🟡 En riesgo 60–79% &nbsp;·&nbsp; 🟢 Satisfactorio ≥80%
+      Aprobado = avance ≥ 100 &nbsp;·&nbsp; Semáforo sobre % aprobó:
+      🔴 &lt;60% &nbsp;·&nbsp; 🟡 60–79% &nbsp;·&nbsp; 🟢 ≥80%
     </p>
   </div>`;
 
@@ -525,93 +641,105 @@ function renderT2(a){
     &nbsp;·&nbsp; Fuente: pestaña "Avance" del registro manual
   </div>` : '';
 
-  return kpis + tabla + anomSec + seg;
+  return kpis + barras + tabla + anomSec + seg;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// TAB 3 — Comparativo
+// TAB 3 — Comparativo: hoja Manual vs cohorte Q10 (aprobación)
 // ═══════════════════════════════════════════════════════════════════════════════
-const ALIAS_Q10 = {
-  'Bienvenida':              'BIENVENIDOS A JÓVENES CREATIVOS',
-  'Hackea Tu Cerebro':       'HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR',
-  'Habilidades Esenciales':  'HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO',
-  'Emprendimiento':          'EMPRENDIMIENTO: IDEA DE NEGOCIO JC',
-  'IA':                      'INTRODUCCIÓN A LA IA GENERATIVA - 2026',
-  'Lógica de Programación':  'FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026',
+// Nombres de la hoja manual → nombres de curso en aprobacion/data.json (Q10)
+const ALIAS_APROB = {
+  'Bienvenida':              'Bienvenidos a Jóvenes creaTIvos',
+  'Hackea Tu Cerebro':       'Hackea tu cerebro: Aprende en menos tiempo y sin sufrir',
+  'Habilidades Esenciales':  'Habilidades esenciales para ser un emprendedor exitoso',
+  'Emprendimiento':          'Emprendimiento: Idea de Negocio JC',
+  'IA':                      'Introducción a la IA Generativa - 2026',
+  'Lógica de Programación':  'Fundamentos Lógica de Programación - 2026',
+  'HTML':                    'Desarrollo Web Front-End - HTML - 2026',
 };
 
-function renderT3(d, a){
-  const promediosQ10 = (d?.por_curso||[]).map(c=>c.promedio).filter(v=>v!=null);
-  const avgQ10 = promediosQ10.length
-    ? (promediosQ10.reduce((x,y)=>x+y,0)/promediosQ10.length).toFixed(1) : null;
-  const avgManual = a?.totales?.promedio_general;
+function renderT3(ap, a){
+  const tq = ap?.totales||{};
+  const tm = a?.totales||{};
+  const pctQ10    = tq.total_matriculas ? (100*tq.total_aprobados/tq.total_matriculas) : null;
+  const pctManual = (tm.total_aprobados!=null && tm.total_registros)
+    ? (100*tm.total_aprobados/tm.total_registros) : null;
 
-  const sq = avgQ10 ? sem(avgQ10) : null;
-  const sm = avgManual!=null ? sem(avgManual) : null;
+  const sq = pctQ10!=null ? sem(pctQ10) : null;
+  const sm = pctManual!=null ? sem(pctManual) : null;
   const resumen = `
   <div class="two-col gap">
     <div class="card col-blue">
-      <div class="card-title" style="color:var(--blue)">● Q10 (Plataforma automática)</div>
-      <div class="stat-row"><span class="stat-lbl">Estudiantes únicos</span><span class="stat-val" style="color:var(--blue)">${fmt(d?.totales?.total_estudiantes_unicos)}</span></div>
-      <div class="stat-row"><span class="stat-lbl">Cursos</span><span class="stat-val">${fmt(d?.totales?.total_cursos)}</span></div>
-      <div class="stat-row"><span class="stat-lbl">Promedio general</span>
-        <span class="stat-val ${sq?sq.cls:''}">${avgQ10!=null?avgQ10+'%':'—'}</span></div>
+      <div class="card-title" style="color:var(--blue)">● Q10 — cohorte completa</div>
+      <div class="stat-row"><span class="stat-lbl">Estudiantes cohorte ${esc(ap?.anio||'')}</span><span class="stat-val" style="color:var(--blue)">${fmt(tq.estudiantes_cohorte_2026)}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Matrículas en cursos</span><span class="stat-val">${fmt(tq.total_matriculas)}</span></div>
+      <div class="stat-row"><span class="stat-lbl">% Aprobación</span>
+        <span class="stat-val ${sq?sq.cls:''}">${pctQ10!=null?pctQ10.toFixed(1)+'%':'—'}</span></div>
     </div>
     <div class="card col-orange">
       <div class="card-title" style="color:var(--orange)">● Hoja Manual (Avance)</div>
-      <div class="stat-row"><span class="stat-lbl">Estudiantes únicos</span><span class="stat-val" style="color:var(--orange)">${fmt(a?.totales?.estudiantes_unicos_id)}</span></div>
-      <div class="stat-row"><span class="stat-lbl">Cursos</span><span class="stat-val">${fmt(a?.totales?.total_cursos)}</span></div>
-      <div class="stat-row"><span class="stat-lbl">Promedio general</span>
-        <span class="stat-val ${sm?sm.cls:''}">${avgManual!=null?avgManual+'%':'—'}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Estudiantes únicos</span><span class="stat-val" style="color:var(--orange)">${fmt(tm.estudiantes_unicos_id)}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Registros en cursos</span><span class="stat-val">${fmt(tm.total_registros)}</span></div>
+      <div class="stat-row"><span class="stat-lbl">% Aprobación</span>
+        <span class="stat-val ${sm?sm.cls:''}">${pctManual!=null?pctManual.toFixed(1)+'%':'—'}</span></div>
     </div>
   </div>`;
 
-  const norm = s => s.replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+  const norm = s => String(s).replace(/ /g,' ').replace(/\s+/g,' ').trim();
   const q10Map = {};
-  (d?.por_curso||[]).forEach(c=>{ q10Map[norm(c.curso)] = c; });
+  (ap?.por_curso||[]).forEach(c=>{ q10Map[norm(c.curso)] = c; });
 
-  const filasCmp = (a?.por_curso||[]).map(c=>{
-    const nombreQ10 = ALIAS_Q10[c.nombre] || null;
-    const q10       = nombreQ10 ? q10Map[norm(nombreQ10)] : null;
-    const pManual   = c.promedio;
-    const pQ10      = q10?.promedio ?? null;
-    const diff      = (pManual!=null && pQ10!=null) ? (pManual - pQ10).toFixed(1) : null;
-    const sm2       = sem(pManual||0);
-    const sq2       = pQ10!=null ? sem(pQ10) : null;
-    const diffColor = diff==null ? '' : Number(diff)>=0 ? 'color:var(--green)' : 'color:var(--red)';
-    const diffStr   = diff==null ? '—' : (Number(diff)>=0?'+':'')+diff+'%';
+  // La hoja manual puede tener varios grupos con el mismo nombre (ej. 3× HTML)
+  // → se fusionan antes de comparar.
+  const manualMerged = {};
+  (a?.por_curso||[]).forEach(c=>{
+    const m = manualMerged[c.nombre] ??= {nombre:c.nombre, estudiantes:0, aprobados:0, _tiene:false};
+    m.estudiantes += c.estudiantes||0;
+    if(c.aprobados!=null){ m.aprobados += c.aprobados; m._tiene = true; }
+  });
+
+  const filasCmp = Object.values(manualMerged).map(m=>{
+    const q10   = ALIAS_APROB[m.nombre] ? q10Map[norm(ALIAS_APROB[m.nombre])] : null;
+    const pM    = m._tiene && m.estudiantes ? (100*m.aprobados/m.estudiantes) : null;
+    const pQ    = q10?.pct_aprobados ?? null;
+    const diff  = (pM!=null && pQ!=null) ? (pM - pQ) : null;
+    const sm2   = pM!=null ? sem(pM) : null;
+    const sq2   = pQ!=null ? sem(pQ) : null;
+    const diffColor = diff==null ? '' : diff>=0 ? 'color:var(--green)' : 'color:var(--red)';
+    const diffStr   = diff==null ? '—' : (diff>=0?'+':'')+diff.toFixed(1)+'%';
     return `<tr>
-      <td><strong>${esc(c.nombre)}</strong></td>
-      <td class="td-r"><span class="${sm2.cls}">${fmtPct(pManual)}</span></td>
-      <td class="td-r">${pQ10!=null?`<span class="${sq2.cls}">${fmtPct(pQ10)}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+      <td><strong>${esc(m.nombre)}</strong></td>
+      <td class="td-r">${pM!=null?`<span class="${sm2.cls}">${pM.toFixed(1)}%</span>`:'—'}</td>
+      <td class="td-r">${pQ!=null?`<span class="${sq2.cls}">${pQ.toFixed(1)}%</span>`:'<span style="color:var(--muted)">—</span>'}</td>
       <td class="td-r" style="${diffColor};font-weight:700">${diffStr}</td>
-      <td class="td-r" style="color:var(--muted);font-size:.78rem">${fmt(c.estudiantes)} / ${q10?fmt(q10.estudiantes):'—'}</td>
+      <td class="td-r" style="color:var(--muted);font-size:.78rem">${fmt(m.estudiantes)} / ${q10?fmt(q10.cursaron):'—'}</td>
     </tr>`;
   }).join('');
 
-  const nombresManual = new Set((a?.por_curso||[]).map(c=>ALIAS_Q10[c.nombre]?norm(ALIAS_Q10[c.nombre]):null).filter(Boolean));
-  const soloQ10 = (d?.por_curso||[]).filter(c=>!nombresManual.has(norm(c.curso)));
+  const nombresManual = new Set(Object.keys(manualMerged)
+    .map(n=>ALIAS_APROB[n]?norm(ALIAS_APROB[n]):null).filter(Boolean));
+  const soloQ10 = (ap?.por_curso||[]).filter(c=>!nombresManual.has(norm(c.curso)));
   const filasExtra = soloQ10.map(c=>{
-    const s=sem(c.promedio||0);
+    const s=sem(c.pct_aprobados||0);
     return `<tr style="opacity:.6">
       <td><em>${esc(c.curso)}</em></td>
       <td class="td-r">—</td>
-      <td class="td-r"><span class="${s.cls}">${fmtPct(c.promedio)}</span></td>
+      <td class="td-r"><span class="${s.cls}">${c.pct_aprobados}%</span></td>
       <td class="td-r" style="color:var(--muted)">—</td>
-      <td class="td-r" style="color:var(--muted);font-size:.78rem">— / ${fmt(c.estudiantes)}</td>
+      <td class="td-r" style="color:var(--muted);font-size:.78rem">— / ${fmt(c.cursaron)}</td>
     </tr>`;
   }).join('');
 
   const tabla = `
   <div class="card gap">
-    <div class="card-title">Avance por curso: Manual vs Q10</div>
+    <div class="card-title">% de aprobación por curso: Manual vs Q10 (cohorte)</div>
     <table class="dt">
       <thead><tr>
         <th>Curso</th>
-        <th class="td-r">Manual</th>
-        <th class="td-r">Q10</th>
+        <th class="td-r">% Manual</th>
+        <th class="td-r">% Q10 cohorte</th>
         <th class="td-r">Δ Dif.</th>
-        <th class="td-r">Est. Manual / Q10</th>
+        <th class="td-r">Est. Manual / Cursaron Q10</th>
       </tr></thead>
       <tbody>
         ${filasCmp||'<tr><td colspan="5" style="color:var(--muted)">Sin datos de hoja manual</td></tr>'}
@@ -619,45 +747,10 @@ function renderT3(d, a){
       </tbody>
     </table>
     <p class="chart-note">
-      <strong>Δ Dif.</strong> = Manual − Q10 &nbsp;·&nbsp;
-      Cursos en gris solo tienen datos en Q10 (no en hoja manual)
+      <strong>Δ Dif.</strong> = % aprobación Manual − % aprobación Q10 (cohorte completa) &nbsp;·&nbsp;
+      El % Q10 incluye a los retirados como no aprobados; el Manual solo registra activos —
+      una Δ positiva es esperable. Cursos en gris solo tienen datos en Q10.
     </p>
-  </div>`;
-
-  const anoms    = (d?.anomalias||[]);
-  const sinMatch = anoms.find(x=>x.categoria==='SIN MATCH');
-  const av0      = anoms.find(x=>x.categoria==='AVANCE 0%');
-  const irr      = anoms.find(x=>x.categoria==='AVANCE IRREGULAR');
-  const totalEst = d?.totales?.total_estudiantes_unicos||1;
-
-  const anomCtx = `
-  <div class="card gap">
-    <div class="card-title" style="color:var(--red)">Anomalías Q10</div>
-    <div class="metrics-grid">
-      <div class="metric-card">
-        <div class="metric-val sem-red">${fmt(sinMatch?.cantidad)}</div>
-        <div class="metric-lbl">Sin Match</div>
-        <div style="font-size:.75rem;color:var(--muted);margin-top:4px">
-          ${sinMatch&&totalEst?((sinMatch.cantidad/totalEst)*100).toFixed(1)+'% del total':'—'}<br>
-          Sin curso asignado en plataforma
-        </div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-val sem-red">${fmt(av0?.cantidad)}</div>
-        <div class="metric-lbl">Avance 0%</div>
-        <div style="font-size:.75rem;color:var(--muted);margin-top:4px">
-          ${av0&&totalEst?((av0.cantidad/totalEst)*100).toFixed(1)+'% del total':'—'}<br>
-          Matriculados sin actividad
-        </div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-val sem-yellow">${fmt(irr?.cantidad)}</div>
-        <div class="metric-lbl">Avance Irregular</div>
-        <div style="font-size:.75rem;color:var(--muted);margin-top:4px">
-          Avance &gt;100% en Q10
-        </div>
-      </div>
-    </div>
   </div>`;
 
   const info = `
@@ -667,7 +760,7 @@ function renderT3(d, a){
     y Q10, usar <code>tools/panel_riesgo.py</code> — los datos personales nunca se publican aquí.
   </div>`;
 
-  return resumen + tabla + anomCtx + info;
+  return resumen + tabla + info;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -808,7 +901,7 @@ function renderT5(hist) {
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;border-top:3px solid var(--muted)">
         <div style="font-size:1.6rem;font-weight:700;color:var(--text)">${hist.length}</div>
         <div style="font-size:.78rem;color:var(--muted);margin-top:4px;font-weight:600">Snapshots registrados</div>
-        <div style="font-size:.72rem;color:var(--muted)">Cada ~4 días</div>
+        <div style="font-size:.72rem;color:var(--muted)">Uno por día con datos en Q10</div>
       </div>
     </div>
     <div style="position:relative;height:300px"><canvas id="chart-jc"></canvas></div>
@@ -894,35 +987,43 @@ Promise.allSettled([
   fetch('./data.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }),
   fetch('../avance/data.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }),
   fetch('./history.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }),
-]).then(([r1,r2,r3])=>{
+  fetch('../aprobacion/data.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }),
+]).then(([r1,r2,r3,r4])=>{
   const dash  = r1.status==='fulfilled' ? r1.value : null;
   const asist = r2.status==='fulfilled' ? r2.value : null;
   const hist  = r3.status==='fulfilled' ? r3.value : null;
+  const aprob = r4.status==='fulfilled' ? r4.value : null;
   window._histJC = hist;
 
   document.getElementById('loading').style.display = 'none';
 
-  if(!dash && !asist){
+  if(!dash && !asist && !aprob){
     document.getElementById('t1').classList.add('active');
-    document.getElementById('t1').innerHTML = `<div class="error-box"><strong>No se pudieron cargar los datos</strong>Verifica que data.json y ../avance/data.json existen.</div>`;
+    document.getElementById('t1').innerHTML = `<div class="error-box"><strong>No se pudieron cargar los datos</strong>Verifica que ../aprobacion/data.json, data.json y ../avance/data.json existen.</div>`;
     return;
   }
 
-  renderHeader(dash?.ultima_actualizacion, asist?.ultima_actualizacion, asist?.segmento);
+  renderHeader(maxTs(dash?.ultima_actualizacion, aprob?.ultima_actualizacion),
+               asist?.ultima_actualizacion, asist?.segmento);
 
-  const warns = [];
-  if(!dash)  warns.push('<div class="error-box" style="margin-bottom:14px"><strong>No se cargó dashboard/data.json</strong>Corre export_stats.py primero.</div>');
-  if(!asist) warns.push('<div class="error-box" style="margin-bottom:14px"><strong>No se cargó avance/data.json</strong>Corre export_avance.py primero.</div>');
-  const wHtml = warns.join('');
+  const wAprob = aprob ? '' : '<div class="error-box" style="margin-bottom:14px"><strong>No se cargó ../aprobacion/data.json</strong>Corre export_aprobacion.py primero.</div>';
+  const wAsist = asist ? '' : '<div class="error-box" style="margin-bottom:14px"><strong>No se cargó avance/data.json</strong>Corre export_avance.py primero.</div>';
+  const wDash  = dash  ? '' : '<div class="error-box" style="margin-bottom:14px"><strong>No se cargó dashboard/data.json</strong>Corre export_stats.py primero.</div>';
 
-  document.getElementById('t1').innerHTML = wHtml + (dash  ? renderT1(dash)  : '<p style="color:var(--muted);padding:24px">Sin datos Q10.</p>');
-  document.getElementById('t2').innerHTML = wHtml + (asist ? renderT2(asist) : '<p style="color:var(--muted);padding:24px">Sin datos de avance.</p>');
-  document.getElementById('t3').innerHTML = wHtml + renderT3(dash, asist);
-  document.getElementById('t4').innerHTML = wHtml + (dash  ? renderAdmin(dash) : '<p style="color:var(--muted);padding:24px">Sin datos Q10.</p>');
+  document.getElementById('t1').innerHTML = wAprob + (aprob ? renderT1(aprob) : '<p style="color:var(--muted);padding:24px">Sin datos de aprobación Q10.</p>');
+  document.getElementById('t2').innerHTML = wAsist + (asist ? renderT2(asist) : '<p style="color:var(--muted);padding:24px">Sin datos de avance.</p>');
+  document.getElementById('t3').innerHTML = wAprob + wAsist + renderT3(aprob, asist);
+  document.getElementById('t4').innerHTML = wDash + (dash ? renderAdmin(dash) : '<p style="color:var(--muted);padding:24px">Sin datos Q10.</p>');
   document.getElementById('t5').innerHTML = renderT5(hist);
 
-  document.getElementById('t1').classList.add('active');
+  // Deep-link por hash: /dashboard/#t3 abre directamente esa pestaña
+  const tabInicial = ['t1','t2','t3','t4','t5'].includes(location.hash.slice(1))
+    ? location.hash.slice(1) : 't1';
+  const btnInicial = document.querySelector(`.tab-btn[onclick*="'${tabInicial}'"]`);
+  if(btnInicial) switchTab(tabInicial, btnInicial);
+  else document.getElementById('t1').classList.add('active');
   animateBars();
+  animateSegs();
 
   document.getElementById('footer-root').innerHTML = `
   <footer>

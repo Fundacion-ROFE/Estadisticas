@@ -164,14 +164,19 @@ def procesar_avance(all_values: list) -> tuple:
                     avance_irr += 1
 
         n = len(avances)
+        # Aprobado = avance >= 100 (misma regla que export_aprobacion.py; hay casos de 101)
+        aprobados = sum(1 for av in avances if av >= 100.0)
         por_curso.append({
-            "nombre":      g["nombre"],
-            "estudiantes": n,
-            "promedio":    round(sum(avances) / n, 2) if n else 0.0,
-            "min":         round(min(avances), 2) if avances else 0.0,
-            "max":         round(max(avances), 2) if avances else 0.0,
+            "nombre":         g["nombre"],
+            "estudiantes":    n,
+            "aprobados":      aprobados,
+            "pct_aprobados":  round(100 * aprobados / n, 1) if n else 0.0,
+            "promedio":       round(sum(avances) / n, 2) if n else 0.0,
+            "min":            round(min(avances), 2) if avances else 0.0,
+            "max":            round(max(avances), 2) if avances else 0.0,
         })
-        log(f"    {g['nombre']}: {n} estudiantes, promedio {por_curso[-1]['promedio']}%")
+        log(f"    {g['nombre']}: {n} estudiantes, promedio {por_curso[-1]['promedio']}%, "
+            f"aprobados {aprobados} ({por_curso[-1]['pct_aprobados']}%)")
 
     total_registros = sum(c["estudiantes"] for c in por_curso)
     promedio_general = (
@@ -184,6 +189,7 @@ def procesar_avance(all_values: list) -> tuple:
         "total_registros":        total_registros,
         "estudiantes_unicos_id":  len(ids_unicos),
         "promedio_general":       promedio_general,
+        "total_aprobados":        sum(c["aprobados"] for c in por_curso),
     }
 
     anomalias = [
@@ -237,6 +243,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Exporta Avance manual a data.json")
     parser.add_argument("--segmento", default="Logica-Nivel 2-2026",
                         help="Nombre del segmento")
+    parser.add_argument("--sin-push", action="store_true",
+                        help="Genera el JSON sin git commit/push (pruebas)")
     args = parser.parse_args()
 
     try:
@@ -251,9 +259,12 @@ def main() -> None:
         datos = generar_json(por_curso, totales, anomalias, args.segmento)
         guardar_json(datos)
 
-        timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M")
-        log("Ejecutando git commit y push...")
-        git_commit_y_push(timestamp)
+        if args.sin_push:
+            log("Modo --sin-push: no se toca git.")
+        else:
+            timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M")
+            log("Ejecutando git commit y push...")
+            git_commit_y_push(timestamp)
 
         log("=" * 60)
         log(f"  Segmento            : {args.segmento}")

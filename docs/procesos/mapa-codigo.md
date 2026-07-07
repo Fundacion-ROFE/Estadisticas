@@ -110,12 +110,23 @@ python export_stats.py
 | `_procesar_grupos(filas, grupos)` | `(por_curso, emails, habilitados, av0, avirr)` | Agrega estadísticas para un subconjunto de grupos |
 | `procesar_h2test(all_values)` | `(pc_jc, pc_mr, pc_stand, anom_jc, anom_mr, n_jc, hab_jc, n_mr, hab_mr, n_stand, hab_stand, total_db)` | Separa y procesa los tres programas |
 | `generar_json(...)` | `dict` | Construye JSON con secciones JC (top-level) + `mr` + `stand` |
+| `enriquecer_con_maximos(*listas)` | `dict` | Marca de agua: añade `inscritos`/`finalizados`/`promedio_pico`/`finalizado` a cada curso in-place; retorna dict de máximos |
+| `_enriquecer_curso(c, maximos, hoy)` | — | Actualiza el pico del curso y calcula el flag `finalizado` |
+| `_seed_maximos_desde_history()` | `dict` | Siembra máximos iniciales desde `history.json` (pico de matrícula) |
+| `guardar_maximos(maximos)` | — | Escribe `docs/dashboard/maximos_cursos.json` |
 | `guardar_json(datos)` | — | Escribe `docs/dashboard/data.json` |
-| `git_commit_y_push(timestamp)` | — | `git add` + `commit` + `push origin main` |
+| `git_commit_y_push(timestamp)` | — | `git add` (data.json + maximos_cursos.json) + `commit` + `push origin main` |
 
-**Output JSON:** `docs/dashboard/data.json` — estructura `{por_curso[] (JC), anomalias[], totales{}, mr:{...}, stand:{...}}`
+**Output JSON:** `docs/dashboard/data.json` — cada curso lleva ahora `estudiantes` (activos hoy),
+`inscritos`/`finalizados`/`promedio_pico`/`finalizado` (marca de agua congelada). Estructura general:
+`{por_curso[] (JC), anomalias[], totales{}, mr:{...}, stand:{...}}`. Estado persistente en
+`docs/dashboard/maximos_cursos.json`.
 
 **Gotcha:** `total_estudiantes_unicos` en la sección `mr` es el count de emails únicos (dedup entre ambos cursos MR), no la suma de inscritas. El contador de anomalías "AVANCE 0%" es por matrícula, no por estudiante única.
+
+**Gotcha (marca de agua):** `finalizados` en vivo también encoge si un estudiante al 100% se archiva;
+por eso se congela el máximo. `inscritos` de cursos con pico **anterior** al 26-jun (inicio de
+history.json) puede quedar subestimado — no hay forma de recuperarlo desde Q10. Ver [[dashboard-web#Cursos finalizados — marca de agua (inscritos → finalizados)]].
 
 ---
 
@@ -131,6 +142,7 @@ python export_stats.py
 ```bash
 python export_avance.py
 python export_avance.py --segmento "Logica-Nivel 2-2026"
+python export_avance.py --sin-push     # pruebas (no toca git)
 ```
 
 **Funciones principales:** (mismo patrón que `export_stats.py`)
@@ -142,9 +154,56 @@ python export_avance.py --segmento "Logica-Nivel 2-2026"
 | `generar_json(...)` | `dict` | Incluye campo `segmento` y `anomalias[]` |
 | `git_commit_y_push(timestamp)` | — | Push a `docs/avance/data.json` |
 
-**Output JSON:** `docs/avance/data.json` — estructura `{segmento, por_curso[], totales{}, anomalias[]}`
+**Output JSON:** `docs/avance/data.json` — estructura `{segmento, por_curso[], totales{}, anomalias[]}`.
+Desde 2026-07-07 cada curso lleva además `aprobados` (avance ≥ 100) y `pct_aprobados`, y `totales.total_aprobados` — los consume el Tab 2 del dashboard (formato barras apiladas de aprobación).
 
 **Gotcha:** Los primeros 3 grupos de columnas en la hoja Avance no tienen nombre de curso en fila 1 → se cuentan como SIN ETIQUETA. Los 6 cursos nombrados empiezan en col 15.
+
+---
+
+## `export_aprobacion.py`
+
+**Propósito:** Aprobación por curso con la **cohorte 2026 completa** (habilitados + inhabilitados). Loguea directo en Q10 (no pasa por Sheets), cruza 3 reportes por cédula y genera `docs/aprobacion/data.json` (solo agregados) → git commit + push.
+
+**Servicios:** Q10 (`site6.q10.com` — 3 reportes Excel internos) · git
+
+**Fuentes cruzadas (por cédula normalizada — solo dígitos):**
+
+| Reporte Q10 | Qué aporta |
+|---|---|
+| Consolidado Educación Virtual (por periodo) | Activos con avance por asignatura |
+| Consolidado Estudiantes Matriculados — modo **Detallado** (por periodo) | Cohorte completa del periodo, **incluye inhabilitados** (Programa, Jornada, Nivel, Estudiante, Identificación) |
+| Estudiantes cancelados (histórico) | Confirma que inhabilitado = retirado |
+
+**Lógica:** `inhabilitados = cohorte_matriculados − activos_virtual`. Verificado 2026-07-07: en periodo 22 los 80 inhabilitados aparecen **todos** en el reporte de retirados → cuentan como *no aprobados*. Aprobado = avance ≥ 100 (hay 101). Los retirados del periodo se atribuyen a cada asignatura del periodo. Asignaturas con el mismo nombre en varios periodos se fusionan (Desarrollo Web: periodos 20+24). Marca de agua en `docs/aprobacion/maximos.json` (`aprobados` y `cursaron` nunca decaen — cubre el caso de Q10 archivando estudiantes al 100% al cerrar cohorte).
+
+**Comando:**
+```bash
+python export_aprobacion.py              # año en curso, commit + push
+python export_aprobacion.py --sin-push   # pruebas (no toca git)
+python export_aprobacion.py --anio 2026
+```
+
+**Funciones principales:**
+
+| Función | Retorna | Descripción |
+|---|---|---|
+| `descargar_matriculados_periodo(session, pid)` | `pd.DataFrame` | Reporte matriculados Detallado; el POST replica los hidden `Filtros[i].Name/PartialName` del form (sin ellos → HTTP 400) |
+| `descargar_fuentes(session, anio)` | `(virtual, cohortes, retirados)` | Autodescubre periodos del año (mismo patrón que `q10_to_sheets`) y baja las 3 fuentes |
+| `agregar_por_curso(...)` | `(lista, anomalias)` | Agrega por asignatura normalizada; fusiona periodos homónimos |
+| `aplicar_maximos(lista)` | — | Marca de agua sobre `aprobados`/`cursaron` |
+| `generar_json(...)` | `dict` | `{por_curso[], por_programa[], totales{}, anomalias{}, periodos[]}` |
+
+**Output JSON:** `docs/aprobacion/data.json` — por curso: `cursaron`, `activos`, `aprobados`, `no_aprobados`, `sin_finalizar`, `retirados`, `pct_aprobados`, `promedio`, `finalizado` (promedio ≥ 90).
+
+**Consumidor:** `docs/aprobacion/index.html` (panel público, botón "Aprobación ↗" en el dashboard).
+
+**Gotchas (hallazgos de la exploración 2026-07-07):**
+- El switch **"¿Incluir archivados?"** (`archivado=true`) del Consolidado de Educación Virtual **NO devuelve a los inhabilitados** — retorna exactamente los mismos activos. Los inhabilitados solo salen por el reporte de Matriculados.
+- El reporte **ConsolidadoNotasCuantitativo** es por logro/actividad (~16k filas para Bienvenida) y Q10 corta en **5.000 registros** → inviable como fuente.
+- El Excel de matriculados trae título/filtros arriba: los headers reales están en la fila que contiene `Identificación`; la identificación viene con prefijo de tipo de documento (`C.C. 123...`) → normalizar a solo dígitos para cruzar.
+- La cohorte de matriculados puede ser menor que el pico histórico de h2test (860 vs 863 en Bienvenida): Q10 elimina del reporte a algunas matrículas anuladas del todo. Diferencia ≤ 3 estudiantes, asumida.
+- `anomalias.inhabilitados_sin_retiro` (5 casos al 2026-07-07): inhabilitados que no están en el reporte de cancelados — posibles archivados al cerrar curso; vigilar si crece.
 
 ---
 
@@ -406,6 +465,46 @@ python tools/panel_riesgo.py --umbral 50        # umbral de atención (default 6
 | `exportar_csv(casos, segmento, umbral)` | — | Escribe 3 CSVs en `tools/reportes/` |
 
 **Nota:** `leer_avance()` lee la pestaña `Avance` del Sheet manual (no la pestaña `asistencias`).
+
+---
+
+## `scripts/mr-actualizacion-datos/actualizar_bd_mr.py`
+
+**Propósito:** Sincroniza la pestaña `General` de **BD-Mujeres ROFÉ 2026** con las respuestas del
+Google Form "Actualización de datos MR2024". Cruce por cédula; actualiza solo celdas que cambian;
+sin match → fila nueva al final con fondo naranja; fila tocada → `Fecha Actualización` (col AL) con
+la fecha de la corrida. Ver [[mr-actualizacion-datos]].
+
+**Servicios:** Google Sheets API (read fuente + write destino)
+
+**Sheets:**
+- Fuente: `Actualización de datos MR2024 (respuestas)` — ID `13a32oExVw64Scpo2YgnMjytXsIIMVNi07NvYoD8QYH0`, pestaña `Respuestas de formulario 1`
+- Destino: `BD-Mujeres ROFÉ 2026` — ID `1ZsC4WyY26aOCEMrnZ_l8Tn-l69DB_0ADs5lnecaoEP8`, pestaña `General`
+
+**Comando:**
+```bash
+python actualizar_bd_mr.py            # escribe
+python actualizar_bd_mr.py --dry-run  # solo reporta
+```
+
+**Funciones principales:**
+
+| Función | Retorna | Descripción |
+|---|---|---|
+| `leer_fuente(gc)` | `(total, {cedula: (ts, fila)}, omitidas)` | Deduplica por cédula — gana la marca temporal más reciente |
+| `construir_valores(fila_form)` | `dict[col→valor]` | Normaliza nombre (title case), correo (lower), celular (10 dígitos), tipo doc (`cc`/`ce`/`ppt`), emprendimiento (`No`→`N/A`) |
+| `difiere(actual, nuevo, col)` | `bool` | Diff **insensible a tildes**; vacío nunca sobreescribe |
+| `sin_tildes(v)` | `str` | Unaccent NFD para comparación |
+
+**Output parseable para n8n:**
+```
+RESUMEN: respuestas=N unicas=M filas_actualizadas=X sin_cambios=Y nuevas=Z omitidas=W estado=exito
+```
+
+**Gotcha:** la columna `Fecha Actualización` se localiza por header (no índice fijo) porque la fila 1
+de General tiene una celda basura en AK. El form llega sin tildes → sin comparación unaccent el diff
+"actualiza" nombres correctos degradándolos. Workflow n8n: `mr-actualizacion-datos`
+(ID `LgkDbNPERYgKMrYj`, diario 7:30).
 
 ---
 

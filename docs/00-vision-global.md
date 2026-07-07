@@ -78,7 +78,7 @@ Pestaña Retirados       ──┘     5 tabs interactivos (PII):
 |---|---|
 | Orquestador | n8n 2.8.4 self-hosted, local en PC Samuel (EstudiantesJC) |
 | Arranque | Task Scheduler → `iniciar_n8n.bat` al iniciar sesión (automático) |
-| Tunnel | Cloudflare Tunnel (`cloudflared`) — expone n8n al webhook de Telegram |
+| Tunnel | **ngrok — dominio estático fijo** `ergonomic-absinthe-refract.ngrok-free.dev` (2026-07-06, reemplaza el `cloudflared` efímero que rotaba). Ver memoria ngrok. Expone n8n a los webhooks de Telegram y Zoom |
 | Identidad | Google Workspace — Service Account por proceso |
 | Dashboard | GitHub Pages → `fundacion-rofe.github.io/Estadisticas/dashboard/` |
 | Red | Proxy corporativo con SSL MITM — ver [[convenciones#SSL corporativo]] |
@@ -90,10 +90,11 @@ Pestaña Retirados       ──┘     5 tabs interactivos (PII):
 | Proceso | Nota | Completado | Estado |
 |---|---|---|---|
 | Consolidación Q10 | [[q10-consolidacion]] | 2026-06-25 | Schedule 4h + Telegram activos · 1,145 estudiantes 2026 · 4,553 total DB |
-| Dashboard web | [[dashboard-web]] | 2026-06-26 | GitHub Pages live · 4 tabs (JC/Avance/Comp/Admin) · panel MR · separación JC/MR en Python |
+| Dashboard web | [[dashboard-web]] | 2026-06-26 | GitHub Pages live · panel MR · separación JC/MR en Python · **panel Aprobación por curso** (cohorte completa habilitados + inhabilitados, aprobado = avance ≥ 100, 2026-07-07) · **tabs 1–3 rediseñados sobre la cohorte de aprobación** + tendencia con snapshots diarios (2026-07-07, pedido del supervisor) · marca de agua cursos finalizados en export_stats (2026-07-06, hoy solo alimenta Admin) |
 | Panel de riesgo GUI | [[dashboard-web]] | 2026-06-26 | 5 tabs interactivos · KPIs clickeables · vistas dinámicas JC y MR · Tab Admin con course_config.json · Tab Retirados |
 | Retirados Q10 | [[q10-consolidacion]] | 2026-07-02 | Fase 4 del pipeline · reporte Estudiantes cancelados → Retirados/Retirados-complete → panel público · 353 retirados (318 cancelados) |
 | Pseudonimizador | [[pseudonimizador]] | 2026-06-30 | GitHub Pages live · 3 tabs · Web Worker para 22 MB / 44 pestañas · Pendiente demo con equipo |
+| Actualización BD MR | [[mr-actualizacion-datos]] | 2026-07-07 | Form MR2024 → pestaña General de BD-Mujeres ROFÉ · cruce por cédula · col `Fecha Actualización` · n8n diario 7:30 (`LgkDbNPERYgKMrYj`) · backfill: 286 filas actualizadas + 24 nuevas (naranja, revisar) |
 
 ---
 
@@ -101,7 +102,7 @@ Pestaña Retirados       ──┘     5 tabs interactivos (PII):
 
 | Proceso | Nota | Bloqueado por |
 |---|---|---|
-| Asistencia Zoom | [[zoom-asistencia]] | **Funcional** — escribe en pestaña `ZOOM-ASISTANCE` con colores <70%, pestañas `CUPOS` (inscritos por clase, desde BD Monitorias) y `ZOOM-STATS` (stats por sesión/semana, "X de Y") (2026-07-02). Pendiente: llenar `Alias Zoom` en CUPOS, filtro de reuniones no-clase, casos límite y Sheet de producción |
+| Asistencia Zoom | [[zoom-asistencia]] | **Funcional (cuenta comunicaciones)** — escribe en pestaña `ZOOM-ASISTANCE` con colores <70%, pestañas `CUPOS` y `ZOOM-STATS` (2026-07-02). **Trigger dual (2026-07-04):** rama `meeting.started` → snapshot al minuto 10 en `ASISTENCIA-10MIN`. **Prueba real 2026-07-06:** la rama corre completa (evento + scope granular `dashboard:read:list_meeting_participants:admin` OK), pero `Participantes en Vivo` da 400 → **BLOQUEO: falta habilitar la Dashboard API por soporte de Zoom** (Business ✓ y Panel web ✓, es flag de servidor). **HALLAZGO: hay 2 cuentas Zoom** (comunicaciones/us06web + soporte/us02web); el app+webhook viven solo en comunicaciones → **las clases de soporte NO se capturan** (verificado en las 38 ejecuciones). Pendiente: ticket Dashboard API, cobertura cuenta soporte (2º app + workflow multi-cuenta), túnel permanente, filtro reuniones no-clase, Sheet de producción |
 
 ---
 
@@ -110,6 +111,7 @@ Pestaña Retirados       ──┘     5 tabs interactivos (PII):
 | Proceso | Por qué importa |
 |---|---|
 | Creación reuniones Meet | 2 asistentes lo hacen manualmente hoy |
+| Grabaciones Zoom → YouTube | [[zoom-youtube]] — subida manual hoy; documentado y viable, reusa la app Zoom S2S de [[zoom-asistencia]] (2026-07-03) |
 
 ---
 
@@ -140,6 +142,7 @@ Pestaña Retirados       ──┘     5 tabs interactivos (PII):
 - **Trigger dual (Telegram + Schedule):** patrón establecido en Q10 — Schedule para actualizaciones automáticas silenciosas, Telegram para forzar actualización on-demand. Reutilizable en otros procesos.
 - **Arranque automático vía Task Scheduler:** tarea "Iniciar n8n ROFE" registrada en Windows — corre `iniciar_n8n.bat` al iniciar sesión de EstudiantesJC. No requiere intervención manual.
 - **JSON sin PII:** toda salida pública es JSON agregado. Datos individuales solo en `tools/`.
+- **Marca de agua (high-water mark):** cuando una fuente solo trae registros "activos" (Q10 archiva a los retirados), rastrear el máximo histórico por entidad en un JSON de estado monótono para no perder cifras de cohortes ya terminadas. Ver [[dashboard-web#Cursos finalizados — marca de agua (inscritos → finalizados)]].
 
 ---
 
