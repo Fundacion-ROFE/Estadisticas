@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-06T19:02:38.257092-05:00",
+  "ultima_actualizacion": "2026-07-06T20:21:53.273423-05:00",
   "segmento": "Logica-Nivel 2-2026",
   "por_curso": [
     {
@@ -50,13 +50,27 @@
       "promedio": 54.63,
       "min": 0.0,
       "max": 100.0
+    },
+    {
+      "nombre": "HTML",
+      "estudiantes": 777,
+      "promedio": 55.68,
+      "min": 0.0,
+      "max": 100.0
+    },
+    {
+      "nombre": "HTML",
+      "estudiantes": 777,
+      "promedio": 55.26,
+      "min": 0.0,
+      "max": 100.0
     }
   ],
   "totales": {
-    "total_cursos": 7,
-    "total_registros": 5764,
+    "total_cursos": 9,
+    "total_registros": 7318,
     "estudiantes_unicos_id": 863,
-    "promedio_general": 90.78
+    "promedio_general": 83.28
   },
   "anomalias": [
     {
@@ -65,7 +79,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 245
+      "cantidad": 529
     },
     {
       "categoria": "AVANCE IRREGULAR",
