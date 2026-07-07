@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-07T11:55:36.319298-05:00",
+  "ultima_actualizacion": "2026-07-07T17:05:26.676235-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -15,8 +15,8 @@
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
       "estudiantes": 777,
-      "finalizados": 262,
-      "promedio": 56.89,
+      "finalizados": 266,
+      "promedio": 57.91,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 777,
@@ -37,8 +37,8 @@
     {
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
       "estudiantes": 777,
-      "finalizados": 718,
-      "promedio": 96.83,
+      "finalizados": 719,
+      "promedio": 96.9,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 806,
@@ -86,7 +86,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 162
+      "cantidad": 157
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -104,8 +104,8 @@
       {
         "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
         "estudiantes": 136,
-        "finalizados": 20,
-        "promedio": 29.52,
+        "finalizados": 24,
+        "promedio": 30.61,
         "min": 0.0,
         "max": 100.0,
         "inscritos": 136,
