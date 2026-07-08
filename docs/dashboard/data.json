@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-08T08:50:30.653751-05:00",
+  "ultima_actualizacion": "2026-07-08T15:25:30.912669-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -15,8 +15,8 @@
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
       "estudiantes": 777,
-      "finalizados": 289,
-      "promedio": 59.77,
+      "finalizados": 302,
+      "promedio": 61.79,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 777,
@@ -37,7 +37,7 @@
     {
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
       "estudiantes": 777,
-      "finalizados": 721,
+      "finalizados": 722,
       "promedio": 96.93,
       "min": 0.0,
       "max": 100.0,
@@ -86,7 +86,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 145
+      "cantidad": 137
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -104,8 +104,8 @@
       {
         "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
         "estudiantes": 136,
-        "finalizados": 24,
-        "promedio": 32.21,
+        "finalizados": 29,
+        "promedio": 33.83,
         "min": 0.0,
         "max": 100.0,
         "inscritos": 136,
@@ -116,7 +116,7 @@
         "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
         "estudiantes": 244,
         "finalizados": 71,
-        "promedio": 31.09,
+        "promedio": 31.6,
         "min": 0.0,
         "max": 100.0,
         "inscritos": 244,
@@ -127,7 +127,7 @@
     "anomalias": [
       {
         "categoria": "AVANCE 0%",
-        "cantidad": 201
+        "cantidad": 199
       },
       {
         "categoria": "AVANCE IRREGULAR",
