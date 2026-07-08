@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-08T17:08:04.571803-05:00",
+  "ultima_actualizacion": "2026-07-08T17:20:09.038532-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -16,7 +16,7 @@
       "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
       "estudiantes": 777,
       "finalizados": 309,
-      "promedio": 62.69,
+      "promedio": 62.85,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 777,
@@ -86,7 +86,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 133
+      "cantidad": 132
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -100,24 +100,6 @@
     "total_db": 1063
   },
   "mr": {
-    "por_curso": [],
-    "anomalias": [
-      {
-        "categoria": "AVANCE 0%",
-        "cantidad": 0
-      },
-      {
-        "categoria": "AVANCE IRREGULAR",
-        "cantidad": 0
-      }
-    ],
-    "totales": {
-      "total_cursos": 0,
-      "total_estudiantes_unicos": 0,
-      "total_habilitados": 0
-    }
-  },
-  "stand": {
     "por_curso": [
       {
         "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
@@ -142,10 +124,28 @@
         "finalizado": false
       }
     ],
+    "anomalias": [
+      {
+        "categoria": "AVANCE 0%",
+        "cantidad": 198
+      },
+      {
+        "categoria": "AVANCE IRREGULAR",
+        "cantidad": 0
+      }
+    ],
     "totales": {
       "total_cursos": 2,
       "total_estudiantes_unicos": 283,
       "total_habilitados": 283
+    }
+  },
+  "stand": {
+    "por_curso": [],
+    "totales": {
+      "total_cursos": 0,
+      "total_estudiantes_unicos": 0,
+      "total_habilitados": 0
     }
   }
 }
