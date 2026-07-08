@@ -23,6 +23,7 @@
       --amber:      #B8860B;   /* "sin completar" — validado 3:1 sobre blanco */
       --amber-bg:   rgba(184,134,11,0.12);
       --green-dark: #4E7A36;
+      --blue-ret:   #3A6FB8;   /* aprobó y se retiró — azul marca con croma validado */
 
       /* UI */
       --bg:         #FFFFFF;
@@ -157,6 +158,7 @@
     }
     .seg { height: 100%; min-width: 0; width: 0; position: relative; cursor: default; }
     .seg-aprobado { background: var(--green); border-radius: 4px 0 0 4px; }
+    .seg-aprobret { background: var(--blue-ret); }
     .seg-sinfin   { background: var(--amber); }
     .seg-retirado { background: var(--red); border-radius: 0 4px 4px 0; }
     .seg:hover { filter: brightness(1.12); }
@@ -411,13 +413,14 @@ document.addEventListener('mousemove', e=>{
 // Fuente: ../aprobacion/data.json (export_aprobacion.py)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/* Barra apilada 100% de un curso: aprobados | sin completar | retirados */
+/* Barra apilada 100% de un curso: aprobados | aprobó y se retiró | sin completar | retirados */
 function stackRow(c){
   const total = c.cursaron || 1;
   const segs = [
-    { k:'aprobado', n:c.aprobados,     lbl:'Aprobaron (avance ≥ 100)' },
-    { k:'sinfin',   n:c.sin_finalizar, lbl: c.finalizado ? 'No completaron el curso' : 'Aún cursando (avance < 100)' },
-    { k:'retirado', n:c.retirados,     lbl:'Se retiraron / inhabilitados' },
+    { k:'aprobado', n:c.aprobados,               lbl:'Aprobaron y siguen activos (avance ≥ 100)' },
+    { k:'aprobret', n:c.aprobados_retirados ?? 0, lbl:'Aprobaron y luego se retiraron' },
+    { k:'sinfin',   n:c.sin_finalizar,           lbl: c.finalizado ? 'No completaron el curso' : 'Aún cursando (avance < 100)' },
+    { k:'retirado', n:c.retirados,               lbl:'Se retiraron sin aprobar' },
   ].filter(s=>s.n>0);
 
   const html = segs.map(s=>{
@@ -445,8 +448,9 @@ function stackRow(c){
 const LEGEND_APROB = `
   <div class="legend">
     <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>Aprobaron (≥ 100)</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--blue-ret)"></span>Aprobaron y se retiraron</span>
     <span class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span>Sin completar</span>
-    <span class="legend-item"><span class="legend-dot" style="background:var(--red)"></span>Retirados</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--red)"></span>Retirados sin aprobar</span>
   </div>`;
 
 function renderT1(ap){
@@ -469,7 +473,8 @@ function renderT1(ap){
     <div class="kpi-card" style="border-top-color:var(--green)">
       <div class="kpi-val ${sg?sg.cls:''}">${pctGlobal!=null?pctGlobal.toFixed(1)+'%':'—'}</div>
       <div class="kpi-lbl">Aprobación global</div>
-      <div class="kpi-sub">${fmt(t.total_aprobados)} matrículas con avance ≥ 100</div>
+      <div class="kpi-sub">${fmt(t.total_aprobados)} matrículas con avance ≥ 100${
+        t.total_aprobados_retirados ? ` (incluye ${fmt(t.total_aprobados_retirados)} de retirados)` : ''}</div>
     </div>
     <div class="kpi-card" style="border-top-color:var(--red)">
       <div class="kpi-val sem-red">${fmt(t.total_retirados_2026)}</div>
@@ -504,7 +509,8 @@ function renderT1(ap){
     <tr>
       <td>${esc(c.curso)}</td>
       <td class="td-r">${fmt(c.cursaron)}</td>
-      <td class="td-r" style="color:var(--green-dark);font-weight:700">${fmt(c.aprobados)}</td>
+      <td class="td-r" style="color:var(--green-dark);font-weight:700">${fmt(c.aprobados_total ?? c.aprobados)}</td>
+      <td class="td-r" style="color:var(--blue-ret);font-weight:700">${fmt(c.aprobados_retirados ?? 0)}</td>
       <td class="td-r">${fmt(c.sin_finalizar)}</td>
       <td class="td-r" style="color:var(--red)">${fmt(c.retirados)}</td>
       <td class="td-r" style="color:var(--green-dark);font-weight:700">${c.pct_aprobados}%</td>
@@ -516,11 +522,12 @@ function renderT1(ap){
     <div class="card-title">Detalle por curso — cohorte ${esc(ap.anio)}</div>
     <table class="dt">
       <thead><tr>
-        <th>Curso</th><th class="td-r">Cursaron</th><th class="td-r">Aprobaron</th>
-        <th class="td-r">Sin completar</th><th class="td-r">Retirados</th>
+        <th>Curso</th><th class="td-r">Cursaron</th><th class="td-r">Aprobaron (total)</th>
+        <th class="td-r">· de ellos, retirados</th>
+        <th class="td-r">Sin completar</th><th class="td-r">Retirados sin aprobar</th>
         <th class="td-r">% Aprobó</th><th>Estado</th>
       </tr></thead>
-      <tbody>${filas||'<tr><td colspan="7" style="color:var(--muted)">Sin datos</td></tr>'}</tbody>
+      <tbody>${filas||'<tr><td colspan="8" style="color:var(--muted)">Sin datos</td></tr>'}</tbody>
     </table>
     <p class="chart-note">${esc(ap.nota_metodo||'')}</p>
   </div>`;

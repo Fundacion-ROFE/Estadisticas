@@ -18,6 +18,7 @@
       --red:        #C12D4C;
       --red-bg:     rgba(193,45,76,0.10);
       --orange:     #D1793F;
+      --blue-ret:   #3A6FB8;   /* aprobó y se retiró — azul marca con croma validado */
 
       --bg:         #FFFFFF;
       --surface:    #FBF6F2;
@@ -120,6 +121,7 @@
     }
     .seg { height: 100%; min-width: 0; width: 0; position: relative; cursor: default; }
     .seg-aprobado { background: var(--green); border-radius: 4px 0 0 4px; }
+    .seg-aprobret { background: var(--blue-ret); }
     .seg-sinfin   { background: var(--amber); }
     .seg-retirado { background: var(--red); border-radius: 0 4px 4px 0; }
     .seg:hover { filter: brightness(1.12); }
@@ -145,6 +147,7 @@
     tbody tr:hover { background: var(--surface); }
     td { font-variant-numeric: tabular-nums; }
     .num-verde { color: var(--green-dark); font-weight: 700; }
+    .num-azul  { color: var(--blue-ret); font-weight: 700; }
     .num-rojo  { color: var(--red); }
 
     /* ── Info / Error ── */
@@ -223,13 +226,14 @@ function animateSegs(){
   }));
 }
 
-/* Barra apilada 100% de un curso: aprobados | sin completar | retirados */
+/* Barra apilada 100% de un curso: aprobados | aprobó y se retiró | sin completar | retirados */
 function cursoRow(c){
   const total = c.cursaron || 1;
   const segs = [
-    { k:'aprobado', n:c.aprobados,     lbl:'Aprobaron (avance ≥ 100)' },
-    { k:'sinfin',   n:c.sin_finalizar, lbl: c.finalizado ? 'No completaron el curso' : 'Aún cursando (avance < 100)' },
-    { k:'retirado', n:c.retirados,     lbl:'Se retiraron / inhabilitados' },
+    { k:'aprobado', n:c.aprobados,               lbl:'Aprobaron y siguen activos (avance ≥ 100)' },
+    { k:'aprobret', n:c.aprobados_retirados ?? 0, lbl:'Aprobaron y luego se retiraron' },
+    { k:'sinfin',   n:c.sin_finalizar,           lbl: c.finalizado ? 'No completaron el curso' : 'Aún cursando (avance < 100)' },
+    { k:'retirado', n:c.retirados,               lbl:'Se retiraron sin aprobar' },
   ].filter(s=>s.n>0);
 
   const html = segs.map(s=>{
@@ -273,7 +277,8 @@ function render(d){
     <div class="kpi-card">
       <div class="kpi-val">${pctGlobal}%</div>
       <div class="kpi-lbl">Aprobación global</div>
-      <div class="kpi-sub">${fmt(t.total_aprobados)} matrículas con avance ≥ 100</div>
+      <div class="kpi-sub">${fmt(t.total_aprobados)} matrículas con avance ≥ 100${
+        t.total_aprobados_retirados ? ` (incluye ${fmt(t.total_aprobados_retirados)} de retirados)` : ''}</div>
     </div>
     <div class="kpi-card" style="border-top-color:var(--red)">
       <div class="kpi-val" style="color:var(--red)">${fmt(t.total_retirados_2026)}</div>
@@ -285,8 +290,9 @@ function render(d){
   const legend = `
   <div class="legend">
     <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>Aprobaron (≥ 100)</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--blue-ret)"></span>Aprobaron y se retiraron</span>
     <span class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span>Sin completar</span>
-    <span class="legend-item"><span class="legend-dot" style="background:var(--red)"></span>Retirados</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--red)"></span>Retirados sin aprobar</span>
   </div>`;
 
   // agrupar por programa
@@ -309,6 +315,9 @@ function render(d){
       Se aprueba únicamente con avance de 100 o más (hay casos de 101 por actividades extra).
       En cursos <strong>finalizados</strong> el % es definitivo; en cursos <strong>en curso</strong>,
       "sin completar" son estudiantes que aún están avanzando.
+      <strong>Aprobaron y se retiraron</strong>: estudiantes que alcanzaron el 100 en este curso
+      y después fueron inhabilitados (Q10 inhabilita todas las matrículas a la vez) —
+      su logro cuenta en el % de aprobación sin importar cuántas actualizaciones pasen.
     </p>
   </div>`;
 
@@ -317,7 +326,8 @@ function render(d){
       <td>${esc(c.curso)}</td>
       <td>${esc(c.programa)}</td>
       <td>${fmt(c.cursaron)}</td>
-      <td class="num-verde">${fmt(c.aprobados)}</td>
+      <td class="num-verde">${fmt(c.aprobados_total ?? c.aprobados)}</td>
+      <td class="num-azul">${fmt(c.aprobados_retirados ?? 0)}</td>
       <td>${fmt(c.sin_finalizar)}</td>
       <td class="num-rojo">${fmt(c.retirados)}</td>
       <td class="num-verde">${c.pct_aprobados}%</td>
@@ -329,8 +339,9 @@ function render(d){
     <div class="tbl-wrap">
       <table>
         <thead><tr>
-          <th>Curso</th><th>Programa</th><th>Cursaron</th><th>Aprobaron</th>
-          <th>Sin completar</th><th>Retirados</th><th>% Aprobó</th><th>Estado</th>
+          <th>Curso</th><th>Programa</th><th>Cursaron</th><th>Aprobaron (total)</th>
+          <th>· de ellos, retirados</th><th>Sin completar</th><th>Retirados sin aprobar</th>
+          <th>% Aprobó</th><th>Estado</th>
         </tr></thead>
         <tbody>${filas}</tbody>
       </table>
@@ -343,6 +354,7 @@ function render(d){
       <td>${fmt(p.cursos)}</td>
       <td>${fmt(p.cursaron)}</td>
       <td class="num-verde">${fmt(p.aprobados)}</td>
+      <td class="num-azul">${fmt(p.aprobados_retirados ?? 0)}</td>
       <td class="num-rojo">${fmt(p.retirados)}</td>
       <td class="num-verde">${p.pct_aprobados}%</td>
     </tr>`).join('');
@@ -353,7 +365,8 @@ function render(d){
       <table>
         <thead><tr>
           <th>Programa</th><th>Cursos</th><th>Matrículas</th>
-          <th>Aprobaron</th><th>Retirados</th><th>% Aprobó</th>
+          <th>Aprobaron (total)</th><th>· de ellos, retirados</th>
+          <th>Retirados sin aprobar</th><th>% Aprobó</th>
         </tr></thead>
         <tbody>${progFilas}</tbody>
       </table>

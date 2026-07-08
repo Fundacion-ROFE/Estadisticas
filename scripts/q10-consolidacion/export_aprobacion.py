@@ -11,11 +11,20 @@ curso (habilitados + inhabilitados) y calcular % de aprobación real:
 
 Aprobado = avance >= 100 (hay casos de 101). Verificado 2026-07-07: en el periodo 22
 los 80 inhabilitados (860 matriculados - 780 activos) aparecen TODOS en el reporte de
-retirados → inhabilitado = retirado = no aprobó.
+retirados.
+
+Q10 inhabilita TODAS las matrículas del estudiante (no solo la del curso perdido) y el
+Consolidado deja de traer su avance. Para no perder a los que YA habían aprobado un
+curso antes de inhabilitarse, se mantiene un ledger local (tools/aprobacion_ledger.json,
+PII, gitignoreado) con el máximo avance visto por estudiante×curso en cada corrida.
+Con él, cada inhabilitado se clasifica por curso en:
+  - aprobados_retirados: alcanzó avance >= 100 antes de inhabilitarse
+  - retirados:           se retiró sin aprobar el curso
+Sembrar el ledger con la hoja manual: python tools/seed_ledger_avance.py
 
 El JSON público solo lleva agregados (NUNCA PII). Marca de agua en
-docs/aprobacion/maximos.json: `aprobados` nunca decae (si Q10 archiva a un estudiante
-que ya iba en 100%, el conteo vivo bajaría — se congela el máximo).
+docs/aprobacion/maximos.json: `aprobados` (total incl. aprobados_retirados) nunca decae;
+si el conteo vivo baja, el déficit se reclasifica como "aprobó y se retiró".
 
 Fundación ROFÉ | Jóvenes creaTIvos
 
@@ -75,6 +84,7 @@ DIRECTORIO_SCRIPT = os.path.dirname(os.path.abspath(__file__))
 PROYECTO_ROOT     = os.path.abspath(os.path.join(DIRECTORIO_SCRIPT, "..", ".."))
 RUTA_DATA_JSON    = os.path.join(PROYECTO_ROOT, "docs", "aprobacion", "data.json")
 RUTA_MAXIMOS      = os.path.join(PROYECTO_ROOT, "docs", "aprobacion", "maximos.json")
+RUTA_LEDGER       = os.path.join(PROYECTO_ROOT, "tools", "aprobacion_ledger.json")
 
 
 def log(msg: str) -> None:
@@ -96,6 +106,56 @@ def parse_avance(serie: pd.Series) -> pd.Series:
     """'100%' / '85,5%' → float. El Consolidado trae el progreso como texto con %."""
     limpio = serie.astype(str).str.replace("%", "", regex=False).str.replace(",", ".")
     return pd.to_numeric(limpio, errors="coerce")
+
+
+# ── Ledger local de avances (PII — tools/ está gitignoreado) ─────────────────
+def cargar_ledger() -> dict:
+    """{cedula: {curso_norm: max_avance}} — memoria del máximo avance visto por
+    estudiante×curso. Q10 borra el avance al inhabilitar (el Consolidado solo
+    trae activos), así que sin esta memoria no se puede saber si un inhabilitado
+    ya había aprobado. Se siembra desde la hoja manual con
+    tools/seed_ledger_avance.py y se actualiza sola en cada corrida."""
+    if os.path.isfile(RUTA_LEDGER):
+        try:
+            with open(RUTA_LEDGER, encoding="utf-8") as f:
+                ledger = json.load(f).get("estudiantes", {})
+            log(f"Ledger de avances: {len(ledger)} estudiantes")
+            return ledger
+        except (json.JSONDecodeError, OSError) as e:
+            log(f"ADVERTENCIA: ledger ilegible ({e}) — se regenera desde cero")
+    else:
+        log("Ledger de avances: no existe aún — se crea en esta corrida "
+            "(sembrar histórico con tools/seed_ledger_avance.py)")
+    return {}
+
+
+def actualizar_ledger(ledger: dict, virtual: dict) -> None:
+    """Registra el máximo avance de cada activo. keepMax: nunca decae."""
+    nuevos = 0
+    for df in virtual.values():
+        ceds    = df[COL_ID].map(norm_id)
+        cursos  = df[COL_CURSO].map(norm_curso)
+        avances = parse_avance(df[COL_AVANCE])
+        for ced, curso, av in zip(ceds, cursos, avances):
+            if not ced or not curso or pd.isna(av):
+                continue
+            d = ledger.setdefault(ced, {})
+            if float(av) > d.get(curso, -1.0):
+                if curso not in d:
+                    nuevos += 1
+                d[curso] = float(av)
+    log(f"  ledger: {len(ledger)} estudiantes ({nuevos} registros estudiante×curso nuevos)")
+
+
+def guardar_ledger(ledger: dict) -> None:
+    os.makedirs(os.path.dirname(RUTA_LEDGER), exist_ok=True)
+    with open(RUTA_LEDGER, "w", encoding="utf-8") as f:
+        json.dump({
+            "_nota": ("Máximo avance visto por estudiante×curso. Contiene cédulas "
+                      "(PII) — vive en tools/ (gitignoreado), NUNCA subir a git."),
+            "actualizado": datetime.now().astimezone().isoformat(),
+            "estudiantes": ledger,
+        }, f, ensure_ascii=False)
 
 
 # ── Q10: Detallado Estudiantes Matriculados (incluye inhabilitados) ──────────
@@ -196,9 +256,14 @@ def descargar_fuentes(session, anio: str) -> tuple[dict, dict, dict]:
 
 
 # ── Agregación por curso (solo agregados — NUNCA PII) ─────────────────────────
-def agregar_por_curso(virtual: dict, cohortes: dict, retirados: dict) -> tuple[list, dict]:
+def agregar_por_curso(virtual: dict, cohortes: dict, retirados: dict,
+                      ledger: dict) -> tuple[list, dict]:
     """Agrega por asignatura, fusionando periodos que comparten nombre
-    (ej. Desarrollo Web en periodos 20 y 24 — cohortes disjuntas)."""
+    (ej. Desarrollo Web en periodos 20 y 24 — cohortes disjuntas).
+
+    Los inhabilitados del periodo se clasifican por curso contra el ledger:
+    si su máximo avance registrado alcanzó el umbral → aprobados_retirados
+    (aprobó y luego se inhabilitó); si no → retirados (se fue sin aprobar)."""
     cursos: dict[str, dict] = {}
     inhab_sin_retiro_total = 0
     inhabilitados_todos: set[str] = set()
@@ -228,28 +293,38 @@ def agregar_por_curso(virtual: dict, cohortes: dict, retirados: dict) -> tuple[l
             programa  = (str(g[COL_PROGRAMA].iloc[0]).strip()
                          if COL_PROGRAMA in g.columns else "")
 
+            # Clasificar inhabilitados de este periodo contra ESTE curso:
+            # ¿su máximo avance registrado en el ledger ya era aprobatorio?
+            aprob_ret = sum(
+                1 for ced in inhabilitados
+                if ledger.get(ced, {}).get(clave, 0.0) >= UMBRAL_APROBADO
+            )
+
             c = cursos.setdefault(clave, {
                 "curso": clave, "programa": programa, "periodos": [],
-                "activos": 0, "aprobados": 0, "retirados": 0,
-                "cursaron": 0, "_suma_avance": 0.0,
+                "activos": 0, "aprobados": 0, "aprobados_retirados": 0,
+                "retirados": 0, "cursaron": 0, "_suma_avance": 0.0,
             })
             c["periodos"].append(info["etiqueta"])
-            c["activos"]      += activos
-            c["aprobados"]    += aprobados
-            c["retirados"]    += len(inhabilitados)
-            c["cursaron"]     += activos + len(inhabilitados)
-            c["_suma_avance"] += promedio * activos
+            c["activos"]             += activos
+            c["aprobados"]           += aprobados
+            c["aprobados_retirados"] += aprob_ret
+            c["retirados"]           += len(inhabilitados) - aprob_ret
+            c["cursaron"]            += activos + len(inhabilitados)
+            c["_suma_avance"]        += promedio * activos
 
     lista = []
     for c in cursos.values():
         promedio = round(c.pop("_suma_avance") / c["activos"], 2) if c["activos"] else 0.0
-        no_aprobados = c["cursaron"] - c["aprobados"]
+        aprobados_total = c["aprobados"] + c["aprobados_retirados"]
+        no_aprobados = c["cursaron"] - aprobados_total
         lista.append({
             **c,
+            "aprobados_total": aprobados_total,
             "no_aprobados":   no_aprobados,
             "sin_finalizar":  c["activos"] - c["aprobados"],
             "promedio":       promedio,
-            "pct_aprobados":  round(100 * c["aprobados"] / c["cursaron"], 1)
+            "pct_aprobados":  round(100 * aprobados_total / c["cursaron"], 1)
                               if c["cursaron"] else 0.0,
             "pct_no_aprobados": round(100 * no_aprobados / c["cursaron"], 1)
                                 if c["cursaron"] else 0.0,
@@ -263,11 +338,13 @@ def agregar_por_curso(virtual: dict, cohortes: dict, retirados: dict) -> tuple[l
     return lista, anomalias
 
 
-# ── Marca de agua (aprobados nunca decae) ─────────────────────────────────────
+# ── Marca de agua (aprobados_total nunca decae) ───────────────────────────────
 def aplicar_maximos(lista: list) -> None:
-    """Si Q10 archiva a un estudiante que iba en 100%, el conteo vivo de aprobados
-    baja. Se congela el máximo histórico por curso (mismo patrón que
-    maximos_cursos.json del dashboard)."""
+    """Red de seguridad para aprobados que el ledger no alcanzó a ver antes de
+    que Q10 los inhabilitara (o que desaparecen de la cohorte): el total de
+    aprobados por curso nunca decae. Si el conteo vivo baja respecto al máximo
+    histórico, el déficit se reclasifica de 'retirados' a 'aprobados_retirados'
+    (por definición son inhabilitados que alguna vez contaron como aprobados)."""
     maximos = {}
     if os.path.isfile(RUTA_MAXIMOS):
         try:
@@ -277,16 +354,24 @@ def aplicar_maximos(lista: list) -> None:
             log(f"ADVERTENCIA: maximos.json ilegible ({e}) — se regenera")
 
     for c in lista:
+        # Clave "aprobados" del maximos.json histórico = piso del total aprobado
         m = maximos.setdefault(c["curso"], {"aprobados": 0, "cursaron": 0})
-        m["aprobados"] = max(m["aprobados"], c["aprobados"])
+        m["aprobados"] = max(m["aprobados"], c["aprobados_total"])
         m["cursaron"]  = max(m["cursaron"], c["cursaron"])
-        if c["aprobados"] < m["aprobados"]:
-            log(f"  marca de agua: {c['curso'][:40]!r} aprobados {c['aprobados']} "
-                f"→ {m['aprobados']} (congelado)")
-        c["aprobados"] = m["aprobados"]
-        c["cursaron"]  = max(c["cursaron"], m["cursaron"])
-        c["no_aprobados"]     = c["cursaron"] - c["aprobados"]
-        c["pct_aprobados"]    = round(100 * c["aprobados"] / c["cursaron"], 1) \
+
+        deficit = m["aprobados"] - c["aprobados_total"]
+        if deficit > 0:
+            traslado = min(deficit, c["retirados"])
+            log(f"  marca de agua: {c['curso'][:40]!r} total aprobado "
+                f"{c['aprobados_total']} < máximo {m['aprobados']} — "
+                f"{traslado} reclasificados como aprobados_retirados")
+            c["aprobados_retirados"] += traslado
+            c["retirados"]           -= traslado
+            c["aprobados_total"]     += traslado
+
+        c["cursaron"] = max(c["cursaron"], m["cursaron"])
+        c["no_aprobados"]     = c["cursaron"] - c["aprobados_total"]
+        c["pct_aprobados"]    = round(100 * c["aprobados_total"] / c["cursaron"], 1) \
             if c["cursaron"] else 0.0
         c["pct_no_aprobados"] = round(100 * c["no_aprobados"] / c["cursaron"], 1) \
             if c["cursaron"] else 0.0
@@ -302,12 +387,14 @@ def generar_json(anio: str, lista: list, cohortes: dict, anomalias: dict) -> dic
     programas: dict[str, dict] = {}
     for c in lista:
         p = programas.setdefault(c["programa"] or "Sin programa", {
-            "cursos": 0, "cursaron": 0, "aprobados": 0, "retirados": 0,
+            "cursos": 0, "cursaron": 0, "aprobados": 0,
+            "aprobados_retirados": 0, "retirados": 0,
         })
-        p["cursos"]    += 1
-        p["cursaron"]  += c["cursaron"]
-        p["aprobados"] += c["aprobados"]
-        p["retirados"] += c["retirados"]
+        p["cursos"]              += 1
+        p["cursaron"]            += c["cursaron"]
+        p["aprobados"]           += c["aprobados_total"]
+        p["aprobados_retirados"] += c["aprobados_retirados"]
+        p["retirados"]           += c["retirados"]
     for p in programas.values():
         p["pct_aprobados"] = round(100 * p["aprobados"] / p["cursaron"], 1) \
             if p["cursaron"] else 0.0
@@ -317,7 +404,9 @@ def generar_json(anio: str, lista: list, cohortes: dict, anomalias: dict) -> dic
         "anio": anio,
         "nota_metodo": (
             "Cohorte = matriculados del periodo (habilitados + inhabilitados). "
-            "Aprobado = avance >= 100. Los retirados cuentan como no aprobados."
+            "Aprobado = avance >= 100. Un inhabilitado que ya había alcanzado el "
+            "100 cuenta como 'aprobó y se retiró' (no pierde su logro); solo los "
+            "retirados sin aprobar cuentan como no aprobados."
         ),
         "por_curso": lista,
         "por_programa": [
@@ -327,7 +416,8 @@ def generar_json(anio: str, lista: list, cohortes: dict, anomalias: dict) -> dic
         "totales": {
             "total_cursos":       len(lista),
             "total_matriculas":   sum(c["cursaron"] for c in lista),
-            "total_aprobados":    sum(c["aprobados"] for c in lista),
+            "total_aprobados":    sum(c["aprobados_total"] for c in lista),
+            "total_aprobados_retirados": sum(c["aprobados_retirados"] for c in lista),
             "total_retirados_2026": anomalias.get("retirados_unicos_2026", 0),
             "estudiantes_cohorte_2026": len(
                 set().union(*(info["ids"] for info in cohortes.values()))
@@ -380,12 +470,16 @@ def main() -> None:
 
     try:
         session = login_q10()
+        ledger = cargar_ledger()
         virtual, cohortes, retirados = descargar_fuentes(session, args.anio)
         if not virtual:
             log(f"ERROR: ningún periodo del año {args.anio} devolvió datos.")
             sys.exit(1)
 
-        lista, anomalias = agregar_por_curso(virtual, cohortes, retirados)
+        actualizar_ledger(ledger, virtual)
+        guardar_ledger(ledger)
+
+        lista, anomalias = agregar_por_curso(virtual, cohortes, retirados, ledger)
         aplicar_maximos(lista)
         datos = generar_json(args.anio, lista, cohortes, anomalias)
         guardar_json(datos)
@@ -400,8 +494,10 @@ def main() -> None:
         t = datos["totales"]
         log("=" * 60)
         for c in lista:
-            log(f"  {c['curso'][:48]:<48} cursaron={c['cursaron']:>4} "
-                f"aprobados={c['aprobados']:>4} ({c['pct_aprobados']}%)"
+            log(f"  {c['curso'][:44]:<44} cursaron={c['cursaron']:>4} "
+                f"aprobados={c['aprobados_total']:>4} "
+                f"(act {c['aprobados']} + ret {c['aprobados_retirados']}) "
+                f"({c['pct_aprobados']}%)"
                 f"{' [FINALIZADO]' if c['finalizado'] else ''}")
         log("=" * 60)
         print(f"EXPORT: cursos={t['total_cursos']} "
