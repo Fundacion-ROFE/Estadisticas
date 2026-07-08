@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-08T15:25:30.912669-05:00",
+  "ultima_actualizacion": "2026-07-08T17:06:43.390788-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -15,8 +15,8 @@
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
       "estudiantes": 777,
-      "finalizados": 302,
-      "promedio": 61.79,
+      "finalizados": 309,
+      "promedio": 62.69,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 777,
@@ -86,7 +86,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 137
+      "cantidad": 133
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -100,12 +100,30 @@
     "total_db": 1063
   },
   "mr": {
+    "por_curso": [],
+    "anomalias": [
+      {
+        "categoria": "AVANCE 0%",
+        "cantidad": 0
+      },
+      {
+        "categoria": "AVANCE IRREGULAR",
+        "cantidad": 0
+      }
+    ],
+    "totales": {
+      "total_cursos": 0,
+      "total_estudiantes_unicos": 0,
+      "total_habilitados": 0
+    }
+  },
+  "stand": {
     "por_curso": [
       {
         "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
         "estudiantes": 136,
         "finalizados": 29,
-        "promedio": 33.83,
+        "promedio": 34.15,
         "min": 0.0,
         "max": 100.0,
         "inscritos": 136,
@@ -116,7 +134,7 @@
         "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
         "estudiantes": 244,
         "finalizados": 71,
-        "promedio": 31.6,
+        "promedio": 31.89,
         "min": 0.0,
         "max": 100.0,
         "inscritos": 244,
@@ -124,28 +142,10 @@
         "finalizado": false
       }
     ],
-    "anomalias": [
-      {
-        "categoria": "AVANCE 0%",
-        "cantidad": 199
-      },
-      {
-        "categoria": "AVANCE IRREGULAR",
-        "cantidad": 0
-      }
-    ],
     "totales": {
       "total_cursos": 2,
       "total_estudiantes_unicos": 283,
       "total_habilitados": 283
-    }
-  },
-  "stand": {
-    "por_curso": [],
-    "totales": {
-      "total_cursos": 0,
-      "total_estudiantes_unicos": 0,
-      "total_habilitados": 0
     }
   }
 }
