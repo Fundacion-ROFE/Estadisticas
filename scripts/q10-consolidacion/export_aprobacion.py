@@ -267,12 +267,20 @@ def agregar_por_curso(virtual: dict, cohortes: dict, retirados: dict,
     cursos: dict[str, dict] = {}
     inhab_sin_retiro_total = 0
     inhabilitados_todos: set[str] = set()
+    prog_stats: dict[str, dict] = {}   # programa → cohorte/inhabilitados únicos
 
     for pid, df in virtual.items():
         info = cohortes[pid]
         ids_activos_periodo = set(df[COL_ID].map(norm_id)) - {""}
         inhabilitados = info["ids"] - ids_activos_periodo
         inhabilitados_todos |= inhabilitados
+
+        # Cohorte única por programa (cada periodo pertenece a un programa)
+        programa_pid = (str(df[COL_PROGRAMA].iloc[0]).strip()
+                        if COL_PROGRAMA in df.columns and len(df) else "")
+        ps = prog_stats.setdefault(programa_pid, {"ids": set(), "inhab": set()})
+        ps["ids"]   |= info["ids"]
+        ps["inhab"] |= inhabilitados
         confirmados = {c for c in inhabilitados if c in retirados}
         sin_retiro = inhabilitados - confirmados
         inhab_sin_retiro_total += len(sin_retiro)
@@ -335,7 +343,11 @@ def agregar_por_curso(virtual: dict, cohortes: dict, retirados: dict,
         "inhabilitados_sin_retiro": inhab_sin_retiro_total,
         "retirados_unicos_2026": len(inhabilitados_todos),
     }
-    return lista, anomalias
+    prog_stats = {
+        prog: {"estudiantes_cohorte": len(v["ids"]), "retirados_unicos": len(v["inhab"])}
+        for prog, v in prog_stats.items()
+    }
+    return lista, anomalias, prog_stats
 
 
 # ── Marca de agua (aprobados_total nunca decae) ───────────────────────────────
@@ -383,7 +395,8 @@ def aplicar_maximos(lista: list) -> None:
 
 
 # ── JSON final ────────────────────────────────────────────────────────────────
-def generar_json(anio: str, lista: list, cohortes: dict, anomalias: dict) -> dict:
+def generar_json(anio: str, lista: list, cohortes: dict, anomalias: dict,
+                 prog_stats: dict) -> dict:
     programas: dict[str, dict] = {}
     for c in lista:
         p = programas.setdefault(c["programa"] or "Sin programa", {
@@ -395,9 +408,11 @@ def generar_json(anio: str, lista: list, cohortes: dict, anomalias: dict) -> dic
         p["aprobados"]           += c["aprobados_total"]
         p["aprobados_retirados"] += c["aprobados_retirados"]
         p["retirados"]           += c["retirados"]
-    for p in programas.values():
+    for nombre, p in programas.items():
         p["pct_aprobados"] = round(100 * p["aprobados"] / p["cursaron"], 1) \
             if p["cursaron"] else 0.0
+        # Estudiantes/retirados únicos del programa (para KPIs por programa)
+        p.update(prog_stats.get(nombre, {}))
 
     return {
         "ultima_actualizacion": datetime.now().astimezone().isoformat(),
@@ -479,9 +494,9 @@ def main() -> None:
         actualizar_ledger(ledger, virtual)
         guardar_ledger(ledger)
 
-        lista, anomalias = agregar_por_curso(virtual, cohortes, retirados, ledger)
+        lista, anomalias, prog_stats = agregar_por_curso(virtual, cohortes, retirados, ledger)
         aplicar_maximos(lista)
-        datos = generar_json(args.anio, lista, cohortes, anomalias)
+        datos = generar_json(args.anio, lista, cohortes, anomalias, prog_stats)
         guardar_json(datos)
 
         if args.sin_push:

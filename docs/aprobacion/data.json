@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-08T15:55:30.661994-05:00",
+  "ultima_actualizacion": "2026-07-08T16:05:25.727299-05:00",
   "anio": "2026",
   "nota_metodo": "Cohorte = matriculados del periodo (habilitados + inhabilitados). Aprobado = avance >= 100. Un inhabilitado que ya había alcanzado el 100 cuenta como 'aprobó y se retiró' (no pierde su logro); solo los retirados sin aprobar cuentan como no aprobados.",
   "por_curso": [
@@ -125,16 +125,16 @@
         "Desarrollo-Avanzado-2026"
       ],
       "activos": 777,
-      "aprobados": 305,
+      "aprobados": 306,
       "aprobados_retirados": 0,
       "retirados": 2,
       "cursaron": 779,
-      "aprobados_total": 305,
-      "no_aprobados": 474,
-      "sin_finalizar": 472,
-      "promedio": 62.32,
-      "pct_aprobados": 39.2,
-      "pct_no_aprobados": 60.8,
+      "aprobados_total": 306,
+      "no_aprobados": 473,
+      "sin_finalizar": 471,
+      "promedio": 62.34,
+      "pct_aprobados": 39.3,
+      "pct_no_aprobados": 60.7,
       "finalizado": false
     },
     {
@@ -151,7 +151,7 @@
       "aprobados_total": 71,
       "no_aprobados": 173,
       "sin_finalizar": 173,
-      "promedio": 31.73,
+      "promedio": 31.89,
       "pct_aprobados": 29.1,
       "pct_no_aprobados": 70.9,
       "finalizado": false
@@ -170,7 +170,7 @@
       "aprobados_total": 29,
       "no_aprobados": 107,
       "sin_finalizar": 107,
-      "promedio": 33.83,
+      "promedio": 33.84,
       "pct_aprobados": 21.3,
       "pct_no_aprobados": 78.7,
       "finalizado": false
@@ -181,10 +181,12 @@
       "programa": "Jóvenes creaTIvos",
       "cursos": 7,
       "cursaron": 5803,
-      "aprobados": 4893,
+      "aprobados": 4894,
       "aprobados_retirados": 138,
       "retirados": 218,
-      "pct_aprobados": 84.3
+      "pct_aprobados": 84.3,
+      "estudiantes_cohorte": 860,
+      "retirados_unicos": 85
     },
     {
       "programa": "Mujeres ROFÉ",
@@ -193,13 +195,15 @@
       "aprobados": 100,
       "aprobados_retirados": 0,
       "retirados": 0,
-      "pct_aprobados": 26.3
+      "pct_aprobados": 26.3,
+      "estudiantes_cohorte": 283,
+      "retirados_unicos": 0
     }
   ],
   "totales": {
     "total_cursos": 9,
     "total_matriculas": 6183,
-    "total_aprobados": 4993,
+    "total_aprobados": 4994,
     "total_aprobados_retirados": 138,
     "total_retirados_2026": 85,
     "estudiantes_cohorte_2026": 1143
