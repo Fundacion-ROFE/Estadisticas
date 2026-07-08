@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-07T20:17:45.064698-05:00",
+  "ultima_actualizacion": "2026-07-08T08:50:30.653751-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -15,8 +15,8 @@
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
       "estudiantes": 777,
-      "finalizados": 270,
-      "promedio": 58.46,
+      "finalizados": 289,
+      "promedio": 59.77,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 777,
@@ -27,7 +27,7 @@
       "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
       "estudiantes": 778,
       "finalizados": 697,
-      "promedio": 98.75,
+      "promedio": 98.79,
       "min": 0.0,
       "max": 101.0,
       "inscritos": 830,
@@ -37,8 +37,8 @@
     {
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
       "estudiantes": 777,
-      "finalizados": 719,
-      "promedio": 96.9,
+      "finalizados": 721,
+      "promedio": 96.93,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 806,
@@ -48,8 +48,8 @@
     {
       "curso": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
       "estudiantes": 779,
-      "finalizados": 735,
-      "promedio": 99.42,
+      "finalizados": 737,
+      "promedio": 99.44,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 854,
@@ -60,7 +60,7 @@
       "curso": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
       "estudiantes": 779,
       "finalizados": 773,
-      "promedio": 99.57,
+      "promedio": 99.58,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 862,
@@ -71,7 +71,7 @@
       "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
       "estudiantes": 777,
       "finalizados": 745,
-      "promedio": 98.33,
+      "promedio": 98.34,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 809,
@@ -86,7 +86,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 153
+      "cantidad": 145
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -105,7 +105,7 @@
         "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
         "estudiantes": 136,
         "finalizados": 24,
-        "promedio": 31.52,
+        "promedio": 32.21,
         "min": 0.0,
         "max": 100.0,
         "inscritos": 136,
