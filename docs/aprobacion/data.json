@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-08T17:07:54.650037-05:00",
+  "ultima_actualizacion": "2026-07-08T17:09:15.588851-05:00",
   "anio": "2026",
   "nota_metodo": "Cohorte = matriculados del periodo (habilitados + inhabilitados). Aprobado = avance >= 100. Un inhabilitado que ya había alcanzado el 100 cuenta como 'aprobó y se retiró' (no pierde su logro); solo los retirados sin aprobar cuentan como no aprobados.",
   "por_curso": [
@@ -132,7 +132,7 @@
       "aprobados_total": 309,
       "no_aprobados": 470,
       "sin_finalizar": 468,
-      "promedio": 62.69,
+      "promedio": 62.7,
       "pct_aprobados": 39.7,
       "pct_no_aprobados": 60.3,
       "finalizado": false
