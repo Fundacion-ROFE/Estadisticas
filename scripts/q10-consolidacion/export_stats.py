@@ -43,8 +43,18 @@ DIRECTORIO_SCRIPT      = os.path.dirname(os.path.abspath(__file__))
 PROYECTO_ROOT          = os.path.abspath(os.path.join(DIRECTORIO_SCRIPT, "..", ".."))
 RUTA_DATA_JSON         = os.path.join(PROYECTO_ROOT, "docs", "dashboard", "data.json")
 RUTA_HISTORY_JSON      = os.path.join(PROYECTO_ROOT, "docs", "dashboard", "history.json")
+RUTA_MAXIMOS_JSON      = os.path.join(PROYECTO_ROOT, "docs", "dashboard", "maximos_cursos.json")
 CONFIG_CURSOS          = os.path.join(PROYECTO_ROOT, "tools", "course_config.json")
+RUTA_EXCLUSIONES       = os.path.join(PROYECTO_ROOT, "tools", "exclusiones_prueba.json")
 INTERVALO_HISTORY_DIAS = 4   # snapshot cada ~4 días (dos veces por semana)
+
+# ── Cursos finalizados (marca de agua) ──────────────────────────────────────────
+# Un curso ya no crece y sus estudiantes se van archivando en Q10 (Estado A → fuera
+# del Consolidado), así que su matrícula "en vivo" encoge. Rastreamos el máximo
+# histórico por curso para congelar inscritos/finalizados de los cursos terminados.
+UMBRAL_AVANCE_FIN   = 100.0  # avance >= esto cuenta como "finalizó el curso" (cubre los 101)
+UMBRAL_PROMEDIO_FIN = 90.0   # promedio del curso para considerarlo finalizado
+MARGEN_DECLIVE      = 0.02   # matrícula cae >=2% del pico => cohorte ya archivándose
 
 
 # ── Utilidades ────────────────────────────────────────────────────────────────
@@ -64,6 +74,33 @@ def _limpiar_porcentaje(valor: str) -> float:
 
 def _es_fila_vacia(row: list) -> bool:
     return all(c.strip() == "" for c in row)
+
+
+# ── Exclusión de usuarios de prueba ───────────────────────────────────────────
+def _cargar_exclusiones() -> tuple[set, set]:
+    """Cédulas y emails de perfiles de prueba (tools/exclusiones_prueba.json,
+    gitignoreado). No deben contar en ningún KPI ni tabla."""
+    ceds, emails = set(), set()
+    if os.path.isfile(RUTA_EXCLUSIONES):
+        try:
+            with open(RUTA_EXCLUSIONES, encoding="utf-8") as f:
+                for p in json.load(f).get("perfiles", []):
+                    ced = "".join(ch for ch in str(p.get("cedula", "")) if ch.isdigit())
+                    if ced:
+                        ceds.add(ced)
+                    if p.get("email"):
+                        emails.add(str(p["email"]).strip().lower())
+        except (json.JSONDecodeError, OSError) as e:
+            log(f"ADVERTENCIA: exclusiones ilegibles ({e}) — no se excluye nada")
+    return ceds, emails
+
+
+EXCL_CEDS, EXCL_EMAILS = _cargar_exclusiones()
+
+
+def _es_prueba(id_val: str, email_val: str) -> bool:
+    ced = "".join(ch for ch in id_val if ch.isdigit())
+    return (ced in EXCL_CEDS) or (email_val in EXCL_EMAILS)
 
 
 # ── Google Sheets ─────────────────────────────────────────────────────────────
@@ -164,6 +201,8 @@ def _procesar_grupos(filas: list, grupos: list) -> tuple:
             if not id_val:
                 continue
             email_val = _cel_grupo(row, g["col_inicio"], g.get("offset_email")).lower().strip()
+            if _es_prueba(id_val, email_val):
+                continue
             est_val   = _cel_grupo(row, g["col_inicio"], g.get("offset_estado")).upper()
             if email_val:
                 emails_unicos.add(email_val)
@@ -177,9 +216,11 @@ def _procesar_grupos(filas: list, grupos: list) -> tuple:
                 avance_irr += 1
 
         n = len(avances)
+        finalizados = sum(1 for a in avances if a >= UMBRAL_AVANCE_FIN)
         por_curso.append({
             "curso":       g["nombre"],
-            "estudiantes": n,
+            "estudiantes": n,             # activos hoy (en vivo)
+            "finalizados": finalizados,   # con avance >= 100 (en vivo; se congela en máximos)
             "promedio":    round(sum(avances) / n, 2) if n else 0.0,
             "min":         round(min(avances), 2) if avances else 0.0,
             "max":         round(max(avances), 2) if avances else 0.0,
@@ -293,6 +334,112 @@ def guardar_json(datos: dict) -> None:
     log(f"  data.json generado en: {RUTA_DATA_JSON}")
 
 
+# ── Marca de agua de cursos (inscritos / finalizados congelados) ────────────────
+def _norm_nombre(nombre: str) -> str:
+    return ' '.join(nombre.replace('\xa0', ' ').split())
+
+
+def _seed_maximos_desde_history() -> dict:
+    """Siembra máximos iniciales desde history.json: para cada curso, el pico de
+    matrícula ('estudiantes') jamás registrado. finalizados arranca en 0 y se llena
+    en la próxima corrida real (history.json no guarda el conteo al 100%)."""
+    seed: dict = {}
+    if not os.path.isfile(RUTA_HISTORY_JSON):
+        return seed
+    try:
+        with open(RUTA_HISTORY_JSON, encoding="utf-8") as f:
+            historia = json.load(f)
+    except Exception:
+        return seed
+    for snap in historia:
+        fecha = snap.get("fecha", "")
+        for prog in ("jc", "mr"):
+            for c in snap.get(prog, {}).get("por_curso", []):
+                nombre = _norm_nombre(c.get("curso", ""))
+                if not nombre:
+                    continue
+                est  = c.get("estudiantes", 0) or 0
+                prev = seed.get(nombre)
+                if prev is None or est > prev["inscritos"]:
+                    seed[nombre] = {
+                        "inscritos":         est,
+                        "inscritos_fecha":   fecha,
+                        "promedio_en_pico":  c.get("promedio", 0.0),
+                        "finalizados":       0,
+                        "finalizados_fecha": "",
+                    }
+    if seed:
+        log(f"  Máximos: sembrados desde history.json ({len(seed)} cursos)")
+    return seed
+
+
+def _cargar_maximos() -> dict:
+    if os.path.isfile(RUTA_MAXIMOS_JSON):
+        try:
+            with open(RUTA_MAXIMOS_JSON, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return _seed_maximos_desde_history()
+
+
+def _enriquecer_curso(c: dict, maximos: dict, hoy: str) -> None:
+    """Actualiza la marca de agua del curso y le añade inscritos/finalizados/finalizado.
+
+    - inscritos:   máx histórico de 'estudiantes' (matrícula pico 2026, nunca decae).
+    - finalizados: máx histórico de avance >= 100 (nunca decae).
+    - finalizado:  True si el promedio es alto Y la matrícula ya bajó del pico
+                   (señal de que Q10 empezó a archivar la cohorte al terminar).
+    """
+    nombre    = _norm_nombre(c["curso"])
+    live_est  = c.get("estudiantes", 0)
+    live_fin  = c.get("finalizados", 0)
+    live_prom = c.get("promedio", 0.0)
+
+    m = maximos.get(nombre, {
+        "inscritos": 0, "inscritos_fecha": "", "promedio_en_pico": 0.0,
+        "finalizados": 0, "finalizados_fecha": "",
+    })
+    if live_est > m.get("inscritos", 0):
+        m["inscritos"]        = live_est
+        m["inscritos_fecha"]  = hoy
+        m["promedio_en_pico"] = live_prom
+    if live_fin > m.get("finalizados", 0):
+        m["finalizados"]       = live_fin
+        m["finalizados_fecha"] = hoy
+    maximos[nombre] = m
+
+    inscritos     = m["inscritos"]   or live_est
+    finalizados   = m["finalizados"] or live_fin
+    promedio_pico = m["promedio_en_pico"] or live_prom
+    finalizado    = (live_prom >= UMBRAL_PROMEDIO_FIN
+                     and inscritos > 0
+                     and live_est <= inscritos * (1 - MARGEN_DECLIVE))
+
+    c["inscritos"]     = inscritos
+    c["finalizados"]   = finalizados
+    c["promedio_pico"] = round(promedio_pico, 2)
+    c["finalizado"]    = finalizado
+
+
+def enriquecer_con_maximos(*listas_por_curso: list) -> dict:
+    """Aplica la marca de agua a todas las listas por_curso in-place. Retorna
+    el dict de máximos actualizado (para persistir)."""
+    maximos = _cargar_maximos()
+    hoy = datetime.now().date().isoformat()
+    for lista in listas_por_curso:
+        for c in lista:
+            _enriquecer_curso(c, maximos, hoy)
+    return maximos
+
+
+def guardar_maximos(maximos: dict) -> None:
+    os.makedirs(os.path.dirname(RUTA_MAXIMOS_JSON), exist_ok=True)
+    with open(RUTA_MAXIMOS_JSON, "w", encoding="utf-8") as f:
+        json.dump(maximos, f, ensure_ascii=False, indent=2)
+    log(f"  maximos_cursos.json actualizado ({len(maximos)} cursos).")
+
+
 # ── Historial de snapshots ────────────────────────────────────────────────────
 def _snapshot_from_data(datos: dict, fecha: str) -> dict:
     """Extrae un resumen liviano de un data.json completo para el historial."""
@@ -350,7 +497,10 @@ def actualizar_history(datos: dict) -> bool:
 
 # ── Git commit y push ──────────────────────────────────────────────────────────
 def git_commit_y_push(timestamp: str, incluir_history: bool = False) -> None:
-    archivos = [os.path.join("docs", "dashboard", "data.json")]
+    archivos = [
+        os.path.join("docs", "dashboard", "data.json"),
+        os.path.join("docs", "dashboard", "maximos_cursos.json"),
+    ]
     if incluir_history:
         archivos.append(os.path.join("docs", "dashboard", "history.json"))
 
@@ -377,6 +527,12 @@ def git_commit_y_push(timestamp: str, incluir_history: bool = False) -> None:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main() -> None:
+    import argparse
+    parser = argparse.ArgumentParser(description="Exporta stats h2test a data.json")
+    parser.add_argument("--sin-push", action="store_true",
+                        help="Genera el JSON sin git commit/push (pruebas)")
+    args = parser.parse_args()
+
     try:
         hoja = conectar_hoja()
 
@@ -391,6 +547,12 @@ def main() -> None:
          n_stand, hab_stand,
          total_db) = procesar_h2test(all_values)
 
+        log("Actualizando máximos históricos por curso...")
+        maximos = enriquecer_con_maximos(pc_jc, pc_mr, pc_stand)
+        guardar_maximos(maximos)
+        n_fin = sum(1 for c in pc_jc if c.get("finalizado"))
+        log(f"  Cursos JC marcados como finalizados: {n_fin}")
+
         datos = generar_json(pc_jc, pc_mr, pc_stand,
                              anom_jc, anom_mr,
                              n_jc, hab_jc,
@@ -402,9 +564,12 @@ def main() -> None:
         log("Actualizando historial...")
         nuevo_snapshot = actualizar_history(datos)
 
-        timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M")
-        log("Ejecutando git commit y push...")
-        git_commit_y_push(timestamp, incluir_history=nuevo_snapshot)
+        if args.sin_push:
+            log("Modo --sin-push: no se toca git.")
+        else:
+            timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M")
+            log("Ejecutando git commit y push...")
+            git_commit_y_push(timestamp, incluir_history=nuevo_snapshot)
 
         log("=" * 60)
         log(f"  Cursos JC           : {len(pc_jc)}")

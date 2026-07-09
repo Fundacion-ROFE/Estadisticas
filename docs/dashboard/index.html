@@ -453,44 +453,47 @@ const LEGEND_APROB = `
     <span class="legend-item"><span class="legend-dot" style="background:var(--red)"></span>Retirados sin aprobar</span>
   </div>`;
 
+const PROGRAMA_JC = 'Jóvenes creaTIvos';
+
 function renderT1(ap){
   const t = ap.totales||{};
-  const pctGlobal = t.total_matriculas ? (100*t.total_aprobados/t.total_matriculas) : null;
+  // Solo Jóvenes creaTIvos — KPIs desde por_programa[], no desde totales{} (mezcla MR)
+  const cursosJC = (ap.por_curso||[]).filter(c=>(c.programa||'')===PROGRAMA_JC);
+  const pJC = (ap.por_programa||[]).find(p=>p.programa===PROGRAMA_JC) || {};
+  const pctGlobal = pJC.pct_aprobados ?? (pJC.cursaron ? 100*pJC.aprobados/pJC.cursaron : null);
   const sg = pctGlobal!=null ? sem(pctGlobal) : null;
+  const habilesX = pJC.habilitados_unicos;
+  const matricY  = pJC.matriculas_activas ?? cursosJC.reduce((s,c)=>s+(c.activos||0),0);
 
   const kpis = `
   <div class="kpi-grid">
     <div class="kpi-card">
-      <div class="kpi-val">${fmt(t.estudiantes_cohorte_2026)}</div>
+      <div class="kpi-val">${fmt(pJC.estudiantes_cohorte ?? t.estudiantes_cohorte_2026)}</div>
       <div class="kpi-lbl">Estudiantes ${esc(ap.anio)}</div>
-      <div class="kpi-sub">Cohorte completa: habilitados + inhabilitados</div>
+      <div class="kpi-sub">Cohorte completa JC: habilitados + inhabilitados</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-val">${fmt(t.total_matriculas)}</div>
-      <div class="kpi-lbl">Matrículas en cursos</div>
-      <div class="kpi-sub">Un estudiante cuenta en cada curso que tomó</div>
+      <div class="kpi-val">${fmt(habilesX)}</div>
+      <div class="kpi-lbl">Estudiantes hábiles</div>
+      <div class="kpi-sub">Actualmente hay ${fmt(habilesX)} estudiantes hábiles, sumando un total de ${fmt(matricY)} matrículas activas</div>
     </div>
     <div class="kpi-card" style="border-top-color:var(--green)">
-      <div class="kpi-val ${sg?sg.cls:''}">${pctGlobal!=null?pctGlobal.toFixed(1)+'%':'—'}</div>
+      <div class="kpi-val ${sg?sg.cls:''}">${pctGlobal!=null?Number(pctGlobal).toFixed(1)+'%':'—'}</div>
       <div class="kpi-lbl">Aprobación global</div>
-      <div class="kpi-sub">${fmt(t.total_aprobados)} matrículas con avance ≥ 100${
-        t.total_aprobados_retirados ? ` (incluye ${fmt(t.total_aprobados_retirados)} de retirados)` : ''}</div>
+      <div class="kpi-sub">${fmt(pJC.aprobados)} matrículas con avance ≥ 100${
+        pJC.aprobados_retirados ? ` (incluye ${fmt(pJC.aprobados_retirados)} de retirados)` : ''}</div>
     </div>
     <div class="kpi-card" style="border-top-color:var(--red)">
-      <div class="kpi-val sem-red">${fmt(t.total_retirados_2026)}</div>
+      <div class="kpi-val sem-red">${fmt(pJC.retirados_unicos ?? t.total_retirados_2026)}</div>
       <div class="kpi-lbl">Retirados ${esc(ap.anio)}</div>
-      <div class="kpi-sub">Estudiantes inhabilitados de la cohorte</div>
+      <div class="kpi-sub">Estudiantes inhabilitados de la cohorte JC</div>
     </div>
   </div>`;
 
-  // barras apiladas agrupadas por programa
-  const porPrograma = {};
-  (ap.por_curso||[]).forEach(c=>{
-    (porPrograma[c.programa||'Sin programa'] ??= []).push(c);
-  });
-  const grupos = Object.entries(porPrograma).map(([prog, cursos])=>`
-    <div class="grupo-titulo">${esc(prog)} — ${cursos.length} curso${cursos.length!==1?'s':''}</div>
-    ${cursos.map(stackRow).join('')}`).join('');
+  // barras apiladas — solo cursos JC
+  const grupos = `
+    <div class="grupo-titulo">${esc(PROGRAMA_JC)} — ${cursosJC.length} curso${cursosJC.length!==1?'s':''}</div>
+    ${cursosJC.map(stackRow).join('')}`;
 
   const barras = `
   <div class="card gap">
@@ -505,7 +508,7 @@ function renderT1(ap){
     </p>
   </div>`;
 
-  const filas = (ap.por_curso||[]).map(c=>`
+  const filas = cursosJC.map(c=>`
     <tr>
       <td>${esc(c.curso)}</td>
       <td class="td-r">${fmt(c.cursaron)}</td>

@@ -80,7 +80,8 @@
     }
 
     /* ── KPIs ── */
-    .kpi-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+    .kpi-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .kpi-grid .kpi-card { text-align: center; }
     .kpi-card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -270,21 +271,11 @@ function render(d){
 
   const kpis = `
   <div class="kpi-grid">
-    <div class="kpi-card" style="border-top-color:var(--primary)">
-      <div class="kpi-val" style="color:var(--primary)">${fmt(pJC.estudiantes_cohorte ?? t.estudiantes_cohorte_2026)}</div>
-      <div class="kpi-lbl">Estudiantes ${esc(d.anio)}</div>
-      <div class="kpi-sub">Cohorte completa: habilitados + inhabilitados</div>
-    </div>
     <div class="kpi-card">
       <div class="kpi-val">${pctGlobal}%</div>
-      <div class="kpi-lbl">Aprobación global</div>
+      <div class="kpi-lbl">Aprobación global ${esc(d.anio)}</div>
       <div class="kpi-sub">${fmt(pJC.aprobados)} matrículas con avance ≥ 100${
         pJC.aprobados_retirados ? ` (incluye ${fmt(pJC.aprobados_retirados)} de retirados)` : ''}</div>
-    </div>
-    <div class="kpi-card" style="border-top-color:var(--red)">
-      <div class="kpi-val" style="color:var(--red)">${fmt(pJC.retirados_unicos ?? t.total_retirados_2026)}</div>
-      <div class="kpi-lbl">Retirados ${esc(d.anio)}</div>
-      <div class="kpi-sub">Estudiantes inhabilitados de la cohorte</div>
     </div>
   </div>`;
 

@@ -43,11 +43,27 @@ SCOPES = [
 DIRECTORIO_SCRIPT = os.path.dirname(os.path.abspath(__file__))
 PROYECTO_ROOT     = os.path.abspath(os.path.join(DIRECTORIO_SCRIPT, "..", ".."))
 RUTA_DATA_JSON    = os.path.join(PROYECTO_ROOT, "docs", "retirados", "data.json")
+RUTA_EXCLUSIONES  = os.path.join(PROYECTO_ROOT, "tools", "exclusiones_prueba.json")
 
 
 # ── Utilidades ────────────────────────────────────────────────────────────────
 def log(msg: str) -> None:
     print(f"[export-retirados] {msg}", flush=True)
+
+
+def _cargar_exclusiones() -> set:
+    """Cédulas de perfiles de prueba (tools/exclusiones_prueba.json, gitignoreado)."""
+    ceds = set()
+    if os.path.isfile(RUTA_EXCLUSIONES):
+        try:
+            with open(RUTA_EXCLUSIONES, encoding="utf-8") as f:
+                for p in json.load(f).get("perfiles", []):
+                    ced = "".join(ch for ch in str(p.get("cedula", "")) if ch.isdigit())
+                    if ced:
+                        ceds.add(ced)
+        except (json.JSONDecodeError, OSError) as e:
+            log(f"ADVERTENCIA: exclusiones ilegibles ({e}) — no se excluye nada")
+    return ceds
 
 
 # ── Google Sheets ─────────────────────────────────────────────────────────────
@@ -137,23 +153,59 @@ def git_commit_y_push(timestamp: str) -> None:
         log(f"  git {cmd[1]}: OK")
 
 
+# ── Lectura tolerante ─────────────────────────────────────────────────────────
+def leer_registros(ws) -> list:
+    """get_all_records() tolerante: ignora columnas con encabezado vacío o duplicado,
+    para que una fórmula suelta en la fila 1 no tumbe el pipeline."""
+    vals = ws.get_all_values()
+    if not vals:
+        return []
+    vistos, cols = set(), []
+    for i, h in enumerate(vals[0]):
+        h = str(h).strip()
+        if h and h not in vistos:
+            vistos.add(h)
+            cols.append((i, h))
+    return [{h: (fila[i] if i < len(fila) else "") for i, h in cols} for fila in vals[1:]]
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main() -> None:
+    import argparse
+    parser = argparse.ArgumentParser(description="Exporta retirados a data.json")
+    parser.add_argument("--sin-push", action="store_true",
+                        help="Genera el JSON sin git commit/push (pruebas)")
+    args = parser.parse_args()
+
     try:
         hoja = conectar_hoja()
 
         log(f"Leyendo hoja '{NOMBRE_HOJA}'...")
-        registros = hoja.get_all_records(default_blank="")
+        registros = leer_registros(hoja)
         log(f"  {len(registros)} registros leídos.")
         if not registros:
             raise ValueError(f"La pestaña '{NOMBRE_HOJA}' está vacía.")
 
+        excl = _cargar_exclusiones()
+        if excl:
+            antes = len(registros)
+            registros = [
+                r for r in registros
+                if "".join(ch for ch in str(r.get("Identificacion", "")) if ch.isdigit())
+                not in excl
+            ]
+            if antes - len(registros):
+                log(f"  Exclusión de pruebas: {antes - len(registros)} registros quitados")
+
         datos = procesar_retirados(registros)
         guardar_json(datos)
 
-        timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M")
-        log("Ejecutando git commit y push...")
-        git_commit_y_push(timestamp)
+        if args.sin_push:
+            log("Modo --sin-push: no se toca git.")
+        else:
+            timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M")
+            log("Ejecutando git commit y push...")
+            git_commit_y_push(timestamp)
 
         t = datos["totales"]
         log("=" * 60)

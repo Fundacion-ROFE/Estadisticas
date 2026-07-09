@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-08T17:21:29.004584-05:00",
+  "ultima_actualizacion": "2026-07-08T19:34:09.455304-05:00",
   "anio": "2026",
   "nota_metodo": "Cohorte = matriculados del periodo (habilitados + inhabilitados). Aprobado = avance >= 100. Un inhabilitado que ya había alcanzado el 100 cuenta como 'aprobó y se retiró' (no pierde su logro); solo los retirados sin aprobar cuentan como no aprobados.",
   "por_curso": [
@@ -9,55 +9,17 @@
       "periodos": [
         "Habilidades-Nivel 1-2026"
       ],
-      "activos": 780,
+      "activos": 777,
       "aprobados": 776,
       "aprobados_retirados": 66,
       "retirados": 14,
-      "cursaron": 860,
+      "cursaron": 857,
       "aprobados_total": 842,
-      "no_aprobados": 18,
-      "sin_finalizar": 4,
-      "promedio": 99.65,
-      "pct_aprobados": 97.9,
-      "pct_no_aprobados": 2.1,
-      "finalizado": true
-    },
-    {
-      "curso": "Habilidades esenciales para ser un emprendedor exitoso",
-      "programa": "Jóvenes creaTIvos",
-      "periodos": [
-        "Habilidades-Nivel 1-2026"
-      ],
-      "activos": 779,
-      "aprobados": 737,
-      "aprobados_retirados": 21,
-      "retirados": 59,
-      "cursaron": 859,
-      "aprobados_total": 758,
-      "no_aprobados": 101,
-      "sin_finalizar": 42,
-      "promedio": 99.44,
-      "pct_aprobados": 88.2,
-      "pct_no_aprobados": 11.8,
-      "finalizado": true
-    },
-    {
-      "curso": "Hackea tu cerebro: Aprende en menos tiempo y sin sufrir",
-      "programa": "Jóvenes creaTIvos",
-      "periodos": [
-        "Habilidades-Nivel 1-2026"
-      ],
-      "activos": 779,
-      "aprobados": 773,
-      "aprobados_retirados": 49,
-      "retirados": 31,
-      "cursaron": 859,
-      "aprobados_total": 822,
-      "no_aprobados": 37,
-      "sin_finalizar": 6,
-      "promedio": 99.58,
-      "pct_aprobados": 95.7,
-      "pct_no_aprobados": 4.3,
+      "no_aprobados": 15,
+      "sin_finalizar": 1,
+      "promedio": 99.98,
+      "pct_aprobados": 98.2,
+      "pct_no_aprobados": 1.8,
       "finalizado": true
     },
     {
@@ -66,17 +28,55 @@
       "periodos": [
         "Habilidades-Nivel 1-2026"
       ],
-      "activos": 778,
+      "activos": 777,
       "aprobados": 697,
       "aprobados_retirados": 2,
       "retirados": 78,
-      "cursaron": 858,
+      "cursaron": 857,
       "aprobados_total": 699,
-      "no_aprobados": 159,
-      "sin_finalizar": 81,
-      "promedio": 98.79,
-      "pct_aprobados": 81.5,
-      "pct_no_aprobados": 18.5,
+      "no_aprobados": 158,
+      "sin_finalizar": 80,
+      "promedio": 98.88,
+      "pct_aprobados": 81.6,
+      "pct_no_aprobados": 18.4,
+      "finalizado": true
+    },
+    {
+      "curso": "Habilidades esenciales para ser un emprendedor exitoso",
+      "programa": "Jóvenes creaTIvos",
+      "periodos": [
+        "Habilidades-Nivel 1-2026"
+      ],
+      "activos": 777,
+      "aprobados": 737,
+      "aprobados_retirados": 21,
+      "retirados": 59,
+      "cursaron": 857,
+      "aprobados_total": 758,
+      "no_aprobados": 99,
+      "sin_finalizar": 40,
+      "promedio": 99.69,
+      "pct_aprobados": 88.4,
+      "pct_no_aprobados": 11.6,
+      "finalizado": true
+    },
+    {
+      "curso": "Hackea tu cerebro: Aprende en menos tiempo y sin sufrir",
+      "programa": "Jóvenes creaTIvos",
+      "periodos": [
+        "Habilidades-Nivel 1-2026"
+      ],
+      "activos": 777,
+      "aprobados": 773,
+      "aprobados_retirados": 49,
+      "retirados": 31,
+      "cursaron": 857,
+      "aprobados_total": 822,
+      "no_aprobados": 35,
+      "sin_finalizar": 4,
+      "promedio": 99.83,
+      "pct_aprobados": 95.9,
+      "pct_no_aprobados": 4.1,
       "finalizado": true
     },
     {
@@ -88,14 +88,14 @@
       "activos": 777,
       "aprobados": 722,
       "aprobados_retirados": 0,
-      "retirados": 17,
-      "cursaron": 794,
+      "retirados": 14,
+      "cursaron": 791,
       "aprobados_total": 722,
-      "no_aprobados": 72,
+      "no_aprobados": 69,
       "sin_finalizar": 55,
       "promedio": 96.93,
-      "pct_aprobados": 90.9,
-      "pct_no_aprobados": 9.1,
+      "pct_aprobados": 91.3,
+      "pct_no_aprobados": 8.7,
       "finalizado": true
     },
     {
@@ -107,14 +107,14 @@
       "activos": 777,
       "aprobados": 745,
       "aprobados_retirados": 0,
-      "retirados": 17,
-      "cursaron": 794,
+      "retirados": 14,
+      "cursaron": 791,
       "aprobados_total": 745,
-      "no_aprobados": 49,
+      "no_aprobados": 46,
       "sin_finalizar": 32,
       "promedio": 98.34,
-      "pct_aprobados": 93.8,
-      "pct_no_aprobados": 6.2,
+      "pct_aprobados": 94.2,
+      "pct_no_aprobados": 5.8,
       "finalizado": true
     },
     {
@@ -125,16 +125,16 @@
         "Desarrollo-Avanzado-2026"
       ],
       "activos": 777,
-      "aprobados": 309,
+      "aprobados": 314,
       "aprobados_retirados": 0,
       "retirados": 2,
       "cursaron": 779,
-      "aprobados_total": 309,
-      "no_aprobados": 470,
-      "sin_finalizar": 468,
-      "promedio": 62.87,
-      "pct_aprobados": 39.7,
-      "pct_no_aprobados": 60.3,
+      "aprobados_total": 314,
+      "no_aprobados": 465,
+      "sin_finalizar": 463,
+      "promedio": 64.01,
+      "pct_aprobados": 40.3,
+      "pct_no_aprobados": 59.7,
       "finalizado": false
     },
     {
@@ -162,17 +162,17 @@
       "periodos": [
         "Unico MR-2026"
       ],
-      "activos": 136,
+      "activos": 135,
       "aprobados": 29,
       "aprobados_retirados": 0,
       "retirados": 0,
-      "cursaron": 136,
+      "cursaron": 135,
       "aprobados_total": 29,
-      "no_aprobados": 107,
-      "sin_finalizar": 107,
-      "promedio": 34.15,
-      "pct_aprobados": 21.3,
-      "pct_no_aprobados": 78.7,
+      "no_aprobados": 106,
+      "sin_finalizar": 106,
+      "promedio": 34.33,
+      "pct_aprobados": 21.5,
+      "pct_no_aprobados": 78.5,
       "finalizado": false
     }
   ],
@@ -180,37 +180,43 @@
     {
       "programa": "Jóvenes creaTIvos",
       "cursos": 7,
-      "cursaron": 5803,
-      "aprobados": 4897,
+      "cursaron": 5789,
+      "aprobados": 4902,
       "aprobados_retirados": 138,
-      "retirados": 218,
-      "pct_aprobados": 84.4,
-      "estudiantes_cohorte": 860,
-      "retirados_unicos": 85
+      "retirados": 212,
+      "sin_finalizar": 675,
+      "matriculas_activas": 5439,
+      "pct_aprobados": 84.7,
+      "estudiantes_cohorte": 857,
+      "retirados_unicos": 82,
+      "habilitados_unicos": 777
     },
     {
       "programa": "Mujeres ROFÉ",
       "cursos": 2,
-      "cursaron": 380,
+      "cursaron": 379,
       "aprobados": 100,
       "aprobados_retirados": 0,
       "retirados": 0,
-      "pct_aprobados": 26.3,
-      "estudiantes_cohorte": 283,
-      "retirados_unicos": 0
+      "sin_finalizar": 279,
+      "matriculas_activas": 379,
+      "pct_aprobados": 26.4,
+      "estudiantes_cohorte": 282,
+      "retirados_unicos": 0,
+      "habilitados_unicos": 282
     }
   ],
   "totales": {
     "total_cursos": 9,
-    "total_matriculas": 6183,
-    "total_aprobados": 4997,
+    "total_matriculas": 6168,
+    "total_aprobados": 5002,
     "total_aprobados_retirados": 138,
-    "total_retirados_2026": 85,
-    "estudiantes_cohorte_2026": 1143
+    "total_retirados_2026": 82,
+    "estudiantes_cohorte_2026": 1139
   },
   "anomalias": {
-    "inhabilitados_sin_retiro": 5,
-    "retirados_unicos_2026": 85
+    "inhabilitados_sin_retiro": 2,
+    "retirados_unicos_2026": 82
   },
   "periodos": [
     {
@@ -219,15 +225,15 @@
     },
     {
       "periodo": "Logica-Nivel 2-2026",
-      "matriculados": 794
+      "matriculados": 791
     },
     {
       "periodo": "Habilidades-Nivel 1-2026",
-      "matriculados": 860
+      "matriculados": 857
     },
     {
       "periodo": "Unico MR-2026",
-      "matriculados": 283
+      "matriculados": 282
     },
     {
       "periodo": "Desarrollo-Avanzado-2026",

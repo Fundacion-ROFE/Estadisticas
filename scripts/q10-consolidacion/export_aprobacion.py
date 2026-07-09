@@ -85,6 +85,7 @@ PROYECTO_ROOT     = os.path.abspath(os.path.join(DIRECTORIO_SCRIPT, "..", ".."))
 RUTA_DATA_JSON    = os.path.join(PROYECTO_ROOT, "docs", "aprobacion", "data.json")
 RUTA_MAXIMOS      = os.path.join(PROYECTO_ROOT, "docs", "aprobacion", "maximos.json")
 RUTA_LEDGER       = os.path.join(PROYECTO_ROOT, "tools", "aprobacion_ledger.json")
+RUTA_EXCLUSIONES  = os.path.join(PROYECTO_ROOT, "tools", "exclusiones_prueba.json")
 
 
 def log(msg: str) -> None:
@@ -106,6 +107,42 @@ def parse_avance(serie: pd.Series) -> pd.Series:
     """'100%' / '85,5%' → float. El Consolidado trae el progreso como texto con %."""
     limpio = serie.astype(str).str.replace("%", "", regex=False).str.replace(",", ".")
     return pd.to_numeric(limpio, errors="coerce")
+
+
+# ── Exclusión de usuarios de prueba ───────────────────────────────────────────
+def cargar_exclusiones() -> set:
+    """Cédulas de perfiles de prueba (tools/exclusiones_prueba.json, gitignoreado).
+    No deben contar en ningún KPI, tabla ni como retirados."""
+    ceds = set()
+    if os.path.isfile(RUTA_EXCLUSIONES):
+        try:
+            with open(RUTA_EXCLUSIONES, encoding="utf-8") as f:
+                for p in json.load(f).get("perfiles", []):
+                    ced = norm_id(p.get("cedula", ""))
+                    if ced:
+                        ceds.add(ced)
+        except (json.JSONDecodeError, OSError) as e:
+            log(f"ADVERTENCIA: exclusiones ilegibles ({e}) — no se excluye nada")
+    return ceds
+
+
+def aplicar_exclusiones(virtual: dict, cohortes: dict, retirados: dict,
+                        ledger: dict, excl: set) -> None:
+    """Elimina las cédulas de prueba de todas las fuentes antes de agregar."""
+    if not excl:
+        return
+    quitadas = 0
+    for pid, df in virtual.items():
+        mask = df[COL_ID].map(norm_id).isin(excl)
+        quitadas += int(mask.sum())
+        virtual[pid] = df[~mask]
+    for info in cohortes.values():
+        info["ids"] -= excl
+        info["n"] = len(info["ids"])
+    for ced in excl:
+        retirados.pop(ced, None)
+        ledger.pop(ced, None)
+    log(f"Exclusión de pruebas: {len(excl)} cédulas — {quitadas} filas quitadas del Consolidado")
 
 
 # ── Ledger local de avances (PII — tools/ está gitignoreado) ─────────────────
@@ -278,9 +315,11 @@ def agregar_por_curso(virtual: dict, cohortes: dict, retirados: dict,
         # Cohorte única por programa (cada periodo pertenece a un programa)
         programa_pid = (str(df[COL_PROGRAMA].iloc[0]).strip()
                         if COL_PROGRAMA in df.columns and len(df) else "")
-        ps = prog_stats.setdefault(programa_pid, {"ids": set(), "inhab": set()})
-        ps["ids"]   |= info["ids"]
-        ps["inhab"] |= inhabilitados
+        ps = prog_stats.setdefault(programa_pid,
+                                   {"ids": set(), "inhab": set(), "activos": set()})
+        ps["ids"]     |= info["ids"]
+        ps["inhab"]   |= inhabilitados
+        ps["activos"] |= ids_activos_periodo
         confirmados = {c for c in inhabilitados if c in retirados}
         sin_retiro = inhabilitados - confirmados
         inhab_sin_retiro_total += len(sin_retiro)
@@ -344,7 +383,11 @@ def agregar_por_curso(virtual: dict, cohortes: dict, retirados: dict,
         "retirados_unicos_2026": len(inhabilitados_todos),
     }
     prog_stats = {
-        prog: {"estudiantes_cohorte": len(v["ids"]), "retirados_unicos": len(v["inhab"])}
+        prog: {
+            "estudiantes_cohorte": len(v["ids"]),
+            "retirados_unicos":    len(v["inhab"]),
+            "habilitados_unicos":  len(v["activos"]),
+        }
         for prog, v in prog_stats.items()
     }
     return lista, anomalias, prog_stats
@@ -381,7 +424,15 @@ def aplicar_maximos(lista: list) -> None:
             c["retirados"]           -= traslado
             c["aprobados_total"]     += traslado
 
-        c["cursaron"] = max(c["cursaron"], m["cursaron"])
+        # Si el máximo de cursaron supera el vivo (Q10 anuló matrículas del reporte
+        # de matriculados), el delta se cuenta como retirado para conservar la
+        # identidad cursaron == aprobados + aprobados_retirados + sin_finalizar + retirados
+        deficit_cursaron = m["cursaron"] - c["cursaron"]
+        if deficit_cursaron > 0:
+            log(f"  marca de agua: {c['curso'][:40]!r} cursaron {c['cursaron']} "
+                f"< máximo {m['cursaron']} — {deficit_cursaron} anulados → retirados")
+            c["retirados"] += deficit_cursaron
+            c["cursaron"]   = m["cursaron"]
         c["no_aprobados"]     = c["cursaron"] - c["aprobados_total"]
         c["pct_aprobados"]    = round(100 * c["aprobados_total"] / c["cursaron"], 1) \
             if c["cursaron"] else 0.0
@@ -408,6 +459,8 @@ def generar_json(anio: str, lista: list, cohortes: dict, anomalias: dict,
         p["aprobados"]           += c["aprobados_total"]
         p["aprobados_retirados"] += c["aprobados_retirados"]
         p["retirados"]           += c["retirados"]
+        p["sin_finalizar"]        = p.get("sin_finalizar", 0) + c["sin_finalizar"]
+        p["matriculas_activas"]   = p.get("matriculas_activas", 0) + c["activos"]
     for nombre, p in programas.items():
         p["pct_aprobados"] = round(100 * p["aprobados"] / p["cursaron"], 1) \
             if p["cursaron"] else 0.0
@@ -491,6 +544,8 @@ def main() -> None:
             log(f"ERROR: ningún periodo del año {args.anio} devolvió datos.")
             sys.exit(1)
 
+        aplicar_exclusiones(virtual, cohortes, retirados, ledger,
+                            cargar_exclusiones())
         actualizar_ledger(ledger, virtual)
         guardar_ledger(ledger)
 

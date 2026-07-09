@@ -1,30 +1,30 @@
 {
   "Bienvenidos a Jóvenes creaTIvos": {
     "aprobados": 842,
-    "cursaron": 860
-  },
-  "Habilidades esenciales para ser un emprendedor exitoso": {
-    "aprobados": 758,
-    "cursaron": 859
-  },
-  "Hackea tu cerebro: Aprende en menos tiempo y sin sufrir": {
-    "aprobados": 822,
-    "cursaron": 859
+    "cursaron": 857
   },
   "Emprendimiento: Idea de Negocio JC": {
     "aprobados": 699,
-    "cursaron": 858
+    "cursaron": 857
+  },
+  "Habilidades esenciales para ser un emprendedor exitoso": {
+    "aprobados": 758,
+    "cursaron": 857
+  },
+  "Hackea tu cerebro: Aprende en menos tiempo y sin sufrir": {
+    "aprobados": 822,
+    "cursaron": 857
   },
   "Fundamentos Lógica de Programación - 2026": {
     "aprobados": 722,
-    "cursaron": 794
+    "cursaron": 791
   },
   "Introducción a la IA Generativa - 2026": {
     "aprobados": 745,
-    "cursaron": 794
+    "cursaron": 791
   },
   "Desarrollo Web Front-End - HTML - 2026": {
-    "aprobados": 309,
+    "aprobados": 314,
     "cursaron": 779
   },
   "Habilidades del ser para Emprendedoras del Siglo XXI": {
@@ -33,6 +33,6 @@
   },
   "De la idea a la acción, tu guía para emprender con éxito": {
     "aprobados": 29,
-    "cursaron": 136
+    "cursaron": 135
   }
 }

@@ -1,12 +1,12 @@
 {
-  "ultima_actualizacion": "2026-07-08T17:20:09.038532-05:00",
+  "ultima_actualizacion": "2026-07-08T19:34:36.077905-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
-      "estudiantes": 780,
+      "estudiantes": 777,
       "finalizados": 776,
-      "promedio": 99.65,
-      "min": 0.0,
+      "promedio": 99.98,
+      "min": 85.0,
       "max": 100.0,
       "inscritos": 863,
       "promedio_pico": 98.47,
@@ -25,9 +25,9 @@
     },
     {
       "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
-      "estudiantes": 778,
+      "estudiantes": 777,
       "finalizados": 697,
-      "promedio": 98.79,
+      "promedio": 98.88,
       "min": 0.0,
       "max": 101.0,
       "inscritos": 830,
@@ -47,9 +47,9 @@
     },
     {
       "curso": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
-      "estudiantes": 779,
+      "estudiantes": 777,
       "finalizados": 737,
-      "promedio": 99.44,
+      "promedio": 99.69,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 854,
@@ -58,10 +58,10 @@
     },
     {
       "curso": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
-      "estudiantes": 779,
+      "estudiantes": 777,
       "finalizados": 773,
-      "promedio": 99.58,
-      "min": 0.0,
+      "promedio": 99.83,
+      "min": 22.0,
       "max": 100.0,
       "inscritos": 862,
       "promedio_pico": 96.37,
@@ -86,7 +86,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 132
+      "cantidad": 127
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -95,17 +95,17 @@
   ],
   "totales": {
     "total_cursos": 7,
-    "total_estudiantes_unicos": 780,
-    "total_habilitados": 780,
-    "total_db": 1063
+    "total_estudiantes_unicos": 777,
+    "total_habilitados": 777,
+    "total_db": 1059
   },
   "mr": {
     "por_curso": [
       {
         "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
-        "estudiantes": 136,
+        "estudiantes": 135,
         "finalizados": 29,
-        "promedio": 34.15,
+        "promedio": 34.21,
         "min": 0.0,
         "max": 100.0,
         "inscritos": 136,
@@ -136,8 +136,8 @@
     ],
     "totales": {
       "total_cursos": 2,
-      "total_estudiantes_unicos": 283,
-      "total_habilitados": 283
+      "total_estudiantes_unicos": 282,
+      "total_habilitados": 282
     }
   },
   "stand": {
