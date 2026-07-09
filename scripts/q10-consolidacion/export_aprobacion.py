@@ -77,7 +77,9 @@ from q10_to_sheets import (
 
 COL_PROGRAMA = "Nombre programa"
 
-UMBRAL_APROBADO     = 100.0  # avance >= 100 aprueba (hay 101 por actividades extra)
+# Aprobado = avance > 80 (cambio 2026-07-09: antes era >= 100). Coincide con la
+# banda superior de progreso (81-100). Bandas de progreso: 0-25 / 26-80 / 81-100.
+UMBRAL_APROBADO     = 80.0   # avance > 80 aprueba
 UMBRAL_PROMEDIO_FIN = 90.0   # promedio de activos >= 90% → curso se considera finalizado
 
 DIRECTORIO_SCRIPT = os.path.dirname(os.path.abspath(__file__))
@@ -366,22 +368,29 @@ def agregar_por_curso(virtual: dict, cohortes: dict, retirados: dict,
             clave = norm_curso(asig)
             g_dedup = g.sort_values("_av", ascending=False).drop_duplicates("_ced")
             activos   = len(g_dedup)
-            aprobados = int((g_dedup["_av"] >= UMBRAL_APROBADO).sum())
+            avs = g_dedup["_av"].fillna(0.0)
+            # Bandas de progreso de los ACTIVOS (suman exacto a 'activos').
+            # 0-25 riesgo · 26-80 medio · 81-100 (> 80) en meta = aprobados.
+            banda_baja  = int((avs <= 25).sum())
+            banda_media = int(((avs > 25) & (avs <= UMBRAL_APROBADO)).sum())
+            banda_alta  = int((avs > UMBRAL_APROBADO).sum())
+            aprobados = banda_alta       # aprobado = avance > 80
             promedio  = float(g_dedup["_av"].mean()) if activos else 0.0
             programa  = (str(g[COL_PROGRAMA].iloc[0]).strip()
                          if COL_PROGRAMA in g.columns else "")
 
             # Clasificar inhabilitados de este periodo contra ESTE curso:
-            # ¿su máximo avance registrado en el ledger ya era aprobatorio?
+            # ¿su máximo avance registrado en el ledger ya era aprobatorio (> 80)?
             aprob_ret = sum(
                 1 for ced in inhabilitados
-                if ledger.get(ced, {}).get(clave, 0.0) >= UMBRAL_APROBADO
+                if ledger.get(ced, {}).get(clave, 0.0) > UMBRAL_APROBADO
             )
 
             c = cursos.setdefault(clave, {
                 "curso": clave, "programa": programa, "periodos": [],
                 "activos": 0, "aprobados": 0, "aprobados_retirados": 0,
                 "retirados": 0, "cursaron": 0, "_suma_avance": 0.0,
+                "banda_0_25": 0, "banda_26_80": 0, "banda_81_100": 0,
             })
             c["periodos"].append(info["etiqueta"])
             c["activos"]             += activos
@@ -390,6 +399,9 @@ def agregar_por_curso(virtual: dict, cohortes: dict, retirados: dict,
             c["retirados"]           += len(inhabilitados) - aprob_ret
             c["cursaron"]            += activos + len(inhabilitados)
             c["_suma_avance"]        += promedio * activos
+            c["banda_0_25"]          += banda_baja
+            c["banda_26_80"]         += banda_media
+            c["banda_81_100"]        += banda_alta
 
     lista = []
     for c in cursos.values():
@@ -509,9 +521,11 @@ def generar_json(anio: str, lista: list, cohortes: dict, anomalias: dict,
         "anio": anio,
         "nota_metodo": (
             "Cohorte = matriculados del periodo (habilitados + inhabilitados). "
-            "Aprobado = avance >= 100. Un inhabilitado que ya había alcanzado el "
-            "100 cuenta como 'aprobó y se retiró' (no pierde su logro); solo los "
-            "retirados sin aprobar cuentan como no aprobados."
+            "Aprobado = avance > 80 (desde 2026-07-09; antes >= 100). Un inhabilitado "
+            "que ya había superado el 80 cuenta como 'aprobó y se retiró' (no pierde "
+            "su logro); solo los retirados sin superar 80 cuentan como no aprobados. "
+            "Cada curso trae bandas de progreso de los activos: banda_0_25 / "
+            "banda_26_80 / banda_81_100 (suman a 'activos')."
         ),
         "por_curso": lista,
         "por_programa": [

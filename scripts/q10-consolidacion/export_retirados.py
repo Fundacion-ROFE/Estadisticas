@@ -60,7 +60,7 @@ RUTA_2026 = [
     "Fundamentos Lógica de Programación - 2026",
     "Desarrollo Web Front-End - HTML - 2026",
 ]
-UMBRAL_APROBADO = 100.0  # avance >= 100 aprueba (mismo criterio que export_aprobacion.py)
+UMBRAL_APROBADO = 80.0  # avance > 80 aprueba/completa (mismo criterio que export_aprobacion.py desde 2026-07-09)
 
 
 # ── Utilidades ────────────────────────────────────────────────────────────────
@@ -119,7 +119,7 @@ def etapa_de_retiro(cedula: str, ledger: dict) -> tuple[int, str]:
     avances = ledger.get(cedula, {})
     ultimo = 0
     for i, curso in enumerate(RUTA_2026, start=1):
-        if avances.get(norm_curso(curso), 0.0) >= UMBRAL_APROBADO:
+        if avances.get(norm_curso(curso), 0.0) > UMBRAL_APROBADO:
             ultimo = i
     etiqueta = "No completó ningún curso" if ultimo == 0 else RUTA_2026[ultimo - 1]
     return ultimo, etiqueta

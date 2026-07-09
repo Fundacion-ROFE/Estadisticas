@@ -121,10 +121,11 @@
       background: var(--border); gap: 2px;   /* separador de 2px entre segmentos */
     }
     .seg { height: 100%; min-width: 0; width: 0; position: relative; cursor: default; }
-    .seg-aprobado { background: var(--green); border-radius: 4px 0 0 4px; }
+    .seg-aprobado { background: var(--green); }
     .seg-aprobret { background: var(--blue-ret); }
     .seg-sinfin   { background: var(--amber); }
-    .seg-retirado { background: var(--red); border-radius: 0 4px 4px 0; }
+    .seg-riesgo   { background: var(--orange); }
+    .seg-retirado { background: var(--red); }
     .seg:hover { filter: brightness(1.12); }
 
     /* tooltip */
@@ -230,12 +231,20 @@ function animateSegs(){
 /* Barra apilada 100% de un curso: aprobados | aprobó y se retiró | sin completar | retirados */
 function cursoRow(c){
   const total = c.cursaron || 1;
-  const segs = [
-    { k:'aprobado', n:c.aprobados,               lbl:'Aprobaron y siguen activos (avance ≥ 100)' },
+  // Curso EN CURSO con datos de bandas → barra por progreso; si no, formato final.
+  const enCurso = !c.finalizado && c.banda_0_25 != null;
+  const segs = (enCurso ? [
+    { k:'riesgo',   n:c.banda_0_25,               lbl:'En riesgo — avance 0–25%' },
+    { k:'sinfin',   n:c.banda_26_80,              lbl:'En progreso — avance 26–80%' },
+    { k:'aprobado', n:c.banda_81_100,             lbl:'En meta — avance > 80% (aprobado)' },
     { k:'aprobret', n:c.aprobados_retirados ?? 0, lbl:'Aprobaron y luego se retiraron' },
-    { k:'sinfin',   n:c.sin_finalizar,           lbl: c.finalizado ? 'No completaron el curso' : 'Aún cursando (avance < 100)' },
-    { k:'retirado', n:c.retirados,               lbl:'Se retiraron sin aprobar' },
-  ].filter(s=>s.n>0);
+    { k:'retirado', n:c.retirados,                lbl:'Se retiraron sin aprobar' },
+  ] : [
+    { k:'aprobado', n:c.aprobados,               lbl:'Aprobaron (avance > 80)' },
+    { k:'aprobret', n:c.aprobados_retirados ?? 0, lbl:'Aprobaron y luego se retiraron' },
+    { k:'sinfin',   n:c.sin_finalizar,           lbl:'No completaron el curso (avance ≤ 80)' },
+    { k:'retirado', n:c.retirados,                lbl:'Se retiraron sin aprobar' },
+  ]).filter(s=>s.n>0);
 
   const html = segs.map(s=>{
     const pct = (s.n/total*100);
@@ -274,17 +283,18 @@ function render(d){
     <div class="kpi-card">
       <div class="kpi-val">${pctGlobal}%</div>
       <div class="kpi-lbl">Aprobación global ${esc(d.anio)}</div>
-      <div class="kpi-sub">${fmt(pJC.aprobados)} matrículas con avance ≥ 100${
+      <div class="kpi-sub">${fmt(pJC.aprobados)} matrículas aprobadas (avance &gt; 80)${
         pJC.aprobados_retirados ? ` (incluye ${fmt(pJC.aprobados_retirados)} de retirados)` : ''}</div>
     </div>
   </div>`;
 
   const legend = `
   <div class="legend">
-    <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>Aprobaron (≥ 100)</span>
-    <span class="legend-item"><span class="legend-dot" style="background:var(--blue-ret)"></span>Aprobaron y se retiraron</span>
-    <span class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span>Sin completar</span>
-    <span class="legend-item"><span class="legend-dot" style="background:var(--red)"></span>Retirados sin aprobar</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--orange)"></span>En riesgo (0–25%)</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span>En progreso (26–80%)</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>En meta / Aprobó (&gt; 80%)</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--blue-ret)"></span>Aprobó y se retiró</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--red)"></span>Retirado sin aprobar</span>
   </div>`;
 
   const grupos = `
@@ -299,12 +309,13 @@ function render(d){
     ${legend}
     ${grupos}
     <p class="chart-note">
-      Se aprueba únicamente con avance de 100 o más (hay casos de 101 por actividades extra).
-      En cursos <strong>finalizados</strong> el % es definitivo; en cursos <strong>en curso</strong>,
-      "sin completar" son estudiantes que aún están avanzando.
-      <strong>Aprobaron y se retiraron</strong>: estudiantes que alcanzaron el 100 en este curso
-      y después fueron inhabilitados (Q10 inhabilita todas las matrículas a la vez) —
-      su logro cuenta en el % de aprobación sin importar cuántas actualizaciones pasen.
+      Se aprueba con avance <strong>mayor a 80%</strong>. En cursos <strong>en curso</strong> la barra
+      reparte a los activos por progreso — <span style="color:var(--orange);font-weight:600">riesgo (0–25%)</span>,
+      <span style="color:var(--amber);font-weight:600">en progreso (26–80%)</span> y
+      <span style="color:var(--green-dark);font-weight:600">en meta (&gt; 80%)</span> — para ver el riesgo
+      respecto al avance esperado. En cursos <strong>finalizados</strong> el % es definitivo.
+      <strong>Aprobó y se retiró</strong>: superó el 80% en este curso y después fue inhabilitado
+      (Q10 inhabilita todas las matrículas a la vez) — su logro cuenta en el % sin importar el tiempo.
     </p>
   </div>`;
 
