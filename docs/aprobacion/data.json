@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-09T00:13:17.360137-05:00",
+  "ultima_actualizacion": "2026-07-09T08:53:24.435924-05:00",
   "anio": "2026",
   "nota_metodo": "Cohorte = matriculados del periodo (habilitados + inhabilitados). Aprobado = avance >= 100. Un inhabilitado que ya había alcanzado el 100 cuenta como 'aprobó y se retiró' (no pierde su logro); solo los retirados sin aprobar cuentan como no aprobados.",
   "por_curso": [
@@ -125,16 +125,16 @@
         "Desarrollo-Avanzado-2026"
       ],
       "activos": 777,
-      "aprobados": 321,
+      "aprobados": 325,
       "aprobados_retirados": 0,
       "retirados": 2,
       "cursaron": 779,
-      "aprobados_total": 321,
-      "no_aprobados": 458,
-      "sin_finalizar": 456,
-      "promedio": 65.41,
-      "pct_aprobados": 41.2,
-      "pct_no_aprobados": 58.8,
+      "aprobados_total": 325,
+      "no_aprobados": 454,
+      "sin_finalizar": 452,
+      "promedio": 65.52,
+      "pct_aprobados": 41.7,
+      "pct_no_aprobados": 58.3,
       "finalizado": false
     },
     {
@@ -170,7 +170,7 @@
       "aprobados_total": 29,
       "no_aprobados": 106,
       "sin_finalizar": 106,
-      "promedio": 34.72,
+      "promedio": 34.73,
       "pct_aprobados": 21.5,
       "pct_no_aprobados": 78.5,
       "finalizado": false
@@ -181,12 +181,12 @@
       "programa": "Jóvenes creaTIvos",
       "cursos": 7,
       "cursaron": 5789,
-      "aprobados": 4910,
+      "aprobados": 4914,
       "aprobados_retirados": 138,
       "retirados": 212,
-      "sin_finalizar": 667,
+      "sin_finalizar": 663,
       "matriculas_activas": 5439,
-      "pct_aprobados": 84.8,
+      "pct_aprobados": 84.9,
       "estudiantes_cohorte": 857,
       "retirados_unicos": 82,
       "habilitados_unicos": 777
@@ -209,7 +209,7 @@
   "totales": {
     "total_cursos": 9,
     "total_matriculas": 6168,
-    "total_aprobados": 5010,
+    "total_aprobados": 5014,
     "total_aprobados_retirados": 138,
     "total_retirados_2026": 82,
     "estudiantes_cohorte_2026": 1139
