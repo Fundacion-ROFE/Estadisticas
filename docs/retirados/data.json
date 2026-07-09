@@ -1,5 +1,6 @@
 {
-  "ultima_actualizacion": "2026-07-08T19:34:38.573012-05:00",
+  "ultima_actualizacion": "2026-07-08T20:02:07.130805-05:00",
+  "anio": null,
   "totales": {
     "total_retirados": 353,
     "cancelados": 318,
@@ -101,5 +102,6 @@
       "mes": "2026-07",
       "cantidad": 26
     }
-  ]
+  ],
+  "por_etapa": []
 }
