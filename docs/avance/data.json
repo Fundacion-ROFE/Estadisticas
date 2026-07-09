@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-08T17:20:15.588783-05:00",
+  "ultima_actualizacion": "2026-07-08T20:01:49.832498-05:00",
   "segmento": "Logica-Nivel 2-2026",
   "por_curso": [
     {
@@ -68,9 +68,9 @@
     {
       "nombre": "HTML - AUT",
       "estudiantes": 777,
-      "aprobados": 309,
-      "pct_aprobados": 39.8,
-      "promedio": 62.85,
+      "aprobados": 316,
+      "pct_aprobados": 40.7,
+      "promedio": 64.22,
       "min": 0.0,
       "max": 100.0
     },
@@ -106,8 +106,8 @@
     "total_cursos": 11,
     "total_registros": 8872,
     "estudiantes_unicos_id": 863,
-    "promedio_general": 87.03,
-    "total_aprobados": 6891
+    "promedio_general": 87.15,
+    "total_aprobados": 6898
   },
   "anomalias": [
     {
@@ -116,7 +116,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 478
+      "cantidad": 471
     },
     {
       "categoria": "AVANCE IRREGULAR",
