@@ -1276,3 +1276,28 @@ Event Subscription de Zoom comunicaciones y pulsa Validate.
 - Verificación: py_compile OK · corrida real export_aprobacion + export_retirados --sin-push ·
   smoke test de render (Node) de retirados (2026 y fallback histórico) y del funnel Tab 5 ·
   paleta del gráfico de etapa validada con el validador de dataviz. Patrones nuevos en [[convenciones]].
+
+---
+
+## 2026-07-09 — [q10-consolidacion] Excluir desertores de todas las estadísticas + reconciliación 857/82
+
+**Estado:** Completado (código + docs) — corrida real --sin-push verificada, JSON regenerados (pendiente push).
+**Proceso relacionado:** [[q10-consolidacion]] · [[dashboard-web]]
+
+- Duda del usuario resuelta: el desajuste 777 vs 775 = el par fantasma (2 inhabilitados sin
+  cancelación, Samuel Murcia 1034662377 + Vicenzo Vecchio 58464721) contado como retirado y a la
+  vez restado del último curso. Activos reales = 775; identidad cierra como 857=775+82 o 855=775+80,
+  nunca 777. Documentado como decisión pendiente (no aplicar hasta confirmar si siguen activos).
+- **Desertores excluidos de TODAS las estadísticas** (`Tipo=Desertor` / "Decisión de la Institución"):
+  se tratan como perfiles de prueba. `export_aprobacion.py` (fuente de verdad) ahora deriva el set de
+  desertores del dict `retirados` y lo une a `cargar_exclusiones()` antes de `aplicar_exclusiones()`
+  (`TIPOS_RETIRO_EXCLUIDOS = {"desertor"}` + helper `cedulas_por_tipo_retiro`). Propaga solo a los dos
+  paneles vía `cohorte_2026.json`; el frontend consume los JSON dinámicamente (nada hardcodeado).
+- **Gotcha marca de agua:** al bajar la cohorte, el watermark `cursaron` de `maximos.json` resucitaba
+  a los desertores como retirados (`deficit_cursaron`). Fix: resetear las 7 entradas JC de maximos.json
+  (conservando las 2 de Mujeres ROFÉ) para rebaselinar. Mismo patrón del fix fantasma revertido.
+- Verificación corrida real --sin-push: 34 desertores en el histórico, 25 en cohorte 2026 →
+  cohorte JC 857→832, retirados únicos 82→57 (55 cancelados + 2 fantasma), desertores 0. Identidad
+  832 = 775 activos + 57 retirados. maximos.json rebaselinó a 832/791/779 sin resucitar a nadie.
+  export_retirados --sin-push coherente (total 57, cancelados 55, desertores 0). py_compile OK.
+- Pendiente: push a producción (dashboard público) — no ejecutado, a la espera de OK del usuario.

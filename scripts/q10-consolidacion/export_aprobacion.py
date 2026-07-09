@@ -82,6 +82,14 @@ COL_PROGRAMA = "Nombre programa"
 UMBRAL_APROBADO     = 80.0   # avance > 80 aprueba
 UMBRAL_PROMEDIO_FIN = 90.0   # promedio de activos >= 90% → curso se considera finalizado
 
+# Tipos de retiro que NO cuentan en ninguna estadística (se tratan igual que los
+# perfiles de prueba: se eliminan de cohorte, activos, retirados y ledger — no solo
+# se dejan de contar como retirados). "Desertor" = causa "Decisión de la Institución":
+# la institución los retiró; no son resultados genuinos del programa. Al excluirlos
+# baja la cohorte por curso, así que maximos.json debe rebaselinarse en la corrida
+# donde se activa (ver docs/procesos/q10-consolidacion.md).
+TIPOS_RETIRO_EXCLUIDOS = {"desertor"}
+
 DIRECTORIO_SCRIPT = os.path.dirname(os.path.abspath(__file__))
 PROYECTO_ROOT     = os.path.abspath(os.path.join(DIRECTORIO_SCRIPT, "..", ".."))
 RUTA_DATA_JSON    = os.path.join(PROYECTO_ROOT, "docs", "aprobacion", "data.json")
@@ -127,6 +135,13 @@ def cargar_exclusiones() -> set:
         except (json.JSONDecodeError, OSError) as e:
             log(f"ADVERTENCIA: exclusiones ilegibles ({e}) — no se excluye nada")
     return ceds
+
+
+def cedulas_por_tipo_retiro(retirados: dict, tipos: set) -> set:
+    """Cédulas cuyo tipo de retiro está en `tipos` (comparación en minúsculas).
+    `retirados` es {cedula_norm: tipo} tal como lo arma descargar_fuentes()."""
+    return {ced for ced, tipo in retirados.items()
+            if str(tipo).strip().lower() in tipos}
 
 
 def aplicar_exclusiones(virtual: dict, cohortes: dict, retirados: dict,
@@ -595,8 +610,12 @@ def main() -> None:
             log(f"ERROR: ningún periodo del año {args.anio} devolvió datos.")
             sys.exit(1)
 
+        excl_pruebas    = cargar_exclusiones()
+        excl_desertores = cedulas_por_tipo_retiro(retirados, TIPOS_RETIRO_EXCLUIDOS)
+        log(f"Exclusión por tipo de retiro {sorted(TIPOS_RETIRO_EXCLUIDOS)}: "
+            f"{len(excl_desertores)} cédulas (no cuentan en ninguna estadística)")
         aplicar_exclusiones(virtual, cohortes, retirados, ledger,
-                            cargar_exclusiones())
+                            excl_pruebas | excl_desertores)
         actualizar_ledger(ledger, virtual)
         guardar_ledger(ledger)
 

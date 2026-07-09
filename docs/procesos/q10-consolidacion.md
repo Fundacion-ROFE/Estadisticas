@@ -131,6 +131,7 @@ Periodos 2026 con datos (verificado 2026-07-05): `20` (Desarrollo-Nivel 3), `21`
 - **Borrar-y-resubir, no actualización por clave.** Válido mientras H1Test tenga solo las 7 columnas propias. Si el equipo agrega columnas a la derecha (fórmulas, notas), migrar a actualización por clave.
 - **Script parametrizable `--grupo`.** Escalable a nuevas pestañas sin código nuevo.
 - **Trigger dual Schedule + Telegram.** Schedule para actualizaciones silenciosas; Telegram para forzar on-demand.
+- **Desertores excluidos de TODAS las estadísticas (2026-07-09).** Los retiros `Tipo=Desertor` (causa "Decisión de la Institución") son estudiantes que la institución retiró — no son resultados genuinos del programa. Se tratan igual que los perfiles de prueba: se eliminan de cohorte, activos, retirados y ledger (no solo se dejan de contar como retirados). Implementado en `export_aprobacion.py` con `TIPOS_RETIRO_EXCLUIDOS = {"desertor"}` unido a `cargar_exclusiones()` antes de `aplicar_exclusiones()`. Como es la fuente de verdad (escribe `cohorte_2026.json`), el efecto propaga solo a los dos paneles (aprobación y retirados). Efecto verificado 2026-07-09: cohorte JC 857→832, retirados únicos 82→57 (55 cancelados + 2 sin registro); identidad `832 = 775 activos + 57 retirados`. Para excluir otro tipo a futuro, agregarlo al set (minúsculas).
 
 ## Gotchas / Limitaciones conocidas
 
@@ -153,6 +154,7 @@ Periodos 2026 con datos (verificado 2026-07-05): `20` (Desarrollo-Nivel 3), `21`
 - **Dos `/actualizar` simultáneos chocan en Q10 (HTTP 444).** Visto 2026-07-07: dos personas pidieron `/actualizar Q10` con 35 s de diferencia; ambas ejecuciones entraron a Q10 con la misma cuenta y Q10 cortó la segunda con `444 Client Error` al descargar el Consolidado. La primera ejecución completa sin problema — el fallo de la duplicada es inofensivo, no hay que reintentar. Mitigación pendiente: candado anti-concurrencia en el workflow (ver Pendientes).
 - **Corridas programadas pueden fallar en la madrugada** con "The server closed the connection unexpectedly" (vistas 03:00 y 07:00 del 2026-07-07; la de 23:00 pasó bien). Posible red inestable o mantenimiento de Q10. Si se vuelve patrón, investigar; una falla aislada se autocorrige en el siguiente ciclo de 4 h.
 - **Una fórmula manual en H1Test tumbó todo el pipeline (2026-07-08).** Alguien puso un `FILTRAR(...)` en `J1` de H1Test; quedó en `#NAME?` y dejó H1/I1 como encabezados vacíos duplicados → `get_all_records()` lanza `GSpreadException` en el organizador y **nada de lo que sigue corre** (dashboard congelado, el q10_to_sheets previo sí pasa). Fix doble: (a) fórmula removida de J1 (guardada en la bitácora), (b) lectura tolerante `leer_registros()` que ignora columnas con encabezado vacío/duplicado, aplicada en `organizador_headless.py`, `retirados_headless.py`, `export_retirados.py` y `organizador_Q10.py` (el `.exe` de operadores necesita rebuild para heredar el fix). Regla para humanos: fórmulas de análisis van en una pestaña aparte, nunca en las pestañas del pipeline.
+- **Excluir cédulas de la cohorte exige rebaselinar `maximos.json` (2026-07-09).** La marca de agua (`aplicar_maximos`) guarda el máximo histórico de `cursaron` por curso y **nunca decae**: si el `cursaron` vivo baja respecto al máximo, el déficit se re-suma como retirados (`deficit_cursaron > 0 → c["retirados"] += deficit`). Al excluir desertores la cohorte baja (857→832), así que el watermark viejo (857) los **resucitaría como retirados** anulando la exclusión. Fix: resetear en `maximos.json` las entradas de los cursos afectados (solo JC — los desertores son todos de Jóvenes creaTIvos; las 2 entradas de Mujeres ROFÉ se conservan) para que la corrida las regenere sobre la cohorte nueva. Mismo patrón que usó el fix fantasma revertido. Aplica a cualquier exclusión futura que reduzca la cohorte.
 - **Los Schedule Triggers corrían en timezone de New York.** Sin `GENERIC_TIMEZONE` ni `settings.timezone`, n8n interpreta las horas en America/New_York. Corregido 2026-07-08: timezone `America/Bogota` en ambos workflows (vía API) + `GENERIC_TIMEZONE` en `iniciar_n8n.bat` (aplica al reiniciar). Ver [[convenciones]].
 
 ## Reglas de Anomalías
@@ -190,6 +192,16 @@ El equipo clasifica los registros bajo 4 categorías tras la carga:
 **Para reiniciar el sistema:** doble clic en `iniciar_n8n.bat` (en el PC de Samuel). ngrok (dominio fijo) + n8n activos en ~45 segundos.
 
 ## Pendiente / Próximos pasos
+
+### Par fantasma "inhabilitados sin cancelación" — decisión pendiente (2026-07-09)
+Dos estudiantes JC 2026 — **Samuel Murcia (1034662377)** y **Vicenzo Vecchio (58464721)** —
+están inhabilitados en Q10 **sin cancelación formal** y con el programa prácticamente completo
+(avance > 80 hasta el curso 6 de la ruta; etapa de retiro 6). Caen como `sin_registro_hoja`
+(2) dentro de los retirados: ni activos-en-progreso ni desertores reales.
+
+- **Hoy (sin aplicar):** cuentan como retirados → cohorte 832 = 775 activos + 57 retirados (55 cancelados + **2 fantasma**).
+- **Fix listo, NO aplicado:** descartarlos vía `tools/exclusiones_prueba.json` (motivo=normalizado) + rebaselinar `maximos.json` → retirados 57→55, cohorte 832→830, identidad `830 = 775 + 55`. Es lo que hacía el commit revertido `7936664`.
+- **Bloqueo:** falta que la coordinación confirme si **siguen activos** (Q10 los reactiva) o si **se retiraron definitivamente**. Según la respuesta se aplica el fix o se dejan como cancelados normales. No aplicar hasta esa confirmación.
 
 ### Setup h2test — completado (2026-06-24)
 - [x] Service Account con acceso de Editor al Sheet de h2test (`1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs`)

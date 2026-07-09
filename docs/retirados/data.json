@@ -1,10 +1,10 @@
 {
-  "ultima_actualizacion": "2026-07-09T13:37:06.091258-05:00",
+  "ultima_actualizacion": "2026-07-09T14:06:34.652601-05:00",
   "anio": "2026",
   "totales": {
-    "total_retirados": 82,
+    "total_retirados": 57,
     "cancelados": 55,
-    "desertores": 25,
+    "desertores": 0,
     "aplazados": 0,
     "sin_registro_hoja": 2
   },
@@ -12,10 +12,6 @@
     {
       "tipo": "Cancelado",
       "cantidad": 55
-    },
-    {
-      "tipo": "Desertor",
-      "cantidad": 25
     },
     {
       "tipo": "Sin registro de retiro",
@@ -28,10 +24,6 @@
       "cantidad": 55
     },
     {
-      "causa": "Decisión de la Institución",
-      "cantidad": 25
-    },
-    {
       "causa": "Sin registro de retiro",
       "cantidad": 2
     }
@@ -39,7 +31,7 @@
   "por_programa": [
     {
       "programa": "Jóvenes creaTIvos",
-      "cantidad": 82
+      "cantidad": 57
     }
   ],
   "por_mes": [
@@ -57,24 +49,24 @@
     },
     {
       "mes": "2026-07",
-      "cantidad": 26
+      "cantidad": 1
     }
   ],
   "por_etapa": [
     {
       "orden": 0,
       "etapa": "No completó ningún curso",
-      "cantidad": 14
+      "cantidad": 0
     },
     {
       "orden": 1,
       "etapa": "Bienvenidos a Jóvenes creaTIvos",
-      "cantidad": 17
+      "cantidad": 7
     },
     {
       "orden": 2,
       "etapa": "Hackea tu cerebro: Aprende en menos tiempo y sin sufrir",
-      "cantidad": 14
+      "cantidad": 13
     },
     {
       "orden": 3,
