@@ -24,6 +24,11 @@ Dos triggers en paralelo — ver patrón en [[convenciones#Trigger dual: Schedul
 
 n8n arranca automáticamente al iniciar sesión en el PC de Samuel (Task Scheduler → `iniciar_n8n.bat`).
 
+**Timezone (desde 2026-07-08):** el workflow tiene `settings.timezone = America/Bogota` y el bat exporta
+`GENERIC_TIMEZONE=America/Bogota`. Sin esto n8n usa America/New_York y el ciclo de 4 h corre a
+horas corridas respecto a Colombia. El grid del Schedule 4h en Bogotá: 0:00, 4:00, 8:00, 12:00,
+16:00, 20:00. n8n **no recupera** disparos perdidos mientras estuvo apagado.
+
 | Comando Telegram | Qué hace |
 |---|---|
 | `/Actualizar Q10` | Pipeline completo: Q10 → H1Test → organizar → h2test → GitHub Pages |
@@ -63,7 +68,31 @@ Para agregar nuevos grupos: editar `MAPEO_GRUPOS`, `MAPEO_SHEET_IDS` en `q10_to_
 
 18. `q10_to_sheets.py --grupo retirados`: reporte `Estudiantes cancelados` (GestionAcademica) → pestaña `Retirados` (Sheet de h2test). Incluye los 3 tipos: Cancelado, Desertor, Aplazado. Histórico completo (sin filtro de fechas).
 19. `organizador/retirados_headless.py`: Retirados → `Retirados-complete` (bloques horizontales por Tipo + bloque RESUMEN).
-20. `export_retirados.py`: agrega por tipo/causa/programa/mes → `docs/retirados/data.json` (sin PII) → git push → panel `docs/retirados/index.html`.
+20. `export_retirados.py`: agrega por tipo/causa/programa/mes → `docs/retirados/data.json` (sin PII) → git push → panel `docs/retirados/index.html`. **Depende de `tools/cohorte_2026.json` + `tools/aprobacion_ledger.json` que genera la Fase 5** → en el workflow corre DESPUÉS de `export_aprobacion` (ver nota de orden abajo).
+
+**Fase 5 — Aprobación (2026-07-07, ledger 2026-07-08):** `export_aprobacion.py` loguea directo en
+Q10, cruza 3 reportes por cédula (cohorte completa incl. inhabilitados) → `docs/aprobacion/data.json`
+→ git push → panel público de aprobación. Como Q10 inhabilita todas las matrículas del estudiante
+(y su avance desaparece del Consolidado), un **ledger local** (`tools/aprobacion_ledger.json`, PII,
+keepMax por estudiante×curso, sembrado desde la hoja manual con `tools/seed_ledger_avance.py`)
+clasifica a cada inhabilitado en "aprobó y se retiró" (4° segmento azul en los paneles) o "se retiró
+sin aprobar" — el % aprobó ya no castiga cursos que el estudiante ganó antes de inhabilitarse.
+Ver detalle en [[mapa-codigo#export_aprobacion.py]].
+
+**Fase 6 — Toma Sin Completar (2026-07-08):** `tools/exportar_sin_completar.py` cruza h2test
+(avance < 100, solo JC) × BD Seguimiento de Monitorias (Grupo = ciudad) por cédula → Sheet privado
+`SinCompletar` con bloques horizontales por ciudad (cursos apilados dentro), para gestión con el
+encargado de cada ciudad. Ver [[mapa-codigo#tools/exportar_sin_completar.py (local, gitignoreado)]].
+
+Ambas fases corren al final de las dos ramas del workflow (Schedule 4h y comando Telegram).
+
+**Orden de ejecución real en el workflow (corregido 2026-07-09):** aunque las fases están numeradas
+Retirados (4) antes de Aprobación (5), en el workflow `export_aprobacion` corre **ANTES** de
+`export_retirados` porque este último consume `cohorte_2026.json` y `aprobacion_ledger.json` que
+aquél genera. Cadena real: `q10 retirados → retirados_headless → export_aprobacion → export_retirados
+→ export_sin_completar`. Antes iban al revés y el panel de retirados usaba la cohorte del ciclo
+anterior (atraso de 4h). `export_aprobacion` loguea directo en Q10 (no depende de la pestaña
+Retirados), por eso puede ir primero.
 
 **Tiempo estimado total (`/actualizar h2test`):** ~4-5 minutos.
 
@@ -115,12 +144,16 @@ Periodos 2026 con datos (verificado 2026-07-05): `20` (Desarrollo-Nivel 3), `21`
 - **`ws_h2.clear()` vs `values_clear("A1:Z1000")`.** h2test tiene 9 bloques × 8 cols = 72 cols, y el bloque SIN CURSO puede tener 3400+ filas. El rango Z1000 solo cubre 26 cols × 1000 filas — datos viejos más allá de esos límites persisten y corrompen export_stats. Usar siempre `ws_h2.clear()`.
 - **Token del bot de Telegram estuvo expuesto** en un chat de desarrollo. Regenerar con BotFather antes de uso en producción real.
 - **`wmic` colgado en Windows 11.** `iniciar_n8n.bat` usaba `wmic process` para matar el n8n anterior — en Windows 11 `wmic` está deprecated y puede colgar indefinidamente. Reemplazado por `Get-CimInstance Win32_Process` vía PowerShell (2026-06-26). Síntoma: bat imprime [2/4] y no avanza.
-- **WEBHOOK_URL se inyecta al arrancar n8n.** Si cloudflared se reinicia y genera una URL nueva, n8n debe reiniciarse también para heredarla — de lo contrario el registro del webhook con Telegram falla con "Failed to resolve host". Siempre reiniciar con el bat completo, nunca solo cloudflared.
+- **WEBHOOK_URL se inyecta al arrancar n8n.** Desde 2026-07-07 es fija (`https://ergonomic-absinthe-refract.ngrok-free.dev`, hardcodeada en `iniciar_n8n.bat`), así que ya no hay rotación de URL. Sigue aplicando: si n8n arranca sin esa variable (p. ej. `n8n start` a mano), el registro del webhook con Telegram queda mal — siempre reiniciar con el bat completo.
 - **Workflow quedó inactivo tras PUT de actualización.** Al actualizar el workflow vía API con el workflow activo se producía error; se desactivó, se actualizó, pero no se reactivó. El bat ya tiene loop que detecta esto y reactiva solo. Verificar con `GET /api/v1/workflows/Rblg81qifVshsRae` si se sospecha inactividad.
 - **Si se agregan columnas propias a H1Test o h2test** a la derecha de las columnas propias, la lógica borrar-y-resubir las destruiría.
 - **Nombre de pestaña h2test es minúsculas intencional.** Así está creada en Google Sheets. No cambiar a `H2Test` ni en el código ni en Sheets — rompería la conexión. `H1Test` usa CamelCase porque se creó primero con ese nombre; son convenciones distintas por origen histórico.
 - **El reporte Estudiantes cancelados NO trae Email ni Curso** — solo identificación, teléfono y datos del retiro. No se puede cruzar por email con h2test/Avance (el cruce estándar del proyecto). El análisis de retirados es sobre sus propios campos (tipo, causa, fecha, programa).
 - **El Consolidado no tiene columna de estado de matrícula** — verificado 2026-07-02 con `archivado=true/false`: mismas filas y columnas. Los retirados solo existen en el reporte `EstudiantesCancelados`.
+- **Dos `/actualizar` simultáneos chocan en Q10 (HTTP 444).** Visto 2026-07-07: dos personas pidieron `/actualizar Q10` con 35 s de diferencia; ambas ejecuciones entraron a Q10 con la misma cuenta y Q10 cortó la segunda con `444 Client Error` al descargar el Consolidado. La primera ejecución completa sin problema — el fallo de la duplicada es inofensivo, no hay que reintentar. Mitigación pendiente: candado anti-concurrencia en el workflow (ver Pendientes).
+- **Corridas programadas pueden fallar en la madrugada** con "The server closed the connection unexpectedly" (vistas 03:00 y 07:00 del 2026-07-07; la de 23:00 pasó bien). Posible red inestable o mantenimiento de Q10. Si se vuelve patrón, investigar; una falla aislada se autocorrige en el siguiente ciclo de 4 h.
+- **Una fórmula manual en H1Test tumbó todo el pipeline (2026-07-08).** Alguien puso un `FILTRAR(...)` en `J1` de H1Test; quedó en `#NAME?` y dejó H1/I1 como encabezados vacíos duplicados → `get_all_records()` lanza `GSpreadException` en el organizador y **nada de lo que sigue corre** (dashboard congelado, el q10_to_sheets previo sí pasa). Fix doble: (a) fórmula removida de J1 (guardada en la bitácora), (b) lectura tolerante `leer_registros()` que ignora columnas con encabezado vacío/duplicado, aplicada en `organizador_headless.py`, `retirados_headless.py`, `export_retirados.py` y `organizador_Q10.py` (el `.exe` de operadores necesita rebuild para heredar el fix). Regla para humanos: fórmulas de análisis van en una pestaña aparte, nunca en las pestañas del pipeline.
+- **Los Schedule Triggers corrían en timezone de New York.** Sin `GENERIC_TIMEZONE` ni `settings.timezone`, n8n interpreta las horas en America/New_York. Corregido 2026-07-08: timezone `America/Bogota` en ambos workflows (vía API) + `GENERIC_TIMEZONE` en `iniciar_n8n.bat` (aplica al reiniciar). Ver [[convenciones]].
 
 ## Reglas de Anomalías
 
@@ -144,6 +177,8 @@ El equipo clasifica los registros bajo 4 categorías tras la carga:
 | `export_avance.py` | `scripts/q10-consolidacion/` | Fase 3b — pestaña Avance → `docs/avance/data.json` → git push |
 | `retirados_headless.py` | `scripts/q10-consolidacion/organizador/` | Fase 4 — Retirados → Retirados-complete (bloques por Tipo + RESUMEN) |
 | `export_retirados.py` | `scripts/q10-consolidacion/` | Fase 4 — Retirados → `docs/retirados/data.json` → git push |
+| `export_aprobacion.py` | `scripts/q10-consolidacion/` | Fase 5 — 3 reportes Q10 → `docs/aprobacion/data.json` → git push |
+| `exportar_sin_completar.py` | `tools/` (gitignoreado) | Fase 6 — h2test × BD Seguimiento → Sheet privado SinCompletar (por ciudad) |
 | `setup_headers.py` | `scripts/q10-consolidacion/` | Escribe headers fila 1 en H1Test/h2test (uso único) |
 | `requirements.txt` | `scripts/q10-consolidacion/` | Dependencias Python |
 | `q10-consolidacion.json` | `n8n-workflows/` | Workflow n8n (ID en producción: `Rblg81qifVshsRae`) |
@@ -152,7 +187,7 @@ El equipo clasifica los registros bajo 4 categorías tras la carga:
 | `docs/dashboard/index.html` | `docs/dashboard/` | Sitio GitHub Pages — Tab 1 (Stats Q10) |
 | `docs/dashboard/data.json` | `docs/dashboard/` | Generado por `export_stats.py` — no editar a mano |
 
-**Para reiniciar el sistema:** doble clic en `iniciar_n8n.bat` (en el PC de Samuel). cloudflared + n8n activos en ~45 segundos.
+**Para reiniciar el sistema:** doble clic en `iniciar_n8n.bat` (en el PC de Samuel). ngrok (dominio fijo) + n8n activos en ~45 segundos.
 
 ## Pendiente / Próximos pasos
 
@@ -162,7 +197,12 @@ El equipo clasifica los registros bajo 4 categorías tras la carga:
 - [x] h2test operativa: se actualiza vía `/Actualizar Q10` — datos subiendo correctamente
 - [x] Schedule **4h** agregado al workflow (2026-06-25) — actualización automática sin intervención
 - [x] Task Scheduler configurado (2026-06-25) — n8n arranca al iniciar sesión de EstudiantesJC
-- [ ] Regenerar token del bot con BotFather (estaba expuesto — hacer antes de prod real)
+- [ ] Regenerar token del bot con BotFather (estaba expuesto — hacer antes de prod real).
+  Nota 2026-07-07: el `.env` ya quedó sincronizado con el token vigente de la credencial de n8n
+  (daba 401 por desactualizado); al regenerar, actualizar credencial n8n + `.env` + reactivar workflow.
+- [ ] Candado anti-concurrencia en el workflow: si ya hay una ejecución de q10_to_sheets en curso,
+  responder "ya hay una actualización corriendo" en vez de lanzar una segunda sesión contra Q10
+  (choca con HTTP 444 — ver Gotchas 2026-07-07)
 
 ### Conexión h2test → Dashboard web
 
