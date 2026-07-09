@@ -455,6 +455,18 @@ const LEGEND_APROB = `
 
 const PROGRAMA_JC = 'Jóvenes creaTIvos';
 
+// Ruta de aprendizaje 2026 (orden cronológico) — para el funnel de retención.
+// Los nombres deben coincidir con curso de aprobacion/data.json.
+const RUTA_JC = [
+  'Bienvenidos a Jóvenes creaTIvos',
+  'Hackea tu cerebro: Aprende en menos tiempo y sin sufrir',
+  'Habilidades esenciales para ser un emprendedor exitoso',
+  'Emprendimiento: Idea de Negocio JC',
+  'Introducción a la IA Generativa - 2026',
+  'Fundamentos Lógica de Programación - 2026',
+  'Desarrollo Web Front-End - HTML - 2026',
+];
+
 function renderT1(ap){
   const t = ap.totales||{};
   // Solo Jóvenes creaTIvos — KPIs desde por_programa[], no desde totales{} (mezcla MR)
@@ -669,9 +681,12 @@ const ALIAS_APROB = {
 };
 
 function renderT3(ap, a){
-  const tq = ap?.totales||{};
+  // Solo Jóvenes creaTIvos — la hoja manual es solo JC, así que la comparación
+  // usa por_programa[] y los cursos JC (no totales{}, que mezcla MR).
+  const pJC = (ap?.por_programa||[]).find(p=>p.programa===PROGRAMA_JC) || {};
+  const cursosJCap = (ap?.por_curso||[]).filter(c=>(c.programa||'')===PROGRAMA_JC);
   const tm = a?.totales||{};
-  const pctQ10    = tq.total_matriculas ? (100*tq.total_aprobados/tq.total_matriculas) : null;
+  const pctQ10    = pJC.pct_aprobados ?? (pJC.cursaron ? 100*((pJC.aprobados||0)+(pJC.aprobados_retirados||0))/pJC.cursaron : null);
   const pctManual = (tm.total_aprobados!=null && tm.total_registros)
     ? (100*tm.total_aprobados/tm.total_registros) : null;
 
@@ -680,9 +695,9 @@ function renderT3(ap, a){
   const resumen = `
   <div class="two-col gap">
     <div class="card col-blue">
-      <div class="card-title" style="color:var(--blue)">● Q10 — cohorte completa</div>
-      <div class="stat-row"><span class="stat-lbl">Estudiantes cohorte ${esc(ap?.anio||'')}</span><span class="stat-val" style="color:var(--blue)">${fmt(tq.estudiantes_cohorte_2026)}</span></div>
-      <div class="stat-row"><span class="stat-lbl">Matrículas en cursos</span><span class="stat-val">${fmt(tq.total_matriculas)}</span></div>
+      <div class="card-title" style="color:var(--blue)">● Q10 — cohorte JC</div>
+      <div class="stat-row"><span class="stat-lbl">Estudiantes cohorte ${esc(ap?.anio||'')}</span><span class="stat-val" style="color:var(--blue)">${fmt(pJC.estudiantes_cohorte)}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Matrículas en cursos</span><span class="stat-val">${fmt(pJC.cursaron)}</span></div>
       <div class="stat-row"><span class="stat-lbl">% Aprobación</span>
         <span class="stat-val ${sq?sq.cls:''}">${pctQ10!=null?pctQ10.toFixed(1)+'%':'—'}</span></div>
     </div>
@@ -697,7 +712,7 @@ function renderT3(ap, a){
 
   const norm = s => String(s).replace(/ /g,' ').replace(/\s+/g,' ').trim();
   const q10Map = {};
-  (ap?.por_curso||[]).forEach(c=>{ q10Map[norm(c.curso)] = c; });
+  cursosJCap.forEach(c=>{ q10Map[norm(c.curso)] = c; });
 
   // La hoja manual puede tener varios grupos con el mismo nombre (ej. 3× HTML)
   // → se fusionan antes de comparar.
@@ -728,7 +743,7 @@ function renderT3(ap, a){
 
   const nombresManual = new Set(Object.keys(manualMerged)
     .map(n=>ALIAS_APROB[n]?norm(ALIAS_APROB[n]):null).filter(Boolean));
-  const soloQ10 = (ap?.por_curso||[]).filter(c=>!nombresManual.has(norm(c.curso)));
+  const soloQ10 = cursosJCap.filter(c=>!nombresManual.has(norm(c.curso)));
   const filasExtra = soloQ10.map(c=>{
     const s=sem(c.pct_aprobados||0);
     return `<tr style="opacity:.6">
@@ -878,15 +893,71 @@ function renderAdmin(d){
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// TAB 5 — Tendencia histórica JC
+// TAB 5 — Retención de la cohorte (funnel) + Tendencia histórica JC
 // ═══════════════════════════════════════════════════════════════════════════════
-function renderT5(hist) {
+
+/* Funnel de retención: cohorte JC recorriendo la ruta 2026 en orden.
+   Ancho de cada barra ∝ cuántos cursaron (la cohorte se encoge por la ruta);
+   dentro, verde = aprobaron (total), ámbar = quedaron en el camino. */
+function renderFunnelJC(ap){
+  const cursosJC = (ap?.por_curso||[]).filter(c=>(c.programa||'')===PROGRAMA_JC);
+  if(!cursosJC.length) return '';
+  const orden = c => { const i = RUTA_JC.indexOf(c.curso); return i<0 ? 999 : i; };
+  const ruta = [...cursosJC].sort((a,b)=>orden(a)-orden(b));
+  const maxCursaron = Math.max(...ruta.map(c=>c.cursaron||0), 1);
+
+  const filas = ruta.map((c,idx)=>{
+    const total   = c.cursaron||1;
+    const aprob   = c.aprobados_total ?? c.aprobados ?? 0;
+    const quedaron= total - aprob;
+    const anchoBarra = (c.cursaron/maxCursaron*100).toFixed(2);
+    const wAprob = (aprob/total*100);
+    const wQued  = (quedaron/total*100);
+    const pos = RUTA_JC.indexOf(c.curso); const num = pos<0 ? '' : (pos+1)+'. ';
+    return `
+    <div class="curso-row">
+      <div class="curso-head">
+        <span class="curso-nom">${num}${esc(c.curso)}</span>
+        <span class="curso-pct">${c.pct_aprobados}% aprobó</span>
+        <span class="curso-n">· ${fmt(c.cursaron)} cursaron</span>
+      </div>
+      <div class="stack" style="background:transparent">
+        <div style="display:flex;height:100%;width:${anchoBarra}%;gap:2px;min-width:2px">
+          <div class="seg seg-aprobado" data-w="${wAprob.toFixed(2)}%"
+            data-tip="Aprobaron: ${fmt(aprob)} de ${fmt(c.cursaron)} (${wAprob.toFixed(1)}%)"></div>
+          <div class="seg seg-sinfin" data-w="${wQued.toFixed(2)}%"
+            data-tip="${c.finalizado?'No completaron':'Aún cursando / sin aprobar'}: ${fmt(quedaron)} de ${fmt(c.cursaron)} (${wQued.toFixed(1)}%)"
+            style="border-radius:0 4px 4px 0"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="card gap">
+    <div class="card-title">Retención de la cohorte por la ruta 2026</div>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>Aprobaron (avance ≥ 100)</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span>Quedaron en el camino</span>
+    </div>
+    ${filas}
+    <p class="chart-note">
+      El <strong>largo de cada barra</strong> es cuántos estudiantes cursaron esa etapa (la cohorte
+      se encoge a lo largo de la ruta); la porción verde es cuántos aprobaron. Cursos en el orden
+      cronológico de la ruta 2026. &nbsp;
+      <a href="../aprobacion/" style="color:var(--green-dark);font-weight:700">Detalle por curso ↗</a>
+    </p>
+  </div>`;
+}
+
+function renderT5(hist, ap) {
+  const funnel = renderFunnelJC(ap);
   if (!hist || hist.length < 2) {
     const n = hist?.length||0;
     const msg = n===0
       ? 'No hay historial aún. Ejecuta <code>bootstrap_history.py</code> y haz push para poblar el historial desde git.'
       : `Hay 1 snapshot guardado (${hist[0].fecha}). Con el próximo registro automático (~4 días) aparecerá la gráfica.`;
-    return `<div class="card gap"><div class="card-title">📈 Tendencia histórica — Jóvenes creaTIvos</div><div class="info-box">${msg}</div></div>`;
+    return funnel + `<div class="card gap"><div class="card-title">📈 Tendencia histórica — Jóvenes creaTIvos</div><div class="info-box">${msg}</div></div>`;
   }
 
   const ul = hist[hist.length-1], pr = hist[0];
@@ -894,7 +965,7 @@ function renderT5(hist) {
   const dc = Number(delta)>=0 ? 'var(--green)' : 'var(--red)';
   const ds = (Number(delta)>=0?'+':'')+delta+'%';
 
-  return `
+  return funnel + `
   <div class="card gap">
     <div class="card-title">📈 Tendencia histórica — Jóvenes creaTIvos</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
@@ -1024,7 +1095,7 @@ Promise.allSettled([
   document.getElementById('t2').innerHTML = wAsist + (asist ? renderT2(asist) : '<p style="color:var(--muted);padding:24px">Sin datos de avance.</p>');
   document.getElementById('t3').innerHTML = wAprob + wAsist + renderT3(aprob, asist);
   document.getElementById('t4').innerHTML = wDash + (dash ? renderAdmin(dash) : '<p style="color:var(--muted);padding:24px">Sin datos Q10.</p>');
-  document.getElementById('t5').innerHTML = renderT5(hist);
+  document.getElementById('t5').innerHTML = renderT5(hist, aprob);
 
   // Deep-link por hash: /dashboard/#t3 abre directamente esa pestaña
   const tabInicial = ['t1','t2','t3','t4','t5'].includes(location.hash.slice(1))

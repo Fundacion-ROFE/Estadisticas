@@ -1,91 +1,48 @@
 {
-  "ultima_actualizacion": "2026-07-08T20:02:07.130805-05:00",
-  "anio": null,
+  "ultima_actualizacion": "2026-07-09T00:13:32.043485-05:00",
+  "anio": "2026",
   "totales": {
-    "total_retirados": 353,
-    "cancelados": 318,
-    "desertores": 34,
-    "aplazados": 1
+    "total_retirados": 82,
+    "cancelados": 55,
+    "desertores": 25,
+    "aplazados": 0,
+    "sin_registro_hoja": 2
   },
   "por_tipo": [
     {
       "tipo": "Cancelado",
-      "cantidad": 318
+      "cantidad": 55
     },
     {
       "tipo": "Desertor",
-      "cantidad": 34
+      "cantidad": 25
     },
     {
-      "tipo": "Aplazado",
-      "cantidad": 1
+      "tipo": "Sin registro de retiro",
+      "cantidad": 2
     }
   ],
   "por_causa": [
     {
       "causa": "Voluntario",
-      "cantidad": 176
-    },
-    {
-      "causa": "Otra",
-      "cantidad": 148
+      "cantidad": 55
     },
     {
       "causa": "Decisión de la Institución",
       "cantidad": 25
     },
     {
-      "causa": "Enfermedad",
-      "cantidad": 4
+      "causa": "Sin registro de retiro",
+      "cantidad": 2
     }
   ],
   "por_programa": [
     {
       "programa": "Jóvenes creaTIvos",
-      "cantidad": 353
+      "cantidad": 82
     }
   ],
   "por_mes": [
-    {
-      "mes": "2023-10",
-      "cantidad": 10
-    },
-    {
-      "mes": "2023-11",
-      "cantidad": 8
-    },
-    {
-      "mes": "2023-12",
-      "cantidad": 126
-    },
-    {
-      "mes": "2024-04",
-      "cantidad": 3
-    },
-    {
-      "mes": "2024-05",
-      "cantidad": 25
-    },
-    {
-      "mes": "2024-06",
-      "cantidad": 39
-    },
-    {
-      "mes": "2024-07",
-      "cantidad": 12
-    },
-    {
-      "mes": "2024-08",
-      "cantidad": 23
-    },
-    {
-      "mes": "2024-10",
-      "cantidad": 24
-    },
-    {
-      "mes": "2025-04",
-      "cantidad": 3
-    },
     {
       "mes": "2026-04",
       "cantidad": 3
@@ -103,5 +60,55 @@
       "cantidad": 26
     }
   ],
-  "por_etapa": []
+  "por_etapa": [
+    {
+      "orden": 0,
+      "etapa": "No completó ningún curso",
+      "cantidad": 14
+    },
+    {
+      "orden": 1,
+      "etapa": "Bienvenidos a Jóvenes creaTIvos",
+      "cantidad": 17
+    },
+    {
+      "orden": 2,
+      "etapa": "Hackea tu cerebro: Aprende en menos tiempo y sin sufrir",
+      "cantidad": 28
+    },
+    {
+      "orden": 3,
+      "etapa": "Habilidades esenciales para ser un emprendedor exitoso",
+      "cantidad": 19
+    },
+    {
+      "orden": 4,
+      "etapa": "Emprendimiento: Idea de Negocio JC",
+      "cantidad": 2
+    },
+    {
+      "orden": 5,
+      "etapa": "Introducción a la IA Generativa - 2026",
+      "cantidad": 0
+    },
+    {
+      "orden": 6,
+      "etapa": "Fundamentos Lógica de Programación - 2026",
+      "cantidad": 2
+    },
+    {
+      "orden": 7,
+      "etapa": "Desarrollo Web Front-End - HTML - 2026",
+      "cantidad": 0
+    }
+  ],
+  "ruta": [
+    "Bienvenidos a Jóvenes creaTIvos",
+    "Hackea tu cerebro: Aprende en menos tiempo y sin sufrir",
+    "Habilidades esenciales para ser un emprendedor exitoso",
+    "Emprendimiento: Idea de Negocio JC",
+    "Introducción a la IA Generativa - 2026",
+    "Fundamentos Lógica de Programación - 2026",
+    "Desarrollo Web Front-End - HTML - 2026"
+  ]
 }

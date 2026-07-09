@@ -204,15 +204,57 @@ function barSection(titulo, items, labelKey, color, nota){
   </div>`;
 }
 
+// Barras de etapa de retiro — se conserva el orden de la ruta (no se reordena por
+// cantidad) porque la secuencia ES la historia. "No completó ninguno" en rojo.
+function etapaSection(d){
+  const items = d.por_etapa||[];
+  if(!items.length) return '';
+  const total = items.reduce((a,x)=>a+(x.cantidad||0),0) || 1;
+  const maxN  = Math.max(...items.map(x=>x.cantidad||0), 1);
+  const filas = items.map(x=>{
+    const pct   = ((x.cantidad||0)/maxN*100).toFixed(1);
+    const share = ((x.cantidad||0)/total*100).toFixed(1);
+    const color = x.orden===0 ? 'var(--red)' : 'var(--orange)';
+    const etiqueta = x.orden===0 ? x.etapa : `${x.orden}. ${x.etapa}`;
+    return `
+    <div class="bar-row">
+      <div class="bar-lbl" title="${esc(etiqueta)}">${esc(etiqueta)}</div>
+      <div class="bar-track"><div class="bar-fill" data-w="${pct}%" style="background:${color}"></div></div>
+      <div class="bar-cnt">${fmt(x.cantidad)} · ${share}%</div>
+    </div>`;
+  }).join('');
+  return `
+  <div class="card gap">
+    <div class="card-title">¿En qué etapa de la ruta los perdimos?</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px">
+      <span style="display:flex;align-items:center;gap:6px;font-size:.76rem;color:var(--muted)"><span style="width:11px;height:11px;border-radius:3px;background:var(--red)"></span>No alcanzó a completar ningún curso</span>
+      <span style="display:flex;align-items:center;gap:6px;font-size:.76rem;color:var(--muted)"><span style="width:11px;height:11px;border-radius:3px;background:var(--orange)"></span>Último curso de la ruta que sí completó</span>
+    </div>
+    ${filas}
+    <p class="chart-note">
+      Cada retirado se ubica en el <strong>último curso de la ruta 2026 que completó</strong>
+      (avance ≥ 100) antes de irse. Es una heurística de secuencia — Q10 no guarda una fecha de
+      retiro por estudiante fiable, así que la etapa se infiere del avance máximo alcanzado, no de
+      cuándo dejó de estudiar.
+    </p>
+  </div>`;
+}
+
 function render(d){
   const t = d.totales||{};
+  const es2026 = !!d.anio;
+  const sub = es2026 ? `Cohorte ${esc(d.anio)}` : 'Histórico completo en Q10';
+
+  const notaHist = es2026 && t.sin_registro_hoja
+    ? `<div class="kpi-sub" style="margin-top:2px">Incluye ${fmt(t.sin_registro_hoja)} sin registro formal de cancelación en la pestaña Retirados</div>`
+    : '';
 
   const kpis = `
   <div class="kpi-grid">
     <div class="kpi-card">
       <div class="kpi-val">${fmt(t.total_retirados)}</div>
-      <div class="kpi-lbl">Total retirados</div>
-      <div class="kpi-sub">Histórico completo en Q10</div>
+      <div class="kpi-lbl">${es2026?'Retirados '+esc(d.anio):'Total retirados'}</div>
+      <div class="kpi-sub">${sub}</div>
     </div>
     <div class="kpi-card" style="border-top-color:var(--red)">
       <div class="kpi-val" style="color:var(--red)">${fmt(t.cancelados)}</div>
@@ -229,8 +271,10 @@ function render(d){
       <div class="kpi-lbl">Aplazados</div>
       <div class="kpi-sub">Retiro temporal</div>
     </div>
-  </div>`;
+  </div>
+  ${notaHist}`;
 
+  const etapa = etapaSection(d);
   const tipos = barSection('Distribución por tipo de retiro', d.por_tipo, 'tipo', 'var(--orange)');
   const causas = barSection('Causas de cancelación', d.por_causa, 'causa', 'var(--red)',
     'Causa registrada en Q10 al momento del retiro');
@@ -238,7 +282,8 @@ function render(d){
 
   const meses = (d.por_mes||[]).map(m=>({...m, mes: fmtMes(m.mes)}));
   const tendencia = barSection('Retiros por mes', meses, 'mes', 'var(--orange-dark)',
-    'Según fecha de cancelación registrada en Q10');
+    es2026 ? 'Mes de cancelación registrado en Q10 (solo cohorte '+esc(d.anio)+'; informativo — el filtro de año es por cédula, no por esta fecha)'
+           : 'Según fecha de cancelación registrada en Q10');
 
   const info = `
   <div class="info-box gap">
@@ -248,7 +293,7 @@ function render(d){
     panel local <code>tools/panel_riesgo_gui.py</code> — los datos personales nunca se publican aquí.
   </div>`;
 
-  return kpis + tipos + causas + programas + tendencia + info;
+  return kpis + etapa + tipos + causas + programas + tendencia + info;
 }
 
 function renderHeader(ts){

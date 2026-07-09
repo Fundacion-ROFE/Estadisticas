@@ -68,6 +68,12 @@ Pestaña Retirados       ──┘     5 tabs interactivos (PII):
                                🎓 JC | 💡 MR | ⚙ Admin | 🔀 Diferencias | 🚪 Retirados
                                ↑ KPIs clickeables → tabla dinámica
                                Admin guarda → tools/course_config.json
+
+Google Sheets h2test (avance < 100, solo JC)  ──┐
+BD Seguimiento Monitorias (Grupo = ciudad)    ──┼──► exportar_sin_completar.py
+                                                └──► Sheet privado "SinCompletar"
+                                                     (bloques horizontales por ciudad,
+                                                      cursos apilados — para encargados)
 ```
 
 ---
@@ -90,9 +96,9 @@ Pestaña Retirados       ──┘     5 tabs interactivos (PII):
 | Proceso | Nota | Completado | Estado |
 |---|---|---|---|
 | Consolidación Q10 | [[q10-consolidacion]] | 2026-06-25 | Schedule 4h + Telegram activos · 1,145 estudiantes 2026 · 4,553 total DB |
-| Dashboard web | [[dashboard-web]] | 2026-06-26 | GitHub Pages live · panel MR · separación JC/MR en Python · **panel Aprobación por curso** (cohorte completa habilitados + inhabilitados, aprobado = avance ≥ 100, 2026-07-07) · **tabs 1–3 rediseñados sobre la cohorte de aprobación** + tendencia con snapshots diarios (2026-07-07, pedido del supervisor) · marca de agua cursos finalizados en export_stats (2026-07-06, hoy solo alimenta Admin) |
+| Dashboard web | [[dashboard-web]] | 2026-06-26 | GitHub Pages live · panel MR · separación JC/MR en Python · **panel Aprobación por curso** (cohorte completa habilitados + inhabilitados, aprobado = avance ≥ 100, 2026-07-07) · **tabs 1–3 rediseñados sobre la cohorte de aprobación** + tendencia con snapshots diarios (2026-07-07, pedido del supervisor) · marca de agua cursos finalizados en export_stats (2026-07-06, hoy solo alimenta Admin) · **Refactorización 2026: Fases 1–3 completadas** — Fase 1 (Tab 1 solo-JC + exclusión de pruebas) y Fase 2 (Comparativo solo-JC + panel MR sobre cohorte) el 2026-07-08; **Fase 3** (panel Retirados filtrado a 2026 con etapa de retiro vía ledger + funnel de retención en Tendencia) el 2026-07-09 |
 | Panel de riesgo GUI | [[dashboard-web]] | 2026-06-26 | 5 tabs interactivos · KPIs clickeables · vistas dinámicas JC y MR · Tab Admin con course_config.json · Tab Retirados |
-| Retirados Q10 | [[q10-consolidacion]] | 2026-07-02 | Fase 4 del pipeline · reporte Estudiantes cancelados → Retirados/Retirados-complete → panel público · 353 retirados (318 cancelados) |
+| Retirados Q10 | [[q10-consolidacion]] | 2026-07-02 | Fase 4 del pipeline · reporte Estudiantes cancelados → Retirados/Retirados-complete → panel público · histórico 353 · **panel filtrado a cohorte 2026: 82 retirados únicos + etapa de retiro** (2026-07-09) |
 | Pseudonimizador | [[pseudonimizador]] | 2026-06-30 | GitHub Pages live · 3 tabs · Web Worker para 22 MB / 44 pestañas · Pendiente demo con equipo |
 | Actualización BD MR | [[mr-actualizacion-datos]] | 2026-07-07 | Form MR2024 → pestaña General de BD-Mujeres ROFÉ · cruce por cédula · col `Fecha Actualización` · n8n diario 7:30 (`LgkDbNPERYgKMrYj`) · backfill: 286 filas actualizadas + 24 nuevas (naranja, revisar) |
 
@@ -102,6 +108,7 @@ Pestaña Retirados       ──┘     5 tabs interactivos (PII):
 
 | Proceso | Nota | Bloqueado por |
 |---|---|---|
+| Website Mujeres ROFÉ | [[mr-website]] | **Documentación inicial lista (2026-07-07).** Código en repo independiente (`Downloads\Mujeres-Rofe-Website`, back Express+Mongo / front Angular 15, deploy droplet DigitalOcean vía Actions). Bloqueado por: definir alcance de los cambios solicitados + clonar repos remotos (copia local sin `.git`) |
 | Asistencia Zoom | [[zoom-asistencia]] | **Funcional (cuenta comunicaciones)** — escribe en pestaña `ZOOM-ASISTANCE` con colores <70%, pestañas `CUPOS` y `ZOOM-STATS` (2026-07-02). **Trigger dual (2026-07-04):** rama `meeting.started` → snapshot al minuto 10 en `ASISTENCIA-10MIN`. **Prueba real 2026-07-06:** la rama corre completa (evento + scope granular `dashboard:read:list_meeting_participants:admin` OK), pero `Participantes en Vivo` da 400 → **BLOQUEO: falta habilitar la Dashboard API por soporte de Zoom** (Business ✓ y Panel web ✓, es flag de servidor). **HALLAZGO: hay 2 cuentas Zoom** (comunicaciones/us06web + soporte/us02web); el app+webhook viven solo en comunicaciones → **las clases de soporte NO se capturan** (verificado en las 38 ejecuciones). Pendiente: ticket Dashboard API, cobertura cuenta soporte (2º app + workflow multi-cuenta), túnel permanente, filtro reuniones no-clase, Sheet de producción |
 
 ---

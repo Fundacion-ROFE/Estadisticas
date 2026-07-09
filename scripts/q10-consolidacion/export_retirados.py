@@ -9,6 +9,7 @@ Fundación ROFÉ | Jóvenes creaTIvos
 import io
 import json
 import os
+import re
 import subprocess
 import sys
 from collections import Counter
@@ -44,11 +45,84 @@ DIRECTORIO_SCRIPT = os.path.dirname(os.path.abspath(__file__))
 PROYECTO_ROOT     = os.path.abspath(os.path.join(DIRECTORIO_SCRIPT, "..", ".."))
 RUTA_DATA_JSON    = os.path.join(PROYECTO_ROOT, "docs", "retirados", "data.json")
 RUTA_EXCLUSIONES  = os.path.join(PROYECTO_ROOT, "tools", "exclusiones_prueba.json")
+RUTA_COHORTE      = os.path.join(PROYECTO_ROOT, "tools", "cohorte_2026.json")
+RUTA_LEDGER       = os.path.join(PROYECTO_ROOT, "tools", "aprobacion_ledger.json")
+
+# Ruta de aprendizaje 2026 de Jóvenes creaTIvos, en orden cronológico. La etapa de
+# retiro = último curso de esta ruta con avance >= 100 en el ledger. Nombres deben
+# coincidir con las claves del ledger (norm_curso de export_aprobacion.py).
+RUTA_2026 = [
+    "Bienvenidos a Jóvenes creaTIvos",
+    "Hackea tu cerebro: Aprende en menos tiempo y sin sufrir",
+    "Habilidades esenciales para ser un emprendedor exitoso",
+    "Emprendimiento: Idea de Negocio JC",
+    "Introducción a la IA Generativa - 2026",
+    "Fundamentos Lógica de Programación - 2026",
+    "Desarrollo Web Front-End - HTML - 2026",
+]
+UMBRAL_APROBADO = 100.0  # avance >= 100 aprueba (mismo criterio que export_aprobacion.py)
 
 
 # ── Utilidades ────────────────────────────────────────────────────────────────
 def log(msg: str) -> None:
     print(f"[export-retirados] {msg}", flush=True)
+
+
+def norm_id(valor) -> str:
+    """Cédula comparable entre reportes: solo dígitos (igual que export_aprobacion.py)."""
+    return re.sub(r"\D", "", str(valor))
+
+
+def norm_curso(nombre) -> str:
+    """Nombre de asignatura sin \\xa0 ni espacios repetidos (clave del ledger)."""
+    return re.sub(r"\s+", " ", str(nombre).replace("\xa0", " ")).strip()
+
+
+def cargar_cohorte_2026() -> dict | None:
+    """Cohorte y retirados únicos 2026 por programa (cédulas), generado por
+    export_aprobacion.py. Sin este archivo no se puede filtrar a 2026 → el panel
+    degrada al histórico completo con una advertencia."""
+    if not os.path.isfile(RUTA_COHORTE):
+        log("ADVERTENCIA: falta tools/cohorte_2026.json — corre export_aprobacion.py "
+            "primero. Se genera el histórico completo (sin filtro 2026).")
+        return None
+    try:
+        with open(RUTA_COHORTE, encoding="utf-8") as f:
+            data = json.load(f)
+        por_prog = data.get("por_programa", {})
+        n_ret = sum(len(v.get("retirados", [])) for v in por_prog.values())
+        log(f"Cohorte 2026: {len(por_prog)} programas, {n_ret} retirados únicos "
+            f"(generada {data.get('actualizado', '?')})")
+        return data
+    except (json.JSONDecodeError, OSError) as e:
+        log(f"ADVERTENCIA: cohorte_2026.json ilegible ({e}) — histórico completo")
+        return None
+
+
+def cargar_ledger() -> dict:
+    """{cedula: {curso_norm: max_avance}} — máximo avance visto por estudiante×curso.
+    Necesario para la heurística de etapa de retiro. Vive en tools/ (PII)."""
+    if os.path.isfile(RUTA_LEDGER):
+        try:
+            with open(RUTA_LEDGER, encoding="utf-8") as f:
+                return json.load(f).get("estudiantes", {})
+        except (json.JSONDecodeError, OSError) as e:
+            log(f"ADVERTENCIA: ledger ilegible ({e}) — sin heurística de etapa")
+    else:
+        log("ADVERTENCIA: falta tools/aprobacion_ledger.json — sin etapa de retiro")
+    return {}
+
+
+def etapa_de_retiro(cedula: str, ledger: dict) -> tuple[int, str]:
+    """Último curso de la ruta 2026 con avance >= 100 para este retirado.
+    Devuelve (orden, etiqueta): orden 0 = no completó ninguno; 1..N = índice en la ruta."""
+    avances = ledger.get(cedula, {})
+    ultimo = 0
+    for i, curso in enumerate(RUTA_2026, start=1):
+        if avances.get(norm_curso(curso), 0.0) >= UMBRAL_APROBADO:
+            ultimo = i
+    etiqueta = "No completó ningún curso" if ultimo == 0 else RUTA_2026[ultimo - 1]
+    return ultimo, etiqueta
 
 
 def _cargar_exclusiones() -> set:
@@ -83,44 +157,113 @@ def conectar_hoja() -> gspread.Worksheet:
 
 
 # ── Procesamiento (solo agregados — NUNCA PII) ────────────────────────────────
-def procesar_retirados(registros: list[dict]) -> dict:
-    """Agrega los registros de retiro. El JSON público solo lleva conteos."""
-    tipos     = Counter()
-    causas    = Counter()
-    programas = Counter()
-    meses     = Counter()
-
+def procesar_historico(registros: list[dict]) -> dict:
+    """Agregación histórica completa (fallback cuando no hay cohorte 2026)."""
+    tipos, causas, programas, meses = Counter(), Counter(), Counter(), Counter()
     for r in registros:
-        tipo = str(r.get("Tipo", "")).strip() or "Sin tipo"
-        tipos[tipo] += 1
+        tipos[str(r.get("Tipo", "")).strip() or "Sin tipo"] += 1
         causas[str(r.get("Causa", "")).strip() or "Sin causa"] += 1
         programas[str(r.get("Programa", "")).strip() or "Sin programa"] += 1
         fecha = str(r.get("FechaCancelacion", "")).strip()
         meses[fecha[:7] if len(fecha) >= 7 else "sin fecha"] += 1
-
     total = len(registros)
-    log(f"  Total retirados: {total} | Tipos: {dict(tipos)}")
-
+    log(f"  Histórico completo: {total} retirados | Tipos: {dict(tipos)}")
     return {
         "ultima_actualizacion": datetime.now().astimezone().isoformat(),
+        "anio": None,
         "totales": {
             "total_retirados": total,
             "cancelados":      tipos.get("Cancelado", 0),
             "desertores":      tipos.get("Desertor", 0),
             "aplazados":       tipos.get("Aplazado", 0),
         },
-        "por_tipo": [
-            {"tipo": t, "cantidad": n} for t, n in tipos.most_common()
-        ],
-        "por_causa": [
-            {"causa": c, "cantidad": n} for c, n in causas.most_common()
-        ],
-        "por_programa": [
-            {"programa": p, "cantidad": n} for p, n in programas.most_common()
-        ],
-        "por_mes": [
-            {"mes": m, "cantidad": n} for m, n in sorted(meses.items())
-        ],
+        "por_tipo":     [{"tipo": t, "cantidad": n} for t, n in tipos.most_common()],
+        "por_causa":    [{"causa": c, "cantidad": n} for c, n in causas.most_common()],
+        "por_programa": [{"programa": p, "cantidad": n} for p, n in programas.most_common()],
+        "por_mes":      [{"mes": m, "cantidad": n} for m, n in sorted(meses.items())],
+        "por_etapa":    [],
+    }
+
+
+def procesar_2026(registros: list[dict], cohorte: dict, ledger: dict) -> dict:
+    """Agrega SOLO los retirados de la cohorte 2026.
+
+    El conjunto autoritativo de retirados 2026 son las cédulas inhabilitadas de la
+    cohorte (union de por_programa[*].retirados de cohorte_2026.json) — NO se filtra
+    por FechaCancelacion. Los datos de tipo/causa/mes salen del cruce de esas cédulas
+    con la pestaña Retirados; los que no tengan registro en la pestaña se cuentan
+    aparte ('sin_registro_hoja') para que los totales cuadren con el panel de aprobación.
+    La etapa de retiro sale del ledger (último curso de la ruta con avance >= 100)."""
+    por_prog = cohorte.get("por_programa", {})
+
+    # cédula → programa, y conjunto autoritativo de retirados 2026
+    prog_de_ced: dict[str, str] = {}
+    retirados_set: set[str] = set()
+    for prog, v in por_prog.items():
+        for ced in v.get("retirados", []):
+            c = norm_id(ced)
+            if c:
+                retirados_set.add(c)
+                prog_de_ced.setdefault(c, prog)
+
+    # Cruce con la pestaña Retirados (tipo/causa/mes) — solo cédulas de la cohorte 2026
+    tipos, causas, meses = Counter(), Counter(), Counter()
+    con_registro: set[str] = set()
+    for r in registros:
+        ced = norm_id(r.get("Identificacion", ""))
+        if ced not in retirados_set or ced in con_registro:
+            continue
+        con_registro.add(ced)
+        tipos[str(r.get("Tipo", "")).strip() or "Sin tipo"] += 1
+        causas[str(r.get("Causa", "")).strip() or "Sin causa"] += 1
+        fecha = str(r.get("FechaCancelacion", "")).strip()
+        meses[fecha[:7] if len(fecha) >= 7 else "sin fecha"] += 1
+
+    sin_registro = retirados_set - con_registro
+    if sin_registro:
+        # Inhabilitados de la cohorte que no aparecen en la pestaña Retirados
+        # (Q10 los archivó sin registro de cancelación formal).
+        tipos["Sin registro de retiro"] += len(sin_registro)
+        causas["Sin registro de retiro"] += len(sin_registro)
+
+    # por_programa desde la cohorte (suma exacta al total de retirados 2026)
+    programas = Counter()
+    for ced in retirados_set:
+        programas[prog_de_ced.get(ced, "Sin programa")] += 1
+
+    # Etapa de retiro (heurística con ledger) sobre TODOS los retirados 2026
+    etapas = Counter()  # orden → cantidad
+    for ced in retirados_set:
+        orden, _ = etapa_de_retiro(ced, ledger)
+        etapas[orden] += 1
+    por_etapa = []
+    for orden in range(0, len(RUTA_2026) + 1):
+        etiqueta = "No completó ningún curso" if orden == 0 else RUTA_2026[orden - 1]
+        por_etapa.append({"orden": orden, "etapa": etiqueta,
+                          "cantidad": etapas.get(orden, 0)})
+
+    total = len(retirados_set)
+    log(f"  Retirados 2026: {total} ({len(con_registro)} con registro en hoja, "
+        f"{len(sin_registro)} sin registro) | Tipos: {dict(tipos)}")
+    log(f"  Etapa de retiro: " + ", ".join(
+        f"{e['etapa'][:24]}={e['cantidad']}" for e in por_etapa if e['cantidad']))
+
+    return {
+        "ultima_actualizacion": datetime.now().astimezone().isoformat(),
+        "anio": cohorte.get("anio", "2026"),
+        "totales": {
+            "total_retirados": total,
+            "cancelados":      tipos.get("Cancelado", 0),
+            "desertores":      tipos.get("Desertor", 0),
+            "aplazados":       tipos.get("Aplazado", 0),
+            "sin_registro_hoja": len(sin_registro),
+        },
+        "por_tipo":     [{"tipo": t, "cantidad": n} for t, n in tipos.most_common()],
+        "por_causa":    [{"causa": c, "cantidad": n} for c, n in causas.most_common()],
+        "por_programa": [{"programa": p, "cantidad": n} for p, n in programas.most_common()],
+        "por_mes":      [{"mes": m, "cantidad": n} for m, n in sorted(meses.items())],
+        "por_etapa":    por_etapa,
+        "ruta":         RUTA_2026,
     }
 
 
@@ -191,13 +334,18 @@ def main() -> None:
             antes = len(registros)
             registros = [
                 r for r in registros
-                if "".join(ch for ch in str(r.get("Identificacion", "")) if ch.isdigit())
-                not in excl
+                if norm_id(r.get("Identificacion", "")) not in excl
             ]
             if antes - len(registros):
                 log(f"  Exclusión de pruebas: {antes - len(registros)} registros quitados")
 
-        datos = procesar_retirados(registros)
+        # Filtrar a la cohorte 2026 si existe tools/cohorte_2026.json; si no, histórico
+        cohorte = cargar_cohorte_2026()
+        if cohorte:
+            ledger = cargar_ledger()
+            datos = procesar_2026(registros, cohorte, ledger)
+        else:
+            datos = procesar_historico(registros)
         guardar_json(datos)
 
         if args.sin_push:

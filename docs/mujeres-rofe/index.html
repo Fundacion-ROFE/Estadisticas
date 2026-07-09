@@ -233,6 +233,24 @@
     .prog-meta-item { font-size: 0.72rem; color: var(--muted); }
     .prog-meta-item strong { color: var(--text-soft); font-weight: 700; }
 
+    /* Barra apilada de aprobación — cohorte 2026 (misma paleta que el panel JC) */
+    .apr-stack { display: flex; height: 14px; border-radius: 4px; overflow: hidden; background: var(--border); gap: 2px; }
+    .apr-seg   { height: 100%; }
+    .apr-verde { background: #6EA050; }   /* aprobaron y siguen activas */
+    .apr-azul  { background: #3A6FB8; }   /* aprobaron y se retiraron */
+    .apr-ambar { background: #B8860B; }   /* sin completar / aún cursando */
+    .apr-rojo  { background: #C12D4C; }   /* retiradas sin aprobar */
+    .apr-leyenda { display: flex; flex-wrap: wrap; gap: 10px 14px; margin-top: 7px; }
+    .apr-leyenda span { font-size: .68rem; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+    .apr-dot { width: 9px; height: 9px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+    .badge-estado {
+      display: inline-block; font-size: .62rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .05em;
+      padding: 2px 8px; border-radius: 10px; vertical-align: middle;
+    }
+    .badge-fin   { background: var(--green-bg); color: var(--green); }
+    .badge-curso { background: var(--yellow-bg); color: #8A6E00; }
+
     /* Stats del curso */
     .course-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; }
     .course-stat {
@@ -372,23 +390,23 @@
   <div class="kpi-grid" style="margin-bottom:36px">
     <div class="kpi-card">
       <div class="kpi-val" id="kpi-mujeres">—</div>
-      <div class="kpi-lbl">Mujeres inscritas</div>
-      <div class="kpi-sub">Estudiantes únicas en el programa</div>
+      <div class="kpi-lbl">Mujeres cohorte 2026</div>
+      <div class="kpi-sub" id="kpi-mujeres-sub">Cohorte completa: habilitadas + retiradas</div>
     </div>
-    <div class="kpi-card alt">
-      <div class="kpi-val" id="kpi-cursos">2</div>
-      <div class="kpi-lbl">Cursos activos</div>
-      <div class="kpi-sub">Emprendimiento + Habilidades del Ser</div>
+    <div class="kpi-card alt3">
+      <div class="kpi-val" id="kpi-aprob">—</div>
+      <div class="kpi-lbl">Aprobación del programa</div>
+      <div class="kpi-sub" id="kpi-aprob-sub">Cohorte 2026 · aprobado = avance ≥ 100</div>
     </div>
     <div class="kpi-card alt2">
       <div class="kpi-val" id="kpi-prom">—</div>
       <div class="kpi-lbl">Avance promedio global</div>
       <div class="kpi-sub">Promedio ponderado por estudiantes</div>
     </div>
-    <div class="kpi-card alt3">
-      <div class="kpi-val" id="kpi-max">—</div>
-      <div class="kpi-lbl">Avance máximo</div>
-      <div class="kpi-sub">Mejor resultado registrado</div>
+    <div class="kpi-card alt">
+      <div class="kpi-val" id="kpi-ret">—</div>
+      <div class="kpi-lbl">Retiradas 2026</div>
+      <div class="kpi-sub">Inhabilitadas de la cohorte MR (sin perfiles de prueba)</div>
     </div>
   </div>
 
@@ -411,7 +429,7 @@
   <div class="section-title">Resumen del programa</div>
   <div class="combined-card">
     <div>
-      <div class="combined-title">Avance promedio ponderado — Mujeres ROFÉ</div>
+      <div class="combined-title" id="combined-title">Avance promedio ponderado — Mujeres ROFÉ</div>
       <div class="combined-val" id="combined-val">—</div>
       <div class="combined-sub" id="combined-sub">—</div>
     </div>
@@ -490,9 +508,72 @@
   }
 
   function renderCourseCard(curso, idx) {
+    const ap  = curso.aprob;          // curso homónimo en aprobacion/data.json (cohorte 2026) — puede faltar
     const pct = curso.promedio;
-    const sem = semaforo(pct);
     const nombreTitulo = toTitleCase(curso.curso);
+
+    // Semáforo sobre el % de aprobación de la cohorte (mismo criterio que JC);
+    // si no hay datos de aprobación, cae al avance promedio como antes.
+    const sem = ap
+      ? Object.assign(semaforo(ap.pct_aprobados),
+          { sub: ap.finalizado
+              ? `El ${ap.pct_aprobados.toFixed(1)}% de la cohorte aprobó (definitivo)`
+              : `El ${ap.pct_aprobados.toFixed(1)}% de la cohorte ha aprobado — curso en curso` })
+      : semaforo(pct);
+
+    const segs = ap ? [
+      { cls: 'apr-verde', n: ap.aprobados,                lbl: 'Aprobaron' },
+      { cls: 'apr-azul',  n: ap.aprobados_retirados || 0, lbl: 'Aprobaron y se retiraron' },
+      { cls: 'apr-ambar', n: ap.sin_finalizar,            lbl: ap.finalizado ? 'No completaron' : 'Aún cursando' },
+      { cls: 'apr-rojo',  n: ap.retirados,                lbl: 'Retiradas sin aprobar' },
+    ].filter(s => s.n > 0) : [];
+
+    const badge = ap
+      ? (ap.finalizado
+          ? '<span class="badge-estado badge-fin">✓ Finalizado</span>'
+          : '<span class="badge-estado badge-curso">En curso</span>')
+      : '';
+
+    const aprBlock = ap ? `
+        <div>
+          <div class="prog-label">Aprobación — cohorte 2026 ${badge}</div>
+          <div class="prog-header">
+            <div class="prog-pct">${ap.pct_aprobados.toFixed(1)}%</div>
+            <div class="prog-pct-label">aprobó · ${ap.cursaron} cursaron</div>
+          </div>
+          <div class="apr-stack">
+            ${segs.map(s => `<div class="apr-seg ${s.cls}" style="width:${(100 * s.n / (ap.cursaron || 1)).toFixed(2)}%" title="${s.lbl}: ${s.n} de ${ap.cursaron}"></div>`).join('')}
+          </div>
+          <div class="apr-leyenda">
+            ${segs.map(s => `<span><span class="apr-dot ${s.cls}"></span>${s.lbl}: <strong>${s.n}</strong></span>`).join('')}
+          </div>
+        </div>` : '';
+
+    const stats = ap ? `
+          <div class="course-stat">
+            <div class="cs-val">${ap.cursaron}</div>
+            <div class="cs-lbl">Cursaron</div>
+          </div>
+          <div class="course-stat">
+            <div class="cs-val">${(ap.aprobados || 0) + (ap.aprobados_retirados || 0)}</div>
+            <div class="cs-lbl">Aprobaron</div>
+          </div>
+          <div class="course-stat">
+            <div class="cs-val">${(ap.retirados || 0) + (ap.aprobados_retirados || 0)}</div>
+            <div class="cs-lbl">Retiradas</div>
+          </div>` : `
+          <div class="course-stat">
+            <div class="cs-val">${curso.estudiantes}</div>
+            <div class="cs-lbl">Inscritas</div>
+          </div>
+          <div class="course-stat">
+            <div class="cs-val">${pct.toFixed(1)}%</div>
+            <div class="cs-lbl">Promedio</div>
+          </div>
+          <div class="course-stat">
+            <div class="cs-val">${curso.max.toFixed(0)}%</div>
+            <div class="cs-lbl">Máximo</div>
+          </div>`;
 
     return `
     <div class="course-card">
@@ -507,8 +588,9 @@
         <div class="course-name">${nombreTitulo}</div>
       </div>
       <div class="course-card-body">
+        ${aprBlock}
         <div>
-          <div class="prog-label">Avance promedio</div>
+          <div class="prog-label">Avance promedio (activas)</div>
           <div class="prog-header">
             <div class="prog-pct">${pct.toFixed(1)}%</div>
             <div class="prog-pct-label">de 100%</div>
@@ -523,18 +605,7 @@
         </div>
 
         <div class="course-stats">
-          <div class="course-stat">
-            <div class="cs-val">${curso.estudiantes}</div>
-            <div class="cs-lbl">Inscritas</div>
-          </div>
-          <div class="course-stat">
-            <div class="cs-val">${pct.toFixed(1)}%</div>
-            <div class="cs-lbl">Promedio</div>
-          </div>
-          <div class="course-stat">
-            <div class="cs-val">${curso.max.toFixed(0)}%</div>
-            <div class="cs-lbl">Máximo</div>
-          </div>
+          ${stats}
         </div>
 
         <div class="semafor ${sem.cls}">
@@ -553,8 +624,9 @@
   function renderDistPanel(curso, idx) {
     const fillClass = idx === 1 ? 'orange' : '';
     const total = curso.estudiantes;
-    // Approx distribution: we show avg, min (0%), max (100%) as reference bars
+    // Referencias: % aprobó de la cohorte (si hay datos) + promedio, mín y máx de avance
     const bars = [
+      ...(curso.aprob ? [{ lbl: '% Aprobó (cohorte)', val: curso.aprob.pct_aprobados, cnt: null }] : []),
       { lbl: 'Promedio',  val: curso.promedio, cnt: total },
       { lbl: 'Mínimo',    val: curso.min,       cnt: null },
       { lbl: 'Máximo',    val: curso.max,        cnt: null },
@@ -586,34 +658,56 @@
 
   async function init() {
     try {
-      const resp = await fetch('../dashboard/data.json');
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
+      // Dos fuentes: stats (avance de activas) + aprobación (cohorte completa 2026).
+      // aprobacion/data.json es opcional — si falta, el panel degrada a la vista de avance.
+      const [rStats, rAprob] = await Promise.allSettled([
+        fetch('../dashboard/data.json').then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+        fetch('../aprobacion/data.json').then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+      ]);
+      if (rStats.status !== 'fulfilled') throw rStats.reason;
+      const data  = rStats.value;
+      const aprob = rAprob.status === 'fulfilled' ? rAprob.value : null;
+
+      // Cohorte MR 2026 desde aprobacion/data.json — misma segmentación que JC
+      const PROGRAMA_MR = 'Mujeres ROFÉ';
+      const norm = s => String(s).toUpperCase().replace(/\s+/g, ' ').trim();
+      const pMR = (aprob?.por_programa || []).find(p => p.programa === PROGRAMA_MR) || null;
+      const aprobPorCurso = {};
+      (aprob?.por_curso || []).filter(c => c.programa === PROGRAMA_MR)
+        .forEach(c => { aprobPorCurso[norm(c.curso)] = c; });
 
       // Cursos MR desde subsección dedicada del JSON (fallback a filtrar por_curso si es JSON antiguo)
       const fuenteMR = data.mr?.por_curso ?? data.por_curso ?? [];
       const cursosMR = CURSOS_MR.map(mr =>
         fuenteMR.find(c => c.curso === mr.key)
-      ).filter(Boolean);
+      ).filter(Boolean).map(c => ({ ...c, aprob: aprobPorCurso[norm(c.curso)] || null }));
 
       if (cursosMR.length === 0) {
         throw new Error('No se encontraron los cursos de Mujeres ROFÉ en el JSON.');
       }
 
       // Actualizar header/hero
-      const fmtd = fmtDate(data.ultima_actualizacion);
+      const fmtd = fmtDate(aprob?.ultima_actualizacion ?? data.ultima_actualizacion);
       document.getElementById('hdr-upd').textContent = 'Actualizado ' + fmtd;
       document.getElementById('hero-upd').textContent = 'Última actualización: ' + fmtd;
 
-      // KPIs — usar conteo único de emails desde totales.mr si está disponible
-      const totalEst = data.mr?.totales?.total_estudiantes_unicos
+      // KPIs — cohorte 2026 (aprobación) con fallback a stats de activas
+      const totalEst = pMR?.estudiantes_cohorte
+                    ?? data.mr?.totales?.total_estudiantes_unicos
                     ?? cursosMR.reduce((s, c) => s + c.estudiantes, 0);
       const promGlobal = promedioPonderado(cursosMR);
-      const maxGlobal  = Math.max(...cursosMR.map(c => c.max));
 
       document.getElementById('kpi-mujeres').textContent = totalEst.toLocaleString('es-CO');
       document.getElementById('kpi-prom').textContent    = promGlobal.toFixed(1) + '%';
-      document.getElementById('kpi-max').textContent     = maxGlobal.toFixed(0) + '%';
+      if (pMR) {
+        const aprobTotal = (pMR.aprobados || 0) + (pMR.aprobados_retirados || 0);
+        document.getElementById('kpi-aprob').textContent = pMR.pct_aprobados.toFixed(1) + '%';
+        document.getElementById('kpi-aprob-sub').textContent =
+          `${aprobTotal} de ${pMR.cursaron} matrículas con avance ≥ 100`;
+        document.getElementById('kpi-ret').textContent = pMR.retirados_unicos.toLocaleString('es-CO');
+      } else {
+        document.getElementById('kpi-mujeres-sub').textContent = 'Estudiantes únicas activas en el programa';
+      }
 
       // Cards de curso
       document.getElementById('courses-grid').innerHTML =
@@ -623,11 +717,23 @@
       document.getElementById('panel-two').innerHTML =
         cursosMR.map((c, i) => renderDistPanel(c, i)).join('');
 
-      // Resumen global
-      const sem = semaforo(promGlobal);
-      document.getElementById('combined-val').textContent = promGlobal.toFixed(1) + '%';
-      document.getElementById('combined-sub').textContent =
-        `${sem.label} · ${totalEst.toLocaleString('es-CO')} mujeres inscritas en ${cursosMR.length} cursos`;
+      // Resumen global — % de aprobación de la cohorte (mismo criterio que JC);
+      // sin datos de aprobación cae al avance promedio ponderado
+      if (pMR) {
+        const aprobTotal = (pMR.aprobados || 0) + (pMR.aprobados_retirados || 0);
+        const semA = semaforo(pMR.pct_aprobados);
+        document.getElementById('combined-title').textContent =
+          '% de aprobación — cohorte Mujeres ROFÉ 2026';
+        document.getElementById('combined-val').textContent = pMR.pct_aprobados.toFixed(1) + '%';
+        document.getElementById('combined-sub').textContent =
+          `${semA.label} · ${aprobTotal} de ${pMR.cursaron} matrículas aprobadas · ` +
+          `${totalEst.toLocaleString('es-CO')} mujeres en la cohorte · aprobado = avance ≥ 100`;
+      } else {
+        const sem = semaforo(promGlobal);
+        document.getElementById('combined-val').textContent = promGlobal.toFixed(1) + '%';
+        document.getElementById('combined-sub').textContent =
+          `${sem.label} · ${totalEst.toLocaleString('es-CO')} mujeres inscritas en ${cursosMR.length} cursos`;
+      }
 
       // Mostrar contenido, ocultar skeleton
       document.getElementById('loading-skeleton').style.display = 'none';

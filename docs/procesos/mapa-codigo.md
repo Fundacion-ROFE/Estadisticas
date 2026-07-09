@@ -175,7 +175,9 @@ Desde 2026-07-07 cada curso lleva además `aprobados` (avance ≥ 100) y `pct_ap
 | Consolidado Estudiantes Matriculados — modo **Detallado** (por periodo) | Cohorte completa del periodo, **incluye inhabilitados** (Programa, Jornada, Nivel, Estudiante, Identificación) |
 | Estudiantes cancelados (histórico) | Confirma que inhabilitado = retirado |
 
-**Lógica:** `inhabilitados = cohorte_matriculados − activos_virtual`. Verificado 2026-07-07: en periodo 22 los 80 inhabilitados aparecen **todos** en el reporte de retirados → cuentan como *no aprobados*. Aprobado = avance ≥ 100 (hay 101). Los retirados del periodo se atribuyen a cada asignatura del periodo. Asignaturas con el mismo nombre en varios periodos se fusionan (Desarrollo Web: periodos 20+24). Marca de agua en `docs/aprobacion/maximos.json` (`aprobados` y `cursaron` nunca decaen — cubre el caso de Q10 archivando estudiantes al 100% al cerrar cohorte).
+**Lógica:** `inhabilitados = cohorte_matriculados − activos_virtual`. Aprobado = avance ≥ 100 (hay 101). Los retirados del periodo se atribuyen a cada asignatura del periodo. Asignaturas con el mismo nombre en varios periodos se fusionan (Desarrollo Web: periodos 20+24).
+
+**Ledger de avances (2026-07-08):** Q10 inhabilita **todas** las matrículas del estudiante y su avance desaparece del Consolidado. Para no perder a los que ya habían aprobado, el script mantiene `tools/aprobacion_ledger.json` (PII, gitignoreado): máximo avance visto por estudiante×curso, keepMax en cada corrida. Con él, cada inhabilitado se clasifica por curso en `aprobados_retirados` (alcanzó ≥ 100 antes de irse) o `retirados` (se fue sin aprobar). El % aprobó usa `aprobados_total = aprobados + aprobados_retirados`. Sembrado inicial desde la hoja manual Avance con `tools/seed_ledger_avance.py` (863 estudiantes, mapeo ALIAS manual→Q10, fusiona bloques duplicados con keepMax). Resultado primera corrida: 66 de los 80 inhabilitados de Nivel 1 habían aprobado Bienvenida → su % pasó de 90.2 a 97.9. Marca de agua en `docs/aprobacion/maximos.json`: ahora protege `aprobados_total`; si el conteo vivo baja, el déficit se **reclasifica** de `retirados` a `aprobados_retirados` (los 4 segmentos siempre suman `cursaron`).
 
 **Comando:**
 ```bash
@@ -190,13 +192,15 @@ python export_aprobacion.py --anio 2026
 |---|---|---|
 | `descargar_matriculados_periodo(session, pid)` | `pd.DataFrame` | Reporte matriculados Detallado; el POST replica los hidden `Filtros[i].Name/PartialName` del form (sin ellos → HTTP 400) |
 | `descargar_fuentes(session, anio)` | `(virtual, cohortes, retirados)` | Autodescubre periodos del año (mismo patrón que `q10_to_sheets`) y baja las 3 fuentes |
-| `agregar_por_curso(...)` | `(lista, anomalias)` | Agrega por asignatura normalizada; fusiona periodos homónimos |
-| `aplicar_maximos(lista)` | — | Marca de agua sobre `aprobados`/`cursaron` |
+| `cargar_ledger()` / `actualizar_ledger()` / `guardar_ledger()` | `dict` | `{cedula: {curso: max_avance}}` — memoria keepMax en `tools/aprobacion_ledger.json` |
+| `agregar_por_curso(..., ledger)` | `(lista, anomalias, prog_stats, prog_stats_raw)` | Agrega por asignatura normalizada; fusiona periodos homónimos; clasifica inhabilitados contra el ledger. `prog_stats_raw` lleva los sets de cédulas (cohorte/retirados) por programa |
+| `guardar_cohorte(prog_stats_raw, anio)` | — | Persiste `tools/cohorte_2026.json` (PII): cohorte y retirados únicos por programa. Lo consume `export_retirados.py` para filtrar a 2026 sin re-descargar de Q10 (2026-07-09) |
+| `aplicar_maximos(lista)` | — | Marca de agua sobre `aprobados_total`/`cursaron`; déficit → `aprobados_retirados` |
 | `generar_json(...)` | `dict` | `{por_curso[], por_programa[], totales{}, anomalias{}, periodos[]}` |
 
-**Output JSON:** `docs/aprobacion/data.json` — por curso: `cursaron`, `activos`, `aprobados`, `no_aprobados`, `sin_finalizar`, `retirados`, `pct_aprobados`, `promedio`, `finalizado` (promedio ≥ 90).
+**Output JSON:** `docs/aprobacion/data.json` — por curso: `cursaron`, `activos`, `aprobados` (activos ≥ 100), `aprobados_retirados`, `aprobados_total`, `no_aprobados`, `sin_finalizar`, `retirados` (sin aprobar), `pct_aprobados` (sobre total), `promedio`, `finalizado` (promedio ≥ 90). Totales incluyen `total_aprobados_retirados`. En `por_programa[]` (2026-07-08): `estudiantes_cohorte`, `habilitados_unicos`, `retirados_unicos`, `matriculas_activas`, `sin_finalizar` — fuente de los KPIs solo-JC del Tab 1 y del panel de aprobación. Identidad garantizada: `cursaron == aprobados + aprobados_retirados + sin_finalizar + retirados` (la marca de agua reclasifica déficits en vez de romperla). Excluye usuarios de prueba vía `tools/exclusiones_prueba.json` (ver [[convenciones#Exclusión de usuarios de prueba en exporters]]).
 
-**Consumidor:** `docs/aprobacion/index.html` (panel público, botón "Aprobación ↗" en el dashboard) y los tabs 1–3 de `docs/dashboard/index.html`.
+**Consumidor:** `docs/aprobacion/index.html` (panel público, botón "Aprobación ↗" en el dashboard) y los tabs 1–3 de `docs/dashboard/index.html`. Ambos muestran barra apilada de **4 segmentos**: verde aprobó-activo · azul `#3A6FB8` aprobó-y-se-retiró · ámbar sin completar · rojo retirado sin aprobar (paleta validada CVD con el validador de dataviz; el azul de marca `#406C9E` falla el piso de croma — no usar en marcas de datos). El panel `aprobacion/` filtra a **solo Jóvenes creaTIvos** (const `PROGRAMA` en el HTML) y sus KPIs salen de `por_programa[]` (`estudiantes_cohorte`, `retirados_unicos`, `pct_aprobados` — 2026-07-08); el tab 1 del dashboard sigue mostrando ambos programas.
 
 **Automatización (2026-07-07):** integrado al workflow n8n `Bot Q10 - Actualizar Grupos` (ID `Rblg81qifVshsRae`) en ambas ramas: `Sched: export_aprobacion` (Schedule 4h, tras `Sched: export_retirados`) y `Ejecutar export_aprobacion` (comando Telegram, antes de `Responder OK` — el bot reporta "Aprobación → GitHub Pages (% aprobó)").
 
@@ -206,6 +210,7 @@ python export_aprobacion.py --anio 2026
 - El Excel de matriculados trae título/filtros arriba: los headers reales están en la fila que contiene `Identificación`; la identificación viene con prefijo de tipo de documento (`C.C. 123...`) → normalizar a solo dígitos para cruzar.
 - La cohorte de matriculados puede ser menor que el pico histórico de h2test (860 vs 863 en Bienvenida): Q10 elimina del reporte a algunas matrículas anuladas del todo. Diferencia ≤ 3 estudiantes, asumida.
 - `anomalias.inhabilitados_sin_retiro` (5 casos al 2026-07-07): inhabilitados que no están en el reporte de cancelados — posibles archivados al cerrar curso; vigilar si crece.
+- **Q10 inhabilita por estudiante, no por curso** (práctica del equipo, confirmada 2026-07-08): al inhabilitar se pierden TODAS sus matrículas del Consolidado, incluidas las de cursos ya aprobados. Sin el ledger, cada inhabilitación restaba aprobados reales de cursos ganados (Bienvenida mostraba 90.2% en vez de 97.9%).
 
 ---
 
@@ -226,20 +231,35 @@ python export_asistencia.py --segmento "Logica-Nivel 2-2026"
 
 ## `export_retirados.py`
 
-**Propósito:** Lee pestaña `Retirados` → agrega por tipo/causa/programa/mes → genera `docs/retirados/data.json` (sin PII) → git commit + push.
+**Propósito:** Lee pestaña `Retirados` → **filtra a la cohorte 2026** → agrega por tipo/causa/programa/mes **y por etapa de retiro** → genera `docs/retirados/data.json` (sin PII) → git commit + push.
 
 **Servicios:** Google Sheets API (read only)
 
 **Sheet:** `Retirados` — mismo Sheet que h2test (`1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs`)
 
+**Filtro 2026 (2026-07-09):** cruza las cédulas de la pestaña contra `tools/cohorte_2026.json`
+(generado por `export_aprobacion.py`). El conjunto autoritativo de retirados 2026 son los
+**inhabilitados de la cohorte** (`por_programa[*].retirados`) — el mismo `retirados_unicos` del
+panel de aprobación (82), NO se filtra por `FechaCancelacion` (poco fiable). Los inhabilitados sin
+registro en la pestaña se cuentan como `sin_registro_hoja` para que los totales cuadren exacto.
+Si falta `cohorte_2026.json`, degrada al histórico completo (353) con advertencia — funciones
+`procesar_2026()` vs `procesar_historico()`.
+
+**Etapa de retiro (heurística, 2026-07-09):** para cada retirado, su "última etapa completada" =
+último curso de la ruta 2026 (const `RUTA_2026`, orden cronológico) con avance ≥ 100 en
+`tools/aprobacion_ledger.json`. Agrupa en `por_etapa[]` (orden 0 = "no completó ninguno", 1..7 =
+índice en la ruta). Q10 no guarda fecha de retiro por estudiante fiable → la etapa se infiere del
+avance máximo, no de cuándo dejó de estudiar. `etapa_de_retiro(cedula, ledger)` → `(orden, etiqueta)`.
+
 **Comando:**
 ```bash
-python export_retirados.py
+python export_aprobacion.py --sin-push   # PRIMERO — genera tools/cohorte_2026.json
+python export_retirados.py --sin-push    # luego — lee la cohorte y filtra a 2026
 ```
 
-**Output JSON:** `docs/retirados/data.json` — estructura `{totales{total_retirados, cancelados, desertores, aplazados}, por_tipo[], por_causa[], por_programa[], por_mes[]}`
+**Output JSON:** `docs/retirados/data.json` — `{anio, totales{total_retirados, cancelados, desertores, aplazados, sin_registro_hoja}, por_tipo[], por_causa[], por_programa[], por_mes[], por_etapa[{orden, etapa, cantidad}], ruta[]}`. Con `anio=null` (fallback histórico) `por_etapa` va vacío.
 
-**Consumidor:** `docs/retirados/index.html` (panel público, botón "Retirados ↗" en el dashboard).
+**Consumidor:** `docs/retirados/index.html` (panel público, botón "Retirados ↗" en el dashboard) — KPIs cohorte 2026 + gráfico "¿En qué etapa de la ruta los perdimos?". El render degrada al histórico si `anio` es null.
 
 ---
 
@@ -376,7 +396,8 @@ _on_listos()  →  _build_resumen_jc() + _build_tab_mr() + _build_tab_admin()
 
 | Vista | Fuente de datos | Columnas clave |
 |---|---|---|
-| EN Q10 JC | `q10_jc.values()` | Nombre · Email · # Cursos · Promedio Q10 % |
+| EN Q10 JC | `q10_jc.values()` | Nombre · Email · **una columna por curso JC** (etiqueta corta `_etiqueta_jc()`) · Promedio |
+| CURSOS | `_jc_by_course` (agregado por curso) | Curso · Activos · Promedio · Mín · Máx · Aprobados ≥100% · % Aprobó (activos). ⚠ Denominador = solo activos en h2test; el panel público de aprobación divide entre la cohorte completa (incluye retirados) — por eso los % difieren |
 | MATCH AMBAS | `casos["atencion"] + avance_0 + ok` | Nombre · Cédula · Email · Q10 % · Manual % · Estado |
 | ATENCIÓN | `casos["atencion"]` | Nombre · Cédula · Email · **Curso** · Q10 % · Manual % · Estado |
 | AVANCE 0% | `casos["avance_0_cruzado"]` | Nombre · Cédula · Email · # Cursos · Manual % · Diagnóstico |
@@ -474,8 +495,10 @@ python tools/panel_riesgo.py --umbral 50        # umbral de atención (default 6
 
 **Propósito:** Sincroniza la pestaña `General` de **BD-Mujeres ROFÉ 2026** con las respuestas del
 Google Form "Actualización de datos MR2024". Cruce por cédula; actualiza solo celdas que cambian;
-sin match → fila nueva al final con fondo naranja; fila tocada → `Fecha Actualización` (col AL) con
-la fecha de la corrida. Ver [[mr-actualizacion-datos]].
+fila tocada → `Fecha Actualización` (col AL) con la fecha de la corrida. Respuestas sin match se
+clasifican: cédula en pestaña `Inactivas` → RETIRADA (no se agrega); ≥2 señales de match con otra
+fila (correo/celular/nombre/cédula parecida) → POSIBLE TYPO (no se agrega, se reporta); solo las
+realmente nuevas van al final con fondo naranja. Ver [[mr-actualizacion-datos]].
 
 **Servicios:** Google Sheets API (read fuente + write destino)
 
@@ -497,10 +520,12 @@ python actualizar_bd_mr.py --dry-run  # solo reporta
 | `construir_valores(fila_form)` | `dict[col→valor]` | Normaliza nombre (title case), correo (lower), celular (10 dígitos), tipo doc (`cc`/`ce`/`ppt`), emprendimiento (`No`→`N/A`) |
 | `difiere(actual, nuevo, col)` | `bool` | Diff **insensible a tildes**; vacío nunca sobreescribe |
 | `sin_tildes(v)` | `str` | Unaccent NFD para comparación |
+| `senales_match(ced, nombre, correo, celular, cand)` | `list[str]` | Señales de misma persona: correo igual, celular igual, nombre exacto/contenido, cédula Levenshtein ≤2 |
+| `clasificar_sin_match(nuevas, gen_cand, inac_ced, inac_cand)` | `(retiradas, typos, reales)` | Clasifica respuestas sin match; typo requiere ≥2 señales o cédula = su propio celular |
 
 **Output parseable para n8n:**
 ```
-RESUMEN: respuestas=N unicas=M filas_actualizadas=X sin_cambios=Y nuevas=Z omitidas=W estado=exito
+RESUMEN: respuestas=N unicas=M filas_actualizadas=X sin_cambios=Y nuevas=Z retiradas=R posibles_typos=T omitidas=W estado=exito
 ```
 
 **Gotcha:** la columna `Fecha Actualización` se localiza por header (no índice fijo) porque la fila 1
@@ -528,6 +553,35 @@ ID `jkNaE51PKQ4TQzNq`). Ver [[zoom-asistencia]] para detalle completo de nodos y
 ## `tools/analizar_cupos_bd.py` (local, gitignoreado)
 
 **Propósito:** Análisis de la BD Seguimiento de Monitorias (xlsx pseudonimizado en Downloads) — cuenta estudiantes asignados por clase en las columnas `Horario *` de la pestaña `Seguimiento` → escribe `tools/cupos_clases.json` (89 clases, sin PII: nombre de clase + conteo). Re-ejecutar cuando cambie la BD y luego correr `setup_zoom_asistance.py` para refrescar `CUPOS`.
+
+## `tools/exportar_sin_completar.py` (local, gitignoreado)
+
+**Propósito:** Toma de estudiantes JC **sin completar** curso (avance < 100 en h2test) con ubicación —
+cruza por cédula normalizada (fallback email) contra la BD Seguimiento de Monitorias (pestaña
+`Seguimiento`: columna `Grupo` = ciudad del encargado) y escribe **bloques horizontales por
+ciudad** (tabla primaria = ciudad lado a lado, mismo patrón que h2test, 2 cols de separación;
+dentro de cada bloque los cursos = tablas secundarias apiladas) en el Sheet **SinCompletar**
+(ID `1OkafT8PYfGOUuTbojTYGy8pbuc4Jf6hO-_IOlQ3Fge8`, pestaña `SinCompletar`). Cursos MR excluidos
+(`course_config.json` + keywords). Columnas: Nombre · Cédula · Email · Celular · Ciudad · Avance %.
+Formato: jerarquía en azul ROFÉ (ciudad oscuro / curso claro), avance con formato condicional
+(<60 rojo claro, 60–99 amarillo claro), fila título congelada. Idempotente: recrea la pestaña en
+cada corrida (add tmp → delete vieja → rename). `python tools/exportar_sin_completar.py [--dry-run]`
+
+**Gotchas:** El API rechaza decimales literales en `ConditionValue` con locale es → usar enteros
+(mismo tipo de gotcha que las fórmulas de `setup_zoom_asistance.py`). La BD referencia
+`BD Seguimiento de Monitorias - JC2026.xlsx` (sin codificar, Downloads) — actualizar `RUTA_BD` si
+cambia la versión del archivo. Primera corrida 2026-07-08: 709 matrículas sin completar, 11 sin
+ubicación (98.4% match), grupos BOG/CTG/BAQ/MED/GYL/UY/CAL/PAN/QTO/BAQ2 (+`GRUPO_LABEL`).
+**El Sheet destino debe estar compartido como Editor con el Service Account**
+(`q10-automatizacion@n8n-automatizacion-q10.iam.gserviceaccount.com`) — el acceso de edición
+por enlace es frágil: el 2026-07-08 se degradó a solo-lectura y la escritura empezó a dar 403.
+
+**Automatización (2026-07-08):** integrado al workflow n8n `Bot Q10 - Actualizar Grupos`
+(ID `Rblg81qifVshsRae`) en ambas ramas, después de export_aprobacion: `Sched: export_sin_completar`
+(Schedule 4h) y `Ejecutar export_sin_completar` (comando Telegram, antes de `Responder OK` — el bot
+reporta "Sin completar → Sheet (N en K ciudades)"). Al insertar el nodo antes de `Responder OK`,
+las referencias `$json` de ese nodo (que apuntaban a export_aprobacion) se cambiaron a
+`$('Ejecutar export_aprobacion')`.
 
 ## `tools/verificar_retirados_bd.py` (local, gitignoreado)
 

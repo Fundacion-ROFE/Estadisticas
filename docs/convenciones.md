@@ -48,11 +48,13 @@ git config --local http.sslBackend schannel
 ```
 Si se clona un repo nuevo en esta red, aplicar este comando antes del primer push.
 
-**Tunnel externo:** usar `cloudflared` (Cloudflare Tunnel) en vez de ngrok. ngrok falla con `x509: certificate signed by unknown authority` porque el proxy intercepta su TLS. cloudflared usa QUIC/UDP, bypasea el proxy HTTP.
+**Tunnel externo:** usar **ngrok con dominio estático** (`ergonomic-absinthe-refract.ngrok-free.dev` → `localhost:5678`). La URL no rota nunca — es la que consumen los webhooks de Zoom y Telegram. Config en `%LOCALAPPDATA%\ngrok\ngrok.yml` (tunnel `n8n`); lo arranca `iniciar_n8n.bat`.
 
 ```
-cloudflared tunnel --url http://localhost:5678 --no-autoupdate
+ngrok start n8n
 ```
+
+Requiere agente ngrok **≥ 3.20** y free tier permite **un solo agente** simultáneo. Historial: se usó `cloudflared` (2026-06) porque una versión vieja de ngrok fallaba con `x509` tras el proxy corporativo — con ngrok 3.39.9 ya no ocurre, y cloudflared quedó retirado (2026-07-07) porque su URL efímera rotaba en cada reinicio.
 
 ## Q10 Login multi-paso
 
@@ -129,6 +131,47 @@ Patrón establecido en q10-consolidacion, reutilizable en otros procesos:
 - Todo a string antes de subir (`df.astype(str)`).
 - Columna faltante → advertir en consola, no crashear.
 
+## Lectura de Sheets en pipelines (tolerante a fórmulas sueltas)
+
+Nunca usar `get_all_records()` directo en un script de pipeline: exige encabezados únicos y
+**una fórmula suelta que un humano ponga en la fila 1** (visto 2026-07-08: `FILTRAR` en
+`H1Test!J1` → `#NAME?` → encabezados vacíos duplicados) tumba todo lo que sigue en la cadena.
+Usar el patrón `leer_registros(ws)`: `get_all_values()` + conservar solo columnas con encabezado
+no vacío y no duplicado (ver `organizador_headless.py`). Regla para humanos: fórmulas de análisis
+van en pestañas aparte, nunca en las pestañas que los scripts leen/escriben.
+
+## Timezone en Schedule Triggers de n8n
+
+Sin configuración, n8n interpreta las horas de los Schedule Triggers en **America/New_York**
+(su default), no en hora de Colombia. Estándar del proyecto (2026-07-08):
+- `GENERIC_TIMEZONE=America/Bogota` y `TZ=America/Bogota` en `iniciar_n8n.bat` (default de instancia).
+- `settings.timezone = "America/Bogota"` en cada workflow con schedule (vía API o UI → Workflow Settings).
+- Los schedules **no se recuperan** si n8n estaba apagado a la hora del disparo — programar a horas
+  en que el PC esté encendido de forma confiable (n8n arranca ~8:45–8:50 con el inicio de sesión).
+
+## Sincronización Form → BD en Sheets (diff por celda)
+
+Patrón establecido en [[mr-actualizacion-datos]], reutilizable para cualquier Google Form que
+alimente una BD en Sheets:
+
+- **Llave de cruce = cédula normalizada** (solo dígitos). El correo no sirve de llave: typos,
+  mayúsculas y columnas duplicadas.
+- **Deduplicar respuestas por llave** antes de cruzar — gana la marca temporal más reciente.
+- **Diff por celda, no por fila:** escribir solo celdas cuyo valor normalizado difiere → corridas
+  idempotentes (re-ejecutar sin datos nuevos no toca nada ni re-fecha filas).
+- **Comparación insensible a tildes** (unaccent NFD): los forms suelen llegar sin acentos;
+  sin esto se "actualiza" `Sofía`→`Sofia` degradando datos ya correctos.
+- **Vacío nunca sobreescribe** un dato existente.
+- **Registros sin match → clasificar antes de agregar** (desde 2026-07-08): si la llave está en la
+  pestaña de retiradas/inactivas → no agregar, solo reportar; si hay ≥2 señales de que es la misma
+  persona que una fila existente (correo igual, celular igual, nombre exacto/contenido, cédula a
+  distancia Levenshtein ≤2, o cédula = su propio celular) → posible typo de llave, no agregar y
+  reportar el candidato; solo lo realmente desconocido entra como **fila nueva al final con color
+  de fondo** (repeatCell/backgroundColor) para revisión humana. Una sola señal NO basta (hay
+  celulares compartidos entre personas distintas).
+- **Columna de fecha localizada por header** (no índice fijo) — sobrevive a columnas basura o
+  reordenamientos.
+
 ## Herramientas web estáticas (GitHub Pages)
 
 Patrón establecido en `docs/pseudonimizador/index.html`, reutilizable en cualquier herramienta de procesamiento en el navegador:
@@ -182,3 +225,59 @@ Patrón establecido en `q10-consolidacion`, reutilizable en cualquier proceso:
 - **Telegram Trigger**: actualización on-demand con respuesta confirmando el resultado.
 - Los dos caminos son **paralelos e independientes** en el workflow — comparten los mismos scripts pero no se cruzan. Evita referencias a `$('Parsear Comando').json.chat_id` que fallarían en ejecuciones sin chat.
 - Si se quiere notificación Telegram también en el schedule: añadir un chat_id de admin fijo en un nodo Set al inicio del camino schedule.
+
+## Editar workflows n8n por API (sin abrir la UI)
+
+Patrón usado para integrar pasos nuevos al workflow de producción (`PUT /api/v1/workflows/{id}`,
+credencial en memoria `reference-n8n-api`). Reglas aprendidas (2026-07-07 y 2026-07-08):
+
+- El body del PUT solo acepta `name`, `nodes`, `connections`, `settings` — construirlo desde el
+  GET previo. Tras el PUT verificar que el workflow siga **activo** (a veces queda inactivo).
+- **El JS de los nodos (Telegram/Code) guarda emoji, tildes y flechas como escapes literales
+  `\uXXXX`** — no como caracteres. Para editar expresiones por script: usar anclas 100% ASCII
+  y construir los escapes con `chr(92)`, nunca pegar el emoji/tilde real.
+- Si se inserta un nodo antes de otro que usa `$json`, esas referencias cambian de fuente —
+  reemplazarlas por `$('Nombre Del Nodo')` explícito.
+- Al terminar: re-exportar el JSON a `n8n-workflows/` (checklist de CLAUDE.md).
+
+## Exclusión de usuarios de prueba en exporters
+
+Q10 tiene perfiles de prueba matriculados como estudiantes reales ("Jovenes Prueba",
+"Pruebas Estudiantes JC", "Pruebas Soporte IT", "Mujeres Prueba") que inflan cohortes,
+KPIs y hasta retirados. La lista canónica vive en **`tools/exclusiones_prueba.json`**
+(gitignoreado — contiene cédulas/emails):
+
+```json
+{ "perfiles": [ { "nombre": "...", "cedula": "...", "email": "..." } ] }
+```
+
+- Todo exporter que produzca JSON público debe cargarla y filtrar **antes de agregar**
+  (por cédula normalizada a solo dígitos; en fuentes con email, también por email).
+- Si el archivo no existe o es ilegible → advertir y no excluir nada (no romper el pipeline).
+- Aplicada en `export_aprobacion.py`, `export_stats.py`, `export_retirados.py` (2026-07-08).
+- Si aparece un perfil de prueba nuevo, agregarlo al JSON — no hardcodear en los scripts.
+
+## Handoff de datos con PII entre exporters (tools/ gitignoreado)
+
+Cuando un exporter necesita un conjunto autoritativo que otro ya calculó (y que contiene
+PII, así que no puede ir al JSON público), el productor lo **persiste en `tools/`** y el
+consumidor lo lee, en vez de re-consultar la fuente lenta (Q10).
+
+- Ejemplo: `export_aprobacion.py` escribe `tools/cohorte_2026.json` (cohorte y retirados
+  únicos por programa, con cédulas) al final de su corrida; `export_retirados.py` lo lee para
+  filtrar la pestaña Retirados a 2026 sin re-loguear en Q10 (2026-07-09).
+- El productor debe correr **antes** que el consumidor (ya es el orden en el workflow n8n:
+  `export_aprobacion` → … → `export_retirados` corre antes, pero el archivo persiste entre
+  corridas, así que usa la cohorte de la corrida anterior — aceptable, cambia poco en 4 h).
+- El consumidor **degrada con gracia** si el archivo falta o es ilegible (advertir + camino
+  alterno), nunca romper el pipeline.
+- El archivo lleva `_nota` recordando que es PII y que `tools/` está gitignoreado.
+
+## Heurística de etapa con el ledger de avances
+
+Para "¿en qué punto de la ruta perdimos a un estudiante?" cuando **no hay una fecha fiable**:
+usar `tools/aprobacion_ledger.json` (máximo avance por estudiante×curso). La etapa = último
+curso de la ruta (en orden cronológico, const `RUTA_2026`) con avance ≥ 100. Es una heurística
+de **secuencia**, no temporal: infiere el progreso alcanzado, no cuándo dejó de estudiar.
+Documentarlo así en la UI para no sobre-prometer precisión. Usado en `export_retirados.py`
+(`etapa_de_retiro`) y el funnel del Tab Tendencia (2026-07-09).

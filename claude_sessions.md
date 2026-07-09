@@ -1053,3 +1053,226 @@ Event Subscription de Zoom comunicaciones y pulsa Validate.
 - **Gotcha:** en el JS de los nodos Telegram las flechas/emoji van como texto literal `→` (no el
   carácter) — al editar expresiones por API hay que matchear esos escapes literales.
 - JSON re-exportado a `n8n-workflows/q10-consolidacion.json` (26 nodos).
+
+---
+
+## 2026-07-07 — [mr-website] Documentación inicial del website Mujeres ROFÉ
+
+**Estado:** Nodo de documentación creado; cambios al sitio aún sin alcance definido.
+**Proceso relacionado:** [[mr-website]] · [[mr-actualizacion-datos]]
+
+- Código en `C:\Users\EstudiantesJC\Downloads\Mujeres-Rofe-Website` (repo independiente, **sin .git local**):
+  `back/` Express 4 + TS + Mongoose (Cloudinary, SendGrid, JWT) · `front/` Angular 15 (SCAM, ngx-sub-form).
+- Deploy: push a main → GitHub Action → SSH a droplet DigitalOcean → compose en repo `rofe-composal`.
+  Dominios: `mujeresrofe.com` / `api.mujeresrofe.com`.
+- Decisión: el código NO se integra a admin-usable — nota [[mr-website]] en el vault (precedente n8n/tools)
+  + `CLAUDE.md` local en la carpeta del website apuntando de vuelta al vault.
+- Gotcha: `environment.ts` de dev del front apunta a la API de producción.
+- Hallazgo: la BD Mongo del website y BD-Mujeres ROFÉ 2026 (Sheets) son bases paralelas no sincronizadas.
+- Pendiente: alcance de cambios, clonar repos remotos, verificar acceso a droplet/secretos.
+
+---
+
+## 2026-07-08 — [dashboard-web] Notas por curso en el panel GUI (tab JC)
+
+**Estado:** Completado.
+**Proceso relacionado:** [[dashboard-web]] · Script: `tools/panel_riesgo_gui.py`
+
+- Vista **EN Q10 JC** ahora muestra una columna por curso JC con el avance individual (etiquetas cortas
+  vía `_etiqueta_jc()`) + columna Promedio, en vez de solo "# Cursos / Promedio".
+- Nueva tarjeta KPI **CURSOS** en el tab JC: agregado por curso (Activos, Promedio, Mín, Máx,
+  Aprobados ≥100%, % Aprobó sobre activos).
+- Análisis de coherencia del panel público de aprobación: los números cuadran internamente
+  (aprobados + sin_finalizar + retirados = cursaron). La diferencia percibida: el % Aprobó público
+  divide entre la **cohorte completa (incluye retirados)**; la GUI divide entre activos de h2test.
+  Ej. Bienvenida: 776/860 = 90.2% (público) vs 776/780 = 99.5% (activos).
+- Smoke test headless con datos falsos: OK. `mapa-codigo.md` actualizado (tabla Vistas JC).
+
+---
+
+## 2026-07-08 — [q10-consolidacion] Toma "sin completar" con ubicación → Sheet SinCompletar
+
+**Estado:** Completado — primera corrida exitosa.
+**Proceso relacionado:** [[q10-consolidacion]] · Script nuevo: `tools/exportar_sin_completar.py`
+
+- Nuevo script local (gitignoreado): cruza h2test (avance < 100, solo cursos JC) × BD Seguimiento
+  de Monitorias (`Grupo` = ciudad) por cédula, fallback email. 709 matrículas sin completar,
+  solo 11 sin ubicación (98.4% match).
+- Salida: Sheet `SinCompletar` (1OkafT8PY...) con tablas anidadas ciudad → curso, formato con
+  paleta ROFÉ y condicional en Avance (<60 rojo / 60-99 amarillo). Idempotente (recrea pestaña).
+- Gotcha: ConditionValue del API no acepta decimales con locale es → límites enteros.
+- Gotcha: la BD codificada referenciada en scripts previos ya no existe en Downloads — ahora se usa
+  `BD Seguimiento de Monitorias - JC2026.xlsx` (sin codificar); hay clave nueva 2026-07-07.
+- Distribución: BOG 125 · CTG 103 · BAQ 97 · MED 84 · GYL 82 · UY 71 · CAL 55 · PAN 43 · QTO 37.
+
+---
+
+## 2026-07-08 — [q10-consolidacion] exportar_sin_completar integrado al workflow n8n
+
+**Estado:** Integrado y verificado — pendiente: re-compartir Sheet destino con el Service Account.
+**Proceso relacionado:** [[q10-consolidacion]] · Workflow `Bot Q10 - Actualizar Grupos` (Rblg81qifVshsRae)
+
+- 2 nodos nuevos vía API (26 → 28): `Sched: export_sin_completar` (rama Schedule 4h, tras
+  export_aprobacion) y `Ejecutar export_sin_completar` (rama Telegram, antes de Responder OK).
+- `Responder OK`: `$json` apuntaba a export_aprobacion; al insertar el nodo intermedio se cambió a
+  `$('Ejecutar export_aprobacion')` y se agregó línea "Sin completar → Sheet (N en K ciudades)".
+- Gotcha (re-confirmado): el JS de nodos Telegram guarda emoji/tildes como escapes literales
+  \uXXXX — para editar por API usar anclas ASCII y construir escapes con chr(92).
+- Gotcha nuevo: el Sheet destino perdió edición por enlace el mismo día (403 al escribir, lectura
+  OK) — hay que compartirlo como Editor con q10-automatizacion@...iam.gserviceaccount.com.
+- JSON re-exportado a `n8n-workflows/q10-consolidacion.json` (28 nodos).
+
+---
+
+## 2026-07-08 — [q10-consolidacion] SinCompletar: verificación end-to-end + bloques horizontales
+
+**Estado:** Completado.
+**Proceso relacionado:** [[q10-consolidacion]] · `tools/exportar_sin_completar.py`
+
+- Sheet destino compartido como Editor con el Service Account → el comando del nodo n8n corre
+  con exit 0 (se resolvió el 403 de la entrada anterior).
+- Formato rediseñado a pedido: las ciudades (tablas primarias) ahora van como **bloques
+  horizontales** lado a lado (patrón h2test, 2 cols de separación, orden por volumen desc),
+  con los cursos apilados verticalmente dentro de cada bloque. 143 filas × 86 cols, 11 bloques.
+- El formato condicional del Avance ahora aplica sobre la columna F de cada bloque
+  (una regla con múltiples rangos).
+
+---
+
+## 2026-07-08 — [mr-actualizacion-datos] Clasificación de sin-match: retiradas y typos de cédula
+
+**Estado:** Completado.
+**Proceso relacionado:** [[mr-actualizacion-datos]] · `scripts/mr-actualizacion-datos/actualizar_bd_mr.py`
+
+- Análisis de las 24 filas naranjas del backfill: 7 eran retiradas (pestaña `Inactivas`),
+  13 posibles typos de cédula (mismo nombre + correo/celular igual que fila existente) y
+  4 realmente nuevas.
+- Script ampliado: respuestas sin match ahora se clasifican antes de agregar — cédula en
+  `Inactivas` → RETIRADA (no se agrega); ≥2 señales (correo/celular/nombre/cédula Levenshtein ≤2)
+  o cédula = su propio celular → POSIBLE TYPO (no se agrega, se reporta); resto → naranja.
+- Las 7 filas naranjas de retiradas se eliminaron de General (verificando cédula antes de borrar).
+- RESUMEN gana campos `retiradas=` y `posibles_typos=`; el IF de n8n solo busca `estado=exito`,
+  no requiere cambios. Dry-run verificado: `nuevas=0 retiradas=7 posibles_typos=0`.
+- Gotcha: una sola señal no basta — hubo un caso de celular compartido entre dos mujeres
+  distintas (Maricela Montalban / Arlenis Nieto) que un umbral de 1 señal marcaría como typo.
+- Pendiente humano: corregir las 13 cédulas con typo (a veces el error está en la BD, no en el
+  form — ej. `11433751119` de 11 dígitos) y confirmar las 4 nuevas reales.
+
+---
+
+## 2026-07-08 — [q10-consolidacion · mr-actualizacion-datos] Auditoría de disparadores por tiempo
+
+**Estado:** Completado (verificación del ciclo 16:00 en curso).
+**Procesos relacionados:** [[q10-consolidacion]] · [[mr-actualizacion-datos]] · [[convenciones]]
+
+- Hallazgo 1: dashboard congelado desde las 8:50 — el Schedule 4h SÍ disparó (15:00) pero
+  `organizador_headless.py` moría con `GSpreadException: header row contains duplicates`.
+  Causa: fórmula manual `FILTRAR(...)` en `H1Test!J1` (quedó `#NAME?`, dejó H1/I1 como
+  encabezados vacíos). Fórmula rescatada y removida:
+  `=FILTRAR(E1:F5828; ISNUMBER(SEARCH("Emprendimiento: Idea de Negocio JC"; E1:E5828)) * (F1:F5828<>"100%") * ...)`
+- Fix de raíz: lectura tolerante `leer_registros()` (ignora encabezados vacíos/duplicados) en
+  `organizador_headless.py`, `retirados_headless.py`, `export_retirados.py` y `organizador_Q10.py`
+  (el .exe de operadores necesita rebuild). Convención nueva en [[convenciones]].
+- Hallazgo 2: los Schedule Triggers corrían en America/New_York (default n8n sin GENERIC_TIMEZONE);
+  el trigger de MR (7:30) equivalía a 6:30 Colombia y nunca disparó (n8n arranca ~8:45).
+- Fix: `settings.timezone=America/Bogota` en ambos workflows vía API + `GENERIC_TIMEZONE` y `TZ`
+  en `iniciar_n8n.bat`; trigger de MR movido a 9:30 am. JSONs re-exportados a `n8n-workflows/`.
+- Catch-up manual: organizador + export_stats corridos a mano (dashboard al día, push OK).
+- Zoom-Asistencia no tiene triggers de tiempo (solo webhook) — no aplica.
+
+---
+
+## 2026-07-08 — [q10-consolidacion] Ledger de avances: "aprobó y se retiró" como 4° segmento
+
+**Estado:** Completado — corrida real verificada, paneles publicados.
+**Proceso relacionado:** [[q10-consolidacion]] · [[dashboard-web]] · `export_aprobacion.py`
+
+- Problema: Q10 inhabilita TODAS las matrículas del estudiante y su avance desaparece del
+  Consolidado → cursos ya aprobados contaban como "no aprobó" en el panel de aprobación.
+- Solución: ledger local `tools/aprobacion_ledger.json` (PII, gitignoreado) con máximo avance
+  visto por estudiante×curso (keepMax por corrida). Cada inhabilitado se clasifica por curso:
+  `aprobados_retirados` (≥100 antes de irse) o `retirados` (se fue sin aprobar).
+- Siembra histórica: `tools/seed_ledger_avance.py` vuelca la hoja manual Avance (863 estudiantes,
+  cohorte completa) al ledger — única fuente del avance de los ya inhabilitados.
+- Resultado: 66/80 inhabilitados de Nivel 1 habían aprobado Bienvenida → 90.2% → 97.9%
+  (Hackea +49 → 95.7%, Habilidades +21 → 88.2%, Emprendimiento +2).
+- Paneles aprobacion/ y dashboard/ (tab 1): barra de 4 segmentos — azul `#3A6FB8` = "aprobó y
+  se retiró" (el azul de marca #406C9E falla el piso de croma del validador dataviz).
+- maximos.json ahora protege `aprobados_total`; déficit se reclasifica a aprobados_retirados
+  (los 4 segmentos siempre suman `cursaron`). Test sintético OK.
+- Ajuste final: panel aprobacion/ filtrado a solo Jóvenes creaTIvos — KPIs desde por_programa[]
+  (estudiantes_cohorte=860, retirados_unicos=85, % global JC 84.3 sin mezclar MR), se quitó la
+  tarjeta "Matrículas en cursos" y la tabla resumen por programa. Tab 1 del dashboard sigue
+  mostrando ambos programas.
+
+---
+
+## 2026-07-08 — [dashboard-web] Fase 1 refactorización 2026: Tab 1 solo-JC + exclusión de pruebas
+
+**Estado:** Completado — criterio de cuadre EXITOSO (bloqueante para Fase 2, cumplido).
+**Proceso relacionado:** [[dashboard-web]] · [[q10-consolidacion]] · Plan: PROMPT-plan-dashboard-2026.md
+
+- Tab 1 del dashboard filtrado a Jóvenes creaTIvos: KPIs desde `por_programa[]` (nuevos campos
+  `habilitados_unicos`, `matriculas_activas`, `sin_finalizar` por programa) — ya no mezcla MR.
+  Nuevo KPI "Estudiantes hábiles" (777 hábiles, 5.439 matrículas activas).
+- El "bug pct_aprobados por programa" del plan YA estaba corregido (d95e010); aplicar la corrección
+  literal habría contado doble los aprobados_retirados (84.4→86.8 era espejismo).
+- Exclusión de usuarios de prueba: son 4 (el plan decía 3 — también existe "Mujeres Prueba" en MR).
+  Lista en tools/exclusiones_prueba.json (gitignoreado) aplicada en aprobacion/stats/retirados.
+  Efecto: cohorte Nivel 1 860→857, retirados únicos JC 85→82 (3 pruebas contaban como retirados).
+- maximos.json reiniciado (re-sembrado sin pruebas); la marca de agua ahora preserva la identidad
+  cursaron == aprobados + aprobados_retirados + sin_finalizar + retirados (déficits se reclasifican).
+- --sin-push agregado a export_stats.py y export_retirados.py (antes siempre publicaban).
+- Cuadre verificado: identidad en los 9 cursos + sumas de tabla == KPIs por programa, exacto.
+  Patrón de exclusión documentado en [[convenciones]].
+
+---
+
+## 2026-07-08 — [dashboard-web] Fase 2 refactorización 2026: Comparativo solo-JC + panel MR con cohorte
+
+**Estado:** Completado — solo frontend, ningún exporter cambió (no aplicó corrida --sin-push).
+**Proceso relacionado:** [[dashboard-web]] · Plan: PROMPT-plan-dashboard-2026.md
+
+- Barrido de años < 2026 en todos los HTML de docs/: cero coincidencias — nada que limpiar.
+- Tab Admin: sin cambios; la exclusión de pruebas de Fase 1 ya vive en export_stats.py y el JSON
+  publicado cuadra con aprobación (JC 777, MR 282 = habilitados_unicos).
+- Tab Comparativo: la columna "Q10" usaba totales{} (mezclaba MR: 1.139/6.168/81,1%); ahora usa
+  por_programa[] JC (857/5.789/84,7%) y los 2 cursos MR ya no salen como filas grises "solo Q10".
+- Panel Mujeres ROFÉ: ahora lee también ../aprobacion/data.json — KPIs de cohorte MR 2026
+  (282 mujeres, 26,4% aprobación = 100/379 matrículas, 0 retiradas), barra apilada de aprobación
+  por curso (misma paleta 4 segmentos que JC), semáforo sobre % aprobó de la cohorte, y
+  degradación elegante a solo-avance si falta el JSON de aprobación.
+- Gotcha documentado: las dos fuentes capitalizan distinto los nombres de curso (Título vs
+  MAYÚSCULAS) — cruce con toUpperCase() + colapso de espacios.
+- Verificación: sintaxis JS OK + smoke test en Node (stubs DOM/fetch sobre los JSON reales):
+  joins MR 2/2, identidad de cuadre por curso true, KPIs y filas verificados.
+
+---
+
+## 2026-07-09 — [dashboard-web] Fase 3 refactorización 2026: Retirados 2026 + etapa + funnel
+
+**Estado:** Completado — corrida real --sin-push verificada, JSON regenerados (pendiente push).
+**Proceso relacionado:** [[dashboard-web]] · [[q10-consolidacion]] · Plan: PROMPT-plan-dashboard-2026.md
+
+- Panel Retirados filtrado a la cohorte 2026: pasa de 353 histórico a **82 retirados únicos**,
+  el mismo número que `retirados_unicos` del panel de aprobación (cuadre exacto verificado).
+  Filtro por cédula contra `tools/cohorte_2026.json`, NO por FechaCancelacion.
+- Nuevo handoff PII entre exporters: `export_aprobacion.py` persiste `tools/cohorte_2026.json`
+  (cohorte + retirados únicos por programa, con cédulas, gitignoreado); `export_retirados.py` lo
+  lee para filtrar sin re-loguear en Q10. Degrada al histórico si el archivo falta.
+- Heurística de etapa de retiro (con `tools/aprobacion_ledger.json`): cada retirado se ubica en el
+  último curso de la ruta 2026 con avance ≥ 100. Gráfico "¿En qué etapa de la ruta los perdimos?"
+  en el panel. Hallazgo real: **78 de 82 se retiraron en los 3 primeros cursos**, pico de 28 tras
+  Hackea tu Cerebro; solo 14 no completaron ninguno. Es heurística de secuencia, no temporal
+  (Q10 no da fecha de retiro fiable) — así documentado en la UI.
+- Tab Tendencia: nuevo **funnel de retención** desde aprobacion/data.json (cursos en orden de ruta,
+  largo ∝ cursaron, verde = aprobaron / ámbar = quedaron en el camino); la línea de snapshots de
+  history.json queda como vista secundaria debajo.
+- `sin_registro_hoja` (2): inhabilitados de la cohorte sin registro formal en la pestaña Retirados;
+  se cuentan aparte para que por_tipo/causa/programa/etapa sumen exacto al total (82).
+- Gotcha de orden: en el workflow n8n export_retirados corre antes que export_aprobacion, así que
+  usa la cohorte del ciclo anterior (4 h de lag, aceptable — el set cambia lento). El archivo ya
+  existe tras esta corrida manual, sin hueco.
+- Verificación: py_compile OK · corrida real export_aprobacion + export_retirados --sin-push ·
+  smoke test de render (Node) de retirados (2026 y fallback histórico) y del funnel Tab 5 ·
+  paleta del gráfico de etapa validada con el validador de dataviz. Patrones nuevos en [[convenciones]].

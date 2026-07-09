@@ -126,13 +126,31 @@ La clasificación de cursos en JC / MR / Stand-by se controla en **`tools/course
 **Rediseño 2026-07-07** (pedido del supervisor: la vista de solo-activos no servía): los tabs 1–3
 ahora usan la **cohorte completa** de `aprobacion/data.json` como fuente Q10.
 
+**Fase 1 refactorización 2026 (2026-07-08):** Tab 1 es **solo Jóvenes creaTIvos** — KPIs desde
+`por_programa[]` (JC: `estudiantes_cohorte`, `habilitados_unicos`, `retirados_unicos`,
+`matriculas_activas`) en vez de `totales{}` que mezclaba MR; barras y tabla filtradas por programa.
+Nuevo KPI "Estudiantes hábiles" ("Actualmente hay X estudiantes hábiles, sumando un total de Y
+matrículas activas"). **Exclusión de usuarios de prueba** (4 perfiles, ver
+`tools/exclusiones_prueba.json` gitignoreado) aplicada en `export_aprobacion.py`, `export_stats.py`
+y `export_retirados.py` — las pruebas inflaban cohorte (860→857 en Nivel 1) y retirados (85→82).
+Criterio de cuadre verificado: `cursaron == aprobados + aprobados_retirados + sin_finalizar +
+retirados` en los 9 cursos, y sumas de tabla == KPIs por programa, exacto.
+
+**Fase 2 refactorización 2026 (2026-07-08):** Tab Comparativo **solo JC** — la columna "Q10" usa
+`por_programa[]` JC (857 cohorte / 5.789 matrículas / 84,7%) en vez de `totales{}` que mezclaba MR,
+y los 2 cursos MR ya no aparecen como filas grises "solo Q10". Barrido de años < 2026 en todos los
+HTML de `docs/`: cero coincidencias (nada que limpiar). Tab Admin sin cambios — la exclusión de
+pruebas de Fase 1 vive en `export_stats.py` y sus totales cuadran con aprobación
+(JC 777 / MR 282 = `habilitados_unicos`). Panel Mujeres ROFÉ rediseñado sobre la cohorte (ver
+sección abajo). Solo frontend — ningún exporter cambió.
+
 | Tab | Fuente | Contenido |
 |---|---|---|
-| Estadísticas Q10 | `../aprobacion/data.json` | KPIs cohorte 2026 (habilitados + inhabilitados) · barras apiladas % aprobó por curso (verde/ámbar/rojo) · tabla detalle cursaron/aprobaron/retirados |
+| Estadísticas Q10 | `../aprobacion/data.json` | **Solo JC** — KPIs cohorte 2026 desde `por_programa[]` · barras apiladas % aprobó por curso (verde/azul/ámbar/rojo, 4 segmentos) · tabla detalle cursaron/aprobaron/retirados |
 | Avance Manual | `avance/data.json` | Mismo formato: KPI % aprobación manual · barras apiladas aprobó/sin completar · tabla · anomalías manuales |
-| Comparativo | `aprobacion` + `avance` | % aprobación Manual vs Q10 cohorte por curso · Δ diferencia (grupos manuales homónimos se fusionan, ej. 3× HTML) |
+| Comparativo | `aprobacion` + `avance` | **Solo JC** — % aprobación Manual vs Q10 cohorte por curso (resumen desde `por_programa[]` JC) · Δ diferencia (grupos manuales homónimos se fusionan, ej. 3× HTML) |
 | Admin | `data.json` (todos) | Resumen por programa (JC/MR/Stand-by) · barras por curso · tabla detalle — sigue usando export_stats.py |
-| Tendencia | `history.json` | Línea de promedio global JC + cursos individuales · **snapshots diarios** desde 2026-06-26 (regenerado con intervalo 1 día desde git) |
+| Tendencia | `aprobacion` + `history.json` | **Funnel de retención** (2026-07-09): barras por curso en orden de ruta 2026 — largo ∝ cuántos cursaron (la cohorte se encoge), verde = aprobaron · ámbar = quedaron en el camino. Debajo, línea de promedio global JC + cursos individuales (**snapshots diarios** desde 2026-06-26) como vista secundaria |
 | Aprobación ↗ | Link a panel aprobación | Navega a `docs/aprobacion/index.html` |
 | Retirados ↗ | Link a panel retirados | Navega a `docs/retirados/index.html` |
 
@@ -147,8 +165,21 @@ El Tab Admin lee las tres secciones del JSON (`por_curso`, `mr.por_curso`, `stan
 Panel independiente con acento naranja. Lee `./data.json` (generado por `export_retirados.py`).
 Botón "← Dashboard" para volver.
 
-KPIs: Total retirados · Cancelados · Desertores · Aplazados. Barras: distribución por tipo,
-causas de cancelación, retirados por programa, retiros por mes.
+**Fase 3 (2026-07-09): filtrado a la cohorte 2026 + etapa de retiro.** Antes mostraba el histórico
+completo (353 desde 2023). Ahora `export_retirados.py` cruza las cédulas de la pestaña contra
+`tools/cohorte_2026.json` (generado por `export_aprobacion.py`) y muestra **solo los 82 retirados
+únicos de 2026** — el mismo número que `retirados_unicos` del panel de aprobación. El filtro es por
+**cédula contra la cohorte matriculada**, NO por `FechaCancelacion` (poco fiable). Los inhabilitados
+sin registro formal en la pestaña se cuentan como `sin_registro_hoja` para que los totales cuadren.
+
+KPIs: Retirados 2026 · Cancelados · Desertores · Aplazados. Barras: **etapa de retiro** (nuevo),
+distribución por tipo, causas, retirados por programa, retiros por mes.
+
+**Gráfico "¿En qué etapa de la ruta los perdimos?"** — cada retirado se ubica en el último curso de
+la ruta 2026 que completó (avance ≥ 100 en el ledger). Barras en orden de ruta (no por cantidad):
+"No completó ninguno" en rojo, el resto en naranja. Es una heurística de secuencia — Q10 no da fecha
+de retiro por estudiante, así que se infiere del avance máximo alcanzado. Hallazgo primera corrida
+(2026-07-09): 78 de 82 se retiraron durante los tres primeros cursos; pico de 28 tras Hackea tu Cerebro.
 
 **Solo agregados** — la info individual de cada retirado (nombre, ID, teléfono, descripción)
 se consulta en el tab 🚪 Retirados del `panel_riesgo_gui.py` local.
@@ -157,13 +188,21 @@ se consulta en el tab 🚪 Retirados del `panel_riesgo_gui.py` local.
 ```json
 {
   "ultima_actualizacion": "ISO8601",
-  "totales": {"total_retirados": 353, "cancelados": 318, "desertores": 34, "aplazados": 1},
-  "por_tipo":     [{"tipo": "Cancelado", "cantidad": 318}],
-  "por_causa":    [{"causa": "Voluntario", "cantidad": 176}],
-  "por_programa": [{"programa": "Jóvenes creaTIvos", "cantidad": 353}],
-  "por_mes":      [{"mes": "2023-10", "cantidad": 120}]
+  "anio": "2026",
+  "totales": {"total_retirados": 82, "cancelados": 55, "desertores": 25, "aplazados": 0,
+              "sin_registro_hoja": 2},
+  "por_tipo":     [{"tipo": "Cancelado", "cantidad": 55}],
+  "por_causa":    [{"causa": "Voluntario", "cantidad": 40}],
+  "por_programa": [{"programa": "Jóvenes creaTIvos", "cantidad": 82}],
+  "por_mes":      [{"mes": "2026-06", "cantidad": 31}],
+  "por_etapa":    [{"orden": 0, "etapa": "No completó ningún curso", "cantidad": 14},
+                   {"orden": 2, "etapa": "Hackea tu cerebro: ...", "cantidad": 28}],
+  "ruta":         ["Bienvenidos a Jóvenes creaTIvos", "..."]
 }
 ```
+
+Fallback: si falta `tools/cohorte_2026.json`, `anio` es `null`, `por_etapa` va vacío y el panel
+muestra el histórico completo (el render lo detecta por `anio`).
 
 ## Panel Aprobación por Curso — docs/aprobacion/index.html
 
@@ -193,9 +232,26 @@ Estado persistente (marca de agua) en `docs/aprobacion/maximos.json`.
 
 ## Panel Mujeres ROFÉ — docs/mujeres-rofe/index.html
 
-Panel independiente con identidad visual MR (paleta rose/warm). Lee `../dashboard/data.json` y accede a `data.mr`. No filtra con JS — la separación ya viene hecha desde Python.
+Panel independiente con identidad visual MR (paleta rose/warm). **Fase 2 (2026-07-08):** aplica el
+mismo rigor de cohorte que JC — lee dos fuentes:
 
-KPIs: Mujeres inscritas (`mr.totales.total_estudiantes_unicos`) · # Cursos · Promedio · Avance 0%.
+- `../dashboard/data.json` → `data.mr` (avance de activas: promedio/mín/máx por curso)
+- `../aprobacion/data.json` → `por_programa[]` / `por_curso[]` del programa "Mujeres ROFÉ"
+  (cohorte 2026 completa, con exclusión de perfiles de prueba desde Python)
+
+El cruce entre fuentes es por **nombre de curso normalizado a mayúsculas** (aprobación usa
+Tipo título, stats usa MAYÚSCULAS). Si `aprobacion/data.json` no carga, el panel degrada a la
+vista de solo-avance (los bloques de cohorte no se muestran).
+
+KPIs: Mujeres cohorte 2026 (`estudiantes_cohorte` = 282) · % Aprobación del programa
+(`pct_aprobados` = 26,4%) · Avance promedio ponderado · Retiradas 2026 (`retirados_unicos`).
+Cada tarjeta de curso muestra: barra apilada de aprobación (misma paleta de 4 segmentos que el
+panel JC), badge ✓ Finalizado / En curso, semáforo sobre el **% aprobó de la cohorte** (ya no
+sobre el avance promedio) y stats Cursaron / Aprobaron / Retiradas. El resumen global del programa
+es el % de aprobación de la cohorte MR.
+
+**Nota:** "Mujeres" = programa Mujeres ROFÉ. NO existe campo de género para estudiantes JC —
+no es un cruce de género dentro de JC.
 
 ---
 
@@ -396,6 +452,10 @@ Requiere acceso Viewer al Sheet h2test y al Sheet Avance desde el Service Accoun
 - **AVANCE 0% ≠ "estudiantes sin progreso":** el contador de anomalías cuenta por matrícula (una estudiante en 2 cursos con 0% suma 2). Para contar personas únicas, usar el panel GUI.
 - **Doble encabezado en h2test y Avance:** fila 1 = nombres de cursos fusionados, fila 2 = sub-headers. `detectar_grupos()` lo maneja en todos los scripts. Ver [[convenciones#Doble encabezado en Google Sheets]].
 - **Cruce por email, no por ID:** las dos fuentes usan IDs incompatibles (cédula vs código interno Q10). Si un estudiante tiene emails distintos en cada sistema queda como SIN MATCH.
+- **Nombres de curso con capitalización distinta por fuente:** `aprobacion/data.json` trae los
+  cursos en Tipo título ("Habilidades del ser para…") y `dashboard/data.json` en MAYÚSCULAS.
+  El panel MR cruza ambas fuentes con `toUpperCase()` + colapso de espacios. Si un cruce falla,
+  revisar primero tildes/espacios dobles en el nombre del curso en Q10. (2026-07-08)
 - **tools/ está gitignoreado:** `course_config.json` vive en `tools/` y nunca sube a GitHub. Si se pierde, reconstruirlo desde el Tab Admin del GUI (los cursos se cargan de h2test en tiempo real).
 - **`.nojekyll` obligatorio en `docs/`:** el sitio son dashboards HTML estáticos, pero GitHub Pages procesa `docs/` con Jekyll por defecto. Las notas de Obsidian con sintaxis Liquid (p.ej. expresiones n8n `{{ ... $json.var }}` en `convenciones.md`) rompen el build → "pages build and deployment failed" en cada push. `docs/.nojekyll` (archivo vacío) desactiva Jekyll y arregla todos los fallos de una vez. No borrar. (2026-07-03)
 

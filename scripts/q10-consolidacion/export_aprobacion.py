@@ -86,6 +86,7 @@ RUTA_DATA_JSON    = os.path.join(PROYECTO_ROOT, "docs", "aprobacion", "data.json
 RUTA_MAXIMOS      = os.path.join(PROYECTO_ROOT, "docs", "aprobacion", "maximos.json")
 RUTA_LEDGER       = os.path.join(PROYECTO_ROOT, "tools", "aprobacion_ledger.json")
 RUTA_EXCLUSIONES  = os.path.join(PROYECTO_ROOT, "tools", "exclusiones_prueba.json")
+RUTA_COHORTE      = os.path.join(PROYECTO_ROOT, "tools", "cohorte_2026.json")
 
 
 def log(msg: str) -> None:
@@ -182,6 +183,36 @@ def actualizar_ledger(ledger: dict, virtual: dict) -> None:
                     nuevos += 1
                 d[curso] = float(av)
     log(f"  ledger: {len(ledger)} estudiantes ({nuevos} registros estudiante×curso nuevos)")
+
+
+def guardar_cohorte(prog_stats_raw: dict, anio: str) -> None:
+    """Persiste la cohorte 2026 y los retirados únicos (cédulas) por programa,
+    para que export_retirados.py filtre el histórico a 2026 sin re-descargar de Q10.
+    Contiene PII → vive en tools/ (gitignoreado), NUNCA subir a git.
+
+    'retirados' = inhabilitados de la cohorte del periodo (misma definición que el
+    KPI 'retirados_unicos' del panel de aprobación). Es la fuente autoritativa de
+    quién se retiró en 2026 — NO se usa FechaCancelacion (poco fiable)."""
+    payload = {
+        "_nota": ("Cohorte 2026 y retirados únicos por programa (cédulas, PII). "
+                  "Generado por export_aprobacion.py; consumido por export_retirados.py. "
+                  "tools/ está gitignoreado — NUNCA subir a git."),
+        "actualizado": datetime.now().astimezone().isoformat(),
+        "anio": anio,
+        "por_programa": {
+            prog: {
+                "cohorte":   sorted(v["cohorte"]),
+                "retirados": sorted(v["retirados"]),
+            }
+            for prog, v in prog_stats_raw.items()
+        },
+    }
+    os.makedirs(os.path.dirname(RUTA_COHORTE), exist_ok=True)
+    with open(RUTA_COHORTE, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False)
+    tot_ret = sum(len(v["retirados"]) for v in prog_stats_raw.values())
+    log(f"  cohorte_2026.json actualizado ({len(prog_stats_raw)} programas, "
+        f"{tot_ret} retirados únicos)")
 
 
 def guardar_ledger(ledger: dict) -> None:
@@ -382,6 +413,12 @@ def agregar_por_curso(virtual: dict, cohortes: dict, retirados: dict,
         "inhabilitados_sin_retiro": inhab_sin_retiro_total,
         "retirados_unicos_2026": len(inhabilitados_todos),
     }
+    # Conserva los sets crudos por programa (cédulas) para persistir la cohorte
+    # 2026 que consume export_retirados.py. Contiene PII → tools/ (gitignoreado).
+    prog_stats_raw = {
+        prog: {"cohorte": set(v["ids"]), "retirados": set(v["inhab"])}
+        for prog, v in prog_stats.items() if prog
+    }
     prog_stats = {
         prog: {
             "estudiantes_cohorte": len(v["ids"]),
@@ -390,7 +427,7 @@ def agregar_por_curso(virtual: dict, cohortes: dict, retirados: dict,
         }
         for prog, v in prog_stats.items()
     }
-    return lista, anomalias, prog_stats
+    return lista, anomalias, prog_stats, prog_stats_raw
 
 
 # ── Marca de agua (aprobados_total nunca decae) ───────────────────────────────
@@ -549,7 +586,9 @@ def main() -> None:
         actualizar_ledger(ledger, virtual)
         guardar_ledger(ledger)
 
-        lista, anomalias, prog_stats = agregar_por_curso(virtual, cohortes, retirados, ledger)
+        lista, anomalias, prog_stats, prog_stats_raw = agregar_por_curso(
+            virtual, cohortes, retirados, ledger)
+        guardar_cohorte(prog_stats_raw, args.anio)
         aplicar_maximos(lista)
         datos = generar_json(args.anio, lista, cohortes, anomalias, prog_stats)
         guardar_json(datos)
