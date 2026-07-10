@@ -84,7 +84,7 @@ BD Seguimiento Monitorias (Grupo = ciudad)    ──┼──► exportar_sin_co
 |---|---|
 | Orquestador | n8n 2.8.4 self-hosted, local en PC Samuel (EstudiantesJC) |
 | Arranque | Task Scheduler → `iniciar_n8n.bat` al iniciar sesión (automático) |
-| Tunnel | **ngrok — dominio estático fijo** `ergonomic-absinthe-refract.ngrok-free.dev` (2026-07-06, reemplaza el `cloudflared` efímero que rotaba). Ver memoria ngrok. Expone n8n a los webhooks de Telegram y Zoom |
+| Tunnel | **ngrok — dominio estático fijo** `ergonomic-absinthe-refract.ngrok-free.dev` (2026-07-06, reemplaza el `cloudflared` efímero que rotaba). Ver [[reference-ngrok-tunel-fijo]]. Expone n8n a los webhooks de Telegram y Zoom |
 | Identidad | Google Workspace — Service Account por proceso |
 | Dashboard | GitHub Pages → `fundacion-rofe.github.io/Estadisticas/dashboard/` |
 | Red | Proxy corporativo con SSL MITM — ver [[convenciones#SSL corporativo]] |
@@ -109,6 +109,7 @@ BD Seguimiento Monitorias (Grupo = ciudad)    ──┼──► exportar_sin_co
 | Proceso | Nota | Bloqueado por |
 |---|---|---|
 | Website Mujeres ROFÉ | [[mr-website]] | **Documentación inicial lista (2026-07-07).** Código en repo independiente (`Downloads\Mujeres-Rofe-Website`, back Express+Mongo / front Angular 15, deploy droplet DigitalOcean vía Actions). Bloqueado por: definir alcance de los cambios solicitados + clonar repos remotos (copia local sin `.git`) |
+| Panel de Datos Supabase | [[panel-datos-etl]] | **Fases 0 + 1a + 1b completadas (2026-07-09):** proyecto `panel-datos-rofe`, RLS verificada, carga real 1.059 participants / 9 courses / 5.818 enrollments (cuadra ≈775 JC + 283 MR), agregados vía `recompute_aggregates()`, **workflow n8n `q10-sync-supabase` (`uSizw3dNzpb6n53H`) activo — sync diario 9:45**. Siguiente: verificar 1ª corrida automática, mapear sociodemográficos (BD monitorias), Fase 2 (views + campo programa), Fase 3 (Next.js/Netlify) |
 | Asistencia Zoom | [[zoom-asistencia]] | **Funcional (cuenta comunicaciones)** — escribe en pestaña `ZOOM-ASISTANCE` con colores <70%, pestañas `CUPOS` y `ZOOM-STATS` (2026-07-02). **Trigger dual (2026-07-04):** rama `meeting.started` → snapshot al minuto 10 en `ASISTENCIA-10MIN`. **Prueba real 2026-07-06:** la rama corre completa (evento + scope granular `dashboard:read:list_meeting_participants:admin` OK), pero `Participantes en Vivo` da 400 → **BLOQUEO: falta habilitar la Dashboard API por soporte de Zoom** (Business ✓ y Panel web ✓, es flag de servidor). **HALLAZGO: hay 2 cuentas Zoom** (comunicaciones/us06web + soporte/us02web); el app+webhook viven solo en comunicaciones → **las clases de soporte NO se capturan** (verificado en las 38 ejecuciones). Pendiente: ticket Dashboard API, cobertura cuenta soporte (2º app + workflow multi-cuenta), túnel permanente, filtro reuniones no-clase, Sheet de producción |
 
 ---
@@ -129,6 +130,7 @@ BD Seguimiento Monitorias (Grupo = ciudad)    ──┼──► exportar_sin_co
 | [CLAUDE.md](../CLAUDE.md) | Instrucciones para Claude Code |
 | [[convenciones]] | Estándares técnicos (SSL, Q10, n8n, Sheets) |
 | [[mapa-codigo]] | Índice esquemático de todos los scripts |
+| [[bd-seguimiento-monitorias]] | Arquitectura interna de la BD manual de 35 pestañas (hub `Seguimiento` + hojas-ciudad) |
 | [claude_sessions.md](../claude_sessions.md) | Bitácora cronológica de sesiones |
 | [[plantillas/plantilla-proceso]] | Plantilla para notas nuevas de proceso |
 

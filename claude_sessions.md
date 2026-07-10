@@ -1301,3 +1301,73 @@ Event Subscription de Zoom comunicaciones y pulsa Validate.
   832 = 775 activos + 57 retirados. maximos.json rebaselinó a 832/791/779 sin resucitar a nadie.
   export_retirados --sin-push coherente (total 57, cancelados 55, desertores 0). py_compile OK.
 - Pendiente: push a producción (dashboard público) — no ejecutado, a la espera de OK del usuario.
+
+---
+
+## 2026-07-09 — [panel-datos-etl] Revisión del plan + Fase 0 Supabase completada
+
+**Estado:** Fase 0 completada — proyecto Supabase vivo, schema aplicado, RLS verificada.
+**Proceso relacionado:** [[panel-datos-etl]] (nuevo) · [[dashboard-web]] · [[q10-consolidacion]]
+
+- Auditados los 5 docs del plan (raíz, generados en claude.ai): 13 fallas corregidas — MySQL→PostgreSQL,
+  ENUM inline inválido, uuid_generate_v4 sin extensión, regla de validación falsa (primaria⇒edad<20),
+  rate limiting inexistente, backups solo-Pro, netlify.toml roto, react-query@3 obsoleto, PII expuesta
+  en endpoint público, view_retirados contradiciendo la definición canónica (832=775+57), contradicción
+  histórico SCD2 vs MVP, fuente sociodemográfica sin confirmar. Notas ⚠️ al pie de cada doc.
+- Hallazgo crítico verificado por MCP: el project ID `sqmrnirbakcrbhdlfxxz` de los docs NO existía en
+  la cuenta (solo 2 proyectos INACTIVE). Creado `panel-datos-rofe` (`kbxptoowtnteflhrfwid`, us-east-1, $0/mes).
+- Matriz de 6 decisiones completada con las recomendadas: 1A sync n8n · 2 escalonada (Type1+snapshots→SCD2)
+  · 3A solo admin · 4A público solo-agregados · 5A Next.js custom · 6B MVP 2 semanas.
+- Schema aplicado en 2 migraciones (schema_base_panel_datos + snapshots_diarios_participants): 6 tablas
+  con RLS, advisor de seguridad limpio. Smoke test REST con anon key: agregados 200, participants
+  privados 0 filas, escritura anónima 401. Datos de prueba insertados y borrados.
+- Artefactos: `.env.example` + `.env.local` (gitignoreado; agregado `.env.*` a .gitignore),
+  `scripts/panel-datos/test_conexion_supabase.py` (stdlib+truststore, corrida real TODO OK),
+  `docs/procesos/panel-datos-etl.md`, credencial documentada en [[convenciones]].
+- Bloqueadores Fase 1a: confirmar fuente de datos sociodemográficos (no están en pestañas Q10;
+  candidatas BD-MR y BD monitorias) + copiar service_role key del Dashboard a `.env.local` (manual).
+
+---
+
+## 2026-07-09 — [panel-datos-etl] Fase 1a + carga inicial a Supabase
+
+**Estado:** Completado — normalización y carga real verificadas, BD poblada.
+**Proceso relacionado:** [[panel-datos-etl]] · [[q10-consolidacion]]
+
+- Cuenta Supabase depurada: Samuel eliminó los 2 proyectos viejos; queda solo `panel-datos-rofe`.
+  Secret key validada (insert/read/delete real). Gotcha nuevo: Supabase rechaza secret keys con
+  User-Agent de navegador → scripts usan UA propio `panel-datos-etl/1.0`.
+- `normalize_q10_data.py` (Fase 1a): h2test en bloques (patrón detectar_grupos) + Retirados;
+  excluye desertores (34) y perfiles de prueba (9); cédula solo dígitos, aprobado > 80, keepMax
+  en duplicados. Corrida real: 1.059 participantes / 9 cursos / 5.818 matrículas, 0 errores,
+  2 advertencias (avances 101 clampeados). Cuadre: 1.059 ≈ 775 activos JC + 283 MR ✔.
+- `cargar_supabase.py`: snapshot previo → participants_snapshots, upserts por lotes de 500 con
+  FKs resueltas. Migración nueva `courses_unique_nombre_cohorte` (sin ella el upsert duplicaba
+  catálogo). Doble corrida = mismos conteos + snapshot 1.059 filas → idempotencia verificada.
+- Estados en BD: 4.983 completado (>80) · 528 en_progreso · 307 inscrito (0%). PII solo en
+  tools/ (payload + reporte de validación); nada nuevo en docs/ públicos.
+- Gotcha: un curso MR contiene coma en el nombre — no parsear listas por coma.
+- Pendiente: Fase 1b (workflow n8n normalize→cargar diario), recompute de agregados
+  (participant_metrics/cohorte_stats vacíos), mapeo sociodemográfico BD monitorias, campo
+  `programa` JC/MR (hoy solo en tools/course_config.json). Sin commit aún.
+
+---
+
+## 2026-07-09 — [panel-datos-etl] Fase 1b: agregados + workflow n8n q10-sync-supabase activo
+
+**Estado:** Completado — sync diario automático en producción.
+**Proceso relacionado:** [[panel-datos-etl]] · [[convenciones]]
+
+- Migración `recompute_aggregates_fn`: función SQL (SECURITY DEFINER, solo service_role;
+  REVOKE a anon/authenticated) que upserta participant_metrics y cohorte_stats desde
+  enrollments/courses y limpia huérfanos. `cargar_supabase.py` la invoca vía /rpc al final de
+  cada carga. Corrida real: 1.059 métricas + cohorte 2026 poblada; anon ya lee agregados reales.
+- Workflow n8n `q10-sync-supabase` (ID `uSizw3dNzpb6n53H`) creado y activado por API, exportado a
+  `n8n-workflows/q10-sync-supabase.json`. Cadena: Schedule diario 9:45 COT → normalize → IF
+  estado=exito → cargar → IF → OK/stopAndError. Decisión: 9:45 en vez del 04:00 UTC del plan
+  (PC apagado a las 23:00; n8n arranca ~8:45 y el workflow MR corre 9:30). "con_advertencias"
+  (FKs perdidas) también dispara el camino de error — nunca en silencio.
+- Gotcha API n8n: POST /activate sin body → "unsupported media type"; mandar JSON '{}' explícito.
+- Pendiente: verificar 1ª corrida automática (mañana 9:45), mapear sociodemográficos (BD
+  monitorias), Fase 2 (materialized views + campo programa), Fase 3 (Next.js + Netlify),
+  Fase 4 (cuadre vs dashboard GitHub Pages). Sin commit aún.

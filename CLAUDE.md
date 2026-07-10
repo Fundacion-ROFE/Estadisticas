@@ -12,7 +12,7 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 /
 ├── CLAUDE.md                   ← Este archivo
 ├── claude_sessions.md          ← Bitácora histórica (solo append)
-├── iniciar_n8n.bat             ← Arranca n8n + cloudflared (~45 s)
+├── iniciar_n8n.bat             ← Arranca n8n + ngrok dominio fijo (~45 s)
 │
 ├── docs/                       ← Vault de Obsidian + GitHub Pages root
 │   ├── 00-vision-global.md     ← MOC / Home de Obsidian
@@ -39,6 +39,14 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 │   ├── setup_headers.py        ← Inicialización headers fila 1 (uso único)
 │   └── organizador/            ← App GUI .exe para operadores no técnicos
 │
+├── scripts/mr-actualizacion-datos/
+│   └── actualizar_bd_mr.py     ← Form MR2024 → BD-Mujeres ROFÉ (General) + Fecha Actualización
+│
+├── scripts/panel-datos/
+│   ├── normalize_q10_data.py   ← h2test → payload normalizado (tools/, PII) — Fase 1a
+│   ├── cargar_supabase.py      ← payload → Supabase (snapshot + upserts, idempotente)
+│   └── test_conexion_supabase.py ← Smoke test REST+RLS del proyecto Supabase panel-datos-rofe
+│
 ├── tools/                      ← LOCAL ONLY — gitignoreado — contiene PII
 │   └── panel_riesgo.py         ← Cruce Avance × h2test por email → reporte de riesgo
 │
@@ -60,7 +68,13 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 | `retirados_headless.py` | [[q10-consolidacion]] | — | — |
 | `panel_riesgo.py` | [[dashboard-web]] | — | Local solamente |
 | `setup_headers.py` | [[q10-consolidacion]] | — | — |
+| `actualizar_bd_mr.py` | [[mr-actualizacion-datos]] | — | — (escribe en BD-Mujeres ROFÉ) |
+| `exportar_sin_completar.py` | [[q10-consolidacion]] | — | — (escribe en Sheet privado SinCompletar) |
+| `normalize_q10_data.py` | [[panel-datos-etl]] | — | — (payload PII en tools/) |
+| `cargar_supabase.py` | [[panel-datos-etl]] | — | — (escribe en Supabase panel-datos-rofe) |
+| `test_conexion_supabase.py` | [[panel-datos-etl]] | — | — (verifica RLS de Supabase con anon key) |
 | n8n workflow | [[q10-consolidacion]] | [[q10-actualizar]] | — |
+| n8n `q10-sync-supabase` | [[panel-datos-etl]] | — | — (sync diario 9:45 → Supabase) |
 
 Ver [[mapa-codigo]] para firma completa de cada script.
 

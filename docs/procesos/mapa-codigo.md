@@ -608,6 +608,67 @@ OAuth manual a Zoom + Info Reunion + Participantes paginado + Code + Google Shee
 
 ---
 
+## `scripts/panel-datos/normalize_q10_data.py`
+
+**Propósito:** Fase 1a del panel de datos Supabase ([[panel-datos-etl]]). Lee h2test (bloques
+por curso, patrón `detectar_grupos` de export_stats) + pestaña Retirados → excluye desertores
+(Tipo=Desertor) y perfiles de prueba (`tools/exclusiones_prueba.json`) → normaliza (cédula solo
+dígitos, email lower+regex, avance clamp 0-100) → valida → payload para Supabase.
+
+**Servicios:** Google Sheets API (read only — credenciales de `scripts/q10-consolidacion/`)
+
+**Comando:**
+```bash
+python scripts/panel-datos/normalize_q10_data.py                 # corrida completa
+python scripts/panel-datos/normalize_q10_data.py --max-filas 100 # muestra de prueba
+```
+
+**Salidas (PII → tools/, gitignoreado):** `tools/supabase_payload.json` (participants/courses/
+enrollments, determinista/idempotente) · `tools/normalize_report_YYYYMMDD.json` (errores y
+advertencias con detalle).
+
+**Reglas canónicas:** aprobado/completado = avance > 80 (`UMBRAL_APROBADO`); estado matrícula:
+`completado` (>80) / `en_progreso` (>0) / `inscrito` (0). Sociodemográficos van null hasta mapear
+la BD de monitorias. Duplicado (cédula, curso) → keepMax.
+
+**Output parseable para n8n:**
+```
+RESUMEN: participantes=N cursos=K matriculas=M errores=E advertencias=W estado=exito
+```
+
+---
+
+## `scripts/panel-datos/cargar_supabase.py`
+
+**Propósito:** Carga `tools/supabase_payload.json` a Supabase `panel-datos-rofe`: snapshot previo
+→ `participants_snapshots` (Decisión 2), luego upsert participants (`q10_id`) → courses
+(`nombre,cohorte`) → enrollments (FKs resueltas, `participant_id,course_id`). Idempotente.
+
+**Servicios:** Supabase REST (service_role de `.env.local` raíz — bypasea RLS, solo backend)
+
+**Comando:**
+```bash
+python scripts/panel-datos/cargar_supabase.py [--dry-run]
+```
+
+**Gotcha:** Supabase rechaza secret keys con User-Agent de navegador → UA propio
+`panel-datos-etl/1.0`. PostgREST pagina a ~1000 filas → `get_todo()` pagina con limit/offset.
+
+**Output parseable para n8n:**
+```
+RESUMEN: participants=N courses=K enrollments=M snapshot=S estado=exito
+```
+
+---
+
+## `scripts/panel-datos/test_conexion_supabase.py`
+
+**Propósito:** Smoke test de la cara pública: con el anon key verifica lectura de agregados,
+que RLS oculte participants privados y que la escritura anónima esté bloqueada.
+`python scripts/panel-datos/test_conexion_supabase.py` — stdlib + truststore, lee `.env.local`.
+
+---
+
 ## Dependencias comunes
 
 ```

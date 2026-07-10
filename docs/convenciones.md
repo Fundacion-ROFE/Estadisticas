@@ -25,6 +25,7 @@ Todo workflow en producción debe tener:
 | Telegram Bot                    | q10-consolidacion | ID credencial en n8n: `kGTAfWTTp4FATF66`                            |
 | Google Calendar                 | (pendiente)       |                                                                     |
 | Zoom (Server-to-Server OAuth)   | zoom-asistencia   | Credenciales en `scripts/zoom-asistencia/.env` (gitignoreado). Scopes: `meeting:read:past_meeting:admin`, `meeting:read:list_past_participants:admin` |
+| Supabase `panel-datos-rofe`     | panel-datos-etl   | Proyecto `kbxptoowtnteflhrfwid` (us-east-1), URL `https://kbxptoowtnteflhrfwid.supabase.co`. Keys en `.env.local` raíz (gitignoreado; plantilla en `.env.example`). Anon key = solo lectura de agregados vía RLS. **service_role bypasea RLS — solo n8n/backend, jamás frontend ni Git** |
 
 ## SSL corporativo
 
@@ -54,7 +55,7 @@ Si se clona un repo nuevo en esta red, aplicar este comando antes del primer pus
 ngrok start n8n
 ```
 
-Requiere agente ngrok **≥ 3.20** y free tier permite **un solo agente** simultáneo. Historial: se usó `cloudflared` (2026-06) porque una versión vieja de ngrok fallaba con `x509` tras el proxy corporativo — con ngrok 3.39.9 ya no ocurre, y cloudflared quedó retirado (2026-07-07) porque su URL efímera rotaba en cada reinicio.
+Requiere agente ngrok **≥ 3.20** y free tier permite **un solo agente** simultáneo. Historial: se usó `cloudflared` (2026-06) porque una versión vieja de ngrok fallaba con `x509` tras el proxy corporativo — con ngrok 3.39.9 ya no ocurre, y cloudflared quedó retirado (2026-07-07) porque su URL efímera rotaba en cada reinicio. Detalle completo (config, arranque, gotchas): [[reference-ngrok-tunel-fijo]].
 
 ## Q10 Login multi-paso
 

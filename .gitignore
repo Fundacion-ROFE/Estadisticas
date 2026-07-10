@@ -1,6 +1,8 @@
 # ── Credenciales y secretos ───────────────────────────────────────────────────
 credenciales_service_account.json
 .env
+.env.*
+!.env.example
 *.har
 *.p12
 *.pem
