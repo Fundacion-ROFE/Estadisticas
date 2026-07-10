@@ -1613,3 +1613,9 @@ pendientes de Samuel. En espera por prioridades — no se implementa aún.
 (uSizw3dNzpb6n53H) actualizado vía API — nueva cola tras ¿Carga OK?: `Ejecutar sync_aprobacion`
 → ¿Aprobación OK? → OK / Error Aprobación (stopAndError). 11 nodos, reactivado, export a
 n8n-workflows/. El KPI de ingresados (832/283) ya se refresca solo a diario; deja de ser manual.
+
+**Tema por programa en el panel (2026-07-10, pedido de Samuel):** al seleccionar Mujeres ROFÉ
+el chrome del panel cambia a la paleta naranja del programa (#D1793F — BRAND-DIGITAL) vía
+variables CSS en #panel + clase tema-mr (números KPI, bordes y sombras de tarjetas glass,
+transición 0.3s); JC mantiene el azul de marca. Colores semánticos de los gráficos invariantes.
+Frontend commit 830a6b2; BRAND-DIGITAL.md v1.1 con la regla nueva (sección 4.5).
