@@ -1619,3 +1619,11 @@ el chrome del panel cambia a la paleta naranja del programa (#D1793F — BRAND-D
 variables CSS en #panel + clase tema-mr (números KPI, bordes y sombras de tarjetas glass,
 transición 0.3s); JC mantiene el azul de marca. Colores semánticos de los gráficos invariantes.
 Frontend commit 830a6b2; BRAND-DIGITAL.md v1.1 con la regla nueva (sección 4.5).
+
+**Tema MR ahora en ROSADO (2026-07-10, pedido de Samuel — reemplaza el naranja):** al oprimir
+Mujeres ROFÉ cambia TODO el aspecto: hero con gradiente rosa profundo (#3a1120→#7a1f38→#C12D4C),
+partículas con prioridad rosa + chispa amarilla, fondo de página #FAF0F3 (body.tema-mr-body,
+transición 0.5s), trazos de fondo en rojo/rosa de marca, botón liquid-metal-rosa, pill del
+selector rosa y chrome del panel con acento #C12D4C. La paleta rosada se tomó del panel
+existente docs/mujeres-rofe (tintes #FDF6F8/#FAF0F3/#F0DDE2/#E5C5CC). JC vuelve al azul al
+instante. Colores semánticos de gráficos invariantes. Frontend 41d2871; BRAND-DIGITAL v1.2.
