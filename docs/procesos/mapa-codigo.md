@@ -680,6 +680,24 @@ es el Zoom de la clase, no un emprendimiento del estudiante.
 
 ---
 
+## `scripts/panel-datos/importar_historico_q10.py`
+
+**Propósito:** Cohortes pasadas (2023-2025) de Q10 → Supabase. Login Q10 (reusa `q10_to_sheets`),
+descarga Consolidado de los periodos históricos con mapa EXPLÍCITO periodo→(cohorte, programa):
+2023=pids 2-7 · 2024=9/10/12/14 ("Único Horario nivel 1-3" sin año, asignados 2024 — confirmar) ·
+2025=16 (MR forzado)/17/18/19. Normaliza con las mismas reglas del sync diario; solo inserta
+cédulas NUEVAS (no toca a los del sync 2026); desertores y perfiles de prueba excluidos.
+Idempotente. Corrida 2026-07-10: +1.816 participantes, 30 cursos·cohorte, 12.377 matrículas, 0 errores.
+
+**Comando:** `python scripts/panel-datos/importar_historico_q10.py [--dry-run] [--solo-pid N]`
+**Output parseable:** `RESUMEN: participantes_nuevos=N cursos=K matriculas=M cohortes=C errores=E estado=exito`
+
+**Gotchas:** Q10 reutiliza nombres de curso entre años (UNIQUE nombre+cohorte los separa);
+el Consolidado NO devuelve inhabilitados → cohortes pasadas sin retirados; `tools/sondear_periodos_q10.py`
+es el explorador que dimensionó todo (re-usarlo si aparecen periodos nuevos).
+
+---
+
 ## `scripts/panel-datos/test_cuadre_dashboard.py`
 
 **Propósito:** Fase 4 — cuadre por curso entre `v_curso_completion` (Supabase, anon) y

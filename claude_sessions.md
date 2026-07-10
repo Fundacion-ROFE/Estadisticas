@@ -1448,3 +1448,22 @@ Event Subscription de Zoom comunicaciones y pulsa Validate.
   en JC (fuente = BD monitorias JC), tab Historial con líneas de matrículas y avance por curso.
   Build 198 kB. Repo GitHub real: soportejunior-codeJR/PowerBi.
 - Backlog: sociodemográficos MR desde BD-Mujeres ROFÉ, retirados en Supabase.
+
+---
+
+## 2026-07-10 — [panel-datos-etl] Cohortes históricas Q10 (2023-2025) importadas
+
+**Estado:** Completado — 2.875 participantes totales en Supabase, selector de cohorte en producción.
+**Proceso relacionado:** [[panel-datos-etl]] · [[q10-consolidacion]]
+
+- Confirmación de diseño: courses.cohorte + UNIQUE(nombre, cohorte) ya soportaba multi-cohorte.
+- Sondeo empírico de Q10 (tools/sondear_periodos_q10.py, pids 1-40): el Consolidado conserva el
+  histórico CON avance — 2.880 cédulas únicas; pids 25-40 vacíos. Los +3.000 = 2.880 + 353
+  retirados históricos (inhabilitados, invisibles al Consolidado — limitación documentada).
+- importar_historico_q10.py con mapa EXPLÍCITO periodo→cohorte (sin inferencias): 2023 pids 2-7,
+  2024 pids 9/10/12/14 (⚠ "Único Horario nivel 1-3" sin año — asignados 2024, confirmar con
+  equipo), 2025 pids 16(MR)/17/18/19. 2026 excluido (fuente = sync diario). Solo cédulas nuevas.
+- Resultado: +1.816 participantes (2.875 totales, cuadra con sondeo menos exclusiones), 39
+  cursos·cohorte, 18.195 matrículas, 0 errores/0 sin_fk. v_programa_stats ganó dimensión cohorte.
+- Frontend: selector de cohorte (2026/2025/2024/2023); cohortes pasadas → Resumen+Cursos con
+  nota "no incluye retirados". Gotcha clave: Q10 reutiliza nombres de curso entre años.

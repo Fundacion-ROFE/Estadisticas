@@ -21,6 +21,23 @@ Repo dedicado: `C:\Users\EstudiantesJC\downloads\panel-datos-rofe` (GitHub conec
   bajo JC — su fuente es la BD de monitorias JC; los sociodemográficos MR viven en BD-Mujeres
   ROFÉ ([[mr-actualizacion-datos]]) → integrarlos es backlog.
 
+## Cohortes históricas Q10 (2026-07-10, pedido de stakeholders)
+- **Sondeo empírico** (`tools/sondear_periodos_q10.py` → `tools/sondeo_periodos_20260710.json`):
+  el Consolidado de Q10 SÍ conserva los periodos históricos CON avance — 2.880 cédulas únicas
+  en los periodos 1-24. IDs 25-40 vacíos. Los +3.000 del equipo = 2.880 + retirados históricos
+  (353, inhabilitados que NO salen del Consolidado — limitación documentada).
+- **`importar_historico_q10.py`:** mapa EXPLÍCITO periodo→cohorte (2023: pids 2-7 ·
+  2024: 9/10/12/14 · 2025: 16-19; pid 16 "Unico 2025" = MR forzado). ⚠️ "Único Horario nivel
+  1-3" no trae año en la etiqueta — asignados a 2024, **confirmar con el equipo**. 2026 NO se
+  re-importa (es del sync diario). Participantes existentes no se tocan; solo cédulas nuevas.
+- **Resultado:** +1.816 participantes nuevos → **2.875 totales** · 39 cursos·cohorte ·
+  **18.195 matrículas** · 0 errores, 0 FKs perdidas. Por cohorte: 2023=336 · 2024=470 ·
+  2025=1.038 · 2026=1.059. Gotcha: Q10 reutiliza nombres de curso entre años ("…- 2026" en
+  cohorte 2023) — UNIQUE(nombre, cohorte) los separa.
+- **Frontend:** selector de cohorte (verde) junto al de programa; cohortes pasadas muestran
+  Resumen + Cursos (Historial/Emprendimiento/Demografía son de la cohorte actual).
+- Re-ejecución: idempotente; correr de nuevo solo si Q10 gana periodos históricos nuevos.
+
 ## Cuadre (Fase 4) — VERIFICADO 2026-07-10
 `test_cuadre_dashboard.py`: v_curso_completion (Supabase) vs docs/aprobacion/data.json —
 **9/9 cursos exactos en activos y aprobados** (misma frescura de fuentes). Gotcha: con fuentes
