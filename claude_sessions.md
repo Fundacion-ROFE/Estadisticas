@@ -1591,3 +1591,12 @@ vista las funciones corren con privilegios del caller (RLS bloqueaba enrollments
 EXISTS daba false). Fix: SECURITY DEFINER (migración `participa_en_security_definer`).
 Regla nueva: helpers llamados desde vistas públicas → SECURITY DEFINER, y verificar con anon
 key, no solo con SQL como postgres.
+
+**Incidente resuelto (misma sesión): push del pipeline roto ~18 h.** El `origin` de admin-usable
+apuntaba a `Samuel-Rojas-Monroy-Official-Repository/PowerBi` (privado, sin acceso para la
+credencial guardada `soportejunior-codeJR`) en vez del canónico — el dashboard público quedó
+congelado en 2026-07-09 19:51 y los `git push` de los export fallaban como ADVERTENCIA silenciosa.
+Fix: `origin` → `https://github.com/Fundacion-ROFE/Estadisticas.git` (nueva ubicación del repo,
+antes fundacion-rofe/Estadisticas) + upstream configurado; push recuperó los commits atrasados
+(incl. los del ciclo 15:05) y Pages volvió a publicar (verificado 15:04 en el data.json web).
+Commit de la sesión en admin-usable: d69a468. Verificar que el ciclo de las 16:00 empuje solo.
