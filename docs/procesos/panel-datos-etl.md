@@ -107,9 +107,12 @@ Plan maestro en la raíz del repo: `PLAN-DATOS-ANALISIS-PROFUNDO.md` ·
   Decisión de diseño: se descartó el 04:00 UTC (23:00 COT) del plan original — el PC estaría
   apagado y los schedules de n8n no se recuperan (convención [[convenciones#Timezone en Schedule Triggers de n8n]]);
   9:45 es después del arranque de n8n (~8:45-8:50 con el login) y del workflow MR (9:30).
-- Cadena: `Ejecutar normalize_q10_data` → IF estado=exito → `Ejecutar cargar_supabase` → IF →
-  OK / stopAndError (camino de error explícito; "con_advertencias" también alerta — FKs perdidas
-  nunca pasan en silencio). Export en `n8n-workflows/q10-sync-supabase.json`.
+- Cadena (desde 2026-07-10 incluye aprobación): `Ejecutar normalize_q10_data` → IF estado=exito →
+  `Ejecutar cargar_supabase` → IF → `Ejecutar sync_aprobacion` → IF → OK / stopAndError en cada
+  paso (camino de error explícito; "con_advertencias" también alerta — FKs perdidas nunca pasan
+  en silencio). El sync de aprobación consume `docs/aprobacion/data.json` del ciclo de las 8:00
+  del pipeline GitHub Pages (frescura ≤ 1h45m a las 9:45). Export en
+  `n8n-workflows/q10-sync-supabase.json`.
 
 ## Flujo resumido
 1. Google Sheets (h2test + Retirados, proxy de Q10) → `normalize_q10_data.py` lee bloques
@@ -221,8 +224,8 @@ de su propia población. Migración `separacion_programas_jc_mr`:
 - [x] Deploy Netlify en producción (2026-07-10)
 - [x] Cohorte canónica en el panel: `cohorte_ingresos` + `aprobacion_cursos` +
       `sync_aprobacion_supabase.py` (2026-07-10, ver sección "Cohorte canónica")
-- [ ] Encadenar `sync_aprobacion_supabase.py` al workflow n8n (corre manual por ahora —
-      re-correr cuando cambien las cifras del panel de aprobación)
+- [x] Encadenar `sync_aprobacion_supabase.py` al workflow n8n (2026-07-10: nodo tras ¿Carga OK?
+      con IF + stopAndError propio; el 832 se refresca solo cada día a las ~9:47)
 - [ ] **Futuro — Hoja Maestra de Participantes:** una sola pestaña limpia como fuente
       sociodemográfica diaria + actualización de usuarios vía Forms, reemplaza los syncs
       manuales de xlsx. Diseño completo en [[hoja-maestra-participantes]] (en espera,

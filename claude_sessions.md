@@ -1608,3 +1608,8 @@ descarta (origin ya restaurado a Fundacion-ROFE/Estadisticas). Nuevo doc de dise
 dropdowns validados, sin fórmulas) + actualización de usuarios solo vía Forms (patrón
 actualizar_bd_mr) + sync diario al panel encadenado a n8n; migración en 4 fases, 4 decisiones
 pendientes de Samuel. En espera por prioridades — no se implementa aún.
+
+**Encadenado sync_aprobacion a n8n (2026-07-10, pedido de Samuel):** workflow `q10-sync-supabase`
+(uSizw3dNzpb6n53H) actualizado vía API — nueva cola tras ¿Carga OK?: `Ejecutar sync_aprobacion`
+→ ¿Aprobación OK? → OK / Error Aprobación (stopAndError). 11 nodos, reactivado, export a
+n8n-workflows/. El KPI de ingresados (832/283) ya se refresca solo a diario; deja de ser manual.
