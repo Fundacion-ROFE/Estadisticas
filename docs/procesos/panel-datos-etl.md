@@ -1,11 +1,19 @@
 # Panel de Datos Supabase (ETL + Dashboard)
 
-**Estado:** En progreso — Fases 0-3 completadas: sync diario activo, vistas públicas y frontend Next.js construido; pendiente deploy Netlify (2026-07-09)
-**Última actualización:** 2026-07-09
+**Estado:** ✅ MVP completo (Fases 0-4) — en producción: https://classy-pasca-eecdd6.netlify.app (2026-07-10)
+**Última actualización:** 2026-07-10
 
-## Frontend (Fase 3)
-Repo dedicado: `C:\Users\EstudiantesJC\downloads\panel-datos-rofe` (git local, commit inicial
-`e7fe030` — falta crear el remoto GitHub y conectar Netlify, pasos en su README).
+## Frontend (Fase 3) — EN PRODUCCIÓN
+**URL:** https://classy-pasca-eecdd6.netlify.app (deploy automático on push; renombrable en
+Netlify → Site settings → Change site name, ej. `panel-rofe`).
+Repo dedicado: `C:\Users\EstudiantesJC\downloads\panel-datos-rofe` (GitHub conectado a Netlify).
+
+## Cuadre (Fase 4) — VERIFICADO 2026-07-10
+`test_cuadre_dashboard.py`: v_curso_completion (Supabase) vs docs/aprobacion/data.json —
+**9/9 cursos exactos en activos y aprobados** (misma frescura de fuentes). Gotcha: con fuentes
+de corridas distintas, los cursos ACTIVOS derivan (+4/+9 aprobados en 12 h de avance real de
+estudiantes) — es frescura, no bug; el sync diario acota la deriva a ≤24 h vs las 4 h del
+pipeline GitHub Pages.
 Next.js 14 **export estático** (`output:'export'` → carpeta `out/`, sin SSR ni plugin Netlify —
 decisión que elimina el netlify.toml problemático del plan original). 4 tabs: Resumen / Cursos /
 Emprendimiento / Demografía, consumiendo las vistas `v_*` + `cohorte_stats` con anon key.
@@ -100,7 +108,10 @@ participant_metrics, cohorte_stats + índices + RLS) y `snapshots_diarios_partic
 - [x] Fase 1b: workflow n8n `q10-sync-supabase` (`uSizw3dNzpb6n53H`, diario 9:45, activo) + JSON exportado
 - [x] Recompute de agregados: función SQL `recompute_aggregates()` (migración `recompute_aggregates_fn`,
       solo service_role) invocada por el loader — 1.059 métricas + cohorte 2026 poblada
-- [ ] Verificar la primera corrida automática (mañana 9:45) en ejecuciones de n8n
+- [x] Fase 4: cuadre 9/9 exacto vs dashboard canónico (2026-07-10, `test_cuadre_dashboard.py`)
+- [x] Deploy Netlify en producción (2026-07-10)
+- [ ] Verificar la primera corrida automática (hoy 9:45) en ejecuciones de n8n
+- [ ] Renombrar sitio Netlify (`classy-pasca-eecdd6` → ej. `panel-rofe`) — opcional, Samuel
 - [ ] Fase 2: materialized views (retirados con definición canónica) + decidir campo `programa`
 - [ ] Fase 3: Next.js + Netlify
 - [ ] Fase 4: test de cuadre contra `docs/dashboard|aprobacion|retirados/data.json` antes de reemplazar nada

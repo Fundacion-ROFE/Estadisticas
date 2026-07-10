@@ -680,6 +680,16 @@ es el Zoom de la clase, no un emprendimiento del estudiante.
 
 ---
 
+## `scripts/panel-datos/test_cuadre_dashboard.py`
+
+**Propósito:** Fase 4 — cuadre por curso entre `v_curso_completion` (Supabase, anon) y
+`docs/aprobacion/data.json`: matriculados==activos y completados==aprobados (avance > 80).
+Verificado 9/9 exacto el 2026-07-10 con fuentes de la misma frescura. Con corridas separadas,
+los cursos activos derivan (avance real de estudiantes) — tolerancia ±2, no es bug.
+`python scripts/panel-datos/test_cuadre_dashboard.py` — exit 1 si hay descuadres.
+
+---
+
 ## `scripts/panel-datos/test_conexion_supabase.py`
 
 **Propósito:** Smoke test de la cara pública: con el anon key verifica lectura de agregados,

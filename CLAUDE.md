@@ -74,6 +74,8 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 | `normalize_q10_data.py` | [[panel-datos-etl]] | — | — (payload PII en tools/) |
 | `cargar_supabase.py` | [[panel-datos-etl]] | — | — (escribe en Supabase panel-datos-rofe) |
 | `sync_sociodemograficos.py` | [[panel-datos-etl]] | — | — (BD monitorias → Supabase) |
+| `test_cuadre_dashboard.py` | [[panel-datos-etl]] | — | — (Fase 4: cuadre vs aprobación) |
+| Frontend Next.js (repo `panel-datos-rofe`) | [[panel-datos-etl]] | — | https://classy-pasca-eecdd6.netlify.app |
 | `test_conexion_supabase.py` | [[panel-datos-etl]] | — | — (verifica RLS de Supabase con anon key) |
 | n8n workflow | [[q10-consolidacion]] | [[q10-actualizar]] | — |
 | n8n `q10-sync-supabase` | [[panel-datos-etl]] | — | — (sync diario 9:45 → Supabase) |

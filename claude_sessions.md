@@ -1413,3 +1413,19 @@ Event Subscription de Zoom comunicaciones y pulsa Validate.
 - Gotcha: tsconfig de Next sin `target` → es5 rechaza regex \p{L}; fijar ES2018.
 - Pendiente Samuel: crear repo GitHub `panel-datos-rofe` + push + Netlify import. Luego Fase 4
   (cuadre vs GitHub Pages) y retirados en Supabase.
+
+---
+
+## 2026-07-10 — [panel-datos-etl] Fase 4: MVP en producción + cuadre 9/9 exacto
+
+**Estado:** MVP COMPLETO — panel público vivo en https://classy-pasca-eecdd6.netlify.app
+**Proceso relacionado:** [[panel-datos-etl]] · [[dashboard-web]]
+
+- Samuel creó el repo GitHub y conectó Netlify: deploy verificado (HTTP 200, título y logo OK).
+- `test_cuadre_dashboard.py` (Fase 4): v_curso_completion vs docs/aprobacion/data.json.
+  Primera corrida: 2 descuadres (+4/+9 aprobados en cursos ACTIVOS) → diagnóstico: frescura,
+  no bug (aprobacion regenerado hoy 8:32 por el pipeline 4h; carga Supabase de ayer 20:28 —
+  12 h de avance real). Re-sync fresco → **9/9 cursos exactos en activos Y aprobados** (0 de
+  tolerancia usada). Deriva esperada documentada: sync diario acota a ≤24 h.
+- Pendiente: verificar 1ª corrida automática n8n (hoy 9:45 — a las 8:33 aún sin ejecuciones,
+  correcto), retirados en Supabase, campo programa JC/MR, renombrar sitio Netlify (opcional).
