@@ -1392,3 +1392,24 @@ Event Subscription de Zoom comunicaciones y pulsa Validate.
   PGRST102 bulk exige claves idénticas; NOT NULL se valida antes del ON CONFLICT.
 - Pendiente: 1ª corrida automática n8n (10-jul 9:45), Fase 3 (Next.js + Netlify), retirados
   en Supabase (hoy solo activos), re-correr sync al cambiar la BD (evaluar leer el Sheet vivo).
+
+---
+
+## 2026-07-09 — [panel-datos-etl] Fase 3: frontend Next.js en repo dedicado
+
+**Estado:** Construido y compilado — pendiente: crear repo GitHub + conectar Netlify (Samuel).
+**Proceso relacionado:** [[panel-datos-etl]]
+
+- Repo nuevo `downloads/panel-datos-rofe` (commit inicial e7fe030). Next.js 14 App Router con
+  **output:'export'** → sitio 100% estático (decisión: los datos se consultan client-side a las
+  vistas públicas con anon key, así Netlify publica `out/` sin plugin ni SSR — se elimina de raíz
+  el netlify.toml roto del plan original).
+- 4 tabs: Resumen (KPIs + completación por curso, criterio >80 = mismo del panel de aprobación),
+  Cursos (stacked bars + tabla), Emprendimiento (dona 4 categorías + relación con cursos, con el
+  hallazgo "avanzan parejo"), Demografía (grupos, género apilado, edades en rangos).
+- Identidad ROFÉ: paleta oficial 2025 en tailwind.config (azul marca #406C9E solo chrome, datos
+  con verde/amarillo/naranja/rojo/azul2), Century Gothic, logo Aplicación 2, eslogan en footer.
+- Build OK: First Load JS 195 kB (criterio < 500 kB). Preview local verificado (http.server 3210).
+- Gotcha: tsconfig de Next sin `target` → es5 rechaza regex \p{L}; fijar ES2018.
+- Pendiente Samuel: crear repo GitHub `panel-datos-rofe` + push + Netlify import. Luego Fase 4
+  (cuadre vs GitHub Pages) y retirados en Supabase.

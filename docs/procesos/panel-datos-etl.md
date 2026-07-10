@@ -1,7 +1,16 @@
 # Panel de Datos Supabase (ETL + Dashboard)
 
-**Estado:** En progreso — Fases 0-2 completadas: sync diario activo, sociodemográficos cargados, vistas públicas listas (2026-07-09)
+**Estado:** En progreso — Fases 0-3 completadas: sync diario activo, vistas públicas y frontend Next.js construido; pendiente deploy Netlify (2026-07-09)
 **Última actualización:** 2026-07-09
+
+## Frontend (Fase 3)
+Repo dedicado: `C:\Users\EstudiantesJC\downloads\panel-datos-rofe` (git local, commit inicial
+`e7fe030` — falta crear el remoto GitHub y conectar Netlify, pasos en su README).
+Next.js 14 **export estático** (`output:'export'` → carpeta `out/`, sin SSR ni plugin Netlify —
+decisión que elimina el netlify.toml problemático del plan original). 4 tabs: Resumen / Cursos /
+Emprendimiento / Demografía, consumiendo las vistas `v_*` + `cohorte_stats` con anon key.
+Identidad ROFÉ (paleta Manual 2025, Century Gothic, logo Aplicación 2). First Load JS 195 kB.
+Preview local: `python -m http.server` sobre `out/`.
 **Procesos relacionados:** [[q10-consolidacion]] · [[dashboard-web]] · [[mr-actualizacion-datos]] · [[bd-seguimiento-monitorias]]
 
 ## Qué hace
