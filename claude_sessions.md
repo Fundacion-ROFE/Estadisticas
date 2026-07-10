@@ -1600,3 +1600,11 @@ Fix: `origin` → `https://github.com/Fundacion-ROFE/Estadisticas.git` (nueva ub
 antes fundacion-rofe/Estadisticas) + upstream configurado; push recuperó los commits atrasados
 (incl. los del ciclo 15:05) y Pages volvió a publicar (verificado 15:04 en el data.json web).
 Commit de la sesión en admin-usable: d69a468. Verificar que el ciclo de las 16:00 empuje solo.
+
+**Cierre de sesión:** confirmado a Samuel el estado de automatización (Q10→Pages cada 4 h,
+Q10→Supabase diario 9:45, Excels→Supabase 100% manual). El repo Samuel-Rojas.../PowerBi se
+descarta (origin ya restaurado a Fundacion-ROFE/Estadisticas). Nuevo doc de diseño futuro
+[[hoja-maestra-participantes]]: una sola pestaña Maestra (17 columnas espejo de participants,
+dropdowns validados, sin fórmulas) + actualización de usuarios solo vía Forms (patrón
+actualizar_bd_mr) + sync diario al panel encadenado a n8n; migración en 4 fases, 4 decisiones
+pendientes de Samuel. En espera por prioridades — no se implementa aún.

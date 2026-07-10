@@ -223,6 +223,10 @@ de su propia población. Migración `separacion_programas_jc_mr`:
       `sync_aprobacion_supabase.py` (2026-07-10, ver sección "Cohorte canónica")
 - [ ] Encadenar `sync_aprobacion_supabase.py` al workflow n8n (corre manual por ahora —
       re-correr cuando cambien las cifras del panel de aprobación)
+- [ ] **Futuro — Hoja Maestra de Participantes:** una sola pestaña limpia como fuente
+      sociodemográfica diaria + actualización de usuarios vía Forms, reemplaza los syncs
+      manuales de xlsx. Diseño completo en [[hoja-maestra-participantes]] (en espera,
+      otras prioridades — 2026-07-10)
 - [ ] Verificar la primera corrida automática (hoy 9:45) en ejecuciones de n8n
 - [ ] Renombrar sitio Netlify (`classy-pasca-eecdd6` → ej. `panel-rofe`) — opcional, Samuel
 - [ ] Fase 2: materialized views (retirados con definición canónica) + decidir campo `programa`
