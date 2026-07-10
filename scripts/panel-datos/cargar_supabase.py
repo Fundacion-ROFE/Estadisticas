@@ -194,6 +194,17 @@ def main() -> int:
     _, agg = supa._req("POST", "/rpc/recompute_aggregates", {})
     log(f"Agregados recomputados: {agg}")
 
+    # 6. Snapshot del día en historial_cursos (serie de tiempo pública).
+    #    UNIQUE(fecha, curso) → re-correr el mismo día actualiza, no duplica.
+    hoy = datetime.now().date().isoformat()
+    filas_h = [{
+        "fecha": hoy, "curso": v["curso"], "programa": v["programa"],
+        "matriculados": v["matriculados"], "completados": v["completados"],
+        "promedio_avance": v["promedio_avance"], "fuente": "sync-diario",
+    } for v in supa.get_todo("/v_curso_completion?select=*")]
+    supa.upsert("historial_cursos", filas_h, conflicto="fecha,curso")
+    log(f"Historial: snapshot {hoy} con {len(filas_h)} cursos")
+
     estado = "exito" if sin_fk == 0 else "con_advertencias"
     print(f"RESUMEN: participants={len(filas_p)} courses={len(courses)} "
           f"enrollments={len(filas_e)} snapshot={snapshot_n} "

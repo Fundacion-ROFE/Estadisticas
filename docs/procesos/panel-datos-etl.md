@@ -8,6 +8,19 @@
 Netlify → Site settings → Change site name, ej. `panel-rofe`).
 Repo dedicado: `C:\Users\EstudiantesJC\downloads\panel-datos-rofe` (GitHub conectado a Netlify).
 
+## Sección por programa + Historial (2026-07-10, pedido de stakeholders)
+- **Programa JC/MR:** columna `courses.programa` (enum `programa_type`), clasificación canónica
+  en `normalize_q10_data.py` (course_config.json precedencia + keywords MR, misma lógica de
+  export_stats). Vista `v_programa_stats` (JC 777 / MR 282 participantes únicos — canónicos).
+- **Historial:** tabla `historial_cursos` (UNIQUE fecha+curso, lectura pública, serie de tiempo
+  sin PII): backfill único desde `docs/dashboard/history.json` (75 filas desde 2026-06-26,
+  `backfill_historial.py`) + snapshot diario que agrega `cargar_supabase.py` en cada corrida
+  (con `completados`, que el backfill no trae → NULL en filas viejas).
+- **Frontend:** selector Jóvenes creaTIvos / Mujeres ROFÉ (segmenta KPIs/cursos/historial) +
+  tab Historial (evolución de matrículas y avance por curso). Emprendimiento y Demografía solo
+  bajo JC — su fuente es la BD de monitorias JC; los sociodemográficos MR viven en BD-Mujeres
+  ROFÉ ([[mr-actualizacion-datos]]) → integrarlos es backlog.
+
 ## Cuadre (Fase 4) — VERIFICADO 2026-07-10
 `test_cuadre_dashboard.py`: v_curso_completion (Supabase) vs docs/aprobacion/data.json —
 **9/9 cursos exactos en activos y aprobados** (misma frescura de fuentes). Gotcha: con fuentes

@@ -1429,3 +1429,22 @@ Event Subscription de Zoom comunicaciones y pulsa Validate.
   tolerancia usada). Deriva esperada documentada: sync diario acota a ≤24 h.
 - Pendiente: verificar 1ª corrida automática n8n (hoy 9:45 — a las 8:33 aún sin ejecuciones,
   correcto), retirados en Supabase, campo programa JC/MR, renombrar sitio Netlify (opcional).
+
+---
+
+## 2026-07-10 — [panel-datos-etl] Sección JC/MR + historial de datos Q10
+
+**Estado:** Completado y en producción (push frontend → Netlify auto-deploy).
+**Proceso relacionado:** [[panel-datos-etl]] · [[dashboard-web]]
+
+- Pedido stakeholders: panel separado Jóvenes creaTIvos / Mujeres ROFÉ + visualizar historial.
+- Migración `programa_e_historial`: enum programa_type en courses (clasificación canónica
+  course_config.json + keywords en normalize), tabla `historial_cursos` (UNIQUE fecha+curso,
+  pública, sin PII), v_curso_completion + programa, vista nueva v_programa_stats (JC 777/MR 282 ✔).
+- Historial: backfill de docs/dashboard/history.json (75 filas, 9 snapshots desde 2026-06-26)
+  vía backfill_historial.py + snapshot diario nuevo en cargar_supabase (paso 6) — la serie crece
+  sola con el workflow n8n de las 9:45.
+- Frontend: selector de programa (JC azul / MR naranja), tabs Emprendimiento y Demografía solo
+  en JC (fuente = BD monitorias JC), tab Historial con líneas de matrículas y avance por curso.
+  Build 198 kB. Repo GitHub real: soportejunior-codeJR/PowerBi.
+- Backlog: sociodemográficos MR desde BD-Mujeres ROFÉ, retirados en Supabase.

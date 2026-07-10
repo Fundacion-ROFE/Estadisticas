@@ -67,7 +67,13 @@ PROYECTO_ROOT     = os.path.abspath(os.path.join(DIRECTORIO_SCRIPT, "..", ".."))
 RUTA_CREDENCIALES = os.path.join(PROYECTO_ROOT, "scripts", "q10-consolidacion",
                                  "credenciales_service_account.json")
 RUTA_EXCLUSIONES  = os.path.join(PROYECTO_ROOT, "tools", "exclusiones_prueba.json")
+RUTA_CONFIG_CURSOS = os.path.join(PROYECTO_ROOT, "tools", "course_config.json")
 RUTA_PAYLOAD      = os.path.join(PROYECTO_ROOT, "tools", "supabase_payload.json")
+
+# Clasificación de programa (misma lógica canónica de export_stats.py):
+# course_config.json tiene precedencia; si el curso no está, keywords → MR; resto → JC
+KEYWORDS_MR = ["emprendedoras", "idea a la acci"]
+CONFIG_CURSOS = {"jc": [], "mr": [], "stand": []}  # se puebla en main()
 DIR_REPORTES      = os.path.join(PROYECTO_ROOT, "tools")
 
 UMBRAL_APROBADO = 80.0   # avance > 80 = completado (criterio canónico 2026-07-09)
@@ -92,6 +98,31 @@ def norm_texto(valor) -> str:
 
 def norm_email(valor) -> str:
     return norm_texto(valor).lower()
+
+
+def cargar_config_cursos() -> dict:
+    """{'jc': [...], 'mr': [...], 'stand': [...]} de tools/course_config.json."""
+    if os.path.isfile(RUTA_CONFIG_CURSOS):
+        try:
+            with open(RUTA_CONFIG_CURSOS, encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError) as e:
+            log(f"ADVERTENCIA: course_config ilegible ({e}) — solo keywords")
+    else:
+        log("ADVERTENCIA: falta tools/course_config.json — clasificando solo por keywords")
+    return {"jc": [], "mr": [], "stand": []}
+
+
+def clasificar_curso(nombre: str, config: dict) -> str:
+    """'jc' | 'mr' | 'stand' — config tiene precedencia sobre keywords."""
+    n = norm_texto(nombre)
+    for prog in ("jc", "mr", "stand"):
+        if any(norm_texto(c) == n for c in config.get(prog, [])):
+            return prog
+    bajo = n.lower()
+    if any(kw in bajo for kw in KEYWORDS_MR):
+        return "mr"
+    return "jc"
 
 
 def cargar_exclusiones() -> tuple[set, set]:
@@ -307,7 +338,8 @@ def guardar_payload(participants: dict, courses: list, enrollments: dict) -> dic
         "cohorte": COHORTE,
         "umbral_aprobado": UMBRAL_APROBADO,
         "participants": [participants[c] for c in sorted(participants)],
-        "courses": [{"nombre": c, "cohorte": COHORTE, "estado": "activo"} for c in courses],
+        "courses": [{"nombre": c, "cohorte": COHORTE, "estado": "activo",
+                     "programa": clasificar_curso(c, CONFIG_CURSOS)} for c in courses],
         "enrollments": [enrollments[k] for k in sorted(enrollments)],
     }
     os.makedirs(os.path.dirname(RUTA_PAYLOAD), exist_ok=True)
@@ -343,6 +375,8 @@ def main() -> int:
                     help="Procesar solo las primeras N filas de datos (prueba)")
     args = ap.parse_args()
 
+    global CONFIG_CURSOS
+    CONFIG_CURSOS = cargar_config_cursos()
     rep = Reporte()
     excl_ceds, excl_emails = cargar_exclusiones()
     sh = conectar()
