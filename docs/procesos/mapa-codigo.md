@@ -628,8 +628,12 @@ enrollments, determinista/idempotente) · `tools/normalize_report_YYYYMMDD.json`
 advertencias con detalle).
 
 **Reglas canónicas:** aprobado/completado = avance > 80 (`UMBRAL_APROBADO`); estado matrícula:
-`completado` (>80) / `en_progreso` (>0) / `inscrito` (0). Sociodemográficos van null hasta mapear
-la BD de monitorias. Duplicado (cédula, curso) → keepMax.
+`completado` (>80) / `en_progreso` (>0) / `inscrito` (0). Duplicado (cédula, curso) → keepMax.
+
+**Gotcha crítico (2026-07-10):** el payload de participants lleva SOLO `q10_id/nombre/email` —
+NUNCA agregar claves sociodemográficas con `null`: el upsert merge-duplicates del loader las
+escribe tal cual y **borra cada mañana** lo que cargaron los syncs de BD monitorias (JC) y
+BD-Mujeres ROFÉ (MR). Así se perdió edad+ciudad de JC el 10-07 (restaurado re-corriendo el sync).
 
 **Output parseable para n8n:**
 ```
@@ -677,6 +681,50 @@ ON CONFLICT → upsert parcial necesita eco del `nombre` actual. (4) `Link Empre
 es el Zoom de la clase, no un emprendimiento del estudiante.
 
 **Output parseable:** `RESUMEN: actualizados=N sin_match_supabase=X sin_datos=Y estado=exito`
+
+---
+
+## `scripts/panel-datos/sync_sociodemograficos_mr.py`
+
+**Propósito:** BD-Mujeres ROFÉ (xlsx en Downloads, `RUTA_BD`) → Supabase participants, SOLO
+matriculadas en cursos `programa=mr`. Espejo del sync JC. Lee `General` (cédula c7, Edad c12,
+Ciudad c13, Nivel estudios c17, Emprendimiento c19, Estrato c20, Estado civil c21, Vivienda c24)
+e `Inactivas` como fuente secundaria (columnas distintas: cédula c5, civil c9, edad c11,
+emprendimiento c12, vivienda c15, nivel c16, estrato c17, ciudad c24; General gana). Primera
+fuente real de `tipo_vivienda`/`estrato`/`estado_civil`/`nivel_estudio` (JC sigue sin fuente).
+`genero='Femenino'` constante. Mapeos por substring a los enums existentes (bachiller→secundaria,
+técnica/tecnóloga→técnico, especialización→postgrado; soltera/sola→soltero, separada→divorciado,
+viuda/madre cabeza→otro). Recomputa agregados. Alimenta la vista pública `v_mr_demografia`
+(6 dimensiones agregadas, GRANT anon).
+
+**Comando:** `python scripts/panel-datos/sync_sociodemograficos_mr.py [--dry-run]`
+**Output parseable:** `RESUMEN: actualizados=N sin_match_supabase=X sin_datos=Y estado=exito`
+
+**Gotchas:** (1) hereda los del sync JC (float→cero extra, PGRST102, eco de `nombre`).
+(2) El filtro MR usa embed PostgREST `enrollments!inner(courses!inner(programa))` — sin el
+`!inner` el filtro no excluye. (3) `HerpowerED` NO se lee (copia de General). (4) La dimensión
+`emprendimiento` de `v_mr_demografia` solo cuenta filas con datos de la BD — el default
+`tiene_emprendimiento=false` de las históricas sin match inflaría "sin_emprendimiento".
+(5) Corrida 2026-07-10: 531 actualizadas (280/282 de la cohorte 2026 = 99.3%; las 739 MR
+históricas restantes ya no figuran en la BD 2026 — cobertura 2025: 26.9%).
+
+---
+
+## `scripts/panel-datos/sync_aprobacion_supabase.py`
+
+**Propósito:** `docs/aprobacion/data.json` (agregados canónicos de export_aprobacion, ya públicos,
+sin PII) → Supabase: `cohorte_ingresos` (cohorte × programa: ingresados/activos/retirados — JC
+2026 = 832 = 777 + 57) y `aprobacion_cursos` (cohorte × curso: cursaron, aprobados,
+aprobados_retirados, retirados, bandas de avance). Es lo que le da al panel el "total de
+ingresados" y el avance sobre la cohorte COMPLETA (no solo activos). Cohorte = campo `anio` del
+JSON → escalable por año sin tocar código. Idempotente (upsert por clave).
+
+**Comando:** `python scripts/panel-datos/sync_aprobacion_supabase.py [--dry-run]`
+**Output parseable:** `RESUMEN: cursos=N programas=P cohorte=YYYY estado=exito`
+
+**Gotchas:** corre DESPUÉS de `export_aprobacion.py` (consume su JSON); mapa de programa por
+etiqueta (`Jóvenes creaTIvos`→jc, `Mujeres ROFÉ`→mr) — un programa nuevo requiere ampliar
+`MAPA_PROGRAMA` y el enum. Pendiente encadenarlo al workflow n8n.
 
 ---
 

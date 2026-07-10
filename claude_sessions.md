@@ -1486,3 +1486,108 @@ Event Subscription de Zoom comunicaciones y pulsa Validate.
   derivados oscuros solo fondos, sistema de movimiento, reglas de los componentes de firma.
   (El PDF oficial no se toca — esto lo complementa.)
 - framer-motion agregado como dependencia.
+
+
+---
+
+## 2026-07-10 — [panel-datos-etl] Sociodemográficos MR desde BD-Mujeres ROFÉ
+
+**Estado:** Completado (531 participantes MR actualizadas en Supabase).
+**Procesos relacionados:** [[panel-datos-etl]] · [[mr-actualizacion-datos]]
+
+- Confirmación del equipo: JC mantiene su fuente (BD monitorias) y MR usa `BD-Mujeres ROFÉ 2026
+  (2).xlsx` (Downloads). Pestaña `General` trae los 4 campos que estaban "SIN FUENTE" en Supabase:
+  Tipo de vivienda (c24), Estrato (c20), Estado civil (c21), Nivel de estudios (c17).
+- Nuevo `scripts/panel-datos/sync_sociodemograficos_mr.py` (espejo del sync JC): lee `General` +
+  `Inactivas` (secundaria; General gana), mapea por substring a los enums existentes, restringe a
+  matriculadas en cursos programa=mr (embed PostgREST `!inner`) y fija genero=Femenino.
+- Migraciones 8 y 9: COMMENTs de columnas (fuente MR) + vista pública `v_mr_demografia` (6
+  dimensiones agregadas, GRANT anon; emprendimiento solo cuenta filas con datos reales — el
+  default false de las históricas inflaba el "sin").
+- Corrida real: 531 actualizadas — 280/282 cohorte 2026 (99.3%); históricas 2025 solo 26.9%
+  (ya no figuran en la BD 2026 — limitación de fuente). recompute_aggregates OK.
+- Pendiente: exponer `v_mr_demografia` en el frontend (Demografía hoy es solo JC).
+
+
+---
+
+## 2026-07-10 — [panel-datos-etl] Tab Demografía MR en el frontend (v_mr_demografia)
+
+**Estado:** En producción (push 7ef41b1 → Netlify).
+**Procesos relacionados:** [[panel-datos-etl]] · [[mr-actualizacion-datos]]
+
+- Frontend (repo panel-datos-rofe): `lib/api.ts` lee `v_mr_demografia` (formato largo
+  dimension/categoria/total) + mapas ETIQUETA_MR (femenino: soltera, arrendada, técnica) y
+  ORDEN_MR (estudios, estrato, edad). `page.tsx`: tab Demografía habilitado para MR (cohorte
+  actual) con 6 gráficos — estado civil (dona), nivel de estudios (barras), vivienda (dona),
+  estrato (barras), edad en rangos (barras), emprendimiento (dona) — todos componentes existentes.
+- Nota de fuente visible: 531 mujeres con datos (99% cohorte 2026), solo agregados sin PII.
+- Verificado: build estático OK (240 kB) y GET anon a v_mr_demografia devuelve las 26 filas.
+- Emprendimiento (encuesta diagnóstico) sigue siendo tab exclusivo de JC.
+
+---
+
+## 2026-07-10 — [estrategia] Documento de prioridades IA/automatización + argumento BD central
+
+**Estado:** Completado.
+**Entregable:** `docs/prioridades-automatizacion-ia.md`
+
+- La dirección entregó documento de necesidades (7 áreas: participantes, selección, bots,
+  marketing, documental, Workspace, analítica) y ordenó entrevistas de diagnóstico por rol.
+- Se priorizó P0 (entrevistas) → P1 (cerrar BD Supabase, ya ~70%) → P2/P3 (participantes y
+  analítica, donde más hay construido) → resto, con ruta de 90 días en dos frentes.
+- Argumento central documentado: 5 de 7 áreas consultan la misma entidad (participante);
+  sin BD única se repite el ciclo de la BD viciada. Se identifican también las tareas que
+  sí pueden avanzar sin BD (documental, contenidos, FAQ, Calendar/Zoom) como victorias rápidas.
+
+
+---
+
+## 2026-07-10 — [panel-datos-etl] Separación estricta JC/MR + fix del wipe diario de sociodemográficos
+
+**Estado:** Completado (migración `separacion_programas_jc_mr` + push bc18381 → Netlify).
+**Procesos relacionados:** [[panel-datos-etl]] · [[mr-actualizacion-datos]]
+
+- Pedido stakeholders: JC y MR son dos secciones separadas — la demografía de cada programa debe
+  salir solo de su población. Las vistas "JC" eran implícitas y la carga MR las contaminó
+  (525 mujeres en la distribución de edad de jóvenes).
+- **Bug crítico descubierto de paso:** normalize_q10_data mandaba edad/ciudad/vivienda/estrato/
+  civil/estudios como null explícito → el upsert diario (merge-duplicates) los BORRABA cada
+  mañana a las 9:45. JC perdió edad+ciudad hoy. Fix: payload solo con q10_id/nombre/email;
+  JC restaurado re-corriendo sync_sociodemograficos.py (775). Regla: con merge-duplicates un
+  null explícito ES una escritura.
+- Migración: helper `participa_en(uuid, programa)`; filtro jc explícito en v_demografia_grupo,
+  v_edad_distribucion, v_emprendimiento_situacion, v_emprendimiento_vs_cursos; cohorte_stats
+  por (cohorte, programa) con PK compuesta + recompute_aggregates actualizado (6 filas).
+- Verificado: edad JC=768 · MR=525 · edad promedio 2026 JC 18.0 / MR 39.6 (antes 39.58 mezclada).
+- Frontend: KPIs por cohorte+programa; Edad promedio ahora también bajo Mujeres ROFÉ, sin mezcla.
+
+
+---
+
+## 2026-07-10 — [panel-datos-etl] Cohorte canónica en el panel (832 ingresados) + ciudades sin acrónimos
+
+**Estado:** Completado (migración `aprobacion_cohorte_canonica` + push a84fe45 → Netlify).
+**Procesos relacionados:** [[panel-datos-etl]] · [[q10-consolidacion]]
+
+- Pedido stakeholders: el año en curso debe mostrar el TOTAL de ingresados (832 JC 2026 =
+  registros del año sin retiros institucionales ni perfiles de prueba = 777 activos + 57
+  retirados) y el avance por curso SOBRE ese total, con estructura estable para el cambio de año.
+- Tablas nuevas (lectura pública, sin PII): `cohorte_ingresos` (cohorte×programa) y
+  `aprobacion_cursos` (cohorte×curso con cursaron/aprobados/aprobados_retirados/retirados/bandas).
+  Fuente: docs/aprobacion/data.json vía `sync_aprobacion_supabase.py` (cohorte = campo anio del
+  JSON — nada hardcodeado; manual por ahora, pendiente encadenar a n8n).
+- Frontend: KPI "Ingresados" (832 JC / 282 MR); Resumen y Cursos del año actual con gráfico
+  apilado sobre la cohorte completa (aprobó / en curso / aprobó y se retiró / retiró sin
+  aprobar); cohorte actual derivada de los datos (max), no hardcodeada; Demografía JC con
+  ETIQUETA_GRUPO (BAQ→Barranquilla, GYL→Guayaquil, QTO→Quito, PAN→Panamá, UY→Uruguay…) y
+  etiquetas rotadas. Emprendimiento sin cambios (sin fuente nueva, decisión del prompt).
+- Con esto los retirados quedan representados en Supabase a nivel de agregados (filas
+  individuales siguen fuera — limitación del Consolidado, documentada).
+
+**Hotfix posterior (misma sesión):** las vistas JC (demografía/edad/emprendimiento) quedaron
+vacías PARA ANON tras la separación — `participa_en()` era SECURITY INVOKER y dentro de una
+vista las funciones corren con privilegios del caller (RLS bloqueaba enrollments/courses; el
+EXISTS daba false). Fix: SECURITY DEFINER (migración `participa_en_security_definer`).
+Regla nueva: helpers llamados desde vistas públicas → SECURITY DEFINER, y verificar con anon
+key, no solo con SQL como postgres.

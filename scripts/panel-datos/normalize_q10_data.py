@@ -295,12 +295,13 @@ def procesar(all_values: list, desertores: set, excl_ceds: set, excl_emails: set
             if avance is None:
                 continue
 
-            # participante: primera aparición gana; completar email/nombre si faltaban
+            # participante: primera aparición gana; completar email/nombre si faltaban.
+            # SOLO las claves que este ETL conoce: los sociodemográficos (edad, ciudad,
+            # vivienda, estrato, civil, estudios) los cargan los syncs de BD monitorias (JC)
+            # y BD-Mujeres ROFÉ (MR) — mandarlos como null explícito hacía que el upsert
+            # diario (merge-duplicates) los BORRARA cada mañana (wipe detectado 2026-07-10).
             p = participants.setdefault(cedula, {
                 "q10_id": cedula, "nombre": nombre, "email": email or None,
-                # sociodemográficos: llegan después desde la BD de monitorias (nullable)
-                "ciudad": None, "tipo_vivienda": None, "estrato": None, "edad": None,
-                "estado_civil": None, "nivel_estudio": None,
             })
             if p["email"] is None and email:
                 p["email"] = email

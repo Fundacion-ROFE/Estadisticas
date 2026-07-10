@@ -45,7 +45,9 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 ├── scripts/panel-datos/
 │   ├── normalize_q10_data.py   ← h2test → payload normalizado (tools/, PII) — Fase 1a
 │   ├── cargar_supabase.py      ← payload → Supabase (snapshot + upserts, idempotente)
-│   ├── sync_sociodemograficos.py ← BD monitorias (xlsx) → participants (género/edad/ciudad/emp)
+│   ├── sync_sociodemograficos.py ← BD monitorias (xlsx) → participants JC (género/edad/ciudad/emp)
+│   ├── sync_sociodemograficos_mr.py ← BD-Mujeres ROFÉ (xlsx) → participants MR (vivienda/estrato/civil/estudios/…)
+│   ├── sync_aprobacion_supabase.py ← docs/aprobacion/data.json → cohorte_ingresos + aprobacion_cursos (832)
 │   └── test_conexion_supabase.py ← Smoke test REST+RLS del proyecto Supabase panel-datos-rofe
 │
 ├── tools/                      ← LOCAL ONLY — gitignoreado — contiene PII
@@ -73,7 +75,9 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 | `exportar_sin_completar.py` | [[q10-consolidacion]] | — | — (escribe en Sheet privado SinCompletar) |
 | `normalize_q10_data.py` | [[panel-datos-etl]] | — | — (payload PII en tools/) |
 | `cargar_supabase.py` | [[panel-datos-etl]] | — | — (escribe en Supabase panel-datos-rofe) |
-| `sync_sociodemograficos.py` | [[panel-datos-etl]] | — | — (BD monitorias → Supabase) |
+| `sync_sociodemograficos.py` | [[panel-datos-etl]] | — | — (BD monitorias → Supabase, JC) |
+| `sync_sociodemograficos_mr.py` | [[panel-datos-etl]] · [[mr-actualizacion-datos]] | — | — (BD-Mujeres ROFÉ → Supabase, MR) |
+| `sync_aprobacion_supabase.py` | [[panel-datos-etl]] · [[q10-consolidacion]] | — | — (aprobacion/data.json → Supabase, cohorte 832) |
 | `test_cuadre_dashboard.py` | [[panel-datos-etl]] | — | — (Fase 4: cuadre vs aprobación) |
 | Frontend Next.js (repo `panel-datos-rofe`) | [[panel-datos-etl]] | — | https://classy-pasca-eecdd6.netlify.app |
 | `test_conexion_supabase.py` | [[panel-datos-etl]] | — | — (verifica RLS de Supabase con anon key) |
