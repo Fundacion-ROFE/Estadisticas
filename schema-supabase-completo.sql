@@ -221,6 +221,38 @@ CREATE POLICY "admin_full_access_snapshots"
   USING (auth.jwt() ->> 'role' = 'admin')
   WITH CHECK (auth.jwt() ->> 'role' = 'admin');
 
+-- PASO 8: Sociodemográficos reales (migración sociodemograficos_reales, 2026-07-09)
+-- ============================================================================
+-- Según introspección de la BD de monitorias: SÍ existen género, fecha nacimiento,
+-- edad, ciudad, grupo operativo y situación de emprendimiento (encuesta Diagnostico).
+-- NO existen en ninguna fuente: tipo_vivienda, estrato, estado_civil, nivel_estudio
+-- (se conservan nullable, documentados con COMMENT).
+
+CREATE TYPE emprendimiento_situacion AS ENUM
+  ('en_marcha', 'idea', 'interesado', 'no_interesado');
+
+ALTER TABLE participants
+  ADD COLUMN genero VARCHAR,
+  ADD COLUMN fecha_nacimiento DATE,
+  ADD COLUMN grupo_ciudad VARCHAR,           -- BAQ/BOG/CAL/CTG/MED/GYL/QTO/PAN/UY
+  ADD COLUMN situacion_emprendimiento emprendimiento_situacion;
+
+CREATE INDEX IF NOT EXISTS idx_participants_genero ON participants(genero);
+CREATE INDEX IF NOT EXISTS idx_participants_grupo_ciudad ON participants(grupo_ciudad);
+CREATE INDEX IF NOT EXISTS idx_participants_situacion_emp ON participants(situacion_emprendimiento);
+
+-- PASO 9: Vistas de agregados para el dashboard (migración vistas_agregadas_dashboard)
+-- ============================================================================
+-- Vistas normales (no materializadas — ~1k filas responden en ms). Security definer
+-- deliberado: leen las tablas saltando RLS pero SOLO exponen agregados sin PII
+-- (lint security_definer_view aceptado, revisado 2026-07-09). GRANT SELECT a anon.
+--   v_demografia_grupo          (total/edad_promedio/género por grupo operativo)
+--   v_emprendimiento_situacion  (conteo por categoría)
+--   v_emprendimiento_vs_cursos  (correlación agregada emprendimiento ↔ cursos)
+--   v_curso_completion          (matriculados/completados/% por curso — cuadre aprobación)
+--   v_edad_distribucion         (rangos de edad)
+-- Definiciones completas en la migración vistas_agregadas_dashboard (Supabase).
+
 -- ============================================================================
 -- FIN SETUP SCHEMA
 -- ============================================================================

@@ -1371,3 +1371,24 @@ Event Subscription de Zoom comunicaciones y pulsa Validate.
 - Pendiente: verificar 1ª corrida automática (mañana 9:45), mapear sociodemográficos (BD
   monitorias), Fase 2 (materialized views + campo programa), Fase 3 (Next.js + Netlify),
   Fase 4 (cuadre vs dashboard GitHub Pages). Sin commit aún.
+
+---
+
+## 2026-07-09 — [panel-datos-etl] Fase 2: sociodemográficos reales + vistas públicas
+
+**Estado:** Completado — commit 72d827d (fases 0-1b) + esta fase.
+**Proceso relacionado:** [[panel-datos-etl]] · [[bd-seguimiento-monitorias]]
+
+- Introspección de la BD de monitorias (35 pestañas): SÍ hay género/fecha nac/edad/ciudad/grupo
+  (Seguimiento) y situación de emprendimiento (Diagnostico c32, 4 categorías limpias); NO existen
+  vivienda/estrato/estado_civil/nivel_estudio en ninguna fuente → nullable documentados.
+  `Link Emprendimiento` es el Zoom de la clase, no emprendimiento del estudiante.
+- Migraciones: `sociodemograficos_reales` (enum emprendimiento_situacion + 4 columnas + índices)
+  y `vistas_agregadas_dashboard` (5 vistas v_* con GRANT anon; lint security_definer_view
+  aceptado y documentado — solo agregados). `sync_sociodemograficos.py`: 775 actualizados
+  (= activos JC canónicos), 162 sin match (retirados), edad promedio 18.0, emprendimiento
+  98/180/363/55. Hallazgo: emprendimiento ~no correlaciona con cursos (6.16 vs 6.34).
+- Gotchas nuevos (en mapa-codigo): float→str de openpyxl mete cero extra en cédulas;
+  PGRST102 bulk exige claves idénticas; NOT NULL se valida antes del ON CONFLICT.
+- Pendiente: 1ª corrida automática n8n (10-jul 9:45), Fase 3 (Next.js + Netlify), retirados
+  en Supabase (hoy solo activos), re-correr sync al cambiar la BD (evaluar leer el Sheet vivo).

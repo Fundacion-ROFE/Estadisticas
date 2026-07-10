@@ -45,6 +45,7 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 ├── scripts/panel-datos/
 │   ├── normalize_q10_data.py   ← h2test → payload normalizado (tools/, PII) — Fase 1a
 │   ├── cargar_supabase.py      ← payload → Supabase (snapshot + upserts, idempotente)
+│   ├── sync_sociodemograficos.py ← BD monitorias (xlsx) → participants (género/edad/ciudad/emp)
 │   └── test_conexion_supabase.py ← Smoke test REST+RLS del proyecto Supabase panel-datos-rofe
 │
 ├── tools/                      ← LOCAL ONLY — gitignoreado — contiene PII
@@ -72,6 +73,7 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 | `exportar_sin_completar.py` | [[q10-consolidacion]] | — | — (escribe en Sheet privado SinCompletar) |
 | `normalize_q10_data.py` | [[panel-datos-etl]] | — | — (payload PII en tools/) |
 | `cargar_supabase.py` | [[panel-datos-etl]] | — | — (escribe en Supabase panel-datos-rofe) |
+| `sync_sociodemograficos.py` | [[panel-datos-etl]] | — | — (BD monitorias → Supabase) |
 | `test_conexion_supabase.py` | [[panel-datos-etl]] | — | — (verifica RLS de Supabase con anon key) |
 | n8n workflow | [[q10-consolidacion]] | [[q10-actualizar]] | — |
 | n8n `q10-sync-supabase` | [[panel-datos-etl]] | — | — (sync diario 9:45 → Supabase) |

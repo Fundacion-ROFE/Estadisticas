@@ -1,6 +1,6 @@
 # Panel de Datos Supabase (ETL + Dashboard)
 
-**Estado:** En progreso — Fases 0, 1a y 1b completadas; sync diario automático activo (2026-07-09)
+**Estado:** En progreso — Fases 0-2 completadas: sync diario activo, sociodemográficos cargados, vistas públicas listas (2026-07-09)
 **Última actualización:** 2026-07-09
 **Procesos relacionados:** [[q10-consolidacion]] · [[dashboard-web]] · [[mr-actualizacion-datos]] · [[bd-seguimiento-monitorias]]
 
@@ -42,12 +42,17 @@ progreso · 307 en 0%), 0 errores, 2 advertencias (avances 101 clampeados), 34 d
 - Supabase REST API — proyecto `panel-datos-rofe` (`kbxptoowtnteflhrfwid`, us-east-1)
   - URL: `https://kbxptoowtnteflhrfwid.supabase.co`
   - Keys en `.env.local` (gitignoreado); service_role pendiente de copiar del Dashboard
-- **Datos sociodemográficos (vivienda/estrato/estado civil/nivel estudio):** confirmado por Samuel
-  (2026-07-09) que viven en la "DB de Excel" — muy probablemente [[bd-seguimiento-monitorias]]
-  (el Google Sheet de 35 pestañas; recordar que el .xlsx es solo un export, la fuente viva es el
-  Sheet). **Pendiente: mapear pestaña(s) y columnas exactas → campos del schema.** Las columnas
-  en Supabase ya son NULLABLE, así que la ingesta Q10 puede arrancar sin ellos y enriquecerse
-  después sin tocar el schema.
+- **Datos sociodemográficos — mapeados y cargados (2026-07-09):** fuente = [[bd-seguimiento-monitorias]]
+  (`RUTA_BD` en Downloads; la fuente viva es el Google Sheet — actualizar la ruta al cambiar versión).
+  - Pestaña `Seguimiento` (headers fila 1): ID(c7), Grupo(c2), Fecha Nacimiento(c11), Edad(c12),
+    Ciudad(c13), Género(c16) — 768 cédulas.
+  - Pestaña `Diagnostico`: Número de documento(c3) + situación emprendimiento(c32, 4 categorías
+    → enum `emprendimiento_situacion`) — 858 respuestas.
+  - Resultado: **775 participantes actualizados** (= activos JC canónicos), 162 de la BD sin match
+    (retirados ya no en h2test), las ~283 MR no están en esta BD.
+  - ⚠️ La introspección confirmó que **vivienda/estrato/estado_civil/nivel_estudio NO existen en
+    ninguna fuente** — quedan nullable y documentados con COMMENT en la BD. `Link Emprendimiento`
+    (c98) es el link de Zoom de la clase, NO un emprendimiento del estudiante.
 
 ## Destino de los datos
 Supabase PostgreSQL — schema en `schema-supabase-completo.sql` (raíz), aplicado como 2 migraciones:
@@ -77,8 +82,12 @@ participant_metrics, cohorte_stats + índices + RLS) y `snapshots_diarios_partic
 - [x] Secret key en `.env.local` (2026-07-09; validada con insert/read/delete real)
 - [x] Fase 1a: `scripts/panel-datos/normalize_q10_data.py` — corrida real 0 errores
 - [x] Loader `scripts/panel-datos/cargar_supabase.py` + carga inicial (idempotencia verificada)
-- [ ] Mapear columnas sociodemográficas de la DB de Excel ([[bd-seguimiento-monitorias]]) → schema
-      (fuente confirmada; campos ya nullable, no bloquea la ingesta Q10 básica)
+- [x] Sociodemográficos mapeados y cargados (`sync_sociodemograficos.py`, 775 actualizados)
+- [x] Fase 2 — vistas públicas de agregados: `v_demografia_grupo`, `v_emprendimiento_situacion`,
+      `v_emprendimiento_vs_cursos`, `v_curso_completion`, `v_edad_distribucion` (GRANT a anon;
+      lint security_definer aceptado y documentado — solo agregados sin PII)
+- [ ] Re-correr `sync_sociodemograficos.py` cuando cambie la BD (manual; evaluar integrarlo a n8n
+      leyendo el Google Sheet vivo en vez del export xlsx)
 - [x] Fase 1b: workflow n8n `q10-sync-supabase` (`uSizw3dNzpb6n53H`, diario 9:45, activo) + JSON exportado
 - [x] Recompute de agregados: función SQL `recompute_aggregates()` (migración `recompute_aggregates_fn`,
       solo service_role) invocada por el loader — 1.059 métricas + cohorte 2026 poblada

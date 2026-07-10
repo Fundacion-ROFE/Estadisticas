@@ -661,6 +661,25 @@ RESUMEN: participants=N courses=K enrollments=M snapshot=S estado=exito
 
 ---
 
+## `scripts/panel-datos/sync_sociodemograficos.py`
+
+**Propósito:** BD Seguimiento de Monitorias (xlsx en Downloads, `RUTA_BD`) → Supabase participants.
+Extrae de `Seguimiento` (ID c7, Grupo c2, Fecha Nacimiento c11, Edad c12, Ciudad c13, Género c16)
+y `Diagnostico` (doc c3, situación emprendimiento c32 → enum 4 categorías). Cruce por cédula;
+actualiza SOLO participantes existentes (sin match → reporte, no se crean). Recomputa agregados.
+
+**Comando:** `python scripts/panel-datos/sync_sociodemograficos.py [--dry-run]`
+
+**Gotchas:** (1) openpyxl entrega cédulas como float — `str(1041774123.0)` mete un CERO extra al
+normalizar; convertir a int primero. (2) PGRST102: el bulk upsert de PostgREST exige claves
+idénticas por batch → agrupar filas por conjunto de claves. (3) NOT NULL se valida ANTES del
+ON CONFLICT → upsert parcial necesita eco del `nombre` actual. (4) `Link Emprendimiento` de la BD
+es el Zoom de la clase, no un emprendimiento del estudiante.
+
+**Output parseable:** `RESUMEN: actualizados=N sin_match_supabase=X sin_datos=Y estado=exito`
+
+---
+
 ## `scripts/panel-datos/test_conexion_supabase.py`
 
 **Propósito:** Smoke test de la cara pública: con el anon key verifica lectura de agregados,
