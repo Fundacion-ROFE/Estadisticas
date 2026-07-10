@@ -1467,3 +1467,22 @@ Event Subscription de Zoom comunicaciones y pulsa Validate.
   cursos·cohorte, 18.195 matrículas, 0 errores/0 sin_fk. v_programa_stats ganó dimensión cohorte.
 - Frontend: selector de cohorte (2026/2025/2024/2023); cohortes pasadas → Resumen+Cursos con
   nota "no incluye retirados". Gotcha clave: Q10 reutiliza nombres de curso entre años.
+
+---
+
+## 2026-07-10 — [panel-datos-etl] Rediseño visual del panel + extensión digital del manual
+
+**Estado:** En producción (push 5714f6d → Netlify).
+**Proceso relacionado:** [[panel-datos-etl]]
+
+- Tres efectos pedidos (referencias 21st.dev, implementaciones propias — el código original no
+  es público y liquid-metal usaba shaders WebGL innecesarios): ParticleHero (canvas, paleta ROFÉ,
+  repulsión al cursor, 0 deps), BackgroundPaths (SVG + framer-motion, azul marca, opacidad baja,
+  fixed tras el contenido), LiquidMetalButton (borde cónico giratorio + brillo, CSS puro).
+- Hero azul profundo (#16283D→#2B4A6F→#406C9E) con título animado por palabra ("Datos que tocan
+  vidas") + CTA al panel. Tarjetas glass + entradas whileInView. Header sticky translúcido.
+  prefers-reduced-motion respetado en todos los efectos. First Load 240 kB.
+- BRAND-DIGITAL.md (repo frontend): extensión digital del manual 2025 — paleta intacta,
+  derivados oscuros solo fondos, sistema de movimiento, reglas de los componentes de firma.
+  (El PDF oficial no se toca — esto lo complementa.)
+- framer-motion agregado como dependencia.
