@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-10T15:04:06.870235-05:00",
+  "ultima_actualizacion": "2026-07-10T20:30:45.105757-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -16,7 +16,7 @@
       "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
       "estudiantes": 777,
       "finalizados": 327,
-      "promedio": 61.32,
+      "promedio": 63.2,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 777,
@@ -27,7 +27,7 @@
       "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
       "estudiantes": 777,
       "finalizados": 697,
-      "promedio": 98.9,
+      "promedio": 98.94,
       "min": 0.0,
       "max": 101.0,
       "inscritos": 830,
@@ -37,8 +37,8 @@
     {
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
       "estudiantes": 777,
-      "finalizados": 723,
-      "promedio": 96.94,
+      "finalizados": 725,
+      "promedio": 97.01,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 806,
@@ -70,8 +70,8 @@
     {
       "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
       "estudiantes": 777,
-      "finalizados": 745,
-      "promedio": 98.34,
+      "finalizados": 746,
+      "promedio": 98.36,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 809,
@@ -86,7 +86,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 104
+      "cantidad": 99
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -104,8 +104,8 @@
       {
         "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
         "estudiantes": 136,
-        "finalizados": 31,
-        "promedio": 38.4,
+        "finalizados": 36,
+        "promedio": 38.98,
         "min": 0.0,
         "max": 100.0,
         "inscritos": 136,
@@ -115,8 +115,8 @@
       {
         "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
         "estudiantes": 244,
-        "finalizados": 71,
-        "promedio": 31.89,
+        "finalizados": 73,
+        "promedio": 31.94,
         "min": 0.0,
         "max": 100.0,
         "inscritos": 244,
