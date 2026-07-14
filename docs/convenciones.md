@@ -27,6 +27,26 @@ Todo workflow en producción debe tener:
 | Zoom (Server-to-Server OAuth)   | zoom-asistencia   | Credenciales en `scripts/zoom-asistencia/.env` (gitignoreado). Scopes: `meeting:read:past_meeting:admin`, `meeting:read:list_past_participants:admin` |
 | Supabase `panel-datos-rofe`     | panel-datos-etl   | Proyecto `kbxptoowtnteflhrfwid` (us-east-1), URL `https://kbxptoowtnteflhrfwid.supabase.co`. Keys en `.env.local` raíz (gitignoreado; plantilla en `.env.example`). Anon key = solo lectura de agregados vía RLS. **service_role bypasea RLS — solo n8n/backend, jamás frontend ni Git** |
 
+### Formato de `.env.local` (raíz) — ojo: NO es python-dotenv
+
+Los scripts de `panel-datos/` no usan `python-dotenv`: traen su propio `cargar_env_local()`
+(ver `cargar_supabase.py:62`), que hace `k, v = linea.split("=", 1)` +
+`os.environ.setdefault(k.strip(), v.strip())`. Toma el valor **crudo**:
+
+```
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_...      ← así
+```
+
+- **Sin comillas.** `KEY="abc"` deja el valor literalmente como `"abc"` (con comillas) → falla el auth.
+- **Sin `export`.** `export KEY=abc` hace que la variable se llame `export KEY`.
+- **Sin comentario al final de línea.** `KEY=abc # nota` mete ` # nota` dentro del valor.
+  Un `#` en su propia línea sí es un comentario válido.
+- `setdefault` → **una variable ya exportada en el entorno le gana al archivo**. Si un script
+  "ignora" tu `.env.local`, revisá que no la tengas exportada en la sesión.
+
+Todo script nuevo que lea Supabase debe llamar a `cargar_env_local()` en `main()`. Plantilla de
+variables en `.env.example` (único `.env*` versionado; el resto los excluye `.gitignore`).
+
 ### Gotcha: secreto commiteado por error
 
 Pasó el 2026-07-14 (ver `SECURITY-INCIDENT.md`). Si el push protection de GitHub bloquea un push:

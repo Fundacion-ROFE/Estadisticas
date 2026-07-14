@@ -9,7 +9,7 @@ Uso:
   python scripts/panel-datos/sync_asistencia_supabase.py [--dry-run]
 
 Requiere:
-  - SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en entorno
+  - SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en .env.local (raíz) o en el entorno
   - Service Account en scripts/q10-consolidacion/credenciales_service_account.json
 """
 import io
@@ -33,11 +33,28 @@ from google.oauth2.service_account import Credentials
 
 BASE = Path(__file__).resolve().parents[2]
 CRED = BASE / "scripts" / "q10-consolidacion" / "credenciales_service_account.json"
+RUTA_ENV = BASE / ".env.local"
 
 ZOOM_ASISTANCE_SHEET_ID = "1VyXOYsnpD9ksKcJFHiiRR6fr4UUCea4WmGG96NV0WP0"
 ZOOM_ASISTANCE_TAB = "ZOOM-ASISTANCE"
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+
+def cargar_env_local() -> None:
+    """Carga .env.local de la raíz (mismo parser que cargar_supabase.py).
+
+    setdefault: una variable ya presente en el entorno le gana al archivo.
+    El valor se toma crudo — sin comillas, sin `export`, sin comentario al final de línea.
+    """
+    if not RUTA_ENV.is_file():
+        return
+    with open(RUTA_ENV, encoding="utf-8") as f:
+        for linea in f:
+            linea = linea.strip()
+            if not linea or linea.startswith("#") or "=" not in linea:
+                continue
+            k, v = linea.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip())
 
 def conectar_sheets():
     """Conecta a Google Sheets."""
@@ -113,7 +130,10 @@ def upsert_supabase(filas, dry_run=False):
     url = os.getenv("SUPABASE_URL", "https://kbxptoowtnteflhrfwid.supabase.co")
     key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not key:
-        raise ValueError("SUPABASE_SERVICE_ROLE_KEY no definida en entorno")
+        raise ValueError(
+            f"SUPABASE_SERVICE_ROLE_KEY no definida. Agregala a {RUTA_ENV} "
+            "(sin comillas) o exportala en el entorno."
+        )
 
     print(f"\nSupabase: {url}")
 
@@ -213,6 +233,8 @@ def main():
     parser = argparse.ArgumentParser(description="Sync ZOOM-ASISTANCE -> Supabase")
     parser.add_argument("--dry-run", action="store_true", help="Mostrar sin hacer cambios")
     args = parser.parse_args()
+
+    cargar_env_local()
 
     print("\n" + "="*80)
     print("SYNC: ZOOM-ASISTANCE (Sheets) -> asistencia_zoom (Supabase)")
