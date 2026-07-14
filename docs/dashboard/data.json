@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-14T02:07:10.073423+01:00",
+  "ultima_actualizacion": "2026-07-14T14:53:39.952232+01:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -16,7 +16,7 @@
       "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
       "estudiantes": 777,
       "finalizados": 333,
-      "promedio": 71.69,
+      "promedio": 55.42,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 777,
@@ -26,8 +26,8 @@
     {
       "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
       "estudiantes": 777,
-      "finalizados": 699,
-      "promedio": 98.95,
+      "finalizados": 701,
+      "promedio": 99.03,
       "min": 0.0,
       "max": 101.0,
       "inscritos": 830,
@@ -70,8 +70,8 @@
     {
       "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
       "estudiantes": 777,
-      "finalizados": 746,
-      "promedio": 98.36,
+      "finalizados": 748,
+      "promedio": 98.51,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 809,
@@ -86,7 +86,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 80
+      "cantidad": 79
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -105,7 +105,7 @@
         "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
         "estudiantes": 136,
         "finalizados": 39,
-        "promedio": 40.66,
+        "promedio": 40.79,
         "min": 0.0,
         "max": 100.0,
         "inscritos": 136,
