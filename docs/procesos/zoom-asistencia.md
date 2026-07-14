@@ -197,6 +197,30 @@ ORDER BY a.fecha DESC;
 **Estado:** Tabla documentada, pendiente de crear en Supabase y script de sync. No bloquea producción
 de asistencia en H3Test — es una optimización posterior para reportes integrados.
 
+## Panel de Riesgo + Asistencia Zoom (actualizado 2026-07-13)
+
+**Integración en `tools/panel_riesgo_gui.py`:**
+- Nueva función `leer_asistencia_zoom()` extrae datos de ZOOM-ASISTANCE
+- Calcula promedio de asistencia por estudiante + lista de faltas (porcentaje <70% O instancias <3/3)
+- Tabla "ATENCIÓN" agregó columna **"Asistencia %"** — promedio general del estudiante
+- Doble clic en estudiante abre reporte completo con:
+  - Promedio manual (Q10)
+  - Promedio asistencia Zoom
+  - Cursos Q10 con avance
+  - **Sección "Faltas de Asistencia"** listando cada clase donde asistencia <70% O <3/3 momentos
+    (fecha, porcentaje, instancias cumplidas)
+  
+**Scripts auxiliares:**
+- `scripts/zoom-asistencia/consultar_asistencia.py` — lectura directa de ZOOM-ASISTANCE,
+  calcula promedios por estudiante, show sample de 3+ estudiantes + estadísticas generales.
+  Uso: `python scripts/zoom-asistencia/consultar_asistencia.py`
+
+**Datos verificados (2026-07-13):**
+- 490 estudiantes únicos con registros de asistencia
+- 704 registros totales (sesiones de clase)
+- Promedio general: 71.9%
+- 161 estudiantes con <70% de promedio
+
 **Coordinación con las clases (agregado 2026-07-01):** como cada clase se programa una a una
 en Zoom con el nombre del curso como tema, el nodo Code agrega a cada fila:
 - `Curso` = topic de la reunión (de `Info Reunion`, fallback al payload del webhook).
