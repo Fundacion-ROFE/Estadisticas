@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-10T20:32:40.288016-05:00",
+  "ultima_actualizacion": "2026-07-14T02:08:53.973134+01:00",
   "anio": "2026",
   "totales": {
     "total_retirados": 57,
@@ -86,12 +86,12 @@
     {
       "orden": 6,
       "etapa": "Fundamentos Lógica de Programación - 2026",
-      "cantidad": 2
+      "cantidad": 1
     },
     {
       "orden": 7,
       "etapa": "Desarrollo Web Front-End - HTML - 2026",
-      "cantidad": 0
+      "cantidad": 1
     }
   ],
   "ruta": [
