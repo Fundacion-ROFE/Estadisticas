@@ -1646,7 +1646,24 @@ instante. Colores semánticos de gráficos invariantes. Frontend 41d2871; BRAND-
   con (email, curso, fecha, instancias, porcentaje_asistencia). Script `sync_asistencia_supabase.py`
   (post-clase) haría upsert desde Sheets. Permite consultas SQL combinadas (asistencia + aprobación por
   estudiante). Posterior a producción de H3Test — no bloquea.
-- **Próximo:** Testing en vivo con reunión Zoom real (cuando el usuario esté en oficina con acceso).
-  Verificar que LIVE-LOG se llene y ASISTENCIA-10MIN capture presentes correctamente al minuto 10.
-- **Bloques:** Infraestructura (segunda cuenta Zoom "soporte" aún requiere permiso de Colegio Colombia 2020).
-  URL fija ngrok pendiente de pegar en Zoom Marketplace (último paso del túnel).
+
+---
+
+## 2026-07-13 — [zoom-asistencia] Panel de Riesgo + Asistencia Zoom integrada
+
+**Estado:** Completado — asistencia visible en panel, reporte detallado al doble click.
+**Proceso relacionado:** [[zoom-asistencia]]
+
+- **Corroboración de datos:** Script `consultar_asistencia.py` verifica que podemos leer ZOOM-ASISTANCE
+  y calcular promedios. Resultado: **490 estudiantes únicos**, **704 sesiones**, promedio **71.9%**,
+  **161 estudiantes <70%**.
+- **Panel de Riesgo actualizado** (tools/panel_riesgo_gui.py, local no gittracked por PII):
+  - Nueva función `leer_asistencia_zoom()` extrae datos de ZOOM-ASISTANCE
+  - Tabla "ATENCIÓN": columna nueva "Asistencia %" (promedio general del estudiante)
+  - Doble-click en estudiante: popup con **sección "Faltas de Asistencia"** listando cada clase donde
+    asistencia <70% O instancias <3/3 (fecha, %, momentos cumplidos). Ver hasta 10 faltas + contador.
+- **Integración en flujo de datos:** función `cruzar()` modificada para recibir dict `asistencia` y
+  adjuntarlo a cada estudiante de "atencion". Worker (_worker) lee asistencia al cargar datos.
+- **Próximo:** Testing en vivo con reunión Zoom real. Panel funciona hoy sin live data;
+  cuando eventos participant_joined/_left lleguen, LIVE-LOG se llena y ASISTENCIA-10MIN captura.
+- **Bloques:** Ídem anteriores (URL ngrok, second account Zoom).
