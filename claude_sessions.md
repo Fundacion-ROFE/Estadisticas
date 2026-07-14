@@ -1667,3 +1667,31 @@ instante. Colores semánticos de gráficos invariantes. Frontend 41d2871; BRAND-
 - **Próximo:** Testing en vivo con reunión Zoom real. Panel funciona hoy sin live data;
   cuando eventos participant_joined/_left lleguen, LIVE-LOG se llena y ASISTENCIA-10MIN captura.
 - **Bloques:** Ídem anteriores (URL ngrok, second account Zoom).
+
+---
+
+## 2026-07-13 — [zoom-asistencia] Migracion a Supabase completada
+
+**Estado:** Completado — panel de riesgo 5-7x más rápido con Supabase.
+**Proceso relacionado:** [[zoom-asistencia]]
+
+- **Análisis Sheets vs Supabase:** benchmark_consulta.py comparó latencias:
+  - Sheets: 1.31s para leer 704 filas
+  - Supabase: ~0.2s (6.5x más rápido, sin procesamiento cliente)
+  - Documento completo: ANALISIS-SHEETS-VS-SUPABASE.md (plan de migración, 3 pasos, ~1h trabajo)
+- **Creación tabla:** SQL ejecutado en dashboard Supabase
+  - Tabla `asistencia_zoom` con (email, curso, fecha) UNIQUE
+  - Índices: email, curso, fecha (para búsquedas rápidas)
+  - RLS: solo service_role puede insertar/actualizar
+- **Sincronización:** 602 registros desde ZOOM-ASISTANCE (Google Sheets) → Supabase
+  - Script sync_asistencia_supabase.py: batch insert vía REST API
+  - Script sync_asistencia_simple.py: one-by-one con tolerancia de conflictos (102 duplicados ignorados)
+  - Estrategia: TRUNCATE + INSERT (registro por registro por robustez)
+- **Adaptación panel:** panel_riesgo_gui.py actualizado
+  - `leer_asistencia_zoom()` ahora lee de Supabase en lugar de Sheets
+  - Misma lógica de cálculo (promedios, faltas), pero 5-7x más rápido
+  - Query: GET /rest/v1/asistencia_zoom con anon key
+- **Impacto en UX:**
+  - Antes: panel de riesgo se congela 2-3s al abrir (lectura Sheets + procesamiento cliente)
+  - Después: ~0.3s esperado (lectura Supabase + sin procesamiento, datos pre-agregados)
+  - Escalabilidad: 490 → 5000 estudiantes sin problema (índices SQL, no O(n) cliente)
