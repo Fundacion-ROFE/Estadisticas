@@ -1,8 +1,8 @@
 # Dashboard Web — GitHub Pages
 
 **Estado:** Completado / En producción
-**Última actualización:** 2026-07-09
-**Procesos relacionados:** [[q10-consolidacion]]
+**Última actualización:** 2026-07-14
+**Procesos relacionados:** [[q10-consolidacion]] · [[panel-datos-etl]]
 
 ## Qué hace
 

@@ -205,6 +205,18 @@ def main() -> int:
     supa.upsert("historial_cursos", filas_h, conflicto="fecha,curso")
     log(f"Historial: snapshot {hoy} con {len(filas_h)} cursos")
 
+    # 7. Mismo snapshot desglosado por ciudad (grupo_ciudad viene de la BD de monitorias,
+    #    solo existe para JC). Serie independiente: arranca 2026-07-14, el pasado no es
+    #    reconstruible porque historial_cursos nunca guardó la dimensión ciudad.
+    filas_hc = [{
+        "fecha": hoy, "curso": v["curso"], "grupo_ciudad": v["grupo_ciudad"],
+        "programa": v["programa"], "cohorte": v["cohorte"],
+        "matriculados": v["matriculados"], "completados": v["completados"],
+        "promedio_avance": v["promedio_avance"], "fuente": "sync-diario",
+    } for v in supa.get_todo("/v_curso_completion_por_ciudad?select=*")]
+    supa.upsert("historial_cursos_ciudad", filas_hc, conflicto="fecha,curso,grupo_ciudad")
+    log(f"Historial ciudad: snapshot {hoy} con {len(filas_hc)} filas curso×ciudad")
+
     estado = "exito" if sin_fk == 0 else "con_advertencias"
     print(f"RESUMEN: participants={len(filas_p)} courses={len(courses)} "
           f"enrollments={len(filas_e)} snapshot={snapshot_n} "

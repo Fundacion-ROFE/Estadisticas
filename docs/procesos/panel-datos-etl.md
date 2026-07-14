@@ -1,7 +1,7 @@
 # Panel de Datos Supabase (ETL + Dashboard)
 
 **Estado:** ✅ MVP completo (Fases 0-4) — en producción: https://classy-pasca-eecdd6.netlify.app (2026-07-10)
-**Última actualización:** 2026-07-10
+**Última actualización:** 2026-07-14
 
 ## Frontend (Fase 3) — EN PRODUCCIÓN
 **URL:** https://classy-pasca-eecdd6.netlify.app (deploy automático on push; renombrable en
@@ -58,6 +58,39 @@ Repo dedicado: `C:\Users\EstudiantesJC\downloads\panel-datos-rofe` (GitHub conec
   las MR históricas 2025 solo 26.9% (ya no figuran en la BD 2026 — limitación de fuente,
   no de proceso). 9 migraciones totales.
 - Re-ejecución: manual tras cambios grandes en la BD (mismo criterio que el sync JC); idempotente.
+
+## Filtro por ciudad en el panel JC (2026-07-14, pedido stakeholders)
+Botonera de ciudad en el panel de Jóvenes creaTIvos. `grupo_ciudad` (BAQ, BOG, CAL, CTG, MED,
+GYL, QTO, PAN, UY) viene de la **BD de monitorias** vía `sync_sociodemograficos.py`.
+
+- **Vistas por ciudad** (lectura pública, solo agregados): `v_demografia_grupo`,
+  `v_programa_stats_por_ciudad`, `v_curso_completion_por_ciudad`, `v_emprendimiento_por_ciudad`.
+- **Alcance del filtro:** al elegir ciudad se filtran KPIs, completación por curso,
+  emprendimiento, demografía e historial. El selector **solo aparece en la cohorte actual** —
+  la BD de monitorias únicamente cubre el año en curso; en cohortes pasadas `grupo_ciudad` es
+  NULL y el filtro mostraría cifras del 2026. Se limpia al cambiar de programa o de cohorte.
+
+### Qué NO tiene desglose por ciudad (y por qué) — leer antes de "arreglar" el filtro
+Dos fuentes canónicas no traen la ciudad. No es un bug del frontend: el dato no existe.
+
+1. **Cohorte canónica / aprobación.** `cohorte_ingresos` y `aprobacion_cursos` salen de
+   `docs/aprobacion/data.json`, que no tiene `grupo_ciudad` (los retirados no llegan con
+   ciudad). Por eso, con una ciudad elegida, el Resumen **cambia de gráfico**: en vez de
+   `GraficoAprobacion` (aprobados/retirados sobre la cohorte completa) muestra
+   `GraficoCursos` sobre `v_curso_completion_por_ciudad`, y el KPI pasa de "Ingresados 832"
+   a "Participantes en <Ciudad>" (activos). Mezclar ambos daría un total nacional dentro de
+   una vista de ciudad.
+2. **Histórico por ciudad — no es reconstruible hacia atrás.** `historial_cursos` (serie desde
+   2026-06-26) solo guarda `fecha × curso × programa`; nunca guardó la ciudad. Y
+   `enrollments.fecha_inscripcion` está **100% NULL** (18.196 filas), así que tampoco se puede
+   inferir cuándo entró cada quien. ⚠️ Gotcha: una vista que intente reconstruirlo con
+   `fecha_inscripcion <= fecha` compila y devuelve **puros ceros** (se creó y se eliminó
+   `v_historial_por_ciudad` por esto).
+   - **Solución:** tabla `historial_cursos_ciudad` (UNIQUE `fecha,curso,grupo_ciudad`, lectura
+     pública), que `cargar_supabase.py` llena con un snapshot diario desde
+     `v_curso_completion_por_ciudad` — mismo patrón que `historial_cursos`. **La serie arranca
+     el 2026-07-14** (63 filas: 9 ciudades × 7 cursos) y crece un punto por día. El gráfico lo
+     dice en su nota; el histórico nacional previo sigue intacto sin filtro.
 
 ## Cohorte canónica en el panel — "Ingresados 832" (2026-07-10, pedido stakeholders)
 El total mostrado para el año en curso es la **cohorte canónica** (todos los registros del año

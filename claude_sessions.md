@@ -1738,3 +1738,58 @@ instante. Colores semánticos de gráficos invariantes. Frontend 41d2871; BRAND-
   - Los datos de género + edad se filtran conjuntamente con los participantes
 - **Deploy:** commit `f47cebe` pusheado a GitHub; Netlify deployará automáticamente en los próximos 2-3 min
 - **Testing:** compilación exitosa (Next.js 14 sin errores), servidor local respondiendo correctamente en puerto 3001
+
+---
+
+## 2026-07-14 — [panel-datos-etl] Extensión de filtro ciudad a TODOS los gráficos
+
+**Estado:** Completado — deployado a Netlify
+**Proceso relacionado:** [[panel-datos-etl]]
+
+- **Solicitud:** extender el filtro por ciudad a emprendimiento, historial, cursos y resumen (no solo demografía)
+- **Cambios backend (lib/api.ts):**
+  - Agregadas interfaces TypeScript: `EmprendimientoPorCiudad` (grupo_ciudad, situacion, total) y `HistorialPorCiudad` (fecha, curso, grupo_ciudad, programa, matriculados, promedio_avance, completados)
+  - Actualizado `cargarTodo()` para cargar `v_emprendimiento_por_ciudad` y `v_historial_por_ciudad` en paralelo
+  - Extendida interfaz `Datos` con los dos nuevos campos
+- **Cambios frontend (app/page.tsx):**
+  - Agregados useMemo: `emprendimientoPorCiudad` (filtra por ciudad/programa JC si aplica) y `historialPorCiudad` (filtra por ciudad/programa si aplica)
+  - Actualizado `emprendimientoOrdenado` para usar fuente filtrada cuando ciudadElegida está activo
+  - Historial gráficos (evolución matrículas + avance promedio) ahora usan `historialPorCiudad` con coerción defensiva de tipos (Number(), manejo de nulos)
+  - Cursos gráficos ya estaban filtrados (commit anterior)
+  - Resumen/KPIs ya estaban filtrados via `statsProgramaPorCiudad`
+- **Vistas Supabase creadas:**
+  - `v_emprendimiento_por_ciudad`: agrega situación_emprendimiento por grupo_ciudad
+  - `v_historial_por_ciudad`: agrega histórico de matrículas y avance por fecha, curso, grupo_ciudad (JOIN con enrollments para calcular por ciudad)
+- **Build:** Compilación exitosa sin errores TypeScript; npm run build pasó sin warnings
+- **Deploy:** Commit fc70dee pusheado a main; Netlify deployando automáticamente
+
+---
+
+## 2026-07-14 — [panel-datos-etl] Fix: Resumen e Historial ignoraban el filtro de ciudad
+
+**Estado:** Completado — deployado (commit `ee4c166` en repo panel-datos-rofe)
+**Proceso relacionado:** [[panel-datos-etl]]
+
+- **Síntoma reportado:** los gráficos de Resumen e Historial no se adaptaban al filtro de ciudad.
+- **Causa 1 (Resumen):** con la cohorte actual se renderizaba `GraficoAprobacion`, alimentado por
+  `aprobacion_cursos` — tabla **sin dimensión de ciudad**. El gráfico filtrado (`GraficoCursos`)
+  solo existía en la rama `else` (cohortes pasadas), así que nunca se veía. Fix: con ciudad
+  elegida se cae a `GraficoCursos` sobre `v_curso_completion_por_ciudad`.
+- **Causa 2 (KPI):** "Ingresados" sale de `cohorte_ingresos`, tampoco tiene ciudad → mostraba el
+  total nacional (832) con cualquier ciudad activa. Fix: con filtro muestra "Participantes en
+  <Ciudad>" (activos) y explica la limitación en el detalle.
+- **Causa 3 (Historial):** la vista `v_historial_por_ciudad` de la sesión anterior era **inválida**
+  — dependía de `enrollments.fecha_inscripcion`, que está **100% NULL** (0 de 18.196), y devolvía
+  puros ceros. El histórico por ciudad **no es reconstruible**: `historial_cursos` solo guarda
+  fecha × curso × programa.
+- **Solución histórico:** vista eliminada; nueva tabla `historial_cursos_ciudad` (UNIQUE
+  fecha+curso+grupo_ciudad, RLS lectura pública) que `cargar_supabase.py` llena con snapshot
+  diario desde `v_curso_completion_por_ciudad`. Serie arranca 2026-07-14 (63 filas = 9 ciudades ×
+  7 cursos) y crece un punto por día. La nota del gráfico lo dice explícitamente.
+- **Extra:** el selector de ciudad ahora solo aparece en la cohorte actual (`grupo_ciudad` viene de
+  la BD de monitorias, que solo cubre el año en curso) y se limpia al cambiar programa/cohorte.
+  Quitado el `console.log` de debug.
+- **Verificado:** `npm run build` OK; lectura vía anon key confirmada por REST (BOG = 132
+  matriculados/curso, cuadra con los 132 participantes de la ciudad).
+- **Gotcha documentado en [[panel-datos-etl]]:** antes de "arreglar" el filtro, revisar si la
+  fuente canónica tiene la dimensión ciudad — `cohorte_ingresos` y `aprobacion_cursos` no la tienen.
