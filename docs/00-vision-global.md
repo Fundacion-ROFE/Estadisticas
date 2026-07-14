@@ -62,12 +62,14 @@ docs/retirados/data.json (solo agregados) ──► panel público de retirados
 
 ```
 (solo local, nunca GitHub)
-Google Sheets h2test    ──┐
-Google Sheets Avance    ──┼──► panel_riesgo_gui.py
-Pestaña Retirados       ──┘     5 tabs interactivos (PII):
-                               🎓 JC | 💡 MR | ⚙ Admin | 🔀 Diferencias | 🚪 Retirados
-                               ↑ KPIs clickeables → tabla dinámica
-                               Admin guarda → tools/course_config.json
+Google Sheets h2test          ──┐
+Google Sheets Avance          ──┤
+Pestaña Retirados             ──┼──► panel_riesgo_gui.py
+Supabase asistencia_promedio ──┘     5 tabs interactivos (PII):
+                                     🎓 JC | 💡 MR | ⚙ Admin | 🔀 Diferencias | 🚪 Retirados
+                                     ↑ KPIs clickeables → tabla dinámica
+                                     Admin guarda → tools/course_config.json
+                                     ✓ Columna "Asistencia %" en 5 vistas
 
 Google Sheets h2test (avance < 100, solo JC)  ──┐
 BD Seguimiento Monitorias (Grupo = ciudad)    ──┼──► exportar_sin_completar.py
@@ -100,7 +102,8 @@ BD Seguimiento Monitorias (Grupo = ciudad)    ──┼──► exportar_sin_co
 | Panel de riesgo GUI | [[dashboard-web]] | 2026-06-26 | 5 tabs interactivos · KPIs clickeables · vistas dinámicas JC y MR · Tab Admin con course_config.json · Tab Retirados |
 | Retirados Q10 | [[q10-consolidacion]] | 2026-07-02 | Fase 4 del pipeline · reporte Estudiantes cancelados → Retirados/Retirados-complete → panel público · histórico 353 · **panel filtrado a cohorte 2026: 82 retirados únicos + etapa de retiro** (2026-07-09) |
 | Pseudonimizador | [[pseudonimizador]] | 2026-06-30 | GitHub Pages live · 3 tabs · Web Worker para 22 MB / 44 pestañas · Pendiente demo con equipo |
-| Actualización BD MR | [[mr-actualizacion-datos]] | 2026-07-07 | Form MR2024 → pestaña General de BD-Mujeres ROFÉ · cruce por cédula · col `Fecha Actualización` · n8n diario 7:30 (`LgkDbNPERYgKMrYj`) · backfill: 286 filas actualizadas + 24 nuevas (naranja, revisar) |
+| Actualización BD MR | [[mr-actualizacion-datos]] | 2026-07-08 | Form MR2024 → pestaña General de BD-Mujeres ROFÉ · cruce por cédula · col `Fecha Actualización` · n8n diario 9:30 am COT (`LgkDbNPERYgKMrYj`) · backfill: 286 filas actualizadas + 24 nuevas (naranja, revisar) |
+| Asistencia Zoom (cálculo + panel) | [[zoom-asistencia]] | 2026-07-13 | **COMPLETADO:** webhook Zoom → ZOOM-ASISTANCE (704 registros) → `calcular_asistencia_promedio.py` → Supabase `asistencia_promedio` (490 estudiantes) → Panel de riesgo muestra "Asistencia %" en 5 vistas. RLS policies + documentación del flujo listos. Automatización n8n diaria 00:00 pendiente de configurar en dashboard n8n. |
 
 ---
 
@@ -110,7 +113,7 @@ BD Seguimiento Monitorias (Grupo = ciudad)    ──┼──► exportar_sin_co
 |---|---|---|
 | Website Mujeres ROFÉ | [[mr-website]] | **Documentación inicial lista (2026-07-07).** Código en repo independiente (`Downloads\Mujeres-Rofe-Website`, back Express+Mongo / front Angular 15, deploy droplet DigitalOcean vía Actions). Bloqueado por: definir alcance de los cambios solicitados + clonar repos remotos (copia local sin `.git`) |
 | Panel de Datos Supabase | [[panel-datos-etl]] | **MVP EN PRODUCCIÓN (2026-07-10):** https://classy-pasca-eecdd6.netlify.app — Next.js estático (repo dedicado `panel-datos-rofe`) sobre vistas de agregados Supabase; ETL diario n8n 9:45; sociodemográficos de BD monitorias (775); **cuadre 9/9 exacto vs dashboard canónico** (activos y aprobados por curso). Pendiente menor: verificar 1ª corrida automática n8n, retirados en Supabase, campo programa JC/MR, renombrar sitio Netlify |
-| Asistencia Zoom | [[zoom-asistencia]] | **Funcional (cuenta comunicaciones)** — escribe en pestaña `ZOOM-ASISTANCE` con colores <70%, pestañas `CUPOS` y `ZOOM-STATS` (2026-07-02). **Trigger dual (2026-07-04):** rama `meeting.started` → snapshot al minuto 10 en `ASISTENCIA-10MIN`. **Prueba real 2026-07-06:** la rama corre completa (evento + scope granular `dashboard:read:list_meeting_participants:admin` OK), pero `Participantes en Vivo` da 400 → **BLOQUEO: falta habilitar la Dashboard API por soporte de Zoom** (Business ✓ y Panel web ✓, es flag de servidor). **HALLAZGO: hay 2 cuentas Zoom** (comunicaciones/us06web + soporte/us02web); el app+webhook viven solo en comunicaciones → **las clases de soporte NO se capturan** (verificado en las 38 ejecuciones). Pendiente: ticket Dashboard API, cobertura cuenta soporte (2º app + workflow multi-cuenta), túnel permanente, filtro reuniones no-clase, Sheet de producción |
+| n8n: Automatización asistencia Zoom | [[zoom-asistencia]] | Script `calcular_asistencia_promedio.py` funcional. Pendiente: agregar Cron job en n8n para ejecutar diariamente a las 00:00 (después de que Zoom envíe eventos). Documentado en [[asistencia-zoom-flujo]]. |
 
 ---
 
@@ -129,6 +132,7 @@ BD Seguimiento Monitorias (Grupo = ciudad)    ──┼──► exportar_sin_co
 |---|---|
 | [CLAUDE.md](../CLAUDE.md) | Instrucciones para Claude Code |
 | [[convenciones]] | Estándares técnicos (SSL, Q10, n8n, Sheets) |
+| [[prioridades-automatizacion-ia]] | Priorización de las 7 áreas pedidas por dirección (2026-07-10) + argumento BD central |
 | [[mapa-codigo]] | Índice esquemático de todos los scripts |
 | [[bd-seguimiento-monitorias]] | Arquitectura interna de la BD manual de 35 pestañas (hub `Seguimiento` + hojas-ciudad) |
 | [claude_sessions.md](../claude_sessions.md) | Bitácora cronológica de sesiones |

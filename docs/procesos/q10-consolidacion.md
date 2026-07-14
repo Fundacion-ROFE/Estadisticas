@@ -1,7 +1,7 @@
 # Consolidación Q10
 
 **Estado:** Completado
-**Última actualización:** 2026-07-05
+**Última actualización:** 2026-07-14
 **Procesos relacionados:** [[dashboard-web]]
 
 ## Qué hace

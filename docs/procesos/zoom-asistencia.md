@@ -6,7 +6,7 @@ escribe en la pestaña **`ZOOM-ASISTANCE`** (mismo spreadsheet H3Test), con form
 condicional <70% y pestañas `CUPOS` + `ZOOM-STATS` (estadísticas por sesión y por semana,
 denominadores "X de Y" desde la BD de Monitorias). Quedan pendientes las pruebas de casos
 límite (reunión ≤20 min, participante sin correo) y la decisión del Sheet de producción.
-**Última actualización:** 2026-07-02
+**Última actualización:** 2026-07-13
 **Procesos relacionados:** —
 
 ## Qué hace

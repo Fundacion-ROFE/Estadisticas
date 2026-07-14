@@ -230,7 +230,7 @@ Patrón establecido en `q10-consolidacion`, reutilizable en cualquier proceso:
 ## Editar workflows n8n por API (sin abrir la UI)
 
 Patrón usado para integrar pasos nuevos al workflow de producción (`PUT /api/v1/workflows/{id}`,
-credencial en memoria `reference-n8n-api`). Reglas aprendidas (2026-07-07 y 2026-07-08):
+credencial en memoria `reference-n8n-api-key`). Reglas aprendidas (2026-07-07 y 2026-07-08):
 
 - El body del PUT solo acepta `name`, `nodes`, `connections`, `settings` — construirlo desde el
   GET previo. Tras el PUT verificar que el workflow siga **activo** (a veces queda inactivo).

@@ -1,7 +1,7 @@
 # Dashboard Web — GitHub Pages
 
 **Estado:** Completado / En producción
-**Última actualización:** 2026-06-26
+**Última actualización:** 2026-07-09
 **Procesos relacionados:** [[q10-consolidacion]]
 
 ## Qué hace
