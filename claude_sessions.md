@@ -1627,3 +1627,26 @@ transición 0.5s), trazos de fondo en rojo/rosa de marca, botón liquid-metal-ro
 selector rosa y chrome del panel con acento #C12D4C. La paleta rosada se tomó del panel
 existente docs/mujeres-rofe (tintes #FDF6F8/#FAF0F3/#F0DDE2/#E5C5CC). JC vuelve al azul al
 instante. Colores semánticos de gráficos invariantes. Frontend 41d2871; BRAND-DIGITAL v1.2.
+
+---
+
+## 2026-07-13 — [zoom-asistencia] Webhook eventos participant_joined/_left + tabla Supabase propuesta
+
+**Estado:** En progreso — eventos webhook activos en Zoom, pestañas creadas, Supabase documentada.
+**Proceso relacionado:** [[zoom-asistencia]]
+
+- **Eventos webhook activados:** Usuario marcó `participant/host joined meeting` + `participant/host left meeting`
+  en Zoom Marketplace Event Subscriptions (se mapean internamente a `meeting.participant_joined/_left`).
+  El workflow ya los filtra desde hace 2026-07-07 (rama "Normalizar Evento Live" + "Registrar LIVE-LOG").
+  Esto reemplaza la Dashboard API bloqueada por feature flag de Zoom.
+- **Pestañas creadas:** `python setup_zoom_asistance.py --solo-livelog` + `--solo-10min`.
+  LIVE-LOG (log crudo joined/left, append-only) + ASISTENCIA-10MIN (control temprano minuto 10,
+  snapshot quién ingresó) — ambas en H3Test con headers correctos. Listas para datos en vivo.
+- **Propuesta Supabase documentada en `docs/procesos/zoom-asistencia.md`:** tabla `asistencia_zoom`
+  con (email, curso, fecha, instancias, porcentaje_asistencia). Script `sync_asistencia_supabase.py`
+  (post-clase) haría upsert desde Sheets. Permite consultas SQL combinadas (asistencia + aprobación por
+  estudiante). Posterior a producción de H3Test — no bloquea.
+- **Próximo:** Testing en vivo con reunión Zoom real (cuando el usuario esté en oficina con acceso).
+  Verificar que LIVE-LOG se llene y ASISTENCIA-10MIN capture presentes correctamente al minuto 10.
+- **Bloques:** Infraestructura (segunda cuenta Zoom "soporte" aún requiere permiso de Colegio Colombia 2020).
+  URL fija ngrok pendiente de pegar en Zoom Marketplace (último paso del túnel).
