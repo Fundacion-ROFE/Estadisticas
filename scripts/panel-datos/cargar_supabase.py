@@ -196,12 +196,17 @@ def main() -> int:
 
     # 6. Snapshot del día en historial_cursos (serie de tiempo pública).
     #    UNIQUE(fecha, curso) → re-correr el mismo día actualiza, no duplica.
+    #    ⚠ Filtrar a la cohorte viva es OBLIGATORIO: Q10 reutiliza los nombres de curso
+    #    entre años, así que v_curso_completion trae el mismo `curso` en varias cohortes
+    #    (desde el import histórico del 2026-07-10). Sin el filtro, el lote lleva `curso`
+    #    repetido y PostgREST aborta TODO el upsert con 21000 "ON CONFLICT DO UPDATE
+    #    command cannot affect row a second time" — así se rompió el sync diario.
     hoy = datetime.now().date().isoformat()
     filas_h = [{
         "fecha": hoy, "curso": v["curso"], "programa": v["programa"],
         "matriculados": v["matriculados"], "completados": v["completados"],
         "promedio_avance": v["promedio_avance"], "fuente": "sync-diario",
-    } for v in supa.get_todo("/v_curso_completion?select=*")]
+    } for v in supa.get_todo(f"/v_curso_completion?select=*&cohorte=eq.{cohorte}")]
     supa.upsert("historial_cursos", filas_h, conflicto="fecha,curso")
     log(f"Historial: snapshot {hoy} con {len(filas_h)} cursos")
 
@@ -213,7 +218,7 @@ def main() -> int:
         "programa": v["programa"], "cohorte": v["cohorte"],
         "matriculados": v["matriculados"], "completados": v["completados"],
         "promedio_avance": v["promedio_avance"], "fuente": "sync-diario",
-    } for v in supa.get_todo("/v_curso_completion_por_ciudad?select=*")]
+    } for v in supa.get_todo(f"/v_curso_completion_por_ciudad?select=*&cohorte=eq.{cohorte}")]
     supa.upsert("historial_cursos_ciudad", filas_hc, conflicto="fecha,curso,grupo_ciudad")
     log(f"Historial ciudad: snapshot {hoy} con {len(filas_hc)} filas curso×ciudad")
 

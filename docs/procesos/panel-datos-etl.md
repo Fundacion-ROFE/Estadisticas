@@ -92,6 +92,108 @@ Dos fuentes canónicas no traen la ciudad. No es un bug del frontend: el dato no
      el 2026-07-14** (63 filas: 9 ciudades × 7 cursos) y crece un punto por día. El gráfico lo
      dice en su nota; el histórico nacional previo sigue intacto sin filtro.
 
+## Emoflow — ingresos al sistema como proxy de "calidad de estudiante" (2026-07-14)
+Emoflow es la herramienta de estado de ánimo de los estudiantes. De momento **no** medimos la
+emoción sino los **ingresos al sistema** (contador acumulado por estudiante) como proxy de
+engagement / calidad.
+
+- **Fuente:** pestaña `+Ingresos-EmoFlow` del Sheet manual (mismo de `Avance`, gid `1288133311`):
+  `Usuario | Nombre | Area | Ingresos al sistema | Ultimo ingreso` — 823 filas.
+- **Script:** `sync_emoflow.py` → tabla `emoflow_ingresos` (upsert por `email`, idempotente).
+- **⚠️ Llave de cruce = EMAIL, y es la única posible.** Emoflow **no expone la cédula** (el resto
+  del ETL cruza por cédula). El correo se normaliza (lower+trim). Los correos sin match se cargan
+  con `participant_id = NULL` — no se crean `participants` desde aquí (Q10 es la fuente de verdad
+  de quién existe).
+- **Cruce medido (2026-07-14):** **757/823 = 92.0%** con match. Cubre **757 de los 777 activos
+  de JC 2026 (97.4%)**. Los 66 sin match son correos que Q10 no conoce (retirados que ya no están
+  en `participants`, o correo personal distinto al registrado en Q10).
+- **Privacidad:** la tabla lleva email+nombre (PII) → RLS **sin lectura anónima** (verificado:
+  anon obtiene 0 filas). El panel consume solo agregados vía 3 vistas públicas (GRANT anon):
+  - `v_emoflow_resumen` — KPIs (participantes, promedio 23.2, mediana 18, máx 309, activos 7d/14d,
+    inactivos 30d).
+  - `v_emoflow_por_ciudad` — usa el mismo código `grupo_ciudad` (BAQ/BOG/…) del filtro de ciudad,
+    así que el `Area` de Emoflow se mapea a los 9 grupos canónicos y el filtro funciona igual.
+  - `v_emoflow_bandas` — bandas de ingresos (1-5 · 6-15 · 16-30 · 31-60 · 61+) **cruzadas con el
+    avance real** de la cohorte JC 2026. Responde "¿el que más entra, avanza más?".
+- **Hallazgo:** la relación es **monótona pero suave** — banda 1-5: 88.1% de avance y 82.5% de
+  aprobación; banda 31-60: 94.6% / 88.2%. Más ingresos correlaciona con más avance, pero la
+  diferencia es de ~6 puntos: sirve para detectar el extremo bajo (102 estudiantes con ≤5 ingresos),
+  no como predictor fino.
+- **Automatizado (2026-07-14):** `sync_emoflow.py` encadenado al workflow n8n `q10-sync-supabase`
+  tras `¿Aprobación OK?` (nodos `Ejecutar sync_emoflow` → `¿Emoflow OK?` → `OK` / `Error Emoflow`).
+  14 nodos, activo, corre solo cada día a las 9:45.
+
+## Puntaje compuesto de "calidad de estudiante" (2026-07-14)
+Vista `v_puntaje_estudiante` (JC, cohorte actual) + `reporte_puntaje.py`. Combina avance Q10,
+asistencia Zoom e ingresos Emoflow, cada señal como **percentil dentro de la cohorte**.
+
+**Regla de negocio vigente (pedido de Samuel):** **Emoflow (ingresos) es el criterio MAYOR — 60% —
+y es obligatorio: sin Emoflow el estudiante no cuenta** (queda fuera del ranking). Avance Q10 40%.
+Asistencia 0% por ahora (ver abajo). Los pesos se ajustan por CLI (`--peso-ingresos`,
+`--peso-avance`, `--peso-asistencia`), no hay que tocar SQL.
+
+**Ojo con la exclusión:** es una decisión de negocio, no un default técnico. En Bogotá deja fuera a
+5 de 133; a nivel cohorte, a los 20 sin Emoflow. Si un día Emoflow deja de cubrir bien a alguien,
+ese estudiante desaparece del ranking sin aviso — vigilar la cobertura (hoy 757/777 = 97%).
+
+**Cobertura de las 3 señales sobre los 777 de JC 2026:** avance **777 (100%)** · Emoflow
+**757 (97%)** · asistencia **408 (53%)** — las 3 juntas solo **398**.
+
+**Dos trampas que se encontraron construyéndolo (y por eso NO se usan valores crudos):**
+1. **Techo del avance.** `avance_q10` = 92.8 ± 6.7: casi no discrimina. Con peso nominal 50%
+   aportaba lo **menos** al ranking (0.50×6.7 = 3.4) mientras la asistencia con 30% aportaba lo
+   **más** (0.30×22.8 = 6.8). Los pesos no significaban lo que decían.
+2. **Faltar dato premiaba.** Renormalizando sobre crudos, a quien no tenía asistencia el avance
+   (~93) le apuntalaba el puntaje → los de 2 señales promediaban **más** (80.2) que los de 3
+   (78.8). Con percentiles (las 3 señales uniformes en [0,100]) ambos sesgos desaparecen.
+
+**Las 3 señales son casi independientes:** corr avance↔asistencia **0.10**, avance↔ingresos
+**0.27**, asistencia↔ingresos **0.18**. No hay un "factor calidad" latente detrás — el compuesto
+promedia cosas distintas. Vale mostrar también las señales por separado, no solo el número.
+
+**⚠ La asistencia todavía no es usable como componente:** viene de **un solo curso**
+(`Desarrollo Web - GIT, HTML y CSS`, 3 salas) y lleva ~11 días de captura (1→11 jul) → **1.4
+sesiones por persona**, solo **4 estudiantes con ≥3**. Un promedio sobre 1 sesión es ruido. Por eso
+el ranking por defecto (`puntaje_sin_asistencia` = avance 60% + ingresos 40%) cubre a los 777.
+Revisar cuando la captura acumule sesiones y llegue a más cursos.
+
+**Limpieza pendiente:** `asistencia_zoom` tiene ~10 registros de staff/test ("Mi reunión",
+"Reunión con Katze", "Prueba - Asistencia", "Entrevista NOVA", "Reunión Semanal de Monitores").
+- **Futuro:** la pestaña `Emoflow` cruda (11.946 filas, formato ancho `Semana 1..15` con bloques
+  `Email | Nombre | Ciudad | Registro Emoción | Fecha`) tiene el registro emocional semanal — es la
+  extensión natural cuando se quiera medir ánimo y no solo ingresos.
+
+## 🔴 Incidente de PII: vistas expuestas a anon (detectado y tapado 2026-07-14)
+Al planear el tab de Emoflow se descubrió que **el anon key (público, va en el bundle de Netlify)
+podía leer datos personales**:
+
+| Objeto | Exponía | Origen |
+|---|---|---|
+| `v_puntaje_estudiante` | **777 nombres + correos** | Creada ese mismo día |
+| `asistencia_promedio` | **490 correos** | Policy `allow_read` permisiva, preexistente |
+
+**Causa raíz:** Supabase concede `SELECT` a `anon` **por defecto** en `public`, y **una vista corre
+con los privilegios de su dueño → ignora el RLS** de las tablas que consulta. Por eso
+`emoflow_ingresos` (tabla con RLS) daba 0 filas a anon, pero la **vista sobre ella** daba las 777.
+No basta con "no dar GRANT": hay que **revocar explícitamente**.
+
+**Fix** (migración `revocar_pii_anon`): `revoke all ... from anon, authenticated` sobre
+`v_puntaje_estudiante`, `asistencia_promedio` y `asistencia_zoom`; eliminada la policy `allow_read`.
+Verificado con el anon key: las 5 fuentes con PII → 401 / 0 filas; los 8 agregados que consume el
+panel → siguen respondiendo. Regla completa en [[convenciones#⚠️ Supabase: una VISTA con PII se expone a `anon` aunque nunca le des GRANT]].
+
+**Lección de método:** las consultas de verificación como `postgres`/service_role **mienten** — ven
+todo bien. Cualquier cambio de exposición se valida **con el anon key**.
+
+## Tab Emoflow en el panel (2026-07-14)
+Tab nuevo en el panel Netlify (solo JC + cohorte actual — la fuente no tiene dimensión de cohorte y
+tiene 0 matrículas MR). Consume 4 vistas de agregados: `v_emoflow_resumen`, `v_emoflow_por_ciudad`,
+`v_emoflow_bandas` y `v_emoflow_bandas_ciudad` (nueva — sin ella, con una ciudad elegida el gráfico
+mostraría cifras **nacionales** dentro de una vista de ciudad; misma trampa del historial).
+Contenido: 4 KPIs (estudiantes, ingresos promedio, activos 7d, inactivos +30d) · distribución de uso
+por bandas · "¿el que más entra, aprueba más?" (con nota honesta: la relación es suave, 82→88%) ·
+uso por ciudad (solo en vista nacional). Respeta el filtro de ciudad.
+
 ## Cohorte canónica en el panel — "Ingresados 832" (2026-07-10, pedido stakeholders)
 El total mostrado para el año en curso es la **cohorte canónica** (todos los registros del año
 menos retiros institucionales/desertores y perfiles de prueba): JC 2026 = **832** = 777 activos
@@ -212,6 +314,31 @@ de su propia población. Migración `separacion_programas_jc_mr`:
   actualizado. Edad promedio 2026: JC 18.0 / MR 39.6 (antes una sola fila mezclada 39.58).
 - **Frontend:** KPIs buscan por cohorte+programa; el KPI Edad promedio aparece en ambos
   programas sin mezclarse (commit `bc18381`).
+
+## ⚠️ El sync diario estuvo ROTO del 10-jul al 14-jul (detectado y corregido 2026-07-14)
+El workflow `q10-sync-supabase` falló en `Ejecutar cargar_supabase` los días 10-07 y 14-07
+(`status=error` en las ejecuciones). **Dos causas independientes, ambas corregidas:**
+
+1. **Secret key revocada.** La `SUPABASE_SERVICE_ROLE_KEY` de `.env.local` devolvía
+   `401 Unregistered API key` — ningún script podía escribir. Reemplazada el 14-07.
+   Diagnóstico rápido: `python scripts/panel-datos/test_conexion_supabase.py`, o pegarle a
+   `/rest/v1/cohorte_stats` con cada key y comparar (anon 200 vs secret 401 ⇒ key revocada).
+2. **Colisión de `historial_cursos` por el import histórico.** El snapshot diario leía
+   `v_curso_completion` **sin filtrar cohorte**. Como Q10 **reutiliza los nombres de curso entre
+   años**, tras el import de 2023-2025 (10-07) la vista devuelve el mismo `curso` en varias
+   cohortes; `historial_cursos` tiene `UNIQUE(fecha, curso)` → el lote llegaba con `curso`
+   repetido y PostgREST abortaba **todo** el upsert con
+   `21000: ON CONFLICT DO UPDATE command cannot affect row a second time`.
+   **Fix:** filtrar el snapshot a la cohorte viva (`&cohorte=eq.{cohorte}`) en los pasos 6 y 7 de
+   `cargar_supabase.py`. La serie histórica siempre fue de la cohorte actual — el filtro
+   restituye esa semántica.
+   **Regla general:** con `merge-duplicates` de PostgREST, **dos filas del mismo lote que colisionan
+   en la clave del `on_conflict` no se resuelven entre sí — revientan el request entero.** Deduplicar
+   SIEMPRE antes de mandar el lote.
+
+Lección de proceso: el workflow sí tenía camino de error explícito (`stopAndError`), pero **nadie
+lo estaba mirando** — falló 2 veces sin que se notara. Vale la pena una alerta (Telegram) en los
+nodos de error, como ya la tiene el bot de Q10.
 
 ## Gotchas / Limitaciones conocidas
 - **Una función dentro de una vista corre con los privilegios del CALLER, no del dueño de la

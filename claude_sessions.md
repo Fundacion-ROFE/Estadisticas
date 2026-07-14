@@ -1821,3 +1821,122 @@ instante. Colores semánticos de gráficos invariantes. Frontend 41d2871; BRAND-
 - **Pendiente (recomendado, no urgente):** rotar la clave en Supabase. No es urgente porque nunca
   salió del equipo, pero cierra el tema.
 - **Patrón agregado a [[convenciones]]:** "Gotcha: secreto commiteado por error" — los 4 pasos.
+
+## 2026-07-14 — Emoflow en Supabase + rescate del sync diario (roto hacía 4 días)
+
+**Pedido:** integrar la pestaña `+Ingresos-EmoFlow` del Sheet manual a Supabase. Emoflow mide
+estado de ánimo, pero de momento se usa como proxy de **"calidad de estudiante"** vía los
+**ingresos al sistema**. Único cruce posible con Supabase: el **correo** (Emoflow no expone cédula).
+
+- **Cruce validado antes de diseñar nada:** 823 filas → **757 con match (92.0%)**, que cubren
+  **757 de los 777 activos de JC 2026 (97.4%)**. El email como llave es viable. Los 66 sin match
+  son correos que Q10 no conoce.
+- **Migración `emoflow_ingresos`:** tabla con PII (email/nombre) → RLS sin lectura anónima
+  (verificado con anon key: 0 filas). 3 vistas públicas de solo agregados: `v_emoflow_resumen`,
+  `v_emoflow_por_ciudad` (reusa `grupo_ciudad`, así el filtro de ciudad del panel funciona igual)
+  y `v_emoflow_bandas` (bandas de ingresos × avance real).
+- **`sync_emoflow.py`:** Sheet → Supabase, upsert por email, idempotente. 823 filas, 0 avisos.
+- **Hallazgo de negocio:** más ingresos ⇒ más avance, pero **la pendiente es suave** (banda 1-5:
+  82.5% de aprobación; banda 31-60: 88.2%). Sirve para detectar el extremo bajo (102 estudiantes
+  con ≤5 ingresos), no como predictor fino.
+
+**Hallazgo grave (no era parte del pedido): el sync diario a Supabase llevaba roto desde el 10-07.**
+Dos causas independientes, ambas corregidas:
+1. La **secret key de `.env.local` estaba revocada** (`401 Unregistered API key`). Consecuencia
+   directa de la rotación que recomendó la sesión del incidente de secreto: **se rotó en Supabase
+   pero nadie actualizó `.env.local`.** Lección: rotar una clave es un cambio de dos lados.
+2. **Colisión en `historial_cursos`:** el snapshot leía `v_curso_completion` sin filtrar cohorte, y
+   como Q10 reutiliza nombres de curso entre años, tras el import histórico del 10-07 el lote
+   llegaba con `curso` repetido → PostgREST abortaba TODO el upsert (`21000 ON CONFLICT DO UPDATE
+   command cannot affect row a second time`). Fix: filtrar a la cohorte viva. **Regla nueva: con
+   `merge-duplicates`, dos filas del mismo lote que colisionan en la clave revientan el request
+   entero — deduplicar antes de mandar.**
+
+ETL restaurado y corriendo (`estado=exito`). El workflow tenía `stopAndError`, pero **falló 2 veces
+sin que nadie lo notara** → vale la pena alerta de Telegram en los nodos de error.
+
+**Pendiente:** encadenar `sync_emoflow.py` al workflow n8n — la API de n8n se colgó al intentar el
+PUT; el workflow quedó **intacto** (verificado en su SQLite). Reintentar tras reiniciar n8n.
+
+---
+
+## 2026-07-14 — [Correos Mujeres ROFÉ] Verificación de campaña MR ya enviada (Tarea 1 del plan)
+
+**Estado:** Completado
+**Proceso relacionado:** [[correos-mujeres-rofe]]
+
+- Al ejecutar la Tarea 1 de `docs/plan-ejecucion-sonnet.md` (enviar campaña MR pendiente),
+  se encontró que el envío **ya había sido realizado por Samuel directamente**, fuera del
+  flujo documentado en el README (que aún decía "aún no ejecutado"). Se detuvo el trabajo
+  para confirmar con Samuel antes de tocar nada — confirmó que él corrió el envío.
+- Verificación (sin ejecutar nada nuevo, solo lectura de logs/CSV en `tools/`): corrida
+  original (12:54–14:05) cubrió 1.216/2.693 destinatarias; el resto se dividió en
+  `lista_mr_parteA.csv` (738) y `lista_mr_parteB.csv` (739), enviadas 14:13–14:51.
+  Cruce de los tres `enviados_*.csv` contra `lista_mr_ultimos_3_anios.csv`: **2.693/2.693
+  enviados, 0 fallos, sin duplicados** (cobertura 100%).
+- Se actualizó `scripts/mujeres-rofe-correos/README.md` (sección envío masivo) reflejando
+  el resultado real y se marcó la Tarea 1 como hecha en `docs/plan-ejecucion-sonnet.md`.
+- Pendiente para la próxima sesión: Tarea 2 del plan (cron n8n para asistencia Zoom).
+
+## 2026-07-14 (cont.) — n8n reiniciado, Emoflow automatizado, puntaje compuesto
+
+- **n8n reiniciado en caliente.** `iniciar_n8n.bat` está **desactualizado**: lanza cloudflared, pero
+  lo que corre hoy es **ngrok con dominio fijo** (`ergonomic-absinthe-refract.ngrok-free.dev`).
+  Correr el .bat habría levantado un túnel paralelo y cambiado la `WEBHOOK_URL` de n8n. Se hizo un
+  reinicio quirúrgico (solo el proceso node de n8n, replicando su entorno: `NODES_EXCLUDE=[]`,
+  `NODE_TLS_REJECT_UNAUTHORIZED=0`, vars de los dos `.env`, `WEBHOOK_URL`=ngrok). Los 4 workflows
+  de producción quedaron activos. **Pendiente: actualizar el .bat a ngrok.**
+- **Emoflow automatizado:** `sync_emoflow` encadenado en `q10-sync-supabase` (14 nodos, activo).
+  Nota: el PUT anterior **sí había guardado** aunque la API se colgó — la lectura del SQLite dio un
+  falso negativo (copia sin flush). Verificar contra la API, no contra el archivo.
+- **Puntaje compuesto** (`v_puntaje_estudiante` + `reporte_puntaje.py`): avance Q10 + asistencia +
+  ingresos Emoflow, **en percentiles**. Cobertura: avance 777/777, Emoflow 757, asistencia 408.
+  - **La versión ingenua (valores crudos) mentía dos veces:** el avance está en el techo
+    (92.8 ± 6.7) así que con 50% de peso aportaba lo MENOS al ranking; y renormalizar premiaba
+    a quien le faltaba asistencia (2 señales promediaban 80.2 vs 78.8 de 3 señales). Percentiles
+    arreglan ambas.
+  - **Las 3 señales son casi independientes** (corr 0.10 / 0.27 / 0.18) → no hay un "factor calidad"
+    latente; el compuesto promedia cosas distintas. Mostrar también las señales por separado.
+  - **La asistencia aún no sirve como componente:** un solo curso (Desarrollo Web) y 11 días de
+    captura → 1.4 sesiones por persona, solo 4 con ≥3. Ranking por defecto = avance 60% +
+    ingresos 40% (cubre a los 777).
+
+- **`iniciar_n8n.bat` migrado a ngrok (2026-07-14).** La migración se había hecho el 07-07 pero
+  **nunca se commiteó** → el .bat del repo seguía lanzando cloudflared y parseando su log para
+  descubrir una URL efímera. Rehecho: `ngrok start n8n`, `WEBHOOK_URL` fija (sin parsear logs),
+  guard anti-doble-agente, watchdog que revive el túnel con la MISMA URL, y
+  `GENERIC_TIMEZONE=America/Bogota`. Probado end-to-end: healthz OK, túnel en el dominio fijo,
+  los 4 workflows activos. **Lección: cambio en .bat que no se commitea, se pierde.**
+
+- **Puntaje: Emoflow pasa a criterio MAYOR (pedido de Samuel, 2026-07-14).** Pesos ahora
+  ingresos Emoflow **60%** + avance Q10 **40%**, asistencia **0%** (inmadura). Y **sin Emoflow el
+  estudiante no cuenta**: queda fuera del ranking (excluye 20 de 777; 5 de los 133 de Bogotá).
+  Los pesos son CLI (`--peso-ingresos/-avance/-asistencia`), no hay SQL que tocar.
+  Entregable: `Downloads\100 mejores de bogota.xlsx` (100 de 128 bogotanos con Emoflow).
+  Sesgo corregido en el camino: antes los de UNA sola señal encabezaban la lista (su puntaje era
+  solo el percentil de avance, que le ganaba a quien tenía avance igual **y además** ingresos).
+
+## 2026-07-14 (cont.) — Tab Emoflow en el panel + INCIDENTE DE PII
+
+**🔴 Lo más importante de la sesión: se detectó y tapó una fuga de datos personales.**
+Planeando el tab, la auditoría de permisos reveló que el **anon key** (público — va compilado en el
+bundle de Netlify) podía leer:
+- `v_puntaje_estudiante` → **777 nombres + correos** (vista creada ese mismo día, en esta sesión)
+- `asistencia_promedio` → **490 correos** (policy `allow_read` permisiva, preexistente)
+
+**Causa raíz (gotcha nuevo, agregado a [[convenciones]]):** Supabase concede `SELECT` a `anon`
+**por defecto** en el schema `public`, y **una vista corre con los privilegios de su DUEÑO → ignora
+el RLS** de las tablas que consulta. Por eso `emoflow_ingresos` (tabla con RLS) devolvía 0 filas a
+anon, pero la **vista sobre ella** devolvía las 777. **No basta con "no dar GRANT" — hay que
+revocar explícitamente.** Y la verificación se hace **con el anon key**: las consultas como
+`postgres`/service_role mienten, ven todo bien.
+
+Fix (migración `revocar_pii_anon`): revoke sobre `v_puntaje_estudiante`, `asistencia_promedio` y
+`asistencia_zoom` + eliminada la policy. Verificado con anon key: las 5 fuentes con PII → 401/0
+filas; los 8 agregados del panel → intactos. `reporte_puntaje.py` sigue funcionando (service_role).
+
+**Tab Emoflow** (repo `panel-datos-rofe`): solo JC + cohorte actual (0 matrículas MR en la fuente;
+sin dimensión de cohorte). 4 KPIs + distribución de uso por bandas + "¿el que más entra, aprueba
+más?" (con nota honesta: la relación es suave) + uso por ciudad. Respeta el filtro de ciudad
+gracias a `v_emoflow_bandas_ciudad` (vista nueva) — sin ella, elegir una ciudad habría mostrado
+cifras nacionales dentro de la vista de ciudad. `npm run build` OK (243 kB First Load).

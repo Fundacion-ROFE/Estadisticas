@@ -312,6 +312,40 @@ consumidor lo lee, en vez de re-consultar la fuente lenta (Q10).
   alterno), nunca romper el pipeline.
 - El archivo lleva `_nota` recordando que es PII y que `tools/` está gitignoreado.
 
+## ⚠️ Supabase: una VISTA con PII se expone a `anon` aunque nunca le des GRANT
+
+**Regla: toda vista o tabla nueva con PII necesita `REVOKE` EXPLÍCITO de `anon`. No basta con
+"no dar GRANT".** Y la verificación se hace **con el anon key**, nunca con SQL de admin.
+
+Dos mecanismos se combinan y el resultado sorprende:
+
+1. Supabase concede `SELECT` a `anon` **por defecto** en el schema `public` (privilegios por
+   defecto del rol). Crear un objeto ya lo deja legible.
+2. Una **vista corre con los privilegios de su DUEÑO**, no del que consulta → **ignora el RLS**
+   de las tablas que consulta. (Es la otra cara del gotcha ya conocido de `participa_en()`.)
+
+Resultado real (incidente 2026-07-14): `emoflow_ingresos` es una tabla **con RLS** y devolvía
+**0 filas** a anon — todo bien. Pero `v_puntaje_estudiante`, una **vista sobre ella**, devolvía
+los **777 nombres + correos** a cualquiera con el anon key… que es **público**: va compilado
+dentro del bundle de Netlify. Se detectó el mismo día que se creó. En el mismo barrido apareció
+`asistencia_promedio` con una policy `allow_read` permisiva que exponía **490 correos**.
+
+```sql
+-- Al crear cualquier objeto con PII:
+revoke all on public.<objeto> from anon, authenticated;
+```
+
+**Chequeo obligatorio** (el mismo que destapó la fuga) — pegarle a PostgREST con el `anon key` y
+exigir 0 filas / 401:
+
+```
+GET /rest/v1/<objeto>?select=nombre,email&limit=100   con apikey = SUPABASE_ANON_KEY
+```
+
+Corolario: el panel público **solo** consume vistas de agregados (`v_emoflow_*`, `v_curso_*`, …).
+Los datos por persona salen por script con `service_role` a `tools/` (gitignoreado), nunca por la
+cara pública. Ver [[panel-datos-etl]].
+
 ## Heurística de etapa con el ledger de avances
 
 Para "¿en qué punto de la ruta perdimos a un estudiante?" cuando **no hay una fecha fiable**:

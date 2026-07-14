@@ -3,13 +3,24 @@ chcp 65001 >nul
 
 echo.
 echo ==========================================
-echo   n8n - Bot Q10 Fundacion ROFE
+echo   n8n - Fundacion ROFE / Jovenes creaTIvos
 echo ==========================================
 echo.
 
-:: Ruta a cloudflared (instalado via winget)
-set "CF_EXE=%LOCALAPPDATA%\Microsoft\WinGet\Packages\Cloudflare.cloudflared_Microsoft.Winget.Source_8wekyb3d8bbwe\cloudflared.exe"
-set "CF_LOG=%TEMP%\cloudflared_n8n.log"
+:: ---------------------------------------------------------------------------
+:: Tunel: ngrok con DOMINIO FIJO (reemplazo de cloudflared desde 2026-07).
+:: El tunel se llama "n8n" y esta definido en %LOCALAPPDATA%\ngrok\ngrok.yml:
+::     tunnels:
+::       n8n:
+::         proto: http
+::         addr: 5678
+::         domain: ergonomic-absinthe-refract.ngrok-free.dev
+:: Al ser fijo, WEBHOOK_URL ya no se descubre parseando logs: es constante.
+:: Eso hace PERMANENTE el webhook de Zoom (antes cambiaba en cada arranque).
+:: ---------------------------------------------------------------------------
+set "NGROK_EXE=%LOCALAPPDATA%\Microsoft\WinGet\Links\ngrok.exe"
+set "NGROK_TUNNEL=n8n"
+set "WEBHOOK_URL=https://ergonomic-absinthe-refract.ngrok-free.dev"
 
 :: Leer variables del .env de q10-consolidacion (TELEGRAM_BOT_TOKEN, N8N_API_KEY, etc.)
 set "ENV_FILE=%~dp0scripts\q10-consolidacion\.env"
@@ -31,62 +42,53 @@ for /f "usebackq tokens=1,* delims==" %%A in ("%ENV_FILE_ZOOM%") do (
 set "NODES_EXCLUDE=[]"
 :: Necesario para redes con proxy corporativo que intercepta HTTPS
 set "NODE_TLS_REJECT_UNAUTHORIZED=0"
-:: Desactiva telemetría de PostHog (us.i.posthog.com bloqueado en red corporativa)
+:: Desactiva telemetria de PostHog (us.i.posthog.com bloqueado en red corporativa)
 set "N8N_DIAGNOSTICS_ENABLED=false"
+:: Sin esto n8n usa America/New_York en los Schedule Triggers
+set "GENERIC_TIMEZONE=America/Bogota"
 
-echo [1/4] Iniciando Cloudflare Tunnel...
-del /f /q "%CF_LOG%" >nul 2>&1
-start /B "" "%CF_EXE%" tunnel --url http://localhost:5678 --no-autoupdate > "%CF_LOG%" 2>&1
-
-:: Esperar hasta 20s a que cloudflared publique la URL HTTPS
-set "CF_URL="
-set /a intentos=0
-:esperar_url
-timeout /t 2 /nobreak >nul
-set /a intentos+=1
-for /f "delims=" %%U in ('powershell -NoProfile -Command "$m=Select-String -Path \"%CF_LOG%\" -Pattern \"https://[a-z0-9-]+\.trycloudflare\.com\"; if($m){$m.Matches[0].Value}"') do set "CF_URL=%%U"
-if defined CF_URL goto :url_ok
-if %intentos% LSS 10 goto :esperar_url
-echo ERROR: No se obtuvo URL de Cloudflare en 20 segundos.
-echo Verifica que cloudflared este instalado y que haya conexion a internet.
-pause
-exit /b 1
-
-:url_ok
-echo   URL Cloudflare: %CF_URL%
-set "WEBHOOK_URL=%CF_URL%"
+echo [1/4] Iniciando tunel ngrok (dominio fijo)...
+tasklist /FI "IMAGENAME eq ngrok.exe" /NH 2>nul | findstr /i "ngrok" >nul 2>&1
+if %errorlevel% EQU 0 (
+    echo   ngrok ya estaba corriendo. Se reutiliza.
+) else (
+    start /B "" "%NGROK_EXE%" start %NGROK_TUNNEL%
+    timeout /t 5 /nobreak >nul
+    echo   ngrok iniciado.
+)
+echo   URL publica: %WEBHOOK_URL%
 echo.
 
-echo [2/4] Iniciando n8n con WEBHOOK_URL=%CF_URL%...
+echo [2/4] Iniciando n8n...
 echo   Editor local:  http://localhost:5678
-echo   Editor remoto: %CF_URL%
+echo   Editor remoto: %WEBHOOK_URL%
 echo.
 
-:: Matar instancia anterior de n8n si existe (para que la nueva herede WEBHOOK_URL correcto)
+:: Matar instancia anterior de n8n (para que la nueva herede el entorno correcto)
 powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"name='node.exe'\" | Where-Object { $_.CommandLine -like '*n8n*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
-timeout /t 2 /nobreak >nul
+timeout /t 3 /nobreak >nul
 
 start /B "" "C:\nvm4w\nodejs\n8n.cmd" start
 
-:: Esperar a que n8n este listo (healthcheck)
-echo [3/4] Esperando que n8n este listo...
+:: Esperar a que n8n este listo (healthcheck). Arranque tipico: 60-70 s.
+echo [3/4] Esperando que n8n este listo (puede tardar ~70s)...
 set /a espera=0
 :esperar_n8n
-timeout /t 3 /nobreak >nul
+timeout /t 5 /nobreak >nul
 set /a espera+=1
 curl -s http://localhost:5678/healthz >nul 2>&1
 if %errorlevel% EQU 0 goto :n8n_ok
-if %espera% LSS 15 goto :esperar_n8n
-echo AVISO: n8n tardo mas de lo esperado. Continuando de todas formas.
+if %espera% LSS 24 goto :esperar_n8n
+echo AVISO: n8n tardo mas de 120s. Continuando de todas formas.
 :n8n_ok
 echo   n8n listo.
 
-:: Activar el workflow y registrar el webhook con Telegram
-echo [4/4] Activando workflow y registrando webhook con Telegram...
+:: Activar el workflow del bot y registrar el webhook con Telegram
+echo [4/4] Activando workflow del bot Q10...
 timeout /t 3 /nobreak >nul
 curl -s -X POST "http://localhost:5678/api/v1/workflows/Rblg81qifVshsRae/activate" ^
      -H "X-N8N-API-KEY: %N8N_API_KEY%" ^
-     -H "Content-Type: application/json" >nul 2>&1
+     -H "Content-Type: application/json" -d "{}" >nul 2>&1
 echo   Workflow activado. Bot Telegram escuchando.
 echo.
 echo ==========================================
@@ -105,15 +107,14 @@ if %errorlevel% NEQ 0 (
     exit /b 1
 )
 
-tasklist /FI "IMAGENAME eq cloudflared.exe" /NH 2>nul | findstr /i "cloudflared" >nul 2>&1
+:: Vigilar el tunel. Al ser dominio fijo, basta con relanzarlo: la URL no cambia,
+:: asi que el webhook de Zoom y el de Telegram siguen siendo validos.
+tasklist /FI "IMAGENAME eq ngrok.exe" /NH 2>nul | findstr /i "ngrok" >nul 2>&1
 if %errorlevel% NEQ 0 (
-    echo [%time%] cloudflared caido. Reiniciando tunel ^(espera 20s^)...
-    del /f /q "%CF_LOG%" >nul 2>&1
-    start /B "" "%CF_EXE%" tunnel --url http://localhost:5678 --no-autoupdate >> "%CF_LOG%" 2>&1
-    timeout /t 20 /nobreak >nul
-    set "CF_URL="
-    for /f "delims=" %%U in ('powershell -NoProfile -Command "$m=Select-String -Path \"%CF_LOG%\" -Pattern \"https://[a-z0-9-]+\.trycloudflare\.com\"; if($m){$m.Matches[0].Value}"') do set "CF_URL=%%U"
-    if defined CF_URL (echo [%time%] Tunel recuperado: %CF_URL%) else (echo [%time%] Sin URL de tunel. Bot Telegram puede no responder.)
+    echo [%time%] ngrok caido. Relanzando ^(misma URL: %WEBHOOK_URL%^)...
+    start /B "" "%NGROK_EXE%" start %NGROK_TUNNEL%
+    timeout /t 5 /nobreak >nul
+    echo [%time%] Tunel restablecido.
 )
 
 curl -s "http://localhost:5678/api/v1/workflows/Rblg81qifVshsRae" -H "X-N8N-API-KEY: %N8N_API_KEY%" -o "%TEMP%\wf_check.json" 2>nul

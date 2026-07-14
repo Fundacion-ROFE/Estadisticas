@@ -728,6 +728,80 @@ etiqueta (`Jóvenes creaTIvos`→jc, `Mujeres ROFÉ`→mr) — un programa nuevo
 
 ---
 
+## `scripts/panel-datos/sync_emoflow.py`
+
+**Propósito:** Pestaña `+Ingresos-EmoFlow` del Sheet manual → Supabase `emoflow_ingresos`.
+Emoflow es la herramienta de estado de ánimo; hoy se usa como proxy de **"calidad de estudiante"**
+vía los **ingresos al sistema** (contador acumulado por estudiante). Normaliza correo/fecha, mapea
+`Area` → `grupo_ciudad` canónico (BAQ/BOG/…) y hace upsert por `email`. Idempotente.
+
+**Servicios:** Google Sheets API (read only) · Supabase REST (service_role)
+
+**Sheet:** ID `1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8`, pestaña `+Ingresos-EmoFlow`
+(gid `1288133311`). Columnas: `Usuario | Nombre | Area | Ingresos al sistema | Ultimo ingreso`.
+
+**Comando:**
+```bash
+python scripts/panel-datos/sync_emoflow.py [--dry-run]
+```
+
+**⚠ Llave de cruce = EMAIL.** Emoflow **no expone la cédula** — el correo normalizado (lower+trim)
+es la única unión posible con `participants`. Los correos sin match se cargan igual con
+`participant_id = NULL` (no se pierden y NO se crean participants desde aquí: Q10 sigue siendo la
+fuente de verdad de quién existe).
+
+**Corrida inicial (2026-07-14):** 823 filas, 0 avisos · **757 con match (92.0%)** · 66 sin match.
+Cubre **757 de los 777 activos de JC 2026 (97.4%)**. Los 66 sin match son correos que Q10 no
+conoce (retirados fuera de `participants`, o correos personales distintos al de Q10).
+
+**Output parseable:** `RESUMEN: filas=N con_match=M sin_match=X estado=exito`
+
+**Gotcha:** el reporte con los correos sin match va a `tools/emoflow_report_YYYYMMDD.json` (PII,
+gitignoreado). Duplicados de correo en la hoja → keepMax por ingresos (patrón del proyecto).
+
+---
+
+## `scripts/panel-datos/reporte_puntaje.py`
+
+**Propósito:** Ranking de estudiantes por **puntaje compuesto** ("calidad de estudiante") sobre la
+vista `v_puntaje_estudiante` (JC, cohorte actual). Pondera señales convertidas a **percentil dentro
+de la cohorte**: ingresos Emoflow **60%** · avance Q10 **40%** · asistencia Zoom **0%**.
+
+**Regla de negocio (2026-07-14, pedido de Samuel):** **Emoflow es el criterio mayor y es
+obligatorio** — sin ingresos registrados el estudiante NO entra al ranking.
+
+**Comando:**
+```bash
+python scripts/panel-datos/reporte_puntaje.py                 # top 25 + CSV
+python scripts/panel-datos/reporte_puntaje.py --ciudad BOG --limite 100 \
+       --excel "%USERPROFILE%\Downloads\100 mejores de bogota.xlsx"
+python scripts/panel-datos/reporte_puntaje.py --peso-ingresos 0.8 --peso-avance 0.2
+python scripts/panel-datos/reporte_puntaje.py --peso-asistencia 0.2   # cuando la asistencia madure
+```
+
+**Salidas:** siempre CSV en `tools/puntaje_estudiantes_YYYYMMDD.csv`; con `--excel`, además un
+`.xlsx` con formato (títulos, autofiltro, panel congelado) en la ruta indicada.
+
+**⚠ Por qué percentiles y no valores crudos:** `avance_q10` promedia 92.8 con sd 6.7 — casi no
+discrimina. Con peso nominal 50% aportaba **menos** al ranking (0.50×6.7=3.4) que la asistencia con
+30% (0.30×22.8=6.8): los pesos no significaban lo que decían. Y al renormalizar sobre crudos, a
+quien le faltaba asistencia el avance (~93) le apuntalaba el puntaje → los de 2 señales promediaban
+**más** (80.2) que los de 3 (78.8): **faltar dato premiaba**. Con percentiles las 3 señales quedan
+uniformes en [0,100] y ambos sesgos desaparecen.
+
+**⚠ La asistencia aún NO es señal madura (2026-07-14):** cubre 408/777, viene de **un solo curso**
+(`Desarrollo Web - GIT, HTML y CSS`) y lleva ~11 días de captura → **1.4 sesiones por persona**
+(solo 4 con ≥3). Por eso el ranking por defecto es `puntaje_sin_asistencia` (avance 60% + ingresos
+40%), comparable entre los 777. Revisar cuando la captura Zoom acumule sesiones y cubra más cursos.
+
+**⚠ PRIVACIDAD:** salida con nombre/correo → `tools/puntaje_estudiantes_YYYYMMDD.csv` (gitignoreado).
+La vista `v_puntaje_estudiante` **no tiene GRANT a anon** (a diferencia de las `v_emoflow_*`).
+
+**Gotcha:** `asistencia_zoom` tiene basura de staff/test ("Mi reunión", "Reunión con Katze",
+"Prueba - Asistencia", "Entrevista NOVA") — ~10 registros a limpiar.
+
+---
+
 ## `scripts/panel-datos/importar_historico_q10.py`
 
 **Propósito:** Cohortes pasadas (2023-2025) de Q10 → Supabase. Login Q10 (reusa `q10_to_sheets`),
@@ -761,6 +835,35 @@ los cursos activos derivan (avance real de estudiantes) — tolerancia ±2, no e
 **Propósito:** Smoke test de la cara pública: con el anon key verifica lectura de agregados,
 que RLS oculte participants privados y que la escritura anónima esté bloqueada.
 `python scripts/panel-datos/test_conexion_supabase.py` — stdlib + truststore, lee `.env.local`.
+
+---
+
+## `scripts/panel-datos/sync_asistencia_supabase.py`
+
+**Propósito:** Sincroniza `ZOOM-ASISTANCE` (Sheet) → Supabase `asistencia_zoom`. Deduplica por
+(email, curso, fecha), upsert por lotes de 100 vía `Prefer: resolution=upsert`. **Es el script
+vigente** — ver [[asistencia-zoom-flujo]].
+
+**Comando:** `python scripts/panel-datos/sync_asistencia_supabase.py [--dry-run]`
+
+**Credenciales:** `.env.local` raíz (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, patrón
+`cargar_env_local()`) + `credenciales_service_account.json` (Sheets).
+
+**Scripts obsoletos (2026-07-14):** `sync_asistencia_upsert.py`, `sync_asistencia_directo.py`,
+`sync_asistencia_simple.py` — versiones anteriores/experimentales del mismo sync, movidas a
+`scripts/panel-datos/_obsoletos/` (no usar; se conservan solo de referencia histórica).
+
+---
+
+## `scripts/panel-datos/calcular_asistencia_promedio.py`
+
+**Propósito:** Lee `ZOOM-ASISTANCE` → calcula promedio de asistencia por estudiante y por curso →
+upsert en Supabase `asistencia_promedio`. Corre después de `sync_asistencia_supabase.py`. Ver
+[[asistencia-zoom-flujo]].
+
+**Comando:** `python scripts/panel-datos/calcular_asistencia_promedio.py`
+
+**Credenciales:** `.env.local` raíz (mismo patrón `cargar_env_local()`).
 
 ---
 
