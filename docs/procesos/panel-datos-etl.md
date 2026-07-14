@@ -77,6 +77,10 @@ menos retiros institucionales/desertores y perfiles de prueba): JC 2026 = **832*
   — mismos criterios del panel de aprobación); cohortes históricas siguen con v_curso_completion.
   Demografía JC muestra ciudades completas (`ETIQUETA_GRUPO`: BAQ→Barranquilla, BOG→Bogotá,
   CAL→Cali, CTG→Cartagena, MED→Medellín, GYL→Guayaquil, QTO→Quito, PAN→Panamá, UY→Uruguay).
+- **Filtro por ciudad (2026-07-14):** se agregó selector de ciudades en el tab Resumen (solo JC).
+  Clickear una ciudad filtra KPIs y gráfico de demografía para mostrar solo datos de esa ciudad.
+  Los participantes mostrados reflejan la ciudad seleccionada; botón "Todas" vuelve al resumen global.
+  Commit `f47cebe`.
 - Con esto queda cubierto el pendiente "retirados en Supabase" a nivel de agregados (las filas
   individuales de retirados siguen sin existir en `participants` — limitación del Consolidado).
 

@@ -1695,3 +1695,46 @@ instante. Colores semánticos de gráficos invariantes. Frontend 41d2871; BRAND-
   - Antes: panel de riesgo se congela 2-3s al abrir (lectura Sheets + procesamiento cliente)
   - Después: ~0.3s esperado (lectura Supabase + sin procesamiento, datos pre-agregados)
   - Escalabilidad: 490 → 5000 estudiantes sin problema (índices SQL, no O(n) cliente)
+
+---
+
+## 2026-07-13 — [zoom-asistencia] Flujo de asistencia: cálculo automático + panel + documentación
+
+**Estado:** Completado — sistema completamente operativo
+**Proceso relacionado:** [[zoom-asistencia]], [[asistencia-zoom-flujo]]
+
+- **Problema descubierto:** ZOOM-ASISTANCE (Sheet) tiene 704 registros con % individual por clase, pero la tabla `asistencia_zoom` en Supabase estaba vacía (conflictos RLS). Análisis reveló: datos existen en Sheet pero no se estaban sincronizando correctamente.
+- **Rediseño del flujo:** en lugar de guardar registros individuales, ahora calculamos promedios una vez al día:
+  - Script `calcular_asistencia_promedio.py`: lee ZOOM-ASISTANCE → agrupa por email → calcula promedio_general + promedios_por_curso → inserta en tabla nueva `asistencia_promedio`
+  - Tabla Supabase: id, email (UNIQUE), promedio_general (FLOAT), n_registros (INT), cursos (JSONB), actualizado_en (TIMESTAMP)
+  - 490 estudiantes cargados exitosamente con promedios reales (89.6%, 98.5%, 88%, etc.)
+- **Panel actualizado:**
+  - Función `leer_asistencia_zoom()` ahora lee de `asistencia_promedio` en lugar de `asistencia_zoom`
+  - Columna "Asistencia %" visible en 5 vistas: "En Q10", "match", "atencion", "mujeres" (MR), "ambas" (Diferencias)
+  - Formato: "89.6%" si hay datos, "aún no disponible" si no hay registros
+- **RLS policies:** `CREATE POLICY "allow_read" ON asistencia_promedio FOR SELECT USING (true)` permite lectura pública
+- **Documentación completa:** `docs/procesos/asistencia-zoom-flujo.md` con diagrama, componentes, flujo de datos, FAQ, gotchas
+- **Visión global actualizada:** proceso movido de "en progreso" a "completado", integración en panel de riesgo documentada
+- **Próximo (n8n automation):** configurar Cron job diario a las 00:00 para ejecutar `calcular_asistencia_promedio.py` automáticamente
+
+---
+
+## 2026-07-14 — [panel-datos-etl] Filtro interactivo por ciudades en resumen JC
+
+**Estado:** Completado — deployado a Netlify
+**Proceso relacionado:** [[panel-datos-etl]]
+
+- **Solicitud:** agregar filtro por ciudades en el resumen del panel (Jóvenes creaTIvos) para visualizar datos específicos de cada ciudad (BAQ, BOG, CAL, CTG, MED, GYL, QTO, PAN, UY).
+- **Cambios frontend:**
+  - Agregado estado `ciudadElegida` y useMemo `ciudades` para extraer ciudades únicas de `datos.demografia`
+  - Creado useMemo `participantesFiltrados` que filtra datos demográficos por ciudad seleccionada
+  - KPIs actualizados: participantes mostrados reflejan la ciudad seleccionada (suma de `total` por grupo)
+  - Botones clicables agregados en tab Resumen (solo para JC): botón "Todas" + botón por cada ciudad con nombre completo (`ETIQUETA_GRUPO`)
+  - Gráfico de demografía actualizado: muestra datos filtrados por ciudad cuando se selecciona una
+- **UX:**
+  - Botón "Todas" desactiva el filtro (ciudadElegida = null)
+  - Botón ciudad activa usa estilo `pill-metal pill-metal-naranja`; botón "Todas" usa `pill-metal-amarillo`
+  - El resumen muestra automáticamente: "Participantes en [Ciudad]" cuando hay filtro activo
+  - Los datos de género + edad se filtran conjuntamente con los participantes
+- **Deploy:** commit `f47cebe` pusheado a GitHub; Netlify deployará automáticamente en los próximos 2-3 min
+- **Testing:** compilación exitosa (Next.js 14 sin errores), servidor local respondiendo correctamente en puerto 3001

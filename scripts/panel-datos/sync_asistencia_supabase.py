@@ -110,8 +110,10 @@ def upsert_supabase(filas, dry_run=False):
     import urllib.request
     import urllib.error
 
-    url = "https://kbxptoowtnteflhrfwid.supabase.co"
-    key = "***SECRETO-PURGADO***"
+    url = os.getenv("SUPABASE_URL", "https://kbxptoowtnteflhrfwid.supabase.co")
+    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not key:
+        raise ValueError("SUPABASE_SERVICE_ROLE_KEY no definida en entorno")
 
     print(f"\nSupabase: {url}")
 
