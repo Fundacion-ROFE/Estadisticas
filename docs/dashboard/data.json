@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-10T20:30:45.105757-05:00",
+  "ultima_actualizacion": "2026-07-14T02:07:10.073423+01:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -15,8 +15,8 @@
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
       "estudiantes": 777,
-      "finalizados": 327,
-      "promedio": 63.2,
+      "finalizados": 333,
+      "promedio": 71.69,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 777,
@@ -26,8 +26,8 @@
     {
       "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
       "estudiantes": 777,
-      "finalizados": 697,
-      "promedio": 98.94,
+      "finalizados": 699,
+      "promedio": 98.95,
       "min": 0.0,
       "max": 101.0,
       "inscritos": 830,
@@ -37,8 +37,8 @@
     {
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
       "estudiantes": 777,
-      "finalizados": 725,
-      "promedio": 97.01,
+      "finalizados": 728,
+      "promedio": 97.11,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 806,
@@ -48,7 +48,7 @@
     {
       "curso": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
       "estudiantes": 777,
-      "finalizados": 739,
+      "finalizados": 740,
       "promedio": 99.7,
       "min": 0.0,
       "max": 100.0,
@@ -86,7 +86,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 99
+      "cantidad": 80
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -104,8 +104,8 @@
       {
         "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
         "estudiantes": 136,
-        "finalizados": 36,
-        "promedio": 38.98,
+        "finalizados": 39,
+        "promedio": 40.66,
         "min": 0.0,
         "max": 100.0,
         "inscritos": 136,
@@ -116,7 +116,7 @@
         "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
         "estudiantes": 244,
         "finalizados": 73,
-        "promedio": 31.94,
+        "promedio": 32.07,
         "min": 0.0,
         "max": 100.0,
         "inscritos": 244,
@@ -127,7 +127,7 @@
     "anomalias": [
       {
         "categoria": "AVANCE 0%",
-        "cantidad": 196
+        "cantidad": 192
       },
       {
         "categoria": "AVANCE IRREGULAR",

@@ -507,5 +507,65 @@
         }
       ]
     }
+  },
+  {
+    "fecha": "2026-07-14",
+    "jc": {
+      "total_estudiantes_unicos": 777,
+      "promedio_global": 95.09,
+      "por_curso": [
+        {
+          "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
+          "promedio": 99.98,
+          "estudiantes": 777
+        },
+        {
+          "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
+          "promedio": 71.69,
+          "estudiantes": 777
+        },
+        {
+          "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
+          "promedio": 98.95,
+          "estudiantes": 777
+        },
+        {
+          "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
+          "promedio": 97.11,
+          "estudiantes": 777
+        },
+        {
+          "curso": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
+          "promedio": 99.7,
+          "estudiantes": 777
+        },
+        {
+          "curso": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
+          "promedio": 99.83,
+          "estudiantes": 777
+        },
+        {
+          "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
+          "promedio": 98.36,
+          "estudiantes": 777
+        }
+      ]
+    },
+    "mr": {
+      "total_estudiantes_unicos": 283,
+      "promedio_global": 35.14,
+      "por_curso": [
+        {
+          "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
+          "promedio": 40.66,
+          "estudiantes": 136
+        },
+        {
+          "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
+          "promedio": 32.07,
+          "estudiantes": 244
+        }
+      ]
+    }
   }
 ]
