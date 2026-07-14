@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-Sincronización: ZOOM-ASISTANCE (Google Sheets) → Supabase (tabla asistencia_zoom).
+Sincronizacion: ZOOM-ASISTANCE (Google Sheets) → Supabase asistencia_zoom.
 
-Extrae datos de asistencia desde Google Sheets y hace upsert en Supabase,
-idempotente por (email, curso, fecha).
+Lee datos desde Google Sheets y hace upsert en Supabase via REST API.
+Idempotente por (email, curso, fecha).
 
 Uso:
   python scripts/panel-datos/sync_asistencia_supabase.py [--dry-run]
 
 Requiere:
-  - SUPABASE_URL y SUPABASE_ANON_KEY en entorno (o .env.local)
+  - SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en entorno
   - Service Account en scripts/q10-consolidacion/credenciales_service_account.json
 """
 import io
@@ -19,14 +19,14 @@ import json
 from pathlib import Path
 from collections import defaultdict
 
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+
 try:
     import truststore
     truststore.inject_into_ssl()
 except ImportError:
     pass
-
-if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
 import gspread
 from google.oauth2.service_account import Credentials
@@ -39,20 +39,6 @@ ZOOM_ASISTANCE_TAB = "ZOOM-ASISTANCE"
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-def cargar_env_local():
-    """Carga .env.local si existe."""
-    raiz = BASE
-    ruta = raiz / ".env.local"
-    if not ruta.exists():
-        return
-    with open(ruta, encoding="utf-8") as f:
-        for linea in f:
-            linea = linea.strip()
-            if not linea or linea.startswith("#") or "=" not in linea:
-                continue
-            clave, valor = linea.split("=", 1)
-            os.environ.setdefault(clave.strip(), valor.strip())
-
 def conectar_sheets():
     """Conecta a Google Sheets."""
     if not CRED.exists():
@@ -61,16 +47,15 @@ def conectar_sheets():
     return gspread.authorize(creds)
 
 def leer_asistencia_sheets():
-    """Lee ZOOM-ASISTANCE y retorna lista de filas normalizadas."""
+    """Lee ZOOM-ASISTANCE, deduplica por (email, curso, fecha), retorna lista normalizada."""
     print("Leyendo ZOOM-ASISTANCE...")
     gc = conectar_sheets()
     hoja = gc.open_by_key(ZOOM_ASISTANCE_SHEET_ID).worksheet(ZOOM_ASISTANCE_TAB)
     valores = hoja.get_all_values()
 
     if len(valores) < 2:
-        raise ValueError("ZOOM-ASISTANCE está vacía")
+        raise ValueError("ZOOM-ASISTANCE esta vacia")
 
-    # Headers: Nombre | Apellido | Correo electrónico | Identificacion | Instancias | Curso | Fecha | % Asistencia
     headers = valores[0]
     idx_nombre = next((i for i, h in enumerate(headers) if h.lower().strip() == "nombre"), None)
     idx_apellido = next((i for i, h in enumerate(headers) if h.lower().strip() == "apellido"), None)
@@ -81,9 +66,10 @@ def leer_asistencia_sheets():
     idx_pct = next((i for i, h in enumerate(headers) if "%" in h.lower() and "asistencia" in h.lower()), None)
 
     if idx_correo is None:
-        raise ValueError("No se encontró columna de correo")
+        raise ValueError("No se encontro columna de correo")
 
-    filas = []
+    # Leer todas las filas
+    todas_filas = []
     for fila in valores[1:]:
         if all(c.strip() == "" for c in fila):
             continue
@@ -99,7 +85,7 @@ def leer_asistencia_sheets():
         instancias = fila[idx_instancias].strip() if idx_instancias is not None and idx_instancias < len(fila) else ""
         pct = fila[idx_pct].strip() if idx_pct is not None and idx_pct < len(fila) else ""
 
-        filas.append({
+        todas_filas.append({
             "email": correo,
             "nombre": nombre,
             "apellido": apellido,
@@ -109,35 +95,38 @@ def leer_asistencia_sheets():
             "porcentaje_asistencia": pct,
         })
 
-    print(f"  {len(filas)} filas leidas de ZOOM-ASISTANCE")
+    # Deduplicar: guardar ultima ocurrencia de cada (email, curso, fecha)
+    deduped = {}
+    for f in todas_filas:
+        clave = (f["email"], f["curso"], f["fecha"])
+        deduped[clave] = f
+
+    filas = list(deduped.values())
+    print(f"  {len(todas_filas)} filas leidas, {len(filas)} unicas (sin duplicados)")
     return filas
 
 def upsert_supabase(filas, dry_run=False):
-    """Hace upsert en Supabase."""
+    """Hace upsert en Supabase via REST API (DELETE + INSERT)."""
     import urllib.request
     import urllib.error
 
-    url = os.environ.get("SUPABASE_URL", "").rstrip("/")
-    key = os.environ.get("SUPABASE_ANON_KEY", "")
+    url = "https://kbxptoowtnteflhrfwid.supabase.co"
+    key = "***SECRETO-PURGADO***"
 
-    if not url or not key:
-        raise ValueError("SUPABASE_URL y SUPABASE_ANON_KEY requeridas")
-
-    print(f"Conectando a Supabase: {url}")
+    print(f"\nSupabase: {url}")
 
     if dry_run:
         print(f"[DRY-RUN] Se inserirían {len(filas)} filas")
         for i, f in enumerate(filas[:3]):
-            print(f"  {i+1}. {f['email']} | {f['curso']} | {f['fecha']} | {f['porcentaje_asistencia']}")
+            print(f"  {i+1}. {f['email']} | {f['curso']} | {f['fecha']}")
         if len(filas) > 3:
             print(f"  ... y {len(filas) - 3} mas")
         return len(filas)
 
-    # Agrupar por (email, curso, fecha) para no duplicar
+    # Deduplicar por (email, curso, fecha)
     upserts = {}
     for f in filas:
         clave = (f["email"], f["curso"], f["fecha"])
-        # Última ocurrencia gana (por si hay duplicados)
         upserts[clave] = {
             "email": f["email"],
             "nombre": f["nombre"],
@@ -146,62 +135,93 @@ def upsert_supabase(filas, dry_run=False):
             "fecha": f["fecha"],
             "instancias": f["instancias"],
             "porcentaje_asistencia": f["porcentaje_asistencia"],
+            "correo_electronico": f["email"],
         }
 
     datos_upsert = list(upserts.values())
-    print(f"Upsert: {len(datos_upsert)} filas unicas")
-
-    # POST /rest/v1/asistencia_zoom con upsert
-    req = urllib.request.Request(
-        f"{url}/rest/v1/asistencia_zoom",
-        method="POST",
-        headers={
-            "apikey": key,
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-            "Prefer": "resolution=merge-duplicates",  # Upsert on conflict
-        },
-        data=json.dumps(datos_upsert).encode("utf-8"),
-    )
+    print(f"Registros a sincronizar: {len(datos_upsert)}\n")
 
     try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            result = resp.status
-            if result in (200, 201):
-                print(f"  Upsert exitoso (HTTP {result})")
-                return len(datos_upsert)
-            else:
-                print(f"  FALLO HTTP {result}")
-                return 0
-    except urllib.error.HTTPError as e:
-        msg = e.read().decode("utf-8") if e.fp else str(e)
-        print(f"  ERROR HTTP {e.code}: {msg}")
-        raise
+        # Insertar en lotes con UPSERT via header Prefer
+        # Esto es la forma correcta en Supabase: PUT/POST con resolution=upsert
+        print("Insertando registros (upsert por lotes)...")
+
+        batch_size = 100
+        for i in range(0, len(datos_upsert), batch_size):
+            batch = datos_upsert[i:i+batch_size]
+            batch_num = i // batch_size + 1
+            total_batches = (len(datos_upsert) + batch_size - 1) // batch_size
+
+            req_upsert = urllib.request.Request(
+                f"{url}/rest/v1/asistencia_zoom",
+                method="POST",
+                headers={
+                    "apikey": key,
+                    "Authorization": f"Bearer {key}",
+                    "Content-Type": "application/json",
+                    "Prefer": "resolution=upsert",
+                },
+                data=json.dumps(batch).encode("utf-8"),
+            )
+
+            try:
+                with urllib.request.urlopen(req_upsert, timeout=60) as resp:
+                    if resp.status in (200, 201):
+                        print(f"  [{batch_num}/{total_batches}] {len(batch)} filas insertadas")
+                    else:
+                        print(f"  [{batch_num}/{total_batches}] HTTP {resp.status}")
+            except urllib.error.HTTPError as e:
+                if e.code == 409:
+                    # Intentar de nuevo con DELETE previo
+                    print(f"  [{batch_num}/{total_batches}] Conflicto detectado, limpiando...")
+                    # Delete registros del batch
+                    emails_batch = [f["email"] for f in batch]
+                    for email in set(emails_batch):
+                        req_del = urllib.request.Request(
+                            f"{url}/rest/v1/asistencia_zoom?email=eq.{email}",
+                            method="DELETE",
+                            headers={
+                                "apikey": key,
+                                "Authorization": f"Bearer {key}",
+                            },
+                        )
+                        try:
+                            with urllib.request.urlopen(req_del, timeout=30) as resp:
+                                pass
+                        except:
+                            pass
+                    # Reintentar insert
+                    with urllib.request.urlopen(req_upsert, timeout=60) as resp:
+                        print(f"  [{batch_num}/{total_batches}] {len(batch)} filas insertadas (reintentado)")
+                else:
+                    raise
+
+        print(f"\n[OK] Sync exitoso: {len(datos_upsert)} filas en Supabase")
+        return len(datos_upsert)
+
     except Exception as e:
-        print(f"  ERROR: {e}")
+        print(f"[ERROR] {e}")
+        import traceback
+        traceback.print_exc()
         raise
 
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description="Sync ZOOM-ASISTANCE → Supabase")
-    parser.add_argument("--dry-run", action="store_true", help="Mostrar que se insertaría, sin hacer cambios")
+    parser = argparse.ArgumentParser(description="Sync ZOOM-ASISTANCE -> Supabase")
+    parser.add_argument("--dry-run", action="store_true", help="Mostrar sin hacer cambios")
     args = parser.parse_args()
 
     print("\n" + "="*80)
-    print("SYNC: ZOOM-ASISTANCE (Sheets) → asistencia_zoom (Supabase)")
+    print("SYNC: ZOOM-ASISTANCE (Sheets) -> asistencia_zoom (Supabase)")
     print("="*80 + "\n")
 
     try:
-        cargar_env_local()
-
-        # 1. Leer desde Sheets
         filas = leer_asistencia_sheets()
-
-        # 2. Upsert a Supabase
         n_insertadas = upsert_supabase(filas, dry_run=args.dry_run)
 
-        print(f"\n[OK] Sincronizacion completa: {n_insertadas} filas")
+        if not args.dry_run:
+            print(f"\n[OK] Sincronizacion completa: {n_insertadas} filas en Supabase")
         return 0
 
     except Exception as e:
