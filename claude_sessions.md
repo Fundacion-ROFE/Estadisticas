@@ -1793,3 +1793,31 @@ instante. Colores semánticos de gráficos invariantes. Frontend 41d2871; BRAND-
   matriculados/curso, cuadra con los 132 participantes de la ciudad).
 - **Gotcha documentado en [[panel-datos-etl]]:** antes de "arreglar" el filtro, revisar si la
   fuente canónica tiene la dimensión ciudad — `cohorte_ingresos` y `aprobacion_cursos` no la tienen.
+
+---
+
+## 2026-07-14 — [seguridad] Purga de clave Supabase de la historia de Git
+
+**Estado:** Completado — historia limpia y pusheada (`93d5fa0`)
+**Proceso relacionado:** [[convenciones]]
+
+- **Contexto:** el push a `Estadisticas` llevaba días bloqueado por el push protection de GitHub:
+  una `SUPABASE_SERVICE_ROLE_KEY` hardcodeada en `sync_asistencia_supabase.py` (commit `f6e0e4b`).
+- **Hallazgo clave:** la clave **nunca llegó a GitHub**. Verificado con `git branch -r --contains
+  f6e0e4b` → ningún remoto la contenía; los 14 commits eran locales. Fue un casi accidente, no una
+  fuga pública. Eso bajó la severidad de ALTA a BAJA.
+- **Segundo hallazgo (autoinfligido):** `SECURITY-INCIDENT.md`, escrito para documentar la fuga,
+  **citaba la clave literal** — así que el propio documento era la fuga y mantenía el push
+  bloqueado. Reescrito sin el valor.
+- **Barrido previo:** se buscaron otros patrones en toda la historia (JWT, tokens de Telegram,
+  authtoken de ngrok, claves de Google, llaves privadas). Único secreto real: el `sb_secret_` en
+  8 blobs. El JWT de `.env.example` es un placeholder truncado, inofensivo.
+- **Purga:** respaldo en tag `backup/pre-purga-secreto` → `git filter-repo --replace-text` →
+  re-agregado `origin` (filter-repo lo borra).
+- **Verificación:** 0 ocurrencias del literal en **todos** los objetos del repo (incluidos los
+  inalcanzables, vía `git cat-file --batch-all-objects`). Los 8 blobs quedaron con el marcador de
+  purga. Como el secreto solo estaba en commits locales, los ya pusheados conservaron su SHA:
+  `origin/main` siguió siendo ancestro y el push fue **fast-forward, sin `--force`**.
+- **Pendiente (recomendado, no urgente):** rotar la clave en Supabase. No es urgente porque nunca
+  salió del equipo, pero cierra el tema.
+- **Patrón agregado a [[convenciones]]:** "Gotcha: secreto commiteado por error" — los 4 pasos.

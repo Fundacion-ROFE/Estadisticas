@@ -27,6 +27,24 @@ Todo workflow en producción debe tener:
 | Zoom (Server-to-Server OAuth)   | zoom-asistencia   | Credenciales en `scripts/zoom-asistencia/.env` (gitignoreado). Scopes: `meeting:read:past_meeting:admin`, `meeting:read:list_past_participants:admin` |
 | Supabase `panel-datos-rofe`     | panel-datos-etl   | Proyecto `kbxptoowtnteflhrfwid` (us-east-1), URL `https://kbxptoowtnteflhrfwid.supabase.co`. Keys en `.env.local` raíz (gitignoreado; plantilla en `.env.example`). Anon key = solo lectura de agregados vía RLS. **service_role bypasea RLS — solo n8n/backend, jamás frontend ni Git** |
 
+### Gotcha: secreto commiteado por error
+
+Pasó el 2026-07-14 (ver `SECURITY-INCIDENT.md`). Si el push protection de GitHub bloquea un push:
+
+1. **Primero averiguar si el secreto ya llegó al remoto:** `git branch -r --contains <commit>`.
+   Si no devuelve nada, fue un casi accidente y la reescritura de historia lo resuelve del todo.
+   Si sí llegó a un repo público, la reescritura **no lo des-publica** — hay que asumir compromiso
+   y **rotar la clave de inmediato**.
+2. **Nunca escribir el valor del secreto en la nota del incidente.** Se hizo, y el documento pasó
+   a ser la fuga que decía documentar: el push siguió bloqueado por ese archivo. Documentar
+   *dónde* estuvo y *qué* se hizo, jamás el valor.
+3. **Purgar:** `git filter-repo --replace-text reemplazos.txt --force` (formato:
+   `<literal>==>***SECRETO-PURGADO***`; el archivo va fuera del repo). Etiquetar un respaldo antes.
+   filter-repo **elimina el remoto `origin`** — re-agregarlo después. Si el secreto solo estaba en
+   commits locales, los ya pusheados conservan su SHA y el push queda como fast-forward, sin `--force`.
+4. **Verificar sobre todos los objetos**, no solo los commits vivos:
+   `git cat-file --batch-all-objects --batch-check` + grep del literal en cada blob.
+
 ## SSL corporativo
 
 Esta red tiene un proxy/firewall corporativo que intercepta HTTPS (MITM). Aplica a **todos** los procesos que hagan llamadas HTTP desde Python o n8n.
