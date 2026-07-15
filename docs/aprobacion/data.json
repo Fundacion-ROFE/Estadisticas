@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-15T12:03:18.524382-05:00",
+  "ultima_actualizacion": "2026-07-15T16:02:55.772032-05:00",
   "anio": "2026",
   "nota_metodo": "Cohorte = matriculados del periodo (habilitados + inhabilitados). Aprobado = avance > 80 (desde 2026-07-09; antes >= 100). Un inhabilitado que ya había superado el 80 cuenta como 'aprobó y se retiró' (no pierde su logro); solo los retirados sin superar 80 cuentan como no aprobados. Cada curso trae bandas de progreso de los activos: banda_0_25 / banda_26_80 / banda_81_100 (suman a 'activos').",
   "por_curso": [
@@ -143,19 +143,19 @@
         "Desarrollo-Avanzado-2026"
       ],
       "activos": 777,
-      "aprobados": 165,
+      "aprobados": 188,
       "aprobados_retirados": 2,
       "retirados": 0,
       "cursaron": 779,
-      "banda_0_25": 112,
-      "banda_26_80": 500,
-      "banda_81_100": 165,
-      "aprobados_total": 167,
-      "no_aprobados": 612,
-      "sin_finalizar": 612,
-      "promedio": 60.09,
-      "pct_aprobados": 21.4,
-      "pct_no_aprobados": 78.6,
+      "banda_0_25": 106,
+      "banda_26_80": 483,
+      "banda_81_100": 188,
+      "aprobados_total": 190,
+      "no_aprobados": 589,
+      "sin_finalizar": 589,
+      "promedio": 61.53,
+      "pct_aprobados": 24.4,
+      "pct_no_aprobados": 75.6,
       "finalizado": false
     },
     {
@@ -208,12 +208,12 @@
       "programa": "Jóvenes creaTIvos",
       "cursos": 7,
       "cursaron": 5689,
-      "aprobados": 4929,
+      "aprobados": 4952,
       "aprobados_retirados": 150,
       "retirados": 100,
-      "sin_finalizar": 660,
+      "sin_finalizar": 637,
       "matriculas_activas": 5439,
-      "pct_aprobados": 86.6,
+      "pct_aprobados": 87.0,
       "estudiantes_cohorte": 832,
       "retirados_unicos": 57,
       "habilitados_unicos": 777
@@ -236,7 +236,7 @@
   "totales": {
     "total_cursos": 9,
     "total_matriculas": 6069,
-    "total_aprobados": 5047,
+    "total_aprobados": 5070,
     "total_aprobados_retirados": 150,
     "total_retirados_2026": 57,
     "estudiantes_cohorte_2026": 1115
