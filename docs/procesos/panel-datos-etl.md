@@ -185,6 +185,25 @@ panel → siguen respondiendo. Regla completa en [[convenciones#⚠️ Supabase:
 **Lección de método:** las consultas de verificación como `postgres`/service_role **mienten** — ven
 todo bien. Cualquier cambio de exposición se valida **con el anon key**.
 
+## Backfill del historial de participación Emoflow (2026-07-15)
+El gráfico "Evolución de la participación semanal" arrancaba plano en la Semana 16 (el sync diario
+`sync_emoflow_participacion.py` solo captura la semana en curso del bloque `Estadísticas`). Para
+alargarlo hacia atrás se rescataron las **Semanas 1-15** desde la **pestaña `Emoflow` cruda**
+(gid `175161020`, registro individual de check-ins por semana) con
+`backfill_emoflow_participacion.py` (uso único).
+- **Hallazgo clave:** la columna `Registro Emoción` NO es la emoción — es `Si`/`No` (si diligenció
+  el check-in esa semana). No hay ánimo/emoción real en el Sheet. Lo aprovechable es el conteo de
+  check-ins semanales.
+- **El histórico va como CONTEO (`completado`), no como %:** el `Real` (denominador) de cada semana
+  pasada no existe; usar el Real actual daría **>100%** en ciudades cuya cohorte encogió (CAL: 102
+  check-ins en Sem.2 vs 93 hoy). El conteo es **fiel** — validado contra el bloque Estadísticas
+  para la Semana 16 (coincide en 7/9 ciudades, ±1 en las otras 2). El frontend cambió el gráfico
+  de evolución de `avance_pct` → `completado` ("Check-ins").
+- Cada semana lleva su fecha real (de la columna `Fecha`); `fuente='backfill-crudo'`. La Semana 16
+  no se tocó (la maneja el sync diario en vivo, y aparece más baja por estar en curso).
+- **Tendencia revelada:** la participación decae durante el semestre (total ~690 en Sem.1 → ~530 en
+  Sem.15). Serie ahora de 16 fechas (antes 1).
+
 ## Tab Emoflow en el panel (2026-07-14)
 Tab nuevo en el panel Netlify (solo JC + cohorte actual — la fuente no tiene dimensión de cohorte y
 tiene 0 matrículas MR). Consume 4 vistas de agregados: `v_emoflow_resumen`, `v_emoflow_por_ciudad`,
@@ -218,6 +237,203 @@ menos retiros institucionales/desertores y perfiles de prueba): JC 2026 = **832*
   Commit `f47cebe`.
 - Con esto queda cubierto el pendiente "retirados en Supabase" a nivel de agregados (las filas
   individuales de retirados siguen sin existir en `participants` — limitación del Consolidado).
+
+## Histórico diario de Emoflow (ingresos al sistema) (2026-07-15)
+Pedido de Samuel: "ir tomando un rastro de valores diarios de emoflow para graficar los avances".
+`sync_emoflow.py` hacía **upsert puro** (`on_conflict=email`) — sobrescribía el estado cada día sin
+dejar rastro histórico, así que no había nada que graficar en el tiempo.
+
+**Fix:** tras el upsert de `emoflow_ingresos`, el script ahora hace un snapshot diario de los
+**agregados** (nunca filas individuales — PII) en dos tablas nuevas (mismo patrón que
+`historial_cursos`/`historial_cursos_ciudad`):
+- `historial_emoflow` (nacional, `UNIQUE(fecha)`): participantes, ingresos_promedio/mediana/max,
+  activos_7d/14d, inactivos_30d. Se lee de `v_emoflow_resumen` ya actualizada.
+- `historial_emoflow_ciudad` (`UNIQUE(fecha, grupo_ciudad)`): mismo desglose por ciudad, de
+  `v_emoflow_por_ciudad`.
+
+Ambas con GRANT anon, verificadas sin PII. **Primer snapshot real cargado 2026-07-15** (823
+participantes, 757 con match). Como `sync_emoflow.py` ya estaba encadenado en el workflow n8n
+`q10-sync-supabase` (último paso, 9:45 diario), la captura queda automática **sin tocar el
+workflow**. Frontend: sección "Evolución de ingresos al sistema" en el tab Emoflow (reusa
+`GraficoHistorial`), commit `d81f42d`. La serie es nueva — arranca plana y se vuelve útil según
+se acumulan días/semanas.
+
+## % de participación semanal por ciudad (bloque EMOFLOW de Estadísticas) — COMPLETADO 2026-07-15
+Segunda parte del pedido de histórico de Emoflow: graficar en el tiempo el **% de participación**
+que Samuel ubica en la pestaña **Estadísticas** de la BD Seguimiento de Monitorias (hoja de 35+
+pestañas, ver [[bd-seguimiento-monitorias]]). Confirmado con Samuel: es el bloque con encabezado
+en columna A `EMOFLOW` (no toda la pestaña) — 9 filas de ciudad + fila total, columnas
+`Seleccionados | Seleccionados|F | Real | Revocados | Retirados | Sin completar | Completado |
+Avance`. El **`Avance`** (= Completado/Real) es el "% de participación". El bloque lleva una
+etiqueta **"Semana N"** una fila arriba, en la misma columna donde otros bloques traen el rótulo
+de banda (offset, no en columna A).
+
+**Descubrimiento clave — el Sheet ID YA era conocido:** al pedirle a Samuel el link para dar
+acceso, resultó ser **el mismo Sheet ID `1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8`** que ya
+usan `sync_emoflow.py`/`export_avance.py` ("Sheet manual, mismo de Avance") — es decir, "BD
+Seguimiento de Monitorias" **no es un archivo separado con Sheet ID propio**: es la MISMA hoja
+gigante (42 pestañas: Seguimiento, Estadísticas, Avance, +Ingresos-EmoFlow, las 9 ciudades, etc.),
+y el service account **ya tenía acceso** (verificado abriendo el Sheet en vivo, sin esperar el
+permiso nuevo). La suposición anterior en esta nota (dos sheets distintos) era incorrecta —
+corregida aquí.
+
+**El bloque se mueve de posición cada semana — verificado empíricamente:** entre el export local
+del 09-jul (bloque en fila 169, "Semana 15") y la lectura en vivo del 15-jul (fila 184, "Semana
+16") la fila cambió. `sync_emoflow_participacion.py` por eso **nunca asume fila fija**: busca
+"EMOFLOW" en columna A en cada corrida (`ws.col_values(1)`), y la etiqueta de semana buscando
+"semana" en toda la fila anterior (no solo columna A). No hay semanas anteriores preservadas en
+la hoja — se captura desde ahora, sin backfill posible.
+
+**Tabla `emoflow_participacion_semanal`** (migración `fix_rls_historial_emoflow_y_participacion`,
+RLS + policy pública de solo lectura desde el inicio): `fecha_corte, semana, grupo_ciudad,
+seleccionados, seleccionados_f, real, revocados, retirados, sin_completar, completado,
+avance_pct` — `UNIQUE(fecha_corte, grupo_ciudad)`. **Upsert diario, no por semana**: leer el
+mismo bloque "Semana N" varios días seguidos captura cómo sube Completado/Real DENTRO de la
+semana (no solo el salto cuando cambia el número). Sin PII (no hay cédulas/correos en este
+bloque). No se guarda la fila de totales — es agregable desde las 9 filas de ciudad.
+
+**Script `sync_emoflow_participacion.py`:** conecta al Sheet vivo (gspread, mismas credenciales
+del Service Account de siempre), localiza el bloque por texto, parsea números con formato
+español (`'53,85%'` → `53.85`), valida `grupo_ciudad` contra el set canónico de 9 ciudades.
+Primera corrida real: Semana 16, 9 ciudades, sin errores.
+
+**Encadenado a n8n (vía API, en vivo):** nuevo tramo al final del workflow
+`q10-sync-supabase` (`uSizw3dNzpb6n53H`) — `¿Emoflow OK?` ahora apunta a
+`Ejecutar sync_emoflow_participacion` → `¿Participación OK?` → `OK` / `Error Participación`
+(antes `¿Emoflow OK?` iba directo a `OK`). 17 nodos totales, activo, verificado con
+`GET /workflows/{id}` tras el `PUT`. Exportado a `n8n-workflows/q10-sync-supabase.json`.
+
+**⚠️ Gotcha de seguridad detectado y corregido en el camino:** `historial_emoflow` y
+`historial_emoflow_ciudad` (creadas la sesión anterior) habían quedado con **RLS deshabilitado**
+— solo tenían `GRANT SELECT`, sin `ENABLE ROW LEVEL SECURITY` + policy, a diferencia del patrón
+correcto usado en `historial_cursos`/`historial_cursos_ciudad`. El advisor de Supabase lo marcó
+como hallazgo CRÍTICO al crear la tabla nueva. Corregido en la misma migración (RLS + policy
+`for select to public using (true)`, igual que las tablas gemelas) — verificado con anon key que
+la lectura sigue funcionando y que un POST anónimo da 401. **Regla:** toda tabla pública nueva
+debe llevar `ENABLE ROW LEVEL SECURITY` + policy explícita en el MISMO statement que la crea,
+nunca solo `GRANT SELECT` (que no genera la alerta de RLS pero deja la tabla en un estado frágil
+si algún día se le da un GRANT más amplio sin querer).
+
+**Frontend:** dos secciones nuevas en el tab Emoflow — barra "% de participación — Semana N"
+(snapshot más reciente, 9 ciudades) y "Evolución de la participación semanal" (línea por ciudad,
+reusa `GraficoHistorial`). Ambas ocultas con ciudad elegida (evita mezclar universos, mismo
+patrón que el resto del panel). Commit `41e6946`.
+
+## Botón "Fuentes de datos" — probado y revertido (2026-07-15)
+Se implementó un botón/panel desplegable en la barra superior (commit `d6612dc`) que explicaba de
+qué fuente venía cada bloque de información (Q10 directo / Sheet vía Q10 / Sheets sociodemográficos
+/ Sheet Emoflow). Samuel pidió eliminarlo tras verlo — revertido con `git revert` (commit `db121cc`,
+limpio, sin restos de código). Si se retoma la idea en el futuro, el diseño y la redacción de las
+4 categorías quedan en el historial de git de ese commit (`git show d6612dc`).
+
+## Toggle Matrículas / Estudiantes en "Estado de la cohorte" (2026-07-14)
+Botón para cambiar la unidad del desglose entre **matrículas** (inscripciones) y **estudiantes**
+(personas únicas) — pedido de Samuel ("análisis por matrículas o cambia a estudiantes en general").
+
+- **Por matrículas** (5.689 JC): aprobadas 4.858 / progreso 568 / riesgo 163 / retiradas 100 —
+  de `aprobacion_cursos` (una persona cuenta en cada curso).
+- **Por estudiantes** (832 JC): al día 753 / progreso 23 / riesgo 1 / retirados 57 — de la vista
+  nueva `v_cohorte_estudiantes`; el estado es por **avance promedio del estudiante** en sus cursos.
+- **Contraste clave para decisión:** 85.4% de matrículas aprobadas vs **96.9% de estudiantes al
+  día**. No se contradicen: cada estudiante tiene ~7 cursos, ya aprobó ~6.1 (los cerrados) y va a
+  mitad en Front-End (único abierto), así que su promedio individual sigue > 80 aunque esa
+  matrícula puntual esté baja. La vista por matrículas "castiga" más porque cada inscripción a
+  medias cuenta aparte.
+
+**Vista `v_cohorte_estudiantes`** (migración `v_cohorte_estudiantes_agregado`, GRANT anon):
+agrega `enrollments × courses` por (cohorte, programa, participante) → clasifica cada estudiante
+en al_dia/en_progreso/en_riesgo por su avance promedio, y devuelve **solo conteos** por
+(cohorte, programa) — 6 filas, sin PII, sin filas individuales. Los retirados no salen de aquí
+(no tienen enrollments); el frontend los toma de `cohorte_ingresos`. **Privacidad verificada con
+el anon key:** la vista responde agregados, `participants` sigue devolviendo `[]`.
+Frontend: estado `unidadEstado` + `EstadoStat` reutilizado. Commit `74f27c2`.
+
+**Toggle también en el tab Cursos (2026-07-15, commit `50887ee`):** el mismo `unidadEstado`
+(compartido con el Resumen) cambia el tab Cursos entre:
+- **Por matrículas:** gráfico apilado + tabla por curso (lo anterior).
+- **Por estudiantes:** histograma "¿cuántos cursos ha aprobado cada estudiante?" — JC 2026:
+  650 van 6/7 (83.7%), 95 completos 7/7 (12.2%), ~32 rezagados (≤5 cursos). Suma 777 activos.
+
+Nueva vista `v_cohorte_estudiantes_distribucion` (migración homónima, GRANT anon): conteos por
+(cohorte, programa, cursos_aprobados) → estudiantes. Sin PII (verificada con anon key). El
+frontend rellena 0..max cursos para un histograma continuo (`GraficoBarras` reutilizado). A nivel
+de un curso individual matrícula=estudiante, así que la distinción solo aporta agregando: por eso
+"por estudiantes" en Cursos es la distribución por persona, no una tabla por curso paralela.
+
+⚠️ **Ojo con "reprobadas":** las 100 de la tarjeta son **retiros sin aprobar**. Reprobadas
+DEFINITIVAS (cursos ya cerrados, no aprobaron) = 100 + 49 `sin_finalizar` de finalizados = **149**.
+Las ~682 restantes sin aprobar están en Front-End (en curso) → aún pueden aprobar, no reprobadas.
+
+## Sección "Estado de la cohorte" — desglose accionable (2026-07-14)
+Pedido de Samuel: "la mayor cantidad de valores para la toma de decisiones". Se añadió al tab
+Resumen (cohorte actual, sin filtro de ciudad) una sección con el desglose canónico de las
+matrículas en los 4 estados que suman a `cursaron`, cada uno con conteo, % y semáforo de color:
+
+| Estado | Fuente (suma sobre `aprobacion_cursos`) | JC 2026 |
+|---|---|---|
+| 🟢 Aprobadas (>80%) | `aprobados_total` (incl. aprobados_retirados) | 4.858 · 85.4% |
+| 🟡 En progreso (26-80%) | `banda_26_80` | 568 · 10.0% |
+| 🟠 En riesgo (0-25%) | `banda_0_25` | 163 · 2.9% |
+| 🔴 Retiradas sin aprobar | `retirados` | 100 · 1.8% |
+
+Los 4 suman exacto las matrículas totales (5.689 JC). Componente `EstadoStat` en `page.tsx`;
+el agregado se calcula en el `kpis` useMemo (`estado`) solo cuando `esCanonico`. Auto-adaptable:
+suma sobre todos los cursos de `aprobacion_cursos`, sin nombres hardcodeados. Commit `43ca6a2`.
+
+**Contexto — aprobación global vs promedio aritmético (duda de Samuel):** el dashboard GitHub
+(Tab Q10, `renderT1`) muestra "Aprobación global" = `pct_aprobados` = aprobados/cursaron = 85.4%
+(tasa binaria: cuántas matrículas cruzaron el 80%). El "Avance promedio" (~93%) es el promedio
+del % de avance (continuo). Difieren porque miden cosas distintas; la brecha la genera sobre todo
+el curso Front-End (en curso: 547 en banda 26-80 suben el promedio pero no aprueban). Ambos son
+correctos; para "aprobación" el número honesto es 85.4%. Netlify ahora muestra los dos + el
+desglose por estado, así que la distinción queda explícita.
+
+## Encabezado de la cohorte actual = 100% canónico Supabase (2026-07-14)
+Pedido de Samuel: "que Netlify use los aprobados canónicos, manejemos los mismos datos en todo
+momento y dependamos lo mínimo posible de las Sheets". Antes había una mezcla de fuentes que
+producía cifras distintas entre paneles para el mismo concepto:
+
+| KPI cohorte actual | Antes (fuente) | Ahora (fuente) |
+|---|---|---|
+| Ingresados 832 | `cohorte_ingresos` ✅ | igual |
+| Aprobados 85.4% JC / 31.1% MR | — (no existía) | `cohorte_ingresos.pct_aprobados` ✅ |
+| Matrículas | `v_programa_stats` = 5439 (solo activos, vía Sheet h2test) | `sum(aprobacion_cursos.cursaron)` = **5689** (cohorte completa) ✅ |
+| Avance promedio | `v_programa_stats` = 92.8% (Sheet h2test) | ponderado por cursaron de `aprobacion_cursos` = **93.1%** ✅ |
+| Gráfico + tabla de cursos | `aprobacion_cursos` ✅ | igual |
+
+- **Por qué importa la fuente:** `aprobacion_cursos` + `cohorte_ingresos` los alimenta
+  `export_aprobacion.py`, que **entra directo a Q10** (login propio) → `docs/aprobacion/data.json`
+  → `sync_aprobacion_supabase.py`. **No pasa por el Sheet h2test.** En cambio `v_programa_stats`
+  y `v_curso_completion` derivan de `enrollments`, poblado por `normalize_q10_data.py` leyendo el
+  **Sheet h2test**. Usar el canónico cumple "depender lo mínimo de las Sheets".
+- **Nueva columna:** `cohorte_ingresos.pct_aprobados numeric(5,1)` (migración vía MCP; GRANT anon),
+  calculada en `sync_aprobacion_supabase.py` desde `por_programa[].aprobados / cursaron`.
+- **Frontend (`app/page.tsx`, `kpis` useMemo):** con `esActual && aprobacionProg.length > 0 &&
+  !hayFiltroCiudad` (flag `esCanonico`), Matrículas/Avance/aprobados se agregan desde
+  `aprobacionProg`. El frontend solo **suma/pondera** valores ya canónicos — no re-deriva desde
+  matrículas crudas. Commits `cab3fb7` + `db204ce`.
+- **Qué sigue usando la vista de Sheets (y por qué es correcto):** (a) cohortes históricas
+  2023-2025 — `aprobacion_cursos`/`cohorte_ingresos` solo tienen 2026, no existe canónico para
+  atrás; (b) vista con ciudad elegida — el canónico no trae `grupo_ciudad`. En ambos casos
+  `esCanonico=false` y el KPI cae a `v_programa_stats`/`v_curso_completion` con su etiqueta propia.
+
+## Adaptabilidad a cursos nuevos — paridad con GitHub Pages verificada (2026-07-14)
+Se confirmó que el panel Netlify tiene la misma adaptabilidad automática a cursos nuevos que el
+dashboard GitHub Pages: `lib/api.ts` (frontend) no tiene ningún nombre de curso hardcodeado —
+lee genérico de las vistas/tablas Supabase — y el pipeline diario de n8n (`q10-sync-supabase`)
+ya encadena los 4 pasos (`normalize_q10_data` → `cargar_supabase` → `sync_aprobacion` →
+`sync_emoflow`, cada uno con IF + `stopAndError`), así que un curso nuevo en Q10 se propaga solo
+sin intervención manual — siempre que esté clasificado en `tools/course_config.json` o matchee
+las keywords MR de fallback (misma lógica canónica compartida por `normalize_q10_data.py` y
+`export_stats.py`, antes duplicada sin cross-check).
+
+**Gotcha corregido:** ese fallback por keywords caía en silencio a "jc" cuando un curso no
+estaba en `course_config.json` y no matcheaba ninguna keyword MR — sin aviso, en ambos scripts.
+Se agregó `rep.warn("curso_sin_config", …)` en `normalize_q10_data.py` (aparece en
+`advertencias` del reporte y en el `RESUMEN` de stdout) y un log `ADVERTENCIA:` equivalente en
+`export_stats.py`. No cambia clasificación ni salida — solo hace visible cuándo un curso
+realmente nuevo necesita agregarse a la config (vía `tools/course_config.json` o el tab Admin
+de `panel_riesgo.py`).
 
 ## Cuadre (Fase 4) — VERIFICADO 2026-07-10
 `test_cuadre_dashboard.py`: v_curso_completion (Supabase) vs docs/aprobacion/data.json —
