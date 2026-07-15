@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-15T08:01:50.455912-05:00",
+  "ultima_actualizacion": "2026-07-15T12:01:58.313785-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -16,7 +16,7 @@
       "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
       "estudiantes": 777,
       "finalizados": 333,
-      "promedio": 59.2,
+      "promedio": 60.04,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 777,
@@ -48,8 +48,8 @@
     {
       "curso": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
       "estudiantes": 777,
-      "finalizados": 740,
-      "promedio": 99.7,
+      "finalizados": 741,
+      "promedio": 99.71,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 854,
@@ -105,7 +105,7 @@
         "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
         "estudiantes": 136,
         "finalizados": 41,
-        "promedio": 41.06,
+        "promedio": 41.07,
         "min": 0.0,
         "max": 100.0,
         "inscritos": 136,
