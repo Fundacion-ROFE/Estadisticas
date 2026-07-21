@@ -154,8 +154,51 @@ def agregar(csv_text: str) -> list:
     return filas
 
 
-def upsert_supabase(url: str, key: str, filas: list) -> None:
-    base = url.rstrip("/") + "/rest/v1/emoflow_ingresos_diario?on_conflict=fecha,grupo_ciudad"
+def agregar_semanal(csv_text: str) -> list:
+    """CSV de eventos → actividad SEMANAL por ciudad: usuarios activos únicos, roster y % activo.
+    La semana se etiqueta por su LUNES (ISO), así el eje X queda en orden temporal correcto."""
+    from datetime import timedelta
+    reader = csv.DictReader(io.StringIO(csv_text))
+    activos = defaultdict(set)   # (lunes, grupo) -> set(email)
+    roster = defaultdict(set)    # grupo -> set(email)  (matrícula Emoflow: alguna vez activo)
+    for row in reader:
+        email = (row.get("Usuario") or row.get("﻿Usuario") or "").strip().lower()
+        area = (row.get("Area") or "").strip()
+        femo = (row.get("Fecha emociones") or "").strip()
+        if not (email and femo):
+            continue
+        try:
+            dt = datetime.strptime(femo[:10], "%Y-%m-%d")
+        except ValueError:
+            continue
+        iso = dt.isocalendar()  # (year, week, weekday 1=lunes)
+        lunes = (dt - timedelta(days=iso[2] - 1)).strftime("%Y-%m-%d")
+        grupo = MAPA_GRUPO.get(area.lower())
+        activos[(lunes, "NACIONAL")].add(email)
+        roster["NACIONAL"].add(email)
+        if grupo:
+            activos[(lunes, grupo)].add(email)
+            roster[grupo].add(email)
+
+    filas = []
+    for (lunes, grupo), emails in activos.items():
+        r = len(roster[grupo])
+        a = len(emails)
+        filas.append({
+            "semana_inicio": lunes,
+            "grupo_ciudad": grupo,
+            "usuarios_activos": a,
+            "roster": r,
+            "pct_activos": round(100 * a / r, 1) if r else 0,
+            "fuente": "emoflow-csv",
+        })
+    semanas = sorted({f["semana_inicio"] for f in filas})
+    log(f"Actividad semanal: {len(semanas)} semanas → filas (semana×ciudad): {len(filas):,}")
+    return filas
+
+
+def upsert_supabase(url: str, key: str, tabla: str, conflicto: str, filas: list) -> None:
+    base = url.rstrip("/") + f"/rest/v1/{tabla}?on_conflict={conflicto}"
     headers = {
         "apikey": key,
         "Authorization": f"Bearer {key}",
@@ -169,7 +212,7 @@ def upsert_supabase(url: str, key: str, filas: list) -> None:
                                      data=json.dumps(lote).encode())
         with urllib.request.urlopen(req, timeout=120):
             pass
-    log(f"Upsert OK: {len(filas):,} filas")
+    log(f"Upsert {tabla} OK: {len(filas):,} filas")
 
 
 def main() -> int:
@@ -195,6 +238,7 @@ def main() -> int:
         log(f"ERROR: {e}"); print("RESUMEN: estado=error"); return 1
 
     filas = agregar(csv_text)
+    filas_sem = agregar_semanal(csv_text)
     if not filas:
         log("ERROR: no se generaron filas"); print("RESUMEN: estado=error"); return 1
 
@@ -205,10 +249,11 @@ def main() -> int:
 
     if args.dry_run:
         log("DRY-RUN: no se escribe")
-        print(f"RESUMEN: filas={len(filas)} dias={len(dias)} estado=dry-run"); return 0
+        print(f"RESUMEN: filas={len(filas)} semanal={len(filas_sem)} dias={len(dias)} estado=dry-run"); return 0
 
-    upsert_supabase(url, key, filas)
-    print(f"RESUMEN: filas={len(filas)} dias={len(dias)} estado=exito")
+    upsert_supabase(url, key, "emoflow_ingresos_diario", "fecha,grupo_ciudad", filas)
+    upsert_supabase(url, key, "emoflow_actividad_semanal", "semana_inicio,grupo_ciudad", filas_sem)
+    print(f"RESUMEN: filas={len(filas)} semanal={len(filas_sem)} dias={len(dias)} estado=exito")
     return 0
 
 
