@@ -1,6 +1,0 @@
-312257db171474cd4f0aca86f491b6fd9a3c21c1 commit	refs/heads/backup-pre-purga
-25cab385eb244ab20f4be2840b38a40e071f80c5 commit	refs/heads/main
-ea53966307724cac0e2033d4db8aed3b630573c5 commit	refs/remotes/origin/HEAD
-ea53966307724cac0e2033d4db8aed3b630573c5 commit	refs/remotes/origin/main
-b8571c959ba9bc8af25c53152ec72cc02070ea16 commit	refs/stash
-312257db171474cd4f0aca86f491b6fd9a3c21c1 commit	refs/tags/backup/pre-purga-secreto
