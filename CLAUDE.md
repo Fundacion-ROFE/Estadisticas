@@ -85,6 +85,7 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 | `sync_emoflow_api.py` | [[panel-datos-etl]] | — | — (Emoflow API → Supabase, sin Sheet intermedio) |
 | `sync_emoflow.py` | [[panel-datos-etl]] (DEPRECATED 2026-07-20) | — | — (Sheet manual +Ingresos-EmoFlow → Supabase) |
 | `sync_emoflow_participacion.py` | [[panel-datos-etl]] | — | — (% participación semanal por ciudad → Supabase) |
+| `extract_emoflow_agregados.py` | [[panel-datos-etl]] | — | — (Emoflow API → emoflow_ingresos_agregados_4h, cada 4h) |
 | `sync_supabase_to_sheets.py` | [[panel-datos-etl]] | — | — (Supabase → hojas h1/h2/h3 en Google Sheets para equipo) |
 | `test_cuadre_dashboard.py` | [[panel-datos-etl]] | — | — (Fase 4: cuadre vs aprobación) |
 | Frontend Next.js (repo `panel-datos-rofe`) | [[panel-datos-etl]] | — | https://classy-pasca-eecdd6.netlify.app |
