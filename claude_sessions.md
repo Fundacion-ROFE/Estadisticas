@@ -2896,3 +2896,30 @@ cifras nacionales dentro de la vista de ciudad. `npm run build` OK (243 kB First
 - **Commit:** `5ec73a2` pushed a main sin secretos (GitHub push protection activado, se removió
   credencial expuesta en docs/GUIA_COMPLETA_SCRIPTS_FLOWS.md de commit anterior).
 - **Pendiente:** importar tabla JSON en panel Netlify + agregar 4 gráficos (línea, barras, heatmap, tabla).
+
+---
+
+## 2026-07-20 (cont. 2) — [panel-datos-etl] Emoflow: se descarta el enfoque 4h inventado → extracción DIARIA REAL
+
+**Estado:** Completado y en producción (los 3 pasos)
+**Proceso relacionado:** [[panel-datos-etl]] · [[project-emoflow-ingresos-diario]]
+
+- **Corrección importante:** el enfoque "4h" de la entrada anterior estaba **inventado** — las
+  métricas de % emociones/bienestar y los rangos eran constantes hardcodeadas / multiplicadores
+  falsos, y "velocidad" no se podía calcular desde un export completo. Samuel además aclaró que
+  Emoflow solo mide **ingresos** (cuantitativo); emociones/bienestar son cualitativos.
+- **Se descartó y borró todo lo 4h:** tabla `emoflow_ingresos_agregados_4h` (DROP), workflow n8n
+  eliminado, scripts/migración/doc `OPTIMIZACION_EMOFLOW_AGREGADOS` removidos.
+- **Hallazgo vía .har + credenciales:** el CSV de `/admin/registro-ingresos-exportar` es un **log de
+  eventos con timestamp** (27k eventos, 844 usuarios, 120 días desde 2026-03-18). Columnas:
+  Usuario, Nombre, Empresa, Area, Fecha emociones, Fechas bienestar, Dimensiones. Bienestar vacío.
+  `ingresos` = registros de emoción (varios por persona/día, NO logins); `usuarios_activos` = personas.
+- **Construido (real):** `extract_emoflow_ingresos_diario.py` → tabla `emoflow_ingresos_diario`
+  (fecha × grupo_ciudad + NACIONAL, ingresos + usuarios_activos), idempotente, backfill de 120 días.
+  Workflow n8n `emoflow-ingresos-diario` (id DFPiF1RtD58FhGoZ) diario 21:30 COT, ACTIVO.
+- **Panel:** evolución de ingresos REAL (nacional + por ciudad); notas aclaran ingresos vs usuarios;
+  participación semanal pasa a una marca por semana con % y auto-avanza a la semana más alta.
+  `leerPaginado()` agregado (PostgREST cortaba en 1000 filas → perdía días recientes).
+- **Producción (3 pasos hechos):** panel → `comunicaciones-ai/Panel-De-Datos` (`ae544bf`, Netlify
+  auto-deploy); script → `Fundacion-ROFE/Estadisticas` (`a3b6d99` + `72fbbc3`); automatización n8n
+  activada. Todo verificado en local antes de subir (tsc limpio, datos reales confirmados en Supabase).
