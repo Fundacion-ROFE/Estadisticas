@@ -1,12 +1,12 @@
 {
-  "ultima_actualizacion": "2026-07-16T20:53:15.854692-05:00",
+  "ultima_actualizacion": "2026-07-21T16:04:56.025627-05:00",
   "anio": "2026",
   "totales": {
-    "total_retirados": 57,
+    "total_retirados": 96,
     "cancelados": 55,
     "desertores": 0,
     "aplazados": 0,
-    "sin_registro_hoja": 2
+    "sin_registro_hoja": 41
   },
   "por_tipo": [
     {
@@ -15,7 +15,7 @@
     },
     {
       "tipo": "Sin registro de retiro",
-      "cantidad": 2
+      "cantidad": 41
     }
   ],
   "por_causa": [
@@ -25,13 +25,17 @@
     },
     {
       "causa": "Sin registro de retiro",
-      "cantidad": 2
+      "cantidad": 41
     }
   ],
   "por_programa": [
     {
       "programa": "Jóvenes creaTIvos",
       "cantidad": 57
+    },
+    {
+      "programa": "Mujeres ROFÉ",
+      "cantidad": 39
     }
   ],
   "por_mes": [
@@ -56,7 +60,7 @@
     {
       "orden": 0,
       "etapa": "No completó ningún curso",
-      "cantidad": 0
+      "cantidad": 39
     },
     {
       "orden": 1,
@@ -86,12 +90,12 @@
     {
       "orden": 6,
       "etapa": "Fundamentos Lógica de Programación - 2026",
-      "cantidad": 1
+      "cantidad": 0
     },
     {
       "orden": 7,
       "etapa": "Desarrollo Web Front-End - HTML - 2026",
-      "cantidad": 1
+      "cantidad": 2
     }
   ],
   "ruta": [
