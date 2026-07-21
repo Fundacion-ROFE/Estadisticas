@@ -118,7 +118,7 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        2016,
+        2464,
         -288
       ],
       "id": "q10sb-0001-0001-0001-000000000006",
@@ -210,7 +210,7 @@
     },
     {
       "parameters": {
-        "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python sync_emoflow.py"
+        "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python sync_emoflow_api.py"
       },
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
@@ -265,6 +265,64 @@
       ],
       "id": "q10sb-0001-0001-0001-000000000014",
       "name": "Error Emoflow"
+    },
+    {
+      "parameters": {
+        "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python sync_emoflow_participacion.py"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        -192
+      ],
+      "id": "q10sb-0001-0001-0001-000000000015",
+      "name": "Ejecutar sync_emoflow_participacion"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.stdout }}",
+              "rightValue": "estado=exito",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2240,
+        -192
+      ],
+      "id": "q10sb-0001-0001-0001-000000000016",
+      "name": "¿Participación OK?"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Sync de % participación Emoflow (Estadísticas) a Supabase falló. Salida: {{ $json.stdout }} {{ $json.stderr }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        2464,
+        -96
+      ],
+      "id": "q10sb-0001-0001-0001-000000000017",
+      "name": "Error Participación"
     }
   ],
   "connections": {
@@ -381,7 +439,7 @@
       "main": [
         [
           {
-            "node": "OK",
+            "node": "Ejecutar sync_emoflow_participacion",
             "type": "main",
             "index": 0
           }
@@ -389,6 +447,35 @@
         [
           {
             "node": "Error Emoflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ejecutar sync_emoflow_participacion": {
+      "main": [
+        [
+          {
+            "node": "¿Participación OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Participación OK?": {
+      "main": [
+        [
+          {
+            "node": "OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Participación",
             "type": "main",
             "index": 0
           }

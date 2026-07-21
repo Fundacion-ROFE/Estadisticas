@@ -92,36 +92,36 @@ Dos fuentes canónicas no traen la ciudad. No es un bug del frontend: el dato no
      el 2026-07-14** (63 filas: 9 ciudades × 7 cursos) y crece un punto por día. El gráfico lo
      dice en su nota; el histórico nacional previo sigue intacto sin filtro.
 
-## Emoflow — ingresos al sistema como proxy de "calidad de estudiante" (2026-07-14)
+## Emoflow — ingresos al sistema como proxy de "calidad de estudiante" (2026-07-14, API directa 2026-07-20)
 Emoflow es la herramienta de estado de ánimo de los estudiantes. De momento **no** medimos la
 emoción sino los **ingresos al sistema** (contador acumulado por estudiante) como proxy de
 engagement / calidad.
 
-- **Fuente:** pestaña `+Ingresos-EmoFlow` del Sheet manual (mismo de `Avance`, gid `1288133311`):
-  `Usuario | Nombre | Area | Ingresos al sistema | Ultimo ingreso` — 823 filas.
-- **Script:** `sync_emoflow.py` → tabla `emoflow_ingresos` (upsert por `email`, idempotente).
+- **Fuente (CAMBIO 2026-07-20):** API de Emoflow (`https://emoflow.sanumbe.com`), sin Sheet intermedio.
+  - Antes: pestaña manual `+Ingresos-EmoFlow` (mantenimiento, desactualizaciones).
+  - Ahora: `POST /login` (credenciales en `.env.local`) → `GET /admin/registro-ingresos-exportar` (CSV, 27K registros).
+  - La API devuelve cada ingreso como una fila → se agrupa por email (suma ingresos, obtiene último).
+- **Script:** `sync_emoflow_api.py` (NEW, 2026-07-20) → tabla `emoflow_ingresos` (upsert por `email`, idempotente).
+  `sync_emoflow.py` (DEPRECATED 2026-07-20, se mantiene por inercia) ya no se usa.
 - **⚠️ Llave de cruce = EMAIL, y es la única posible.** Emoflow **no expone la cédula** (el resto
   del ETL cruza por cédula). El correo se normaliza (lower+trim). Los correos sin match se cargan
   con `participant_id = NULL` — no se crean `participants` desde aquí (Q10 es la fuente de verdad
   de quién existe).
-- **Cruce medido (2026-07-14):** **757/823 = 92.0%** con match. Cubre **757 de los 777 activos
-  de JC 2026 (97.4%)**. Los 66 sin match son correos que Q10 no conoce (retirados que ya no están
-  en `participants`, o correo personal distinto al registrado en Q10).
+- **Cruce medido (2026-07-20):** **759/826 = 91.9%** con match (coherente con el 92% anterior). 826 usuarios únicos en Emoflow.
+  Los sin match son correos que Q10 no conoce (retirados que ya no están en `participants`, o correo personal distinto).
 - **Privacidad:** la tabla lleva email+nombre (PII) → RLS **sin lectura anónima** (verificado:
   anon obtiene 0 filas). El panel consume solo agregados vía 3 vistas públicas (GRANT anon):
-  - `v_emoflow_resumen` — KPIs (participantes, promedio 23.2, mediana 18, máx 309, activos 7d/14d,
-    inactivos 30d).
+  - `v_emoflow_resumen` — KPIs (participantes, promedio, mediana, máx, activos 7d/14d, inactivos 30d).
   - `v_emoflow_por_ciudad` — usa el mismo código `grupo_ciudad` (BAQ/BOG/…) del filtro de ciudad,
     así que el `Area` de Emoflow se mapea a los 9 grupos canónicos y el filtro funciona igual.
   - `v_emoflow_bandas` — bandas de ingresos (1-5 · 6-15 · 16-30 · 31-60 · 61+) **cruzadas con el
     avance real** de la cohorte JC 2026. Responde "¿el que más entra, avanza más?".
-- **Hallazgo:** la relación es **monótona pero suave** — banda 1-5: 88.1% de avance y 82.5% de
-  aprobación; banda 31-60: 94.6% / 88.2%. Más ingresos correlaciona con más avance, pero la
-  diferencia es de ~6 puntos: sirve para detectar el extremo bajo (102 estudiantes con ≤5 ingresos),
+- **Hallazgo:** la relación es **monótona pero suave** — banda 1-5: 82.5% de aprobación; banda 31-60: 88.2%.
+  Más ingresos correlaciona con más avance, pero la diferencia es de ~6 puntos: sirve para detectar el extremo bajo,
   no como predictor fino.
-- **Automatizado (2026-07-14):** `sync_emoflow.py` encadenado al workflow n8n `q10-sync-supabase`
+- **Automatizado (2026-07-20):** `sync_emoflow_api.py` encadenado al workflow n8n `q10-sync-supabase`
   tras `¿Aprobación OK?` (nodos `Ejecutar sync_emoflow` → `¿Emoflow OK?` → `OK` / `Error Emoflow`).
-  14 nodos, activo, corre solo cada día a las 9:45.
+  Corre diario a las 9:45. Credenciales: `EMOFLOW_USER`, `EMOFLOW_PASSWORD` en `.env.local` (nunca en git).
 
 ## Puntaje compuesto de "calidad de estudiante" (2026-07-14)
 Vista `v_puntaje_estudiante` (JC, cohorte actual) + `reporte_puntaje.py`. Combina avance Q10,

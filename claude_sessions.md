@@ -1822,31 +1822,39 @@ instante. Colores semánticos de gráficos invariantes. Frontend 41d2871; BRAND-
   salió del equipo, pero cierra el tema.
 - **Patrón agregado a [[convenciones]]:** "Gotcha: secreto commiteado por error" — los 4 pasos.
 
-## 2026-07-14 — Emoflow en Supabase + rescate del sync diario (roto hacía 4 días)
+---
 
-**Pedido:** integrar la pestaña `+Ingresos-EmoFlow` del Sheet manual a Supabase. Emoflow mide
-estado de ánimo, pero de momento se usa como proxy de **"calidad de estudiante"** vía los
-**ingresos al sistema**. Único cruce posible con Supabase: el **correo** (Emoflow no expone cédula).
+## 2026-07-15 — [meta] Prompt "Árbol ROFÉ" — visualización de progreso para dirección
 
-- **Cruce validado antes de diseñar nada:** 823 filas → **757 con match (92.0%)**, que cubren
-  **757 de los 777 activos de JC 2026 (97.4%)**. El email como llave es viable. Los 66 sin match
-  son correos que Q10 no conoce.
-- **Migración `emoflow_ingresos`:** tabla con PII (email/nombre) → RLS sin lectura anónima
-  (verificado con anon key: 0 filas). 3 vistas públicas de solo agregados: `v_emoflow_resumen`,
-  `v_emoflow_por_ciudad` (reusa `grupo_ciudad`, así el filtro de ciudad del panel funciona igual)
-  y `v_emoflow_bandas` (bandas de ingresos × avance real).
-- **`sync_emoflow.py`:** Sheet → Supabase, upsert por email, idempotente. 823 filas, 0 avisos.
-- **Hallazgo de negocio:** más ingresos ⇒ más avance, pero **la pendiente es suave** (banda 1-5:
-  82.5% de aprobación; banda 31-60: 88.2%). Sirve para detectar el extremo bajo (102 estudiantes
-  con ≤5 ingresos), no como predictor fino.
+**Estado:** Completado — prompt entregado
+**Proceso relacionado:** [[prioridades-automatizacion-ia]] · [[dashboard-web]]
 
-**Hallazgo grave (no era parte del pedido): el sync diario a Supabase llevaba roto desde el 10-07.**
-Dos causas independientes, ambas corregidas:
-1. La **secret key de `.env.local` estaba revocada** (`401 Unregistered API key`). Consecuencia
-   directa de la rotación que recomendó la sesión del incidente de secreto: **se rotó en Supabase
-   pero nadie actualizó `.env.local`.** Lección: rotar una clave es un cambio de dos lados.
-2. **Colisión en `historial_cursos`:** el snapshot leía `v_curso_completion` sin filtrar cohorte, y
-   como Q10 reutiliza nombres de curso entre años, tras el import histórico del 10-07 el lote
+- Redactado `prompt-arbol-progreso.md` (raíz del repo): prompt completo para Claude Code
+  (+ MCP 21st.dev) que construye un árbol SVG animado e interactivo para presentar a
+  dirección todo lo hecho / en curso / pendiente.
+- Jerarquía por regla "importancia = cercanía al tronco": raíces = infraestructura,
+  tronco = BD central (70%), ramas ordenadas por prioridad P0–P8, hojas = procesos con
+  datos reales tomados de [[00-vision-global]] y [[prioridades-automatizacion-ia]].
+- Incluye paneles Roles (1 persona · 7 roles), Ahorro (cifras marcadas [EDITAR]), Uso de
+  IA, timeline de 10 hitos y modo presentación de 8 pasos. Stack: Vite+React+framer-motion,
+  estático → local primero, Netlify después con autorización. Sin PII, nada inventado.
+
+---
+
+## 2026-07-15 — [meta] Prompt "Árbol ROFÉ" v2 — realismo + cámara con zoom
+
+**Estado:** Completado — prompt actualizado
+**Proceso relacionado:** [[prioridades-automatizacion-ia]]
+
+- `prompt-arbol-progreso.md` mejorado: nueva sección 5 con anatomía realista del árbol
+  (proporciones concretas, regla de Leonardo para el taper, root flare, 3 niveles de
+  ramificación, corteza/follaje/luz con filtros SVG, semilla aleatoria fija).
+- Nueva sección 7.0 — cámara con d3-zoom: zoom libre (rueda/drag/pinch, límites 0.6×–8×),
+  foco cinematográfico al clickear un nodo (centra el nodo junto al drawer sin taparlo,
+  regresa al cerrar), controles + / − / ⌂; el tour reutiliza la misma cámara.
+- Permitidos recursos externos (Google Fonts, d3-zoom); checklist y "qué NO hacer"
+  actualizados (anti-lollipop, hojas solo en ramitas terminales, no CSS scale).
+ curso entre años, tras el import histórico del 10-07 el lote
    llegaba con `curso` repetido → PostgREST abortaba TODO el upsert (`21000 ON CONFLICT DO UPDATE
    command cannot affect row a second time`). Fix: filtrar a la cohorte viva. **Regla nueva: con
    `merge-duplicates`, dos filas del mismo lote que colisionan en la clave revientan el request
@@ -1940,3 +1948,907 @@ sin dimensión de cohorte). 4 KPIs + distribución de uso por bandas + "¿el que
 más?" (con nota honesta: la relación es suave) + uso por ciudad. Respeta el filtro de ciudad
 gracias a `v_emoflow_bandas_ciudad` (vista nueva) — sin ella, elegir una ciudad habría mostrado
 cifras nacionales dentro de la vista de ciudad. `npm run build` OK (243 kB First Load).
+
+---
+
+## 2026-07-14 (cont.) — [panel-datos-etl] Limpieza de secretos hardcodeados (sin commitear)
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-datos-etl]]
+
+- Durante la Tarea 2 del plan (`docs/plan-ejecucion-sonnet.md`) se encontró la Supabase
+  `SERVICE_ROLE_KEY` hardcodeada en texto plano en 8 scripts sin commitear, y el `N8N_API_KEY`
+  (JWT) en otros 2 — ninguno había llegado a GitHub, pero estaban listos para el próximo commit.
+- Movidos a `scripts/panel-datos/_obsoletos/`: `sync_asistencia_upsert.py`,
+  `sync_asistencia_directo.py`, `sync_asistencia_simple.py` (versiones viejas/experimentales;
+  el canónico es `sync_asistencia_supabase.py`).
+- Los 8 scripts restantes ahora leen `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`/`N8N_API_KEY`
+  desde `.env.local` (patrón `cargar_env_local()` + `RuntimeError` si faltan). Agregado
+  `N8N_API_KEY=` a `.env.local`. `crear_tabla_asistencia_promedio.py` tenía la key como código
+  muerto (nunca se usaba) — se eliminó en vez de envolverla en un check innecesario.
+- Verificado: `grep -rn "sb_secret_\|N8N_API_KEY = \"eyJ" scripts/` → 0 resultados; los 10
+  archivos compilan. Nada se commiteó.
+- **Pendiente para Samuel:** rotar la `SERVICE_ROLE_KEY` en Supabase (Settings → API →
+  Regenerate) y actualizar `.env.local` — la key vieja quedó expuesta en el working tree y debe
+  tratarse como comprometida (ver `SECURITY-INCIDENT.md`).
+
+---
+
+## 2026-07-14 (cont.) — [asistencia-zoom-flujo] Cron n8n diario + 2 bugs reales en sync_asistencia_supabase.py
+
+**Estado:** Completado
+**Proceso relacionado:** [[asistencia-zoom-flujo]]
+
+- Tarea 2 del plan: cron n8n 00:00 que corre `sync_asistencia_supabase.py` (crudo → Supabase) →
+  si OK → `calcular_asistencia_promedio.py` (promedios) → si falla cualquiera, Telegram (mismo
+  bot `Telegram Q10 Bot` de q10-consolidacion; `chat_id` fijo de Samuel, obtenido del historial de
+  ejecuciones de `q10-consolidacion` sin tocar el token del bot).
+- **Hallazgo:** al revisar n8n vía API había **4 workflows duplicados** `asistencia-zoom-diario`
+  (restos de pruebas previas con `crear_workflow_n8n_api.py`/`crear_workflow_simple.py` corridos
+  varias veces). Con OK de Samuel se borraron 3; el 4º resultó estar **archivado**, y la API
+  pública de n8n no tiene endpoint de `unarchive` (`PUT`/`PATCH` a `/workflows/{id}` de un
+  workflow archivado da `400 Cannot update an archived workflow`) — se borró también y se creó
+  uno nuevo limpio (`POST /workflows`).
+- **Bug 1 (con OK de Samuel):** `sync_asistencia_supabase.py` usaba `Prefer: resolution=upsert`
+  — valor **inválido** en PostgREST (correcto: `resolution=merge-duplicates` + `?on_conflict=
+  email,curso,fecha`, porque la PK real de `asistencia_zoom` es `id`, no esas 3 columnas). Sin el
+  fix, cualquier fila repetida (ej. ya capturada por el webhook `Zoom - Asistencia` en vivo)
+  tiraba 409 y el script fallaba.
+- **Bug 2 (con OK de Samuel):** la columna `Fecha` del Sheet trae fecha+hora; `asistencia_zoom.
+  fecha` es `date`. Dos sesiones el mismo día (mismo email+curso, horas distintas) colapsan a la
+  misma fecha en Postgres → si caían en el mismo lote de upsert, `500` (`21000 ON CONFLICT DO
+  UPDATE command cannot affect row a second time`). Fix: truncar `fecha` a solo el día ANTES de
+  deduplicar, conservando el **mayor %** de asistencia (no la última fila) al colapsar sesiones
+  reales del mismo día. De paso se agregó `CURSOS_EXCLUIDOS` (constante nombrada) para filtrar
+  basura de staff/pruebas ya documentada en el Gotcha de `reporte_puntaje.py`.
+- **Validación en 2 pasos** (pedida explícitamente por Samuel): 1) Sonnet corrió ambos scripts
+  por consola con el comando exacto del nodo Execute Command → `exit 0` en ambos, conteos
+  verificados contra Supabase (689 asistencia_zoom nuevas, 490 asistencia_promedio). 2) Samuel
+  ejecutó "Execute workflow" en la UI de n8n → confirmado vía `GET /executions` (`status:
+  success`, los 6 nodos llegaron al camino `OK`, ningún Telegram de error disparado).
+- JSON exportado a `n8n-workflows/asistencia-zoom-diario.json` (workflow id `qKBCgp1zFa3qeZAB`).
+  `docs/procesos/asistencia-zoom-flujo.md` actualizado (flujo de 2 scripts, estado activo, Gotchas
+  nuevos). Tarea 2 marcada en `docs/plan-ejecucion-sonnet.md`.
+- **Pendiente:** limpiar ~2 filas de staff que quedaron en `asistencia_zoom` de antes del fix
+  (cosmético); evaluar si `calcular_asistencia_promedio.py` también debería excluir
+  `CURSOS_EXCLUIDOS`.
+
+---
+
+## 2026-07-14 — [Panel Netlify] Confirmación de paridad de adaptabilidad de cursos vs GitHub Pages
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-datos-etl]] · [[dashboard-web]] · [[q10-consolidacion]]
+
+- Samuel preguntó si el panel Netlify puede adaptarse a los cursos disponibles igual que el
+  dashboard GitHub Pages. Verificación empírica (no solo lectura de código): el curso
+  "Desarrollo Web Front-End - HTML - 2026" ya está en `tools/course_config.json` (jc) y ya
+  fluye correctamente a Supabase (`aprobacion_cursos`: 779 cursaron/777 activos, cuadra con la
+  cifra pegada por Samuel salvo drift de ~17 min entre corridas, comportamiento ya documentado).
+- **Corrección de una afirmación mía anterior en esta sesión:** dije que `sync_aprobacion_supabase.py`
+  corría manual y estaba pendiente de encadenar a n8n — falso, ya está encadenado desde el
+  2026-07-10 (confirmado releyendo `n8n-workflows/q10-sync-supabase.json`: 4 pasos con IF +
+  stopAndError cada uno — normalize → cargar_supabase → sync_aprobacion → sync_emoflow). Dos
+  memorias tenían la misma info desactualizada (`project_panel_datos_supabase.md`,
+  `project_emoflow_supabase.md`) — corregidas.
+- Confirmado además: el frontend Netlify (`lib/api.ts`) no tiene NINGÚN nombre de curso
+  hardcodeado — lee genérico de las vistas/tablas Supabase, igual que `export_stats.py` lee
+  genérico de h2test. Ambos paneles ya tienen paridad real de adaptabilidad a cursos nuevos.
+- **Único hallazgo real:** la clasificación programa (jc/mr/stand) de un curso que NO está en
+  `course_config.json` cae en silencio al fallback por keywords (default "jc" si no matchea
+  palabras MR) — sin aviso, en los dos scripts (`normalize_q10_data.py` y `export_stats.py`,
+  lógica duplicada). Se agregó advertencia explícita en ambos (`rep.warn("curso_sin_config", …)`
+  / log `ADVERTENCIA:`) para que un curso realmente nuevo no pase desapercibido en ninguno de
+  los dos paneles. Verificado: los 9 cursos actuales (7 JC + 2 MR) ya están todos en la config,
+  cero advertencias hoy — cambio solo de visibilidad, no cambia clasificación ni salida.
+- Pendiente: ninguno técnico. Si aparece un curso nuevo real, el log de la próxima corrida n8n
+  (o de `q10_to_sheets.py`/export manual) mostrará la advertencia y bastará con agregarlo a
+  `tools/course_config.json` (o vía el tab Admin de `panel_riesgo.py`).
+
+---
+
+## 2026-07-14 — [Panel Netlify + GitHub Pages] Paridad de KPI "% aprobados" en ambos paneles
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-datos-etl]] · [[dashboard-web]]
+
+- **Problema identificado:** GitHub Pages (docs/aprobacion/data.json) mostraba 85.4% de aprobación para JC,
+  pero el usuario reportaba ver "únicamente 92.8%" en Netlify. Diferencia explicada: no era una brecha real,
+  sino dos KPIs distintos:
+  - GitHub: **85.4%** = aprobados (avance >80%) / cursaron = aprobación canónica de la cohorte
+  - Netlify: **92.8%** = promedio aritmético de avance Q10 (métrica completamente diferente)
+- **Solución:** Agregar el KPI de aprobación canónica a Netlify para que sea comparable con GitHub:
+  1. Migración SQL: agregar `pct_aprobados` a tabla `cohorte_ingresos` (Supabase)
+  2. Backend: actualizar `sync_aprobacion_supabase.py` para calcular 4858/5689 = 85.4% (JC) y 118/380 = 31.1% (MR)
+  3. Frontend: agregar interfaz `CohorteIngresos.pct_aprobados` y renderizar nuevo KPI "Aprobados" junto a "Avance promedio"
+  4. Push a Netlify: commit `cab3fb7`, deploy automático disparado vía GitHub
+- **Resultado:** Ambos paneles ahora muestran la aprobación canónica (85.4% JC / 31.1% MR) de forma comparable.
+  El promedio de avance (92.8%) sigue visible en Netlify pero ya sin confusión — etiqueta actualizada a "Promedio aritmético".
+- **Pendiente:** ninguno. El KPI está en producción, deploy a Netlify en progreso (~5-10 min típico).
+
+---
+
+## 2026-07-14 — [Panel Netlify] Encabezado de cohorte actual 100% canónico (Supabase, sin Sheets)
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-datos-etl]] · [[q10-consolidacion]]
+
+- Pedido de Samuel (tras el fix del KPI de aprobación): que Netlify use los aprobados canónicos,
+  "manejemos los mismos datos en todo momento y dependamos lo mínimo posible de las Sheets", +
+  que se adapte solo a cursos nuevos (sistema de mínimo mantenimiento, alta adaptabilidad a Q10).
+- **Diagnóstico:** para la cohorte actual, Ingresados y el gráfico/tabla de cursos ya salían del
+  canónico (`cohorte_ingresos` + `aprobacion_cursos`, alimentados por `export_aprobacion.py` que
+  entra DIRECTO a Q10, sin Sheet). Pero **Matrículas (5439) y Avance promedio (92.8%) salían de
+  `v_programa_stats`** — derivado de `enrollments`, poblado leyendo el **Sheet h2test**. Esa era
+  la fuente de la inconsistencia con GitHub (5689 cursaron canónicos vs 5439 activos).
+- **Cambios:**
+  1. Migración Supabase (vía MCP): columna `cohorte_ingresos.pct_aprobados numeric(5,1)` + GRANT anon.
+  2. `sync_aprobacion_supabase.py`: calcula pct_aprobados por programa (JC 85.4% / MR 31.1%).
+  3. Frontend `app/page.tsx` (`kpis` useMemo): flag `esCanonico` (cohorte actual, sin ciudad) →
+     Matrículas=`sum(cursaron)`=5689, Avance=ponderado por cursaron=93.1%, ambos desde
+     `aprobacionProg`. El frontend solo agrega valores ya canónicos, no re-deriva desde crudo.
+  4. Etiquetas de KPI honestas según fuente (canónico vs Sheets).
+- **Qué sigue con la vista de Sheets (correcto — no hay canónico):** cohortes históricas 2023-2025
+  (aprobacion_cursos/cohorte_ingresos solo tienen 2026) y vista con ciudad elegida (canónico sin
+  grupo_ciudad). Ahí `esCanonico=false` y cae a v_programa_stats con su propia etiqueta.
+- **Auto-adaptabilidad:** los agregados son sobre TODOS los cursos de aprobacion_cursos, sin
+  nombres hardcodeados (verificado en page.tsx) → un curso nuevo en Q10 aparece solo tras el sync
+  diario 9:45, sin deploy ni cambios de código.
+- Build Next.js: `✓ Compiled successfully` + type-check OK (el EBUSY del `out/` es un lock local
+  de Windows, no afecta a Netlify que compila en limpio). Commits `cab3fb7` (KPI aprobados) +
+  `db204ce` (encabezado canónico), pusheados a soportejunior-codeJR/PowerBi → deploy Netlify auto.
+- **Pendiente:** ninguno técnico. Verificar visualmente el panel Netlify tras el deploy (~5 min).
+
+---
+
+## 2026-07-14 — [Panel Netlify] Sección "Estado de la cohorte" + aclaración aprobación vs promedio
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-datos-etl]] · [[dashboard-web]]
+
+- Samuel preguntó por qué el dashboard GitHub (Tab Q10) muestra 85.4% de "Aprobación global"
+  mientras el promedio aritmético es ~93%. Respuesta: son métricas distintas — 85.4% es la TASA
+  (aprobados/cursaron, binaria: cruzó o no el 80%), 93% es el promedio del % de avance (continuo).
+  La brecha la genera sobre todo el curso Front-End (en curso, 547 en banda 26-80 que suben el
+  promedio pero no aprueban). Ambos correctos; para "aprobación" el número honesto es 85.4%.
+- Pedido derivado: "la mayor cantidad de valores para la toma de decisiones" en Netlify.
+- **Cambio:** sección "Estado de la cohorte" en el tab Resumen (cohorte actual, sin ciudad) con el
+  desglose canónico de las matrículas en 4 estados accionables + % + semáforo:
+  Aprobadas 4.858 (85.4%) · En progreso 568 (10.0%) · En riesgo 163 (2.9%) · Retiradas 100 (1.8%).
+  Los 4 suman exacto las 5.689 matrículas (verificado en SQL). Todo desde `aprobacion_cursos`
+  (componente `EstadoStat`, agregado en el `kpis` useMemo con flag `esCanonico`).
+- Auto-adaptable: suma sobre todos los cursos de aprobacion_cursos, sin nombres hardcodeados.
+- Type-check `tsc --noEmit` limpio. Commit `43ca6a2` pusheado → deploy Netlify auto.
+- **Pendiente:** ninguno. Verificar visualmente tras el deploy (~5 min).
+
+---
+
+## 2026-07-14 — [Panel Netlify] Toggle Matrículas/Estudiantes + vista v_cohorte_estudiantes
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-datos-etl]]
+
+- Samuel confirmó las "100 matrículas reprobadas" y pidió un botón que cambie el análisis entre
+  "por matrículas" y "por estudiantes en general". Aclaración importante: NO es análisis individual
+  con PII (eso no puede ir al panel público — anon key en el bundle; ya existe la GUI local
+  tools/panel_riesgo_gui.py para ver estudiante por estudiante). Es un toggle de UNIDAD de conteo,
+  ambos agregados.
+- Aclaración sobre las 100: son RETIROS sin aprobar. Reprobadas definitivas = 149 (100 + 49
+  sin_finalizar de cursos cerrados). Las ~682 restantes sin aprobar están en Front-End (en curso).
+- **Cambios:**
+  1. Vista pública `v_cohorte_estudiantes` (migración `v_cohorte_estudiantes_agregado`): agrega
+     enrollments×courses por participante, clasifica cada estudiante por avance promedio
+     (al día >80 / progreso 26-80 / riesgo <26), devuelve solo conteos por (cohorte,programa).
+     Sin PII. GRANT anon.
+  2. **Privacidad verificada con el anon key** (no solo service_role): la vista responde agregados,
+     participants sigue devolviendo [] a anon.
+  3. Frontend: estado `unidadEstado` + toggle en "Estado de la cohorte" + segundo desglose desde
+     v_cohorte_estudiantes; retirados de cohorte_ingresos. `lib/api.ts` carga la vista nueva.
+- **Contraste que aporta:** 85.4% matrículas aprobadas vs 96.9% estudiantes al día (753/777) —
+  cada estudiante ya aprobó ~6.1 de sus 7 cursos y va a mitad en Front-End.
+- Auto-adaptable (por cohorte×programa, sin nombres hardcodeados). Type-check limpio.
+- Netlify SIN créditos → no despliega; se ve en LOCAL con `npm run dev` (localhost:3003, corriendo).
+  Commit `74f27c2` versionado en soportejunior-codeJR/PowerBi para cuando se renueven créditos.
+- **Pendiente:** ninguno. Verificar visualmente el toggle en localhost:3003.
+
+---
+
+## 2026-07-15 — [Panel Netlify] Toggle Matrículas/Estudiantes extendido al tab Cursos
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-datos-etl]]
+
+- Samuel pidió extender el toggle Matrículas/Estudiantes (ya en Resumen) al tab Cursos.
+- Decisión de diseño: a nivel de UN curso, matrícula=estudiante (no aporta distinguir). Lo que sí
+  aporta por persona es la DISTRIBUCIÓN de cuántos cursos ha aprobado cada estudiante. Por eso:
+  - "Por matrículas" en Cursos = gráfico apilado + tabla por curso (lo anterior).
+  - "Por estudiantes" en Cursos = histograma de distribución (# cursos aprobados → # estudiantes).
+- **Datos:** JC 2026 → 650 estudiantes van 6/7 (83.7%), 95 completos 7/7 (12.2%), ~32 rezagados
+  (≤5 cursos); suma 777 activos.
+- **Vista nueva `v_cohorte_estudiantes_distribucion`** (migración homónima, GRANT anon): conteos
+  por (cohorte, programa, cursos_aprobados). Sin PII, verificada con anon key.
+- Frontend: el toggle comparte `unidadEstado` con el Resumen; el histograma rellena 0..max cursos
+  para eje continuo (reusa `GraficoBarras`). Type-check limpio.
+- Netlify sigue sin créditos → se ve en LOCAL (localhost:3003, dev server corriendo). Commit
+  `50887ee` versionado para cuando se renueven créditos.
+- **Pendiente:** ninguno.
+
+---
+
+## 2026-07-15 — [Panel Netlify] Botón "Fuentes de datos" en la barra superior
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-datos-etl]]
+
+- Pedido de Samuel: un botón/pestaña arriba (conservando el estilo visual) que indique de qué
+  fuente viene la información — Q10, Supabase o Sheet directo — visible en todos los tabs.
+- **Cambio:** botón "Fuentes de datos" en la barra de nav (junto a los tabs de programa/cohorte/
+  ciudad), que despliega un panel (`PanelFuentes`, estilo `tarjeta-glass` + `AnimatePresence`)
+  con 4 filas semáforo:
+  - 🟢 Q10 directo (sin Sheets): Ingresados, Aprobados %, Estado de la cohorte, gráfico Cursos
+    de la cohorte actual.
+  - 🟡 Sheet vía Q10 automatizado (h2test): históricos, filtro por ciudad, Matrículas/Avance
+    fuera de la cohorte actual.
+  - 🔵 Sheet de bases sociodemográficas (BD monitorias/BD-Mujeres): Demografía JC/MR.
+  - 🟠 Sheet de Emoflow: tab Emoflow.
+- Aclara explícitamente que el panel SIEMPRE lee de Supabase — nunca consulta Q10 ni Sheets en
+  vivo desde el navegador; lo que varía es de dónde llenó Supabase cada tabla.
+- Type-check limpio + dev server recompiló OK (`Compiled / in 39.2s`, `GET / 200`).
+- Netlify sigue sin créditos → se ve en LOCAL (localhost:3003). Commit `d6612dc` versionado.
+- **Pendiente:** ninguno.
+
+---
+
+## 2026-07-15 — [Panel Netlify] Botón "Fuentes de datos" revertido
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-datos-etl]]
+
+- El botón "Fuentes de datos" (commit `d6612dc`, sesión anterior el mismo día) se revirtió a
+  pedido de Samuel tras verlo en local — `git revert d6612dc` → commit `db121cc`, limpio (84
+  líneas removidas exacto, sin restos de imports/estado huérfanos). Type-check OK, push hecho.
+- El diseño/contenido de las 4 categorías de fuente queda disponible en el historial de git
+  (`git show d6612dc`) por si se retoma más adelante.
+
+---
+
+## 2026-07-15 — [correos-mujeres-rofe] Skill /enviar-correo (Tarea 3) + credenciales SMTP a .env.local
+
+**Estado:** Completado
+**Proceso relacionado:** [[correos-mujeres-rofe]]
+
+- Tarea 3 del plan: creado `.claude/skills/enviar-correo/SKILL.md` (user-invocable). Orquesta
+  `enviar_campana.py` SIN reimplementar el envío: interpretar petición → filtros (programa/ciudad/
+  estado curso) → lista a `tools/` (reusa `extraer_lista_mr_ultimos3anios.py` o filtra Supabase con
+  service_role) → JSON de campaña (esquema copiado de `mr_ultimos_3_anios.json`, sin inventar
+  campos) → preview → piloto → 2º OK → envío. Incluye Reglas globales 1 y 3 textuales.
+- **Prueba end-to-end OK:** campaña ficticia `_prueba_skill.json` generada por herramienta (sin
+  editar a mano) → `--preview` (lo corrió Sonnet, verificado que interpoló los 9 campos, cero
+  placeholders `$VAR`) → piloto real a `samueldavidvida@gmail.com` (`enviados__prueba_skill.csv` =
+  OK). Artefactos de prueba (`preview.html`, `_prueba_skill.json`) removidos tras validar.
+- **Decisión de credenciales (Samuel, 2026-07-15):** autorizó guardar las app-passwords SMTP en
+  `.env.local` (raíz, gitignoreado) — supersede la parte "getpass en el momento" de la Regla 1
+  SOLO para uso local. Variables: `SMTP_USER`/`SMTP_PASSWORD` (mujeres.rofe@) y `SMTP_USER_2`/
+  `SMTP_PASSWORD_2` (envios.mr@). Permiso permanente para que Sonnet dispare pilotos a
+  `samueldavidvida@gmail.com` no-interactivamente (cargando `.env.local` al entorno, sin imprimir
+  el valor). Reflejado en el skill (sección "Excepción autorizada") y en el README.
+- **🔴 Pendiente de seguridad:** Samuel pegó **ambas app-passwords en el chat** → quedaron en el
+  log de la conversación en texto plano → **comprometidas**. Debe **revocarlas y regenerarlas** en
+  https://myaccount.google.com/apppasswords y actualizar `.env.local` (pegando la nueva en el
+  archivo, no en el chat). Hasta que rote, esas dos claves deben tratarse como expuestas.
+
+---
+
+## 2026-07-15 — [Panel Netlify] Histórico diario Emoflow + investigación % participación semanal
+
+**Estado:** En progreso (parte 1 completa, parte 2 bloqueada esperando Sheet ID)
+**Proceso relacionado:** [[panel-datos-etl]] · [[bd-seguimiento-monitorias]]
+
+- Samuel pidió: (1) empezar a trazar un histórico diario de Emoflow para graficar avances, y
+  (2) graficar en el tiempo el "% de participación" que está en la BD Seguimiento de Monitorias
+  (pestaña Estadísticas).
+- **Parte 1 — COMPLETA:** `sync_emoflow.py` hacía upsert puro (sobrescribía cada día, sin rastro).
+  Ahora, tras el upsert, snapshot diario de los AGREGADOS (nunca filas individuales) en dos tablas
+  nuevas: `historial_emoflow` (nacional) e `historial_emoflow_ciudad`, mismo patrón que
+  `historial_cursos`. Primer snapshot real cargado (823 participantes, 757 con match, 2026-07-15).
+  Ya encadenado en n8n (sync_emoflow es el último paso de q10-sync-supabase) — captura automática
+  sin tocar el workflow. Frontend: sección "Evolución de ingresos al sistema" en tab Emoflow
+  (commit panel-datos-rofe `d81f42d`).
+- **Parte 2 — investigación completa, implementación bloqueada:** el "% de participación" es el
+  bloque `EMOFLOW` de la pestaña Estadísticas (BD Seguimiento de Monitorias) — 9 ciudades + total,
+  columna `Avance` (=Completado/Real), con etiqueta "Semana N" (hoy Semana 15). Solo hay UN bloque
+  vigente en el export local (2026-07-09) — sin semanas anteriores preservadas, hay que capturar
+  desde ahora. **Bloqueador:** esa hoja hoy solo se lee vía export xlsx manual, nunca API en vivo.
+  Necesito el Sheet ID del Google Sheet vivo + que Samuel lo comparta (lectura) con
+  `q10-automatizacion@n8n-automatizacion-q10.iam.gserviceaccount.com`. Samuel se ofreció a pasarlo.
+- **Pendiente próxima sesión:** recibir Sheet ID + permisos → crear tabla
+  `emoflow_participacion_semanal` + script `sync_emoflow_participacion.py` (localiza bloque EMOFLOW
+  por texto, upsert diario por fecha+ciudad para capturar avance intra-semana) + encadenar a n8n +
+  gráfico frontend.
+
+---
+
+## 2026-07-15 — [Alerta de deserción] Tarea 4 del plan Sonnet — completada
+
+**Estado:** Completado
+**Proceso relacionado:** [[alerta-desercion]] · [[panel-datos-etl]] · [[q10-consolidacion]]
+
+- Tarea 4 de `docs/plan-ejecucion-sonnet.md`: convertir `tools/panel_riesgo.py` (corre a mano,
+  cruza h2test × Avance manual desde Sheets) en una alerta periódica.
+- **Decisión clave (Samuel):** la pestaña `Avance` manual NO está en Supabase, así que reproducir
+  el cruce de dos fuentes es imposible desde ahí → riesgo definido con **una sola fuente**
+  (`enrollments.porcentaje_avance`). Notificación por **Telegram** (bot q10-consolidacion), no correo.
+- **`scripts/panel-datos/alerta_desercion.py`** (nuevo): lee Supabase (service_role, `participants!inner`
+  + `courses!inner`), riesgo = matrícula no completada con avance < 60 en JC 2026; `0%`=posible
+  abandono, `1–59%`=avance bajo. Salida: mensaje resumido (stdout, para Telegram) + CSV con PII en
+  `tools/reportes/` (gitignoreado). Corrida real: **241 en riesgo · 51 abandono · 190 avance bajo**
+  (cuadra con SQL directo a Supabase).
+- **n8n `alerta-desercion-semanal`** (id `g0zmkQB70FHXPPLN`, ACTIVO): cron lunes 07:00 → Execute
+  Command → IF éxito/error → Telegram (credencial `Telegram Q10 Bot`, rama de error explícita).
+  JSON exportado a `n8n-workflows/alerta-desercion-semanal.json`.
+- **chat_id de Samuel (`8141703221`)** obtenido del historial de ejecuciones de n8n (sin tocar
+  secretos) — @myidbot no respondía. **Prueba en vivo:** cron temporal cada 2 min → ejecución
+  exitosa, nodo Telegram entregó OK → mensaje llegó al Telegram de Samuel; luego cron restaurado a
+  semanal. Criterio de aceptación cumplido.
+- Doc: `docs/procesos/alerta-desercion.md` (plantilla) + entrada en `mapa-codigo.md`.
+- **Nota:** la Regla global 6 dice "SERVICE_ROLE_KEY da 401" — desactualizada; el pipeline diario
+  ya la usa con éxito y este script también.
+- **Próximo (opcional):** enriquecer motivo con asistencia Zoom (ya en Supabase); historial de
+  alertas para reportar solo casos NUEVOS por semana.
+
+---
+
+## 2026-07-15 — [Panel Netlify] % de participación semanal Emoflow — resuelto de punta a punta
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-datos-etl]] · [[bd-seguimiento-monitorias]]
+
+- Continuación de la sesión anterior (bloqueada esperando Sheet ID). Samuel pasó el link:
+  `1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8`.
+- **Descubrimiento que destrabó todo:** ese ID es EL MISMO Sheet que ya usan `sync_emoflow.py`/
+  `export_avance.py` — "BD Seguimiento de Monitorias" no es un archivo separado, es la MISMA hoja
+  gigante (42 pestañas). El Service Account ya tenía acceso, verificado en vivo con gspread sin
+  esperar ningún permiso nuevo. La nota de la sesión anterior (asumía dos sheets distintos) era
+  incorrecta.
+- **Verificado en vivo que el bloque EMOFLOW se mueve de fila cada semana** (09-jul: fila 169,
+  Semana 15 → 15-jul: fila 184, Semana 16) — confirma que el sync debe buscar por texto, nunca
+  fila fija.
+- **Implementado:**
+  1. Tabla `emoflow_participacion_semanal` (RLS + policy desde el inicio).
+  2. `scripts/panel-datos/sync_emoflow_participacion.py` — localiza el bloque por texto, parsea
+     formato español, upsert diario por (fecha_corte, grupo_ciudad). Primera corrida real: Semana
+     16, 9 ciudades, 0 errores.
+  3. Encadenado a n8n vía API en vivo (`GET`+`PUT /workflows/uSizw3dNzpb6n53H`): nuevo tramo
+     `Ejecutar sync_emoflow_participacion` → `¿Participación OK?` → `OK`/`Error Participación`
+     tras `¿Emoflow OK?`. 17 nodos, verificado activo. Exportado a n8n-workflows/.
+  4. Frontend: 2 secciones nuevas en tab Emoflow (barra semana actual + evolución), commit
+     `41e6946`.
+- **Hallazgo de seguridad corregido en el camino:** `historial_emoflow`/`historial_emoflow_ciudad`
+  (de la sesión anterior) habían quedado con RLS DESHABILITADO — solo GRANT SELECT, sin policy.
+  El advisor de Supabase lo marcó crítico al crear la tabla nueva. Corregido en la misma migración
+  (RLS + policy pública de solo lectura, igual que historial_cursos), verificado con anon key
+  (lectura OK, escritura anónima → 401).
+- De paso: corregida otra nota desactualizada en mapa-codigo.md (sync_aprobacion_supabase.py
+  decía "pendiente encadenar a n8n" — ya estaba encadenado desde el 2026-07-10).
+- **Pendiente:** ninguno técnico. Verificar en la próxima corrida automática (9:45) que los 17
+  nodos completen el camino OK sin alertas.
+
+---
+
+## 2026-07-15 — [Correos MR] Tarea 5 del plan Sonnet — email_optout + log de campañas
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-datos-etl]] · correos Mujeres ROFÉ (scripts/mujeres-rofe-correos)
+
+- Tarea 5 de `docs/plan-ejecucion-sonnet.md`: deuda técnica antes de escalar envíos.
+- **Migración Supabase** (`email_optout_y_campanas_enviadas`): dos tablas, ambas con **RLS
+  activada y sin política anon** (backend service_role):
+  - `email_optout(email PK, fecha, motivo)` — correos que piden no recibir campañas (PII).
+  - `campanas_enviadas(id, campana, fecha, enviados, fallidos, programa)` — log AGREGADO, sin
+    correos individuales.
+- **`extraer_lista_mr_ultimos3anios.py`:** al final excluye los correos de `email_optout`
+  (nueva `extraer_optout()`; `RESUMEN` ahora lleva `optout_excluidos=N`).
+- **`enviar_campana.py`:** inserta UNA fila resumen en `campanas_enviadas` al terminar piloto/envío
+  (`registrar_campana_supabase()`, nunca hace fallar el envío). **Bug corregido:** `CONFIG_SMTP` lee
+  `os.environ` en tiempo de import, así que el `cargar_env_local()` debía correr a nivel de módulo
+  ANTES de `CONFIG_SMTP`, no dentro de `main()` (si no, `SMTP_PASSWORD`=None).
+- **Verificación (criterio de aceptación):** (1) inserté un correo MR real de prueba en
+  `email_optout` → la extracción bajó de union=2693 a 2692 (`optout_excluidos=1`) → borré la fila de
+  prueba (0 reales suprimidos). (2) `--piloto` a samueldavidvida@gmail.com → correo enviado +
+  fila `mr_ultimos_3_anios (piloto)` (enviados=1, fallidos=0, programa=mr) en `campanas_enviadas`
+  (confirmado vía REST; el MCP Supabase daba 502 transitorio).
+- README de mujeres-rofe-correos actualizado con las dos tablas.
+- **NO ejecuté `--enviar`** (sigue requiriendo confirmación explícita de Samuel).
+
+---
+
+## 2026-07-15 — [Zoom] Tarea 6 del plan Sonnet — crear reuniones automáticamente
+
+**Estado:** Completado
+**Proceso relacionado:** [[zoom-crear-reunion]] · [[zoom-asistencia]]
+
+- Tarea 6: workflow n8n que crea reuniones Zoom (hoy 2 personas las hacen a mano).
+- **Bloqueo detectado y resuelto:** el app S2S OAuth (reusado de asistencia) solo tenía scopes de
+  LECTURA; crear reuniones exige `meeting:write`. Verifiqué el hueco pidiendo un token e
+  inspeccionando su campo `scope`. Samuel agregó `meeting:write:meeting:admin` en el Marketplace
+  (cuenta comunicaciones) y re-activó el app; confirmé el scope con un token fresco.
+- **`zoom-crear-reunion`** (id `JimOlAsAF0jAXcWj`, activo): Webhook (título/fecha/hora/duración) →
+  Preparar datos (Set) → Obtener Token Zoom (Basic Auth `Zoom S2S Basic Auth v2`) → Crear Reunion
+  (`POST /users/{host}/meetings`, host por email = comunicaciones@, sin scope user:read) →
+  Responder OK (devuelve join_url). Camino de error explícito (`onError: continueErrorOutput` →
+  Responder Error 500). JSON en `n8n-workflows/zoom-crear-reunion.json`.
+- **Verificación:** invocación de prueba creó reunión real (id `84283509100`) y devolvió link (HTTP
+  200); host inválido → HTTP 500 con el mensaje de Zoom, sin crear reunión. Criterio cumplido.
+- **Pendiente operativo:** (1) borrar 2 reuniones de prueba (`84752669526`, `84283509100`) — el app
+  no tiene scope `meeting:delete`, así que se borran a mano o se agrega el scope. (2) UX: cambiar
+  webhook por Form Trigger / comando Telegram para los operadores. Doc en `docs/procesos/zoom-crear-reunion.md`.
+- Con esto quedan hechas las Tareas 1–6; falta Tarea 7 (captura de rebotes, agregada hoy).
+
+---
+
+## 2026-07-15 — [Correos MR] Tarea 7 del plan Sonnet — captura de rebotes → suppression list
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-datos-etl]] · correos Mujeres ROFÉ
+
+- Tarea 7 (agregada hoy tras detectar Samuel que no capturábamos rebotes): cerrar el ciclo
+  rebote → suppression list. Decisión Samuel: tabla **`email_bounces` aparte** (no reusar
+  email_optout — baja voluntaria ≠ rebote técnico). Lectura del buzón por **IMAP** con la
+  app-password ya existente (la Gmail MCP no sirve: apunta al correo personal, no al remitente).
+- **Migración:** `email_bounces(email PK, tipo, codigo, fecha, motivo)`, RLS activada sin anon.
+- **`capturar_rebotes.py`** (nuevo): IMAP a `mujeres.rofe@`, busca DSN de mailer-daemon desde
+  una fecha, parsea `Final-Recipient`/`Status`/`Diagnostic-Code`, clasifica hard (5.x) / soft
+  (4.x), upsert en email_bounces. PII → `tools/.../rebotes_YYYYMMDD.csv` (gitignored); consola
+  solo conteos.
+- **Bug de parseo corregido:** la parte `message/delivery-status` es multiparte (lista de bloques
+  Message), no texto — la 1ª versión caía al texto plano y no capturaba `Status:` (todos salían
+  hard con código vacío). Ahora itera los bloques estructurados + fallback al texto. Trunqué y
+  re-corrí: 73 direcciones reales, **52 hard + 21 soft (4.2.2 buzón lleno)**, códigos correctos.
+- **`extraer_lista_mr_ultimos3anios.py`:** ahora excluye supresiones = `email_optout` +
+  `email_bounces` tipo=hard (los soft NO). Verificado: union 2693 → **2641** (52 hard excluidos).
+  `RESUMEN` cambió `optout_excluidos` → `suprimidos`.
+- **Cron n8n `correos-rebotes-semanal`** (id `N7ouRIdgbomCGNxa`, activo): lunes 6:30 → Execute
+  Command → IF → Telegram (resumen/error). JSON exportado. README actualizado.
+- **Plan Sonnet completo: Tareas 1–7 hechas.** ✅
+
+---
+
+## 2026-07-15 — [Correos MR] Rebotes también a Google Sheet (pedido Samuel)
+
+- Samuel pidió que los rebotes queden en un Sheet para reconocer a quién actualizarle el correo.
+- `capturar_rebotes.py` ahora, además de Supabase, vuelca la foto completa de `email_bounces`
+  enriquecida con **nombre** a la pestaña **`Rebotes`** de la BD-Mujeres ROFÉ 2026
+  (`1ZsC4WyY...`, misma SA de Q10). Nombre desde la pestaña `General` (roster completo, gana) +
+  lista campaña + `participants`. Columnas: Nombre·Correo·Tipo·Codigo·Fecha·Motivo, hard primero.
+  Idempotente (reescribe la pestaña). Flag `--no-sheet`.
+- **Gotcha resuelto:** la lista de campaña ya excluye los hard bounces → no servía para los
+  nombres; la fuente buena es la pestaña General. Resultado: 85/86 con nombre.
+- Verificado: pestaña `Rebotes` con 86 filas (52 hard + 34 soft). README actualizado.
+
+---
+
+## 2026-07-15 — [Zoom→YouTube] Análisis + plan de acción para clases Mujeres ROFÉ
+
+- Objetivo: al terminar de procesarse la grabación en la nube de una clase MR, descargarla y
+  subirla al canal de YouTube al que se accede con comunicaciones@tocaunavida.org.
+- **Verificado contra la API real:** el app S2S de comunicaciones NO tiene scope de cloud
+  recording (`4711` explícito: falta `cloud_recording:read:list_user_recordings:admin`).
+- **Hallazgo bloqueante:** `asistencia_zoom` (todo `meeting.ended` de comunicaciones desde
+  2026-07-01) solo tiene clases JC → las clases MR probablemente se dictan en la cuenta
+  *soporte* (us02web, sin acceso S2S, solicitud a Colegio Colombia pendiente). Confirmar cuenta
+  es la pregunta #1 del plan.
+- Cursos MR reales en Supabase (8) con naming inconsistente → filtro por palabras clave
+  editables, no match exacto de topic.
+- Plan completo en [[zoom-youtube]] sección "Plan de acción — Clases Mujeres ROFÉ" (2026-07-15):
+  Fase 0 confirmaciones → Fase 1 scopes + Event Subscription `recording.completed` (path nuevo
+  `/webhook/zoom-grabaciones`) → Fase 2 OAuth YouTube (comunicaciones@, refresh_token, app
+  publicada) → Fase 3 workflow n8n + `subir_yt_grabacion.py` (streaming, unlisted, playlist,
+  log Sheet, backfill diario 48h) → Fase 4 pruebas. Sin implementar aún.
+
+---
+
+## 2026-07-15 (cont.) — [Zoom→YouTube] Decisión de host MR + gap encontrado
+
+- Samuel confirmó Fase 0: se graba en la nube, comunicaciones@ es owner del canal YouTube,
+  máx. 2 clases MR/día (holgado vs cuota 6/día). Decisión nueva: **de ahora en adelante las
+  clases MR se dictan con host `mujeres.rofe@tocaunavida.org`** (correo ya usado como
+  remitente de campañas) — resuelve la pregunta de qué cuenta Zoom usar sin depender de la
+  cuenta *soporte* bloqueada.
+- **Verificado en vivo:** ese correo aún NO es usuario Zoom dentro de la cuenta comunicaciones
+  — `POST /users/mujeres.rofe@tocaunavida.org/meetings` devolvió `404 / 1001 User does not
+  exist`. Falta que Samuel lo agregue como usuario licenciado (Zoom Admin → User Management)
+  antes de la Fase 1 del plan.
+- Filtro de la Fase 3 del plan cambiado de "palabras clave del topic" a **filtro por
+  `host_email`** (más robusto, evita el naming inconsistente de los 8 cursos MR en Supabase).
+- Plan actualizado en [[zoom-youtube]]. Sin implementar aún — próximo paso es de Samuel
+  (agregar el usuario Zoom), luego Fase 1 (scopes + Event Subscription).
+
+---
+
+## 2026-07-15 (cont. 2) — [Zoom→YouTube] Corrección: host es comunicaciones@, no mujeres.rofe@
+
+- Samuel corrigió: las clases (JC y MR) se dictan con `comunicaciones@tocaunavida.org` — ahí
+  se alojan las grabaciones a enviar a YouTube. Se descarta mover MR a un host Zoom separado
+  (la idea de `mujeres.rofe@tocaunavida.org` como host quedó revertida; ese correo sigue siendo
+  solo remitente de campañas).
+- **Consecuencia de diseño:** como JC y MR comparten host, el filtro de "es clase MR" vuelve a
+  ser por **palabras clave del topic** (no por host_email) — revertido en el plan de
+  [[zoom-youtube]] y en la memoria de proyecto correspondiente (que había quedado con el dato
+  equivocado en el turno anterior — corregida).
+- Sin cambios en el bloqueante técnico real: falta agregar el scope `cloud_recording:read:*`
+  al app S2S existente de comunicaciones (Fase 1, ~10 min manual de Samuel). El resto del plan
+  (Fases 2-4) queda igual.
+
+---
+
+## 2026-07-15 — [Correos MR] Campaña "7mo Encuentro Regional Bogotá" — envío real, 2 cuentas simultáneas
+
+**Estado:** Completado
+**Proceso relacionado:** correos Mujeres ROFÉ (scripts/mujeres-rofe-correos)
+
+- Samuel filtró en la BD-Mujeres ROFÉ (columna AUXILIAR + Ciudad + magenta) una lista de 468
+  correos "útiles" (sin rebotes) para invitar al 7mo Encuentro Regional (Bogotá, sáb 29-ago).
+- Pegó la lista (468 nombre,correo) + texto de la invitación + imágenes header/footer
+  (`Downloads/plantilla/`). El footer resultó ser idéntico al `firma.png` genérico ya usado;
+  el header sí es específico del evento ("7to Encuentro Regional 2026").
+- **Cambio de código (mínimo, aditivo) en `enviar_campana.py`:** el JSON de campaña ahora puede
+  declarar `IMG_BANNER`/`IMG_FIRMA` propios (si no, usa los genéricos de siempre) — necesario
+  porque este banner es del evento, no de marca. De paso corregí `accion_preview()`: mostraba
+  siempre `img/banner.png` fijo aunque la campaña usara otra imagen — ahora refleja la real.
+- **Pidió usar AMBAS cuentas SMTP simultáneamente** (`mujeres.rofe@` + `envios.mr@`, esta
+  última ya reparada por Samuel — confirmé con un login SMTP real antes de nada). Lista dividida
+  234/234; dos campañas (`encuentro_bogota_2026_a`/`_b`), mismo contenido, distinto ID para
+  separar registro. Verifiqué contra Supabase: 0 duplicados, 0 en `email_bounces`(hard)/
+  `email_optout` antes de enviar.
+- **Preview → piloto (ambas cuentas a samueldavidvida@gmail.com) → confirmación explícita
+  "ENVIAR 234" (dos veces) → envío masivo en paralelo (2 procesos background).**
+- **Resultado: 468/468 enviados, 0 errores** (234+234, ambas cuentas). Registrado en
+  `campanas_enviadas` (4 filas: 2 pilotos + 2 envíos masivos).
+- Le mostré a Samuel cómo monitorear en vivo abriendo los logs de los procesos en VS Code
+  (`code <ruta-output>`) — se autorefrescan mientras no se editen.
+
+---
+
+## 2026-07-15 — [Correos MR] Rebotes: cron subido de semanal a diario
+
+- Tras el envío del 7mo Encuentro (468 correos), Samuel pidió hacer la captura de rebotes más
+  regular. Workflow `correos-rebotes-semanal` (id `N7ouRIdgbomCGNxa`) renombrado a
+  **`correos-rebotes-diario`**, cron cambiado de `30 6 * * 1` (solo lunes) a `30 6 * * *`
+  (todos los días, 6:30 a.m.). JSON re-exportado a `n8n-workflows/correos-rebotes-diario.json`
+  (el archivo semanal viejo se eliminó, nunca se había commiteado).
+- Estado acumulado de email_bounces tras la campaña: 122 direcciones (60 hard, 62 soft) — 18
+  nuevas vs. antes del envío (8 hard + 10 soft), confirmando que valía la pena capturarlas pronto.
+
+---
+
+## 2026-07-15 — [Correos MR] Certificados personalizados por PDF (curso "De la idea a la acción")
+
+**Estado:** Completado
+**Proceso relacionado:** correos Mujeres ROFÉ (scripts/mujeres-rofe-correos)
+
+- Una compañera armó 42 certificados en un solo archivo de Canva (42 páginas, mismo diseño,
+  sin Bulk Create/Autofill) y había que mandarle a cada dueña el suyo por correo, guiándose
+  por el nombre. La infraestructura de correos existente **no soportaba adjunto por
+  destinatario** (solo imágenes inline iguales para todos) y no había ninguna librería de PDF
+  en el repo.
+- **Nuevo módulo `scripts/mujeres-rofe-correos/certificados/`:**
+  - `preparar_certificados.py --dividir PDF.pdf` — separa el PDF en 42 archivos individuales
+    (`pypdf`, única dependencia nueva) y extrae el texto de cada página para ubicar la línea
+    del nombre.
+  - `preparar_certificados.py --emparejar --linea N` — cruza el nombre contra la pestaña
+    `General` de la BD-Mujeres ROFÉ (gspread, mismo patrón que `capturar_rebotes.py`) con
+    matching difuso.
+  - `enviar_certificados.py --piloto/--enviar` — reutiliza `conectar_smtp`/`construir_mensaje`/
+    reintentos/registro de `enviar_campana.py` (cero duplicación), agregando el PDF propio de
+    cada quien.
+- **Gotcha 1 — nombre "letra por letra":** Canva exportó el nombre del certificado con cada
+  letra como glyph separado (`"A d y  L u z"`, espacio simple entre letras, doble entre
+  palabras). Rompía el matching por completo. Se agregó `reconstruir_texto_espaciado()` que
+  detecta el patrón (hay `"  "` en la línea) y recompone las palabras usando el espacio doble
+  como frontera real.
+- **Gotcha 2 — nombres incompletos en la BD:** muchas filas de `General` tienen solo parte del
+  nombre (falta un nombre o un apellido), lo que hundía el score de similitud por caracteres
+  aunque el match fuera obviamente correcto (ej. "Ady Luz Martinez Hernández" vs BD "Ady Luz
+  Martinez"). Se agregó una segunda métrica por **contención de tokens** (todas las palabras
+  del nombre más corto están en el más largo) y se usa el máximo de las dos — subió de 38/42 a
+  42/42 matches confiables, verificado además cruzando que el correo contuviera el nombre.
+- **Extensión reutilizable en `enviar_campana.py`:** `construir_mensaje()` ahora acepta
+  `adjunto=(ruta, nombre)` opcional (retrocompatible), y las imágenes inline (banner/firma)
+  solo se adjuntan si la plantilla realmente las referencia — permitió pedir "sin banner de
+  encabezado" para esta campaña sin tocar la plantilla genérica: se creó
+  `templates/email_certificado_template.html` (copia sin el `<tr>` del banner) y el JSON de
+  campaña puede declarar `PLANTILLA_TEMPLATE` propia (mismo patrón que `IMG_BANNER`/`IMG_FIRMA`).
+- Piloto a samueldavidvida@gmail.com (2 rondas: con y sin banner) → aprobado → `ENVIAR 42` →
+  **42/42 enviados, 0 errores.**
+
+---
+
+## 2026-07-15 — [Correos MR] Resaltado rojo en Sheets + marcador de alerta en Supabase
+
+- Samuel pidió dos cosas para hacer los rebotes "fácilmente identificables": (1) que las filas
+  con correo rebotado en `General` se vean en rojo, (2) un marcador en Supabase que informe
+  que hay correos desactualizados.
+- **(1) Formato condicional en `General`:** regla `CUSTOM_FORMULA` vía Sheets API —
+  `=AND(ISLOGICAL($AN2);NOT($AN2))` sobre A2:BK(todas las filas), fondo rojo (255,153,153).
+  Mismo gotcha de siempre (locale es_ES): nombres de función en inglés, separador `;`.
+  Insertada con `index:0` (máxima prioridad) para que gane sobre las 4 reglas de color por
+  proveedor de correo (gmail/hotmail/outlook/sena) que ya existían en columna E. Se recalcula
+  sola — verificado con un hard bounce real (`clau908@gmail.com`, fila 688): fondo rojo
+  confirmado vía API sin tocar nada a mano.
+- **(2) Tabla `alertas_datos`** (nueva, RLS + política pública de solo lectura, mismo patrón
+  que `cohorte_ingresos`/`historial_cursos` — sin PII, solo conteos): fila
+  `id='correos_mr_desactualizados'` con `activa`/`cantidad`/`detalle`, actualizada por
+  `capturar_rebotes.py` en cada corrida con el total ACUMULADO de hard bounces (no solo lo
+  nuevo de esa corrida). Verificado: 61 hard acumulados, activa=true.
+- Ambas cosas quedan automáticas vía el cron diario `correos-rebotes-diario` — no requieren
+  intervención manual futura.
+
+---
+
+## 2026-07-15 (cont. 3) — [Zoom→YouTube] Fase 1 hecha: scopes cloud recording verificados
+
+- Samuel agregó y reactivó los scopes `cloud_recording:read:list_user_recordings:admin` y
+  `cloud_recording:read:list_recording_files:admin` en el app S2S de comunicaciones.
+- **Verificado en vivo:** token fresco los trae; `GET /users/comunicaciones@.../recordings`
+  pasó de `4711` a `200` — 11 grabaciones reales de los últimos 15 días con `download_url` y
+  `file_size` por archivo (incluye el MP4 `shared_screen_with_speaker_view`).
+- Todas las grabaciones actuales son de "Desarrollo Web - GIT, HTML y CSS" (JC) o pruebas —
+  ninguna con topic MR todavía (no bloqueante, ya esperado).
+- Fase 1 del plan en [[zoom-youtube]] marcada como hecha. Sigue pendiente: Event Subscription
+  de `recording.completed` (se hace junto con el workflow n8n de la Fase 3), y Fase 2 (OAuth
+  YouTube).
+
+---
+
+## 2026-07-15 (cont. 4) — [Zoom→YouTube] Fase 2 iniciada: OAuth Client creado
+
+- Samuel habilitó YouTube Data API v3 y creó el OAuth Client en el proyecto Google Cloud
+  existente. Client ID/Secret guardados en `scripts/zoom-youtube/.env` (nuevo, gitignoreado;
+  confirmado con `git status` que no aparece como tracked).
+- Pausa acordada: arquitectura de la Fase 3 (workflow n8n + script) se retoma mañana.
+- Pendiente antes de continuar Fase 2: confirmar scope `youtube.upload` + app "In production"
+  en la pantalla de consentimiento, y correr el consentimiento real con comunicaciones@ para
+  obtener el `refresh_token`.
+
+---
+
+## 2026-07-15 (cont. 5) — [Zoom→YouTube] Fase 2 completa: OAuth YouTube verificado
+
+- Primer intento de consentimiento OAuth falló: `Error 400: redirect_uri_mismatch` — el OAuth
+  Client creado era tipo "Web application", pero el flujo local (`google-auth-oauthlib`
+  `run_local_server`) necesita tipo **"Desktop app"** (acepta `http://localhost:<puerto
+  random>` sin pre-registrar la URI). Se creó un segundo cliente Desktop app y funcionó a la
+  primera con `comunicaciones@tocaunavida.org`.
+- `refresh_token` obtenido y guardado en `scripts/zoom-youtube/.env`. **Verificado en vivo:**
+  autentica contra el canal real "Fundación ROFÉ - Toca una Vida" (157 videos existentes).
+- Gotcha de scopes: declarar solo `youtube.upload` en las Credentials locales causa
+  down-scoping del access_token al refrescar — corregido en `subir_yt_grabacion.py` para
+  declarar `youtube.upload` + `youtube`.
+- Avance de Fase 3 en paralelo: escrito `scripts/zoom-youtube/subir_yt_grabacion.py` completo
+  (probado con descarga real de 435MB) y creado el workflow n8n `zoom-yt-grabaciones`
+  (id `bmKg2YhNRM3mlI19`, inactivo, vía API).
+- Falta: suscribir `recording.completed` en Zoom Marketplace, activar el workflow, y probar
+  end-to-end con una clase MR real. Plan actualizado en [[zoom-youtube]] y memoria de proyecto.
+
+---
+
+## 2026-07-15 (cont. 6) — [Zoom→YouTube] Pipeline en producción, esperando primera clase MR
+
+- Samuel agregó la Event Subscription `recording.completed` en Zoom Marketplace y validó la
+  URL en verde. Se activó el workflow n8n `zoom-yt-grabaciones` (id `bmKg2YhNRM3mlI19`) y se
+  reconfirmó con un CRC sintético (mismo patrón de zoom-asistencia): el `encryptedToken`
+  calculado coincidió byte a byte con el esperado.
+- **Pipeline completo Zoom→YouTube para clases MR queda en producción:** scopes de cloud
+  recording (Fase 1) + OAuth YouTube (Fase 2) + script/workflow activos (Fase 3), todo
+  verificado en vivo durante la sesión. Solo falta la prueba end-to-end real cuando corra la
+  primera clase MR con host comunicaciones@ (el filtro por topic/keyword se probará ahí).
+- Plan cerrado en [[zoom-youtube]] y memoria de proyecto actualizada.
+
+---
+
+## 2026-07-16 — [Zoom→YouTube/Drive] Rama NOVA → carpeta de Drive + backfill diario
+
+- Requerimiento de Samuel: sesiones NOVA → carpeta Drive `TEST-16-07-2026`
+  (`18eu7pveWJmvTb_rLPHGVmPZ41PE-zUGV`), cada sesión con su transcripción en subcarpeta
+  `NOVA-DD-MM-YYYY`, con garantía del 100% para todas las NOVA.
+- `subir_yt_grabacion.py` ahora enruta por topic: "nova" → Drive (MP4 + TRANSCRIPT VTT),
+  keywords MR → YouTube, resto descarta. Idempotencia NOVA por nombre de archivo en Drive
+  (soporta `recording.transcript_completed` llegando después sin duplicar video).
+- **Gotcha verificado en vivo:** la service account NO puede subir a carpetas de My Drive
+  (`403 storageQuotaExceeded`) — se usa el OAuth de comunicaciones@ agregando scope `drive`.
+- Verificado: Audio Transcript activado en la cuenta (todas las grabaciones recientes traen
+  `TRANSCRIPT audio_transcript`).
+- Red de seguridad: `backfill_grabaciones.py` + workflow n8n `zoom-yt-backfill`
+  (id `HEz0dGunvdGckdEr`, ACTIVO, diario 20:00, Telegram) — cubre PC apagado/túnel caído/
+  transcripción tardía. Textos Telegram de `zoom-yt-grabaciones` generalizados.
+- Bloquea el test E2E: (1) Samuel re-corre `obtener_refresh_token.py` (nuevo scope drive),
+  (2) agregar evento `recording.transcript_completed` en el Marketplace.
+
+---
+
+## 2026-07-16 (cont.) — [Zoom→Drive NOVA] Test E2E PASÓ; listo para la sesión real de 12:30
+
+- Samuel re-consintió OAuth (scope drive) y habilitó la Drive API en el proyecto GCP
+  (gotcha: el scope no basta, la API se habilita aparte — 403 accessNotConfigured).
+- Test E2E con grabación real (121 MB + VTT, topic NOVA sintético): subcarpeta
+  `NOVA-16-07-2026` creada, video + transcripción subidos, log OK. Idempotencia verificada
+  (mismo start_time → no resube). Token nuevo verificado también contra YouTube (canal OK).
+- Workflow `zoom-yt-grabaciones`: rama SKIP silenciosa (IF "Es SKIP?" → NoOp) para que los
+  eventos sin grabación y clases JC no disparen falsas alarmas de Telegram.
+- La app S2S no tiene `meeting:read:list_meetings` → chequeo pre-sesión NOVA es manual:
+  topic con "nova" + grabar en la nube.
+
+---
+
+## 2026-07-16 (cont. 2) — [Zoom→Drive NOVA] Primera sesión real: 3 bugs cazados, cadena validada
+
+- Primera reunión NOVA real (12:52, creada por API con auto_recording=cloud). El video llegó
+  a Drive vía backfill manual; el webhook destapó 3 fallas, todas corregidas y verificadas
+  re-inyectando el evento real firmado por la URL pública:
+  1. Zoom manda los recording.* a la suscripción de ASISTENCIA → nueva ruta "recording" en el
+     switch de Zoom - Asistencia que reenvía a /webhook/zoom-grabaciones (misma firma).
+  2. Zoom - Asistencia tenía nodos triplicados (mismo nombre/id); n8n ejecuta la ÚLTIMA copia.
+     Deduplicado 30→22 nodos.
+  3. --payload-b64 con Buffer resolvía vacío en Execute Command → ahora --meeting-uuid y el
+     script consulta la API (camino del backfill). IF guard: solo completed/transcript_completed.
+- Replay final: asistencia→reenvío→grabaciones→script ("ya estaban", idempotente)→Telegram OK.
+- JSONs re-exportados: zoom-asistencia.json, zoom-yt-grabaciones.json.
+
+---
+
+## 2026-07-16 (cont. 3) — [Zoom→YT/Drive] Test YouTube OK + cambio de alcance: se sube TODO
+
+- Test E2E de la rama YouTube: grabación real de 2 MB con topic "TEST 16-07 Clase
+  Emprendimiento (borrar)" → subida unlisted al canal real → verificada por Samuel →
+  borrada del canal (la fila queda en el log para idempotencia).
+- **Cambio de alcance (decisión de Samuel):** se graba TODO — ya no hay filtro MR. Toda
+  grabación no-NOVA va a YouTube unlisted. MR_KEYWORDS ahora solo etiqueta el programa.
+- Columna nueva "Programa" en YT-GRABACIONES-LOG (Mujeres ROFE / Jovenes creaTIvos), también
+  en la descripción del video. asegurar_tab_log actualiza el encabezado si cambió.
+- Vigilar: cuota YouTube 6 subidas/día ahora cuenta todas las clases + salas breakout; el
+  backfill sube también las clases JC de su ventana de 2 días.
+
+---
+
+## 2026-07-16 (cont. 4) — [Zoom→YT] Playlists por curso + "todo a partir de ahora"
+
+- "Carpetas" en YouTube = playlists por curso: cada video se agrega solo a una playlist
+  unlisted con el nombre del curso (normalizar_curso quita " - Sala N"). Columna "Playlist"
+  en el log. Gotcha verificado: playlistItems.insert da 409 SERVICE_UNAVAILABLE transitorio
+  recién creada la playlist → agregar_a_playlist reintenta 4x con espera (probado en vivo).
+- Precisión de Samuel: TODO se sube A PARTIR DE AHORA → las 2 clases JC previas (14/07 y
+  16/07 am) pre-marcadas como OMITIDO en YT-GRABACIONES-LOG para que el backfill de las
+  20:00 no las suba retroactivamente.
+- Tests con subida real de 1 MB: playlist creada + video insertado (con reintento) →
+  verificado → video y playlist de test borrados del canal.
+
+---
+
+## 2026-07-16 (cont. 5) — [wordpress-tocaunavida] Backup, API REST, panel embebido y refresco visual
+
+- Descubierto: el sitio institucional `tocaunavida.org` es WordPress+Elementor en droplet DO
+  (NO es mujeresrofe.com/Angular). Nota nueva: [[wordpress-tocaunavida]].
+- Backup Duplicator (1.3 GB) + réplica local Docker (BD real importada, search-replace a
+  localhost:8080). Gotcha: el export omitió wp-content/plugins/ → réplica se ve rota.
+- Panel Netlify migrado de repo: soportejunior-codeJR/PowerBi (dejó de desplegar) →
+  comunicaciones-ai/Panel-De-Datos. URL nueva: venerable-truffle-331f3c.netlify.app.
+- Página /panel-de-datos/ (18705) publicada con iframe del panel.
+- Acceso programático por API REST con Application Password (usuario Samuel ROFE, token
+  "claude-code", cred en .env.local). Se puede leer/escribir _elementor_page_settings y
+  limpiar cache CSS vía DELETE /elementor/v1/cache — sin tocar wp-admin.
+- Refresco visual sitewide en Kit 6 (custom_css: hovers, brillo en botones, subrayado
+  degradado en headings; sombra nativa de imágenes). Respaldo para revertir en scratchpad.
+- Página de prueba 18716 (draft "Mujeres ROFÉ"): rediseño iterativo con referencia aprobada
+  https://front-end-visuals-reborn.lovable.app (paleta #ef2b3c/#f6a129/#1a7bb8/...).
+
+---
+
+## 2026-07-16 (cont. 6) — [wordpress-tocaunavida] Revert total + cambio a plan standalone
+
+- El refresco visual por API (Kit global + página prueba) causó dudas al no poder verificarse
+  visualmente en vivo (sin herramienta de navegador). Por precaución, **revert completo del Kit 6**
+  a su estado original (backup JSON previo) — confirmado en el sitio público, cero rastro.
+- Página de prueba 18716 (draft, sin impacto público) quedó con el custom_css de la v2 sin revertir
+  — no urgente por estar aislada e invisible.
+- **Nuevo plan acordado con el usuario:** en vez de seguir editando Elementor a ciegas, construir un
+  HTML+CSS+JS standalone con mejor calidad, y solo integrarlo a WordPress tras aprobación.
+- Extracción completa del contenido real de `/mujeres-rofe/` (17915) vía API REST → documento
+  `docs/procesos/mujeres-rofe-inventario-contenido.md`: toda la estructura (hero, 4 pilares, 2
+  catálogos de cursos duplicados, servicios de apoyo, requisitos, 2 bloques de registro duplicados,
+  FAQ, 3 testimonios en video, T&C), 16 imágenes con URL completa, todos los enlaces, 3 videos
+  YouTube. Detectado: contenido duplicado 2x en 3 secciones (probable hack desktop/mobile no
+  responsive) — origen del problema de "bombillos sobrepuestos a un cuadrado" reportado.
+- Pendiente: esperar señal del usuario para construir el HTML/CSS/JS de reemplazo.
+
+---
+
+## 2026-07-17 — [transversal] Agenda Google Calendar con las automatizaciones n8n
+
+- Petición: que cada automatización n8n aparezca en la agenda de samueldavidvida@gmail.com
+  como recordatorio de qué se está automatizando, cuándo y qué nodos corren.
+- Análisis de los 10 JSONs en n8n-workflows/: 7 con horario fijo, 3 por webhook (sin hora).
+- Creados 8 eventos recurrentes vía conector Google Calendar (America/Bogota, "libre",
+  sin alarmas, colores por área): asistencia-zoom-diario 00:00, correos-rebotes 6:30,
+  q10-consolidacion 8:00 (representa cadencia cada 4 h — GCal no soporta RRULE horaria),
+  mr-actualizacion-datos 9:30, q10-sync-supabase 9:45, zoom-yt-backfill 20:00,
+  alerta-desercion lunes 7:00, y un all-day semanal (lunes) listando los 3 webhooks
+  (zoom-asistencia, zoom-yt-grabaciones, zoom-crear-reunion).
+- Cada evento describe workflow, cadena de nodos en orden y qué actualiza.
+- Gotcha: el conector de Calendar requirió re-autorización OAuth (token expirado).
+- Mantenimiento: si cambia el horario de un workflow, actualizar el evento correspondiente.
+
+---
+
+## 2026-07-17 (cont.) — [q10-consolidacion] Bot Telegram: comandos manuales para todos los procesos
+
+- Extendido el workflow producción `Rblg81qifVshsRae` (Bot Q10) vía API: el parser ahora acepta
+  `/actualizar <proceso>` con 7 procesos: q10 (cadena existente), panel, asistencia, mr,
+  rebotes, alerta, backfill. Rama nueva: ¿Es q10? → Avisar inicio → Ejecutar proceso manual
+  (comando mapeado en el Code node, onError continue) → Responder resultado (exitCode + cola
+  de stdout/stderr). Ayuda actualizada con la lista completa.
+- Los comandos shell son los mismos de cada workflow programado (sin duplicar lógica de flujo;
+  la cadena del pipeline panel corre los 5 scripts con &&).
+- Motivo de diseño: Telegram solo permite 1 webhook por bot → los comandos nuevos viven en el
+  mismo workflow del bot, no en workflows aparte.
+- Los 8 eventos de Calendar ahora incluyen su comando manual (🔄 Actualización manual) y se
+  corrigió el HTML de las descripciones (habían quedado con entidades escapadas).
+- Alarmas popup+email activadas solo para alerta-desercion-semanal (lunes 7:00).
+- Export actualizado en `n8n-workflows/q10-consolidacion.json` (32 nodos).
+- Pendiente de verificación por el usuario: probar `/actualizar alerta` en Telegram.
+
+---
+
+## 2026-07-20 — [transversal] Presentación para Cristian: cómo funciona el sistema + hallazgos de datos
+
+- Contexto: chat de Cristian (18/7) con 3 dudas — "cuando se necesita no está disponible o tarda",
+  "los usuarios que se salieron no se eliminan" y "el proceso ha sido un poco inestable".
+  Revisión acordada para el martes 21/7. Perfil no técnico → tono pedagógico, sin culpas.
+- Creada `tools/presentacion-automatizaciones-cristian.pptx` (12 láminas + notas de orador por
+  lámina): flujo Q10→robot→Sheets→paneles, horarios reales COT, dependencia del PC encendido
+  (cada corrida reconstruye todo → una corrida pone al día), 7 comandos Telegram, 4 paneles
+  públicos con URL, retirados/ledger (82 cohorte 2026 · 353 histórico · verificación 55/55),
+  hallazgo Emprendimiento duplicado (19 estudiantes, 6 conflictos, caso 78%→0%), cuentas de
+  prueba excluidas, denominadores + cohorte 832 + cuadre 9/9, y opciones A/$0 · B/VPS · C/híbrido.
+- Guardada en `tools/` (gitignoreado) por ser comunicación interna — no debe llegar a GitHub Pages.
+- Agenda propuesta del martes: demo paneles, regla "retiro → marcarlo en Q10 el mismo día",
+  frecuencia real de reportes, decidir opción de estabilidad, guía Telegram al equipo.
+- Pendiente: Samuel reenviará el "plan de acción" (encargo de Lina) y el contrato (los pegados no
+  llegaron al chat) para contrastarlos con el roadmap original y analizar alcance/carga laboral.
+
+---
+
+## 2026-07-20 (cont.) — [transversal] Contraste "plan de acción de IA" vs roadmap + contrato
+
+- Llegaron los dos textos pendientes: el "plan de acción" resultó ser el MISMO documento
+  "Necesidades de Fundación ROFÉ en IA y Automatización" (7 áreas, 50+ ítems) que ya fue
+  respondido el 10-jul con [[prioridades-automatizacion-ia]] — quien lo encargó/redactó no
+  conocía esa respuesta. El otro texto: contrato de prestación de servicios (soporte técnico,
+  18-jun→31-ago, $1.700.000, con cláusula abierta de "demás actividades").
+- Creado `tools/contraste-plan-ia-vs-roadmap-INTERNO.docx` (5 págs, USO INTERNO): contraste
+  estructural (8 dimensiones), estado real por área al 20-jul (área 2 ~80%, 8 ~70%, 7 ~50%,
+  5 ~25%, 6 ~15%, 3 y 4 en 0%), contrato vs entregado (todo ✅ salvo 2 brechas de formato:
+  informes semanales — recomendación: automatizarlos ya), lo que el plan añade fuera de
+  contrato (equipo completo, no una persona), carga real, riesgos de "IA para todo" y plan
+  realista a 31-ago + 3 decisiones a pedir a dirección + borrador de mensaje para Lina.
+- Acción recomendada #1 derivada: automatizar informe semanal (bitácora+workflows+tendencias
+  IA → viernes) — cierra la única brecha literal del contrato antes de la evaluación de agosto.
+
+---
+
+## 2026-07-20 — [panel-datos-etl] Emoflow: API directa en lugar de Sheet intermedio
+
+**Estado:** Completado
+**Proceso relacionado:** [[project-emoflow-supabase]]
+
+- **Problema:** sync_emoflow.py dependía de pestaña manual `+Ingresos-EmoFlow` → mantenimiento, errores de sincronización.
+- **Solución:** escribir `sync_emoflow_api.py` que conecta directamente a API de Emoflow (https://emoflow.sanumbe.com).
+  - Autenticación: `POST /login` (PHPSESSID cookie) + `GET /admin/registro-ingresos-exportar` (CSV, 27K registros).
+  - Agregación por email (suma ingresos, último ingreso) → 826 usuarios únicos.
+  - Cruce Supabase por email: 759/826 = 91.9% de match (coherente con 92% anterior).
+  - Upsert a `emoflow_ingresos` + snapshots históricos (igual que antes).
+- **Cambios en n8n:** actualizar workflow `q10-sync-supabase.json`: reemplazar comando `sync_emoflow.py` por `sync_emoflow_api.py`.
+  El nodo IF (`¿Emoflow OK?`) y stopAndError siguen sin cambios.
+- **Documentación:** CLAUDE.md (arquitectura + tabla componentes), memoria actualizada, referencia API nueva, MEMORY.md indexado.
+- **Credenciales:** `EMOFLOW_USER=Rofe123`, `EMOFLOW_PASSWORD=Rofe123@` en `.env.local` (nunca en git).
+- **Testing:** --dry-run exitoso, test real exitoso (826 filas a Supabase, snapshots históricos guardados).
+- Script `sync_emoflow.py` marcado como DEPRECATED 2026-07-20 pero se mantiene por inercia.
