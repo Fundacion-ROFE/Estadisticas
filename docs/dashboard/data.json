@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-16T20:44:35.762090-05:00",
+  "ultima_actualizacion": "2026-07-21T16:02:00.401843-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -15,8 +15,8 @@
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
       "estudiantes": 777,
-      "finalizados": 333,
-      "promedio": 66.27,
+      "finalizados": 410,
+      "promedio": 78.86,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 777,
@@ -26,8 +26,8 @@
     {
       "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
       "estudiantes": 777,
-      "finalizados": 703,
-      "promedio": 99.04,
+      "finalizados": 711,
+      "promedio": 99.1,
       "min": 0.0,
       "max": 101.0,
       "inscritos": 830,
@@ -37,8 +37,8 @@
     {
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
       "estudiantes": 777,
-      "finalizados": 730,
-      "promedio": 97.18,
+      "finalizados": 734,
+      "promedio": 97.36,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 806,
@@ -48,8 +48,8 @@
     {
       "curso": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
       "estudiantes": 777,
-      "finalizados": 741,
-      "promedio": 99.71,
+      "finalizados": 747,
+      "promedio": 99.72,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 854,
@@ -70,8 +70,8 @@
     {
       "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
       "estudiantes": 777,
-      "finalizados": 748,
-      "promedio": 98.51,
+      "finalizados": 750,
+      "promedio": 98.54,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 809,
@@ -86,7 +86,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 65
+      "cantidad": 59
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -97,21 +97,10 @@
     "total_cursos": 7,
     "total_estudiantes_unicos": 777,
     "total_habilitados": 777,
-    "total_db": 1060
+    "total_db": 1021
   },
   "mr": {
     "por_curso": [
-      {
-        "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
-        "estudiantes": 136,
-        "finalizados": 46,
-        "promedio": 41.9,
-        "min": 0.0,
-        "max": 100.0,
-        "inscritos": 136,
-        "promedio_pico": 13.49,
-        "finalizado": false
-      },
       {
         "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
         "estudiantes": 244,
@@ -127,7 +116,7 @@
     "anomalias": [
       {
         "categoria": "AVANCE 0%",
-        "cantidad": 192
+        "cantidad": 148
       },
       {
         "categoria": "AVANCE IRREGULAR",
@@ -135,9 +124,9 @@
       }
     ],
     "totales": {
-      "total_cursos": 2,
-      "total_estudiantes_unicos": 283,
-      "total_habilitados": 283
+      "total_cursos": 1,
+      "total_estudiantes_unicos": 244,
+      "total_habilitados": 244
     }
   },
   "stand": {
