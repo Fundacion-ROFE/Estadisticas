@@ -213,6 +213,42 @@ Contenido: 4 KPIs (estudiantes, ingresos promedio, activos 7d, inactivos +30d) �
 por bandas · "¿el que más entra, aprueba más?" (con nota honesta: la relación es suave, 82→88%) ·
 uso por ciudad (solo en vista nacional). Respeta el filtro de ciudad.
 
+## Tab Emoflow — rehecho: serie diaria/semanal REAL y "todo directo de Emoflow" (2026-07-20/21)
+Pedido de Samuel: **toda la pestaña Emoflow debe venir directo de Emoflow** (Emoflow→Supabase cuenta;
+hojas u otras fuentes NO). Se auditó cada dato y se corrigió la cadena.
+
+- **Descubrimiento clave (vía .har + credenciales):** el CSV de `/admin/registro-ingresos-exportar`
+  es un **log de EVENTOS con timestamp**, no un acumulado. ~27k eventos, 844 usuarios, **120 días**
+  (desde 2026-03-18). Columnas: `Usuario, Nombre, Empresa, Area, Fecha emociones, Fechas bienestar,
+  Dimensiones bienestar completadas`. **Bienestar viene vacío** para la org; solo se miden ingresos.
+- **Definiciones (se confundían):** `ingresos` = **registros de emoción** (una persona genera VARIOS
+  por día — ej. 37 en un día, varios en el mismo minuto); NO son logins. `usuarios_activos` =
+  **personas distintas**.
+- **Se DESCARTÓ un enfoque 4h inventado** (métricas emociones/bienestar/rangos hardcodeadas) —
+  tabla/workflow/script/doc borrados. No usar `emoflow_ingresos_agregados_4h` (ya no existe).
+- **Script `extract_emoflow_ingresos_diario.py`** (una corrida llena 2 tablas, idempotente, re-lee
+  los 120 días):
+  - `emoflow_ingresos_diario` (fecha × grupo_ciudad + NACIONAL): ingresos + usuarios_activos por día.
+  - `emoflow_actividad_semanal` (semana_inicio=lunes ISO × grupo_ciudad): usuarios_activos, roster
+    (matrícula Emoflow = distinct histórico de la ciudad), pct_activos = 100·activos/roster.
+  - **n8n `emoflow-ingresos-diario`** (id `DFPiF1RtD58FhGoZ`), scheduleTrigger **diario 21:30 COT**,
+    ACTIVO. Gotcha: activar por API `/activate` (el UPDATE directo en SQLite no registra el trigger);
+    connections deben ir en formato `{"main": [[...]]}`.
+- **Panel (repo comunicaciones-ai/Panel-De-Datos):**
+  - "Evolución de ingresos al sistema" = serie diaria real (nacional; por ciudad al filtrar);
+    reemplaza el backfill plano de `historial_emoflow` (repetía 32.5). Notas aclaran ingresos vs usuarios.
+  - "Participación semanal" ahora sale de **`emoflow_actividad_semanal`** (100% Emoflow), no del Sheet.
+    Métrica = **% de matrícula activa** por semana/ciudad. Eje X por **lunes ISO** (orden temporal
+    correcto — antes ordenaba "Sem 1, Sem 10, Sem 2…" por localeCompare del label en GraficoHistorial).
+  - **Solo semanas COMPLETAS:** una semana entra cuando pasa su domingo (según la última fecha con
+    datos). La semana en curso llevaría pocos días y aparecería como el punto más bajo del histórico
+    (artefacto, no bajón real). El snapshot por ciudad usa la última semana completa.
+  - "Participar → aprobar" se **mantiene pero etiquetado** (la aprobación viene de **Q10**, cruce).
+  - **Gotcha frontend:** PostgREST corta en 1000 filas aunque se pida `limit` mayor → se agregó
+    `leerPaginado()` (header Range) en `lib/api.ts`; si no, se perdían los días recientes.
+- **`sync_emoflow_participacion.py` (Sheet de monitorías) sigue existiendo** y corriendo en
+  `q10-sync-supabase`, pero el panel **ya no lo consume**. Candidato a deprecar si nada más lo usa.
+
 ## Cohorte canónica en el panel — "Ingresados 832" (2026-07-10, pedido stakeholders)
 El total mostrado para el año en curso es la **cohorte canónica** (todos los registros del año
 menos retiros institucionales/desertores y perfiles de prueba): JC 2026 = **832** = 777 activos

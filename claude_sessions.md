@@ -2944,3 +2944,22 @@ cifras nacionales dentro de la vista de ciudad. `npm run build` OK (243 kB First
   aprobar" se mantiene pero reetiquetado (aprobación = Q10, no Emoflow), por decisión de Samuel.
 - **Producción:** panel `d3a7a26` (Netlify), script+migración `0d4f396` (admin-usable). La
   automatización n8n existente (emoflow-ingresos-diario 21:30) ya alimenta ambas tablas — sin cambios.
+
+---
+
+## 2026-07-21 — [panel-datos-etl] Emoflow: evolución semanal solo con semanas completas
+
+**Estado:** Completado (producción)
+**Proceso relacionado:** [[panel-datos-etl]] · [[project-emoflow-ingresos-diario]]
+
+- Samuel notó que la "Evolución semanal de la actividad en Emoflow" mostraba la semana actual como
+  el punto MÁS BAJO del histórico. Diagnóstico con datos: **no era un bajón real** — hoy (2026-07-20)
+  es lunes, la semana lleva **1 día** vs 7 de las completas (424–538 usuarios). Ese lunes tuvo 128
+  activos, MÁS que el lunes previo (87). Actividad diaria sana (87–180/día).
+- **Fix:** la evolución y el snapshot ahora incluyen **solo semanas completas** (una semana entra
+  cuando pasa su domingo, según la última fecha con datos). Memo `semanaCompleta` en page.tsx.
+  Panel `7a1a787` (Netlify).
+- **Apunte real (secundario):** quitando la semana en curso, hay una tendencia leve a la baja a lo
+  largo del programa (~82% activos en abril → ~60% ahora): desgaste normal de meses. Samuel decidió
+  dejarlo así por ahora (posible alerta futura si una ciudad cae bajo umbral 2 semanas seguidas).
+- Documentado en `docs/procesos/panel-datos-etl.md` (subsección "Tab Emoflow — rehecho").
