@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-sync_supabase_to_sheets.py — Sincronización bidireccional Supabase → Sheets (hojas intermedias).
+sync_supabase_to_sheets.py — Sincronización Supabase → Sheets (H1Test, H2Test, H3Test).
 
 Objetivo: mantener hojas de lectura fácil en Google Sheets para que el equipo pueda
 consultar/editar los datos sin abandonar Excel. Las vistas públicas de Supabase se
-espejo en pestañas h1 (Q10 raw), h2 (Emoflow), h3 (Resumen).
+espejo en pestañas H1Test (Participantes), H2Test (Emoflow), H3Test (Resumen).
 
 ⚠️ NOTA: Este script es principalmente de LECTURA (Supabase → Sheets).
 Escrituras manuales en Sheets se cargan en Supabase a través del flujo manual.
@@ -101,8 +101,8 @@ class Supa:
 
 
 def sincronizar_h1_participantes(supa: Supa, ws_h1) -> None:
-    """h1: Participantes + programa + ciudad (datos brutos para referencia)."""
-    log("Sincronizando h1 (Participantes)...")
+    """H1Test: Participantes + programa + ciudad (datos brutos para referencia)."""
+    log("Sincronizando H1Test (Participantes)...")
 
     # Participantes con programa y ciudad
     filas = supa.get_todo("/participants?select=id,cedula,nombre,email,programa,grupo_ciudad&order=cedula.asc")
@@ -127,8 +127,8 @@ def sincronizar_h1_participantes(supa: Supa, ws_h1) -> None:
 
 
 def sincronizar_h2_emoflow(supa: Supa, ws_h2) -> None:
-    """h2: Emoflow — ingresos al sistema por participante."""
-    log("Sincronizando h2 (Emoflow - Ingresos)...")
+    """H2Test: Emoflow — ingresos al sistema por participante."""
+    log("Sincronizando H2Test (Emoflow - Ingresos)...")
 
     # Emoflow con participant_id resuelto
     filas = supa.get_todo(
@@ -155,8 +155,8 @@ def sincronizar_h2_emoflow(supa: Supa, ws_h2) -> None:
 
 
 def sincronizar_h3_resumen(supa: Supa, ws_h3) -> None:
-    """h3: Resumen ejecutivo — KPIs de la cohorte actual."""
-    log("Sincronizando h3 (Resumen Ejecutivo)...")
+    """H3Test: Resumen ejecutivo — KPIs de la cohorte actual."""
+    log("Sincronizando H3Test (Resumen Ejecutivo)...")
 
     # Estadísticas generales
     cohorte_stats = supa.get_todo("/cohorte_stats?limit=1")
@@ -227,28 +227,28 @@ def main() -> int:
     )
     sh = gspread.authorize(creds).open_by_key(args.sheet_id)
 
-    # Verificar que existan las hojas h1, h2, h3 (deben existir en el Sheet)
+    # Verificar que existan las hojas H1Test, H2Test, H3Test (deben existir en el Sheet)
     hojas_existentes = {w.title for w in sh.worksheets()}
-    hojas_necesarias = ["h1", "h2", "h3"]
+    hojas_necesarias = ["H1Test", "H2Test", "H3Test"]
 
     log(f"Hojas disponibles en el Sheet: {hojas_existentes}")
 
     hojas_faltantes = [h for h in hojas_necesarias if h not in hojas_existentes]
     if hojas_faltantes:
         log(f"⚠️ ADVERTENCIA: faltan hojas {hojas_faltantes} en el Sheet.")
-        log(f"   Por favor crea manualmente las hojas h1, h2, h3 en: https://docs.google.com/spreadsheets/d/{args.sheet_id}")
+        log(f"   Por favor crea manualmente las hojas H1Test, H2Test, H3Test en: https://docs.google.com/spreadsheets/d/{args.sheet_id}")
         log(f"   Luego ejecuta este script de nuevo.")
         return 1
 
     # Sincronizar
     try:
-        ws_h1 = sh.worksheet("h1")
+        ws_h1 = sh.worksheet("H1Test")
         sincronizar_h1_participantes(supa, ws_h1)
 
-        ws_h2 = sh.worksheet("h2")
+        ws_h2 = sh.worksheet("H2Test")
         sincronizar_h2_emoflow(supa, ws_h2)
 
-        ws_h3 = sh.worksheet("h3")
+        ws_h3 = sh.worksheet("H3Test")
         sincronizar_h3_resumen(supa, ws_h3)
 
         log("OK")

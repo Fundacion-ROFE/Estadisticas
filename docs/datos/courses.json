@@ -1,0 +1,392 @@
+[
+  {
+    "id": "4686d3e3-86ff-499c-8a51-95a5b247dc16",
+    "nombre": "BIENVENIDOS A JÓVENES CREATIVOS",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc"
+  },
+  {
+    "id": "bceb577b-373f-4d69-bdce-bafcdd79d426",
+    "nombre": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "mr"
+  },
+  {
+    "id": "da4fad7b-de7f-42fe-92aa-78cb3c536ec7",
+    "nombre": "DESARROLLO WEB FRONT-END - HTML - 2026",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc"
+  },
+  {
+    "id": "ffd44d77-40d6-48bf-ac39-50176a3898a8",
+    "nombre": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc"
+  },
+  {
+    "id": "3eb4d761-51de-4bcd-b2e2-8a7c8f143b2d",
+    "nombre": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc"
+  },
+  {
+    "id": "bd7d3b0e-a28d-4266-82fb-a0947b2a2143",
+    "nombre": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "mr"
+  },
+  {
+    "id": "287d579f-56f1-47ba-8c69-06ce8756f723",
+    "nombre": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc"
+  },
+  {
+    "id": "c2b84241-8c73-4b84-a09d-2df274a81fbe",
+    "nombre": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc"
+  },
+  {
+    "id": "ae1c5761-e352-4e0f-a18c-d7321e6f7a37",
+    "nombre": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc"
+  },
+  {
+    "id": "5c453871-3543-40d1-b630-69c4791a8a5a",
+    "nombre": "Bienvenidos a Jóvenes creaTIvos",
+    "cohorte": "2024",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "59f16a45-5054-4146-96d7-1d776ef7714c",
+    "nombre": "Bienvenidos a Jóvenes creaTIvos",
+    "cohorte": "2025",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "b572676b-8f91-435e-a3fa-96a0c2cec1e9",
+    "nombre": "De la idea a la acción, tu guía para emprender con éxito",
+    "cohorte": "2025",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "mr"
+  },
+  {
+    "id": "938aa2d6-205b-4530-9d4b-222cfab79e35",
+    "nombre": "Desarrollo Web Front-End - CSS - 2026",
+    "cohorte": "2024",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "8eb6b785-3917-48ca-8ccc-993bd14d4c99",
+    "nombre": "Desarrollo Web Front-End - CSS - 2026",
+    "cohorte": "2025",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "bb156421-edc1-49bf-9b3b-bba4a19132b5",
+    "nombre": "Desarrollo Web Front-End - HTML - 2026",
+    "cohorte": "2023",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "aaa1b542-29af-4d4c-ab70-c567bbbf3f88",
+    "nombre": "Desarrollo Web Front-End - HTML - 2026",
+    "cohorte": "2024",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "d86b337c-f33e-45db-9d53-0e97d80a333e",
+    "nombre": "Desarrollo Web Front-End - HTML - 2026",
+    "cohorte": "2025",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "5c37fbb2-099c-485d-8db6-587918fcd1cf",
+    "nombre": "Desarrollo Web Front-End - JS - 2026",
+    "cohorte": "2024",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "58415f7a-e0e8-4d3b-91a0-3716de4c4f68",
+    "nombre": "Desarrollo Web Front-End - JS - 2026",
+    "cohorte": "2025",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "3da648a5-a676-4be8-9967-7254c5cb0ab5",
+    "nombre": "Desarrollo Web con Node.js y Express - 2026",
+    "cohorte": "2025",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "6af8afd4-5e9f-4cc7-b762-e8a556d5f162",
+    "nombre": "Desarrollo Web con React - 2026",
+    "cohorte": "2025",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "278b4098-fce2-4fed-b2c3-153b3bb25be2",
+    "nombre": "Desarrollo front end avanzado",
+    "cohorte": "2023",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "726374b4-c758-4f9f-84d7-3ab0f285cbe8",
+    "nombre": "Desarrollo front end avanzado",
+    "cohorte": "2024",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "e8c10fef-8b56-4011-9690-629281bc9743",
+    "nombre": "Empoderamiento en Ventas: Lleva tu Negocio al Siguiente Nivel!",
+    "cohorte": "2025",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "mr"
+  },
+  {
+    "id": "53921b65-b970-49d5-9fbf-967d120add3b",
+    "nombre": "Emprendimiento: Idea de Negocio JC",
+    "cohorte": "2023",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "38c4753e-661e-4934-824c-bf569075a1dc",
+    "nombre": "Emprendimiento: Idea de Negocio JC",
+    "cohorte": "2024",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "6b357f33-4441-4c09-8289-f5864263ef9b",
+    "nombre": "Emprendimiento: Idea de Negocio JC",
+    "cohorte": "2025",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "mr"
+  },
+  {
+    "id": "f82530d4-2e98-40ce-ae42-7cf9954585c8",
+    "nombre": "Finanzas Inteligentes, gestión para emprendedoras",
+    "cohorte": "2025",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "mr"
+  },
+  {
+    "id": "a0b905fa-622a-40fb-8d71-262b4f3da1fe",
+    "nombre": "Fundamentos Lógica de Programación - 2026",
+    "cohorte": "2023",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "daea3b12-3bbb-4145-93d5-83b98792faa8",
+    "nombre": "Fundamentos Lógica de Programación - 2026",
+    "cohorte": "2024",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "c5286b4e-3d0f-4d33-a971-605fd8c35107",
+    "nombre": "Fundamentos Lógica de Programación - 2026",
+    "cohorte": "2025",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "mr"
+  },
+  {
+    "id": "46a70866-a094-49dd-9d92-7316f11879de",
+    "nombre": "Habilidades esenciales para ser un emprendedor exitoso",
+    "cohorte": "2023",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "f853627d-d2cf-407c-9866-74e830c28fd8",
+    "nombre": "Habilidades esenciales para ser un emprendedor exitoso",
+    "cohorte": "2024",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "98629fa8-ac27-4efb-9461-90a6db695490",
+    "nombre": "Habilidades esenciales para ser un emprendedor exitoso",
+    "cohorte": "2025",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "d965b45e-d3fa-40a5-9d4b-e17bf4e1cd91",
+    "nombre": "Hackea tu cerebro: Aprende en menos tiempo y sin sufrir",
+    "cohorte": "2025",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "0dcd0b00-f9c0-4890-9c30-12006158e2a0",
+    "nombre": "Introducción a la IA Generativa - 2026",
+    "cohorte": "2025",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "6ef158fa-6fde-4ed5-9f52-7e0a49a92a9f",
+    "nombre": "Proyecto Final - 2026",
+    "cohorte": "2025",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "cab67c64-e8e6-4e11-8678-42ff707ffa56",
+    "nombre": "Sistema de Control de Versiones - GIT",
+    "cohorte": "2023",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "b407793b-fb8c-4b95-bb56-244bfd72cae2",
+    "nombre": "Transforma tu negocio con estrategias digitales",
+    "cohorte": "2025",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "completado",
+    "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "mr"
+  }
+]

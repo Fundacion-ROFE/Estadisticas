@@ -1,0 +1,38 @@
+[
+  {
+    "fecha": "2026-07-15",
+    "participantes": 823,
+    "con_match_supabase": 757,
+    "ingresos_promedio": 23.2,
+    "ingresos_mediana": 18,
+    "ingresos_max": 309,
+    "activos_7d": 426,
+    "activos_14d": 610,
+    "inactivos_30d": 145,
+    "fuente": "sync-diario"
+  },
+  {
+    "fecha": "2026-07-16",
+    "participantes": 823,
+    "con_match_supabase": 757,
+    "ingresos_promedio": 23.2,
+    "ingresos_mediana": 18,
+    "ingresos_max": 309,
+    "activos_7d": 378,
+    "activos_14d": 600,
+    "inactivos_30d": 149,
+    "fuente": "sync-diario"
+  },
+  {
+    "fecha": "2026-07-20",
+    "participantes": 827,
+    "con_match_supabase": 759,
+    "ingresos_promedio": 32.5,
+    "ingresos_mediana": 27,
+    "ingresos_max": 388,
+    "activos_7d": 515,
+    "activos_14d": 597,
+    "inactivos_30d": 157,
+    "fuente": "emoflow-api"
+  }
+]
