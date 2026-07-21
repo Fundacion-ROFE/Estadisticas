@@ -2874,3 +2874,25 @@ cifras nacionales dentro de la vista de ciudad. `npm run build` OK (243 kB First
   Guía en `docs/hojas-intermedias-setup.md`.
 - **Ejecución:** manual (`python sync_supabase_to_sheets.py`) o en n8n como nodo extra post-emoflow.
 - **Testing:** confirmado estructura de datos, falta solo crear hojas en Sheet y probar end-to-end.
+
+---
+
+## 2026-07-20 (cont.) — [panel-datos-etl] Emoflow agregados cada 4 horas (reemplaza snapshots diarios)
+
+**Estado:** Completado (implementación: script, tabla, workflow, documentación, Supabase SQL)
+**Proceso relacionado:** [[project-emoflow-supabase]] · [[project-emoflow-agregados-4h]]
+
+- **Problema:** historial_emoflow usa snapshots DIARIOS de totales individuales (redundantes, acumulativos).
+  No apto para análisis estadístico (ruido en lugar de información). Panel muestra tendencias falsas.
+- **Solución:** extracción AGREGADA cada 4 horas (00, 04, 08, 12, 16, 20 COT) con métricas reales:
+  % participación (Emociones + Bienestar), velocidad de ingresos/hora, distribución por rango.
+- **Implementación completada:**
+  - Script `extract_emoflow_agregados.py` (descarga CSV Emoflow → parsea → calcula % participación real)
+  - Tabla `emoflow_ingresos_agregados_4h` (Supabase, RLS pública lectura) + migración SQL + índices
+  - Workflow n8n `emoflow-agregados-4h` (cron cada 4h) con IF validación + error handling
+  - Documentación `OPTIMIZACION_EMOFLOW_AGREGADOS.md` (propuesta visual, 4 opciones de gráficos)
+- **Ventajas finales:** datos LIMPIOS (% real, no acumulativo), granularidad 4h (vs diaria),
+  3 dimensiones (Emociones + Bienestar + velocidad), apto para análisis estadístico.
+- **Commit:** `5ec73a2` pushed a main sin secretos (GitHub push protection activado, se removió
+  credencial expuesta en docs/GUIA_COMPLETA_SCRIPTS_FLOWS.md de commit anterior).
+- **Pendiente:** importar tabla JSON en panel Netlify + agregar 4 gráficos (línea, barras, heatmap, tabla).
