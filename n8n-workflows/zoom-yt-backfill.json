@@ -1,0 +1,160 @@
+{
+  "name": "zoom-yt-backfill",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 20,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ytbf-0001-0001-0001-000000000001",
+      "name": "Schedule 20:00"
+    },
+    {
+      "parameters": {
+        "command": "cd /d C:\\Users\\EstudiantesJC\\downloads\\admin-usable && python scripts\\zoom-youtube\\backfill_grabaciones.py --dias 2"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "ytbf-0002-0001-0001-000000000002",
+      "name": "Execute Command: backfill"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-bf-ok",
+              "leftValue": "={{ $json.stdout }}",
+              "rightValue": "[OK]",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "ytbf-0003-0001-0001-000000000003",
+      "name": "Backfill OK?"
+    },
+    {
+      "parameters": {
+        "chatId": "8141703221",
+        "text": "=Backfill grabaciones OK\n{{ $json.stdout.split('[OK]').pop().trim() }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        672,
+        -80
+      ],
+      "id": "ytbf-0004-0001-0001-000000000004",
+      "name": "Telegram Exito",
+      "credentials": {
+        "telegramApi": {
+          "id": "kGTAfWTTp4FATF66",
+          "name": "Telegram Q10 Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "8141703221",
+        "text": "=Backfill grabaciones ERROR\n{{ $json.stdout }}\n{{ $json.stderr }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        672,
+        80
+      ],
+      "id": "ytbf-0005-0001-0001-000000000005",
+      "name": "Telegram Error",
+      "credentials": {
+        "telegramApi": {
+          "id": "kGTAfWTTp4FATF66",
+          "name": "Telegram Q10 Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule 20:00": {
+      "main": [
+        [
+          {
+            "node": "Execute Command: backfill",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command: backfill": {
+      "main": [
+        [
+          {
+            "node": "Backfill OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Backfill OK?": {
+      "main": [
+        [
+          {
+            "node": "Telegram Exito",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Bogota"
+  }
+}

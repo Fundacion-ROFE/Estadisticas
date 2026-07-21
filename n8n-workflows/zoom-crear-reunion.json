@@ -1,0 +1,159 @@
+{
+  "name": "zoom-crear-reunion",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "zoom-crear-reunion",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b2c3d4e5-0001-4000-8000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "webhookId": "zoom-crear-reunion"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "as-topic",
+              "name": "topic",
+              "value": "={{ $json.body.titulo }}",
+              "type": "string"
+            },
+            {
+              "id": "as-start",
+              "name": "start_time",
+              "value": "={{ $json.body.fecha }}T{{ $json.body.hora }}:00",
+              "type": "string"
+            },
+            {
+              "id": "as-dur",
+              "name": "duration",
+              "value": "={{ $json.body.duracion }}",
+              "type": "number"
+            },
+            {
+              "id": "as-host",
+              "name": "host",
+              "value": "={{ $json.body.host || 'comunicaciones@tocaunavida.org' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b2c3d4e5-0002-4000-8000-000000000002",
+      "name": "Preparar datos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://zoom.us/oauth/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "grant_type", "value": "account_credentials" },
+            { "name": "account_id", "value": "u08qlWbRTR2VBSs0bRwZPQ" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b2c3d4e5-0003-4000-8000-000000000003",
+      "name": "Obtener Token Zoom",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 300],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "QbO1Pa1R0lo6YdGK",
+          "name": "Zoom S2S Basic Auth v2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.zoom.us/v2/users/{{ $('Preparar datos').item.json.host }}/meetings",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Obtener Token Zoom').item.json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ topic: $('Preparar datos').item.json.topic, type: 2, start_time: $('Preparar datos').item.json.start_time, duration: $('Preparar datos').item.json.duration, timezone: 'America/Bogota', settings: { join_before_host: true, waiting_room: false } }) }}",
+        "options": {}
+      },
+      "id": "b2c3d4e5-0004-4000-8000-000000000004",
+      "name": "Crear Reunion",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 300],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, meeting_id: $json.id, topic: $json.topic, join_url: $json.join_url, start_time: $json.start_time, timezone: $json.timezone }) }}",
+        "options": {}
+      },
+      "id": "b2c3d4e5-0005-4000-8000-000000000005",
+      "name": "Responder OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, error: ($json.error && $json.error.message) || $json.message || 'fallo al crear la reunion', detalle: $json }) }}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "id": "b2c3d4e5-0006-4000-8000-000000000006",
+      "name": "Responder Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1120, 420]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Preparar datos", "type": "main", "index": 0 }]]
+    },
+    "Preparar datos": {
+      "main": [[{ "node": "Obtener Token Zoom", "type": "main", "index": 0 }]]
+    },
+    "Obtener Token Zoom": {
+      "main": [
+        [{ "node": "Crear Reunion", "type": "main", "index": 0 }],
+        [{ "node": "Responder Error", "type": "main", "index": 0 }]
+      ]
+    },
+    "Crear Reunion": {
+      "main": [
+        [{ "node": "Responder OK", "type": "main", "index": 0 }],
+        [{ "node": "Responder Error", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

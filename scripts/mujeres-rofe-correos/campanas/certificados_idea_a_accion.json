@@ -1,0 +1,14 @@
+{
+  "ID": "certificados_idea_a_accion",
+  "programa": "mr",
+  "PLANTILLA_TEMPLATE": "templates/email_certificado_template.html",
+  "ASUNTO": "Tu certificado del curso \"De la idea a la acción\" | Mujeres ROFÉ",
+  "TITULO_EVENTO": "Certificado - De la idea a la acción, tu guía para emprender con éxito",
+  "PARRAFO_INTRO": "¡Felicitaciones! Culminaste con éxito el curso <strong>\"De la idea a la acción, tu guía para emprender con éxito\"</strong>, un espacio pensado para ayudarte a transformar tus ideas en acciones concretas con visión emprendedora.",
+  "DATOS_EVENTO": "<strong>Curso:</strong> De la idea a la acción, tu guía para emprender con éxito<br><strong>Duración:</strong> Del 10 de junio al 2 de julio de 2026<br><strong>Certificado:</strong> Encontrarás tu certificado de participación adjunto a este correo, en formato PDF.",
+  "PARRAFO_DESCRIPCION": "Gracias por tu compromiso y dedicación durante todo el curso. Este logro es un paso más en tu camino hacia el fortalecimiento de tus habilidades y la construcción de nuevas oportunidades.",
+  "PARRAFO_CIERRE": "Sigue construyendo con nosotras. ¡Estamos muy orgullosas de tu esfuerzo!",
+  "TEXTO_CTA": "Conoce más de Mujeres ROFÉ",
+  "URL_CTA": "https://tocaunavida.org",
+  "FIRMA": "Equipo Mujeres ROFÉ"
+}

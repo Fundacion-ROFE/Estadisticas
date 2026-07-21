@@ -1,0 +1,98 @@
+================================================================================
+CREAR WORKFLOW EN N8N: asistencia-zoom-diario
+================================================================================
+
+OPCIÓN 1: IMPORTAR JSON (RECOMENDADO - 2 minutos)
+================================================================================
+
+1. Abre n8n:
+   http://localhost:5678
+
+2. Click en el menu "≡" (esquina superior izquierda)
+
+3. Click "Import"
+
+4. Selecciona el archivo:
+   n8n-workflows/asistencia-zoom-diario.json
+
+5. Click "Import"
+
+6. Click "Save" (esquina superior)
+
+7. Click el toggle "Active" (debe estar en verde)
+
+LISTO. El workflow correrá cada noche a las 00:00.
+
+
+OPCIÓN 2: CREAR MANUALMENTE (5-10 minutos)
+================================================================================
+
+1. Abre n8n:
+   http://localhost:5678
+
+2. Click "+ New" → "New Workflow"
+
+3. Nombre del workflow:
+   asistencia-zoom-diario
+
+4. Click "+ Add trigger"
+   - Busca: "Cron"
+   - Selecciona: "Cron"
+
+5. En el nodo Cron, configura:
+   - Trigger time: 00:00 (medianoche)
+
+6. Click el "+" que sale del nodo Cron (para agregar siguiente paso)
+
+7. Busca: "Execute Command"
+   - Selecciona: "Execute Command"
+
+8. En el nodo Execute Command, en el campo "Command", pega:
+
+   cd "C:\Users\EstudiantesJC\downloads\admin-usable" && python scripts\panel-datos\calcular_asistencia_promedio.py
+
+9. Click "Save" (esquina superior derecha)
+
+10. Click el toggle "Active" (arriba a la derecha, debe estar en VERDE)
+
+LISTO. El workflow correrá cada noche a las 00:00.
+
+
+VERIFICAR QUE FUNCIONA
+================================================================================
+
+Antes de dejarlo automático, haz un TEST:
+
+1. En n8n, en el nodo "Execute Command", click el boton de PLAY (▶)
+
+2. Espera a que complete (30-60 segundos)
+
+3. Verifica que el output contenga:
+   - "704 registros leídos"
+   - "490 estudiantes únicos"
+   - "490 nuevos registros"
+   - "Sincronización completada"
+
+Si ves esto, ¡funciona perfectamente!
+
+
+MONITOREO DIARIO
+================================================================================
+
+Para verificar que el workflow corre cada noche:
+
+1. En n8n, abre el workflow "asistencia-zoom-diario"
+
+2. Click "Executions" (tab en el medio)
+
+3. Deberías ver una ejecución cada noche a las 00:XX con status "success"
+
+Si ves algún "error", haz click para ver detalles.
+
+
+UBICACION DE ARCHIVOS
+================================================================================
+
+Workflow JSON: n8n-workflows/asistencia-zoom-diario.json
+Script Python: scripts/panel-datos/calcular_asistencia_promedio.py
+Documentación: docs/n8n-workflows-setup.md

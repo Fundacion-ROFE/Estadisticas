@@ -1,0 +1,125 @@
+{
+  "name": "alerta-desercion-semanal",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "name": "Cron semanal (Lun 7:00)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [260, 300]
+    },
+    {
+      "parameters": {
+        "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable && python scripts/panel-datos/alerta_desercion.py --csv"
+      },
+      "id": "a1b2c3d4-0002-4000-8000-000000000002",
+      "name": "Ejecutar alerta_desercion",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-exitcode",
+              "leftValue": "={{ $json.exitCode }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "cond-estado",
+              "leftValue": "={{ $json.stdout }}",
+              "rightValue": "estado=exito",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-0003-4000-8000-000000000003",
+      "name": "¿Exito?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "8141703221",
+        "text": "={{ $('Ejecutar alerta_desercion').item.json.stdout }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "a1b2c3d4-0004-4000-8000-000000000004",
+      "name": "Notificar riesgo",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [940, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "kGTAfWTTp4FATF66",
+          "name": "Telegram Q10 Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "8141703221",
+        "text": "={{ '⚠ alerta_desercion fallo (exit ' + $('Ejecutar alerta_desercion').item.json.exitCode + ')\\n' + (($('Ejecutar alerta_desercion').item.json.stderr || '').slice(0, 600)) }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "a1b2c3d4-0005-4000-8000-000000000005",
+      "name": "Notificar error",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [940, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "kGTAfWTTp4FATF66",
+          "name": "Telegram Q10 Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cron semanal (Lun 7:00)": {
+      "main": [[{ "node": "Ejecutar alerta_desercion", "type": "main", "index": 0 }]]
+    },
+    "Ejecutar alerta_desercion": {
+      "main": [[{ "node": "¿Exito?", "type": "main", "index": 0 }]]
+    },
+    "¿Exito?": {
+      "main": [
+        [{ "node": "Notificar riesgo", "type": "main", "index": 0 }],
+        [{ "node": "Notificar error", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

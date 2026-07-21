@@ -1,0 +1,157 @@
+{
+  "active": true,
+  "connections": {
+    "Schedule Diario 7:30": {
+      "main": [
+        [
+          {
+            "node": "Ejecutar actualizar_bd_mr",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ejecutar actualizar_bd_mr": {
+      "main": [
+        [
+          {
+            "node": "¿Éxito?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Éxito?": {
+      "main": [
+        [
+          {
+            "node": "OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Marcar Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "description": null,
+  "id": "LgkDbNPERYgKMrYj",
+  "name": "mr-actualizacion-datos",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 9,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "mrupd-0001-0001-0001-000000000001",
+      "name": "Schedule Diario 9:30"
+    },
+    {
+      "parameters": {
+        "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/mr-actualizacion-datos && python actualizar_bd_mr.py"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "mrupd-0001-0001-0001-000000000002",
+      "name": "Ejecutar actualizar_bd_mr"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.stdout }}",
+              "rightValue": "estado=exito",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "mrupd-0001-0001-0001-000000000003",
+      "name": "¿Éxito?"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        672,
+        -96
+      ],
+      "id": "mrupd-0001-0001-0001-000000000004",
+      "name": "OK"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Actualización BD-Mujeres ROFÉ falló. Salida: {{ $json.stdout }} {{ $json.stderr }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        672,
+        96
+      ],
+      "id": "mrupd-0001-0001-0001-000000000005",
+      "name": "Marcar Error"
+    }
+  ],
+  "pinData": null,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "timezone": "America/Bogota"
+  },
+  "staticData": {
+    "node:Schedule Diario 7:30": {
+      "recurrenceRules": []
+    },
+    "node:Schedule Diario 9:30": {
+      "recurrenceRules": []
+    }
+  },
+  "versionCounter": 9
+}
