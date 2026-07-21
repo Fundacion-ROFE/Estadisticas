@@ -1,44 +1,50 @@
 # Hojas Intermedias — Setup para el Equipo
 
-**Objetivo:** mantener hojas de lectura/escritura en Google Sheets para que el equipo pueda consultar datos sin abandonar Excel.
+**Objetivo:** mantener hojas de lectura/escritura en Google Sheets (H1Test, H2Test, H3Test) para que el equipo pueda consultar datos sin abandonar Excel.
 
-**Flujo bidireccional:**
+**Flujo bidireccional actualizado (2026-07-20):**
 ```
 Emoflow API / Q10
     ↓
-Supabase (backend de verdad)
+Supabase (backend de verdad, única fuente)
     ↓
-Hojas h1, h2, h3 (lectura + edición manual del equipo)
+├─ Google Sheets (H1Test, H2Test, H3Test) — equipo
+│  Lectura + edición manual por operadores
+│
+└─ GitHub (docs/datos/*.json) — panel Netlify
+   Visualización pública en venerable-truffle-331f3c.netlify.app
 ```
 
 ---
 
-## Setup (10 minutos)
+## Setup Automático
 
-### Opción A: Usar el Sheet existente (1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8)
+Ya TODO está automático. Los datos fluyen así:
 
-1. **Abre:** https://docs.google.com/spreadsheets/d/1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8/edit
+1. **`export_supabase_json.py`** (ejecutar diario o en n8n):
+   ```bash
+   python scripts/panel-datos/export_supabase_json.py
+   ```
+   - Exporta 16 tablas/vistas públicas de Supabase a JSON
+   - Genera `docs/datos/*.json` (aprobacion, emoflow, cursos, historial, etc)
+   - Listo para GitHub Pages / Netlify
 
-2. **Crea 3 hojas nuevas:**
-   - Haz clic en el `+` al final de las pestañas
-   - Llama cada una: `h1`, `h2`, `h3`
-   - Déjalas vacías por ahora
-
-3. **Ejecuta el sync:**
+2. **`sync_supabase_to_sheets.py`** (ejecutar diario):
    ```bash
    python scripts/panel-datos/sync_supabase_to_sheets.py
    ```
+   - Rellena **H1Test, H2Test, H3Test** automáticamente
+   - Requiere que las hojas YA existan en el Sheet
 
-   Esto llena:
-   - **h1:** Lista de participantes (Cédula | Nombre | Email | Programa | Ciudad)
-   - **h2:** Emoflow (Email | Nombre | Ciudad | Ingresos al Sistema | Último Ingreso)
-   - **h3:** Resumen ejecutivo (KPIs de la cohorte)
+---
+
+## Contenido de cada Hoja
 
 ---
 
 ## Qué va en cada hoja
 
-### `h1` — Participantes (referencia)
+### `H1Test` — Participantes (referencia)
 | Cédula | Nombre | Email | Programa | Ciudad |
 |--------|--------|-------|----------|--------|
 | 1054... | Juan | juan@... | jc | Bogotá D.C. |
@@ -49,7 +55,7 @@ Hojas h1, h2, h3 (lectura + edición manual del equipo)
 
 ---
 
-### `h2` — Emoflow (ingresos al sistema)
+### `H2Test` — Emoflow (ingresos al sistema)
 | Email | Nombre | Ciudad | Ingresos al Sistema | Último Ingreso |
 |-------|--------|--------|----------------------|-----------------|
 | juan@... | Juan | Bogotá | 42 | 2026-07-20 |
@@ -57,11 +63,11 @@ Hojas h1, h2, h3 (lectura + edición manual del equipo)
 
 **Lectura:** vee qué estudiantes entran al sistema y cuántas veces.
 **Edición:** manual (el equipo puede ajustar/validar si ve errores).
-**Sincronización:** `sync_emoflow_api.py` (n8n diario 9:45) sobrescribe con datos frescos de Emoflow API.
+**Sincronización:** `sync_emoflow_api.py` (n8n diario 9:45) + `sync_supabase_to_sheets.py` → sobrescribe con datos frescos.
 
 ---
 
-### `h3` — Resumen Ejecutivo
+### `H3Test` — Resumen Ejecutivo
 Tabla de KPIs de la cohorte actual:
 - Ingresados, Activos, Aprobados, En Progreso, Retirados
 - Emoflow: participantes, promedio ingresos, mediana, máximo, % activos 7d/30d
@@ -72,38 +78,64 @@ Tabla de KPIs de la cohorte actual:
 
 ---
 
-## Automatización
+## Automatización (Recomendado)
 
-El script `sync_supabase_to_sheets.py` se puede ejecutar:
+Agregá estos 2 nodos a n8n (en el workflow `q10-sync-supabase`, después de `sync_emoflow_api.py`):
 
-1. **Manualmente:**
-   ```bash
-   python scripts/panel-datos/sync_supabase_to_sheets.py
-   ```
+1. **Ejecutar `export_supabase_json.py`:**
+   - Exporta Supabase → docs/datos/*.json
+   - GitHub Push automático (para panel Netlify)
+   - Tiempo: ~3-5 minutos
 
-2. **En n8n (scheduled):** agregar un nodo que ejecute el script tras `sync_emoflow_api.py`
-   (Sugerencia: mismo horario diario 9:45, después de que Emoflow se actualice).
+2. **Ejecutar `sync_supabase_to_sheets.py`:**
+   - Actualiza H1Test, H2Test, H3Test en Google Sheets
+   - Tiempo: ~1-2 minutos
 
----
-
-## Notas
-
-- **h1, h2, h3 NO son fuentes de verdad.** Supabase es la base de datos. Sheets es una interfaz amigable.
-- **Cambios en Sheets no se replican automáticamente a Supabase** (solo Supabase → Sheets). Si el equipo necesita editar datos, hace cambios en Sheets y alguien los ingresa manualmente en Supabase o Q10.
-- **Privacidad:** h1 y h2 contienen email/nombre (PII). No compartir públicamente.
-- **Actualización:** las hojas se refrescan cada vez que corre el script (~ 2 minutos de ejecución).
+**Horario:** Después de 9:45 (cuando `sync_emoflow_api.py` termine).
 
 ---
 
-## Solución de problemas
+## Flujo de Datos Completo (2026-07-20)
 
-**"Faltan hojas h1, h2, h3"**
-→ Créalas manualmente en el Sheet (ver Opción A arriba).
+```
+1. Emoflow API (27K registros)
+   ↓ sync_emoflow_api.py
+2. Supabase (única fuente de verdad)
+   ↓↓
+   ├─→ export_supabase_json.py → docs/datos/*.json → git push → GitHub
+   │   ↓
+   │   Panel Netlify (venerable-truffle-331f3c.netlify.app)
+   │
+   └─→ sync_supabase_to_sheets.py → Google Sheets (H1Test/H2Test/H3Test)
+       ↓
+       Equipo (lectura + edición manual)
+```
 
-**"Permiso insuficiente para escribir"**
-→ Verifica que la Service Account (`credenciales_service_account.json`) tenga acceso al Sheet.
+---
+
+## Notas Importantes
+
+- **H1Test, H2Test, H3Test NO son fuentes de verdad.** Supabase es la BD única. Sheets es interfaz amigable.
+- **Sincronización unidireccional:** Supabase → Sheets/GitHub. NO hay sync de vuelta (Sheets → Supabase).
+  Si el equipo edita datos en Sheets, coordina con alguien para ingresarlos en Supabase/Q10 manualmente.
+- **Privacidad:** H1Test y H2Test contienen email/nombre (PII). No compartir públicamente.
+- **Actualización:** las hojas + JSON se refrescan cada vez que corren los scripts (~1-2 min para Sheets, ~3-5 min para JSON).
+
+---
+
+## Solución de Problemas
+
+**"Faltan hojas H1Test, H2Test, H3Test"**
+→ Créalas manualmente en el Sheet. El script las verá automáticamente.
+
+**"Permiso insuficiente para escribir en Sheet"**
+→ Verifica que la Service Account tenga acceso.
   Comparte el Sheet con `q10-automatizacion@n8n-automatizacion-q10.iam.gserviceaccount.com` (role: Editor).
 
-**"Datos no se actualizan"**
-→ Ejecuta el script manualmente (`python sync_supabase_to_sheets.py`).
-  Si falla, revisa los logs de Supabase (`SUPABASE_URL`, `SUPABASE_ANON_KEY` en `.env.local`).
+**"No ve JSON en GitHub / Panel Netlify"**
+→ Ejecuta `python export_supabase_json.py` y espera a que haga push.
+  Netlify puede tardarse 1-2 minutos en actualizar tras el push.
+
+**"Datos no se actualizan en Sheets"**
+→ Ejecuta `python sync_supabase_to_sheets.py` manualmente.
+  Revisa los logs si falla. Verifica credenciales Supabase en `.env.local`.
