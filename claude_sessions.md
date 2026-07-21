@@ -2852,3 +2852,25 @@ cifras nacionales dentro de la vista de ciudad. `npm run build` OK (243 kB First
 - **Credenciales:** `EMOFLOW_USER=Rofe123`, `EMOFLOW_PASSWORD=Rofe123@` en `.env.local` (nunca en git).
 - **Testing:** --dry-run exitoso, test real exitoso (826 filas a Supabase, snapshots históricos guardados).
 - Script `sync_emoflow.py` marcado como DEPRECATED 2026-07-20 pero se mantiene por inercia.
+
+---
+
+## 2026-07-20 (cont.) — [panel-datos-etl] Hojas intermedias h1/h2/h3 — interfaz Sheets para equipo
+
+**Estado:** Completado (setup pendiente: crear hojas manualmente en Sheet)
+**Proceso relacionado:** [[project-emoflow-supabase]] · [[project-panel-datos-supabase]]
+
+- **Objetivo:** el equipo está acostumbrado a Excel/Sheets. Mantener hojas de lectura fácil para
+  que consulten datos sin abandonar su interfaz (h1=participantes, h2=emoflow, h3=resumen KPIs).
+- **Flujo:** Supabase (backend, fuente única de verdad) → `sync_supabase_to_sheets.py` → Google Sheets hojas h1/h2/h3 (lectura + edición manual).
+- **Sincronización:** unidireccional Supabase → Sheets. Cambios críticos en backend; ediciones del equipo en Sheets se coordinan manualmente.
+- **Script nuevo:** `scripts/panel-datos/sync_supabase_to_sheets.py`
+  - Lectura anon_key de Supabase (vistas públicas + tabla emoflow_ingresos)
+  - Escritura en Google Sheets (copia/pega de datos)
+  - h1: Participantes (cédula, nombre, email, programa, ciudad) — referencia
+  - h2: Emoflow (email, nombre, ciudad, ingresos, último ingreso) — visto por equipo
+  - h3: Resumen (KPIs: ingresados, activos, aprobados, emoflow stats) — dashboard rápido
+- **Setup:** requiere crear hojas h1, h2, h3 manualmente en el Sheet (permisos del Service Account limitados).
+  Guía en `docs/hojas-intermedias-setup.md`.
+- **Ejecución:** manual (`python sync_supabase_to_sheets.py`) o en n8n como nodo extra post-emoflow.
+- **Testing:** confirmado estructura de datos, falta solo crear hojas en Sheet y probar end-to-end.
