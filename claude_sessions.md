@@ -2923,3 +2923,24 @@ cifras nacionales dentro de la vista de ciudad. `npm run build` OK (243 kB First
 - **Producción (3 pasos hechos):** panel → `comunicaciones-ai/Panel-De-Datos` (`ae544bf`, Netlify
   auto-deploy); script → `Fundacion-ROFE/Estadisticas` (`a3b6d99` + `72fbbc3`); automatización n8n
   activada. Todo verificado en local antes de subir (tsc limpio, datos reales confirmados en Supabase).
+
+---
+
+## 2026-07-20 (cont. 3) — [panel-datos-etl] Emoflow: participación semanal pasa a 100% Emoflow + fix eje temporal
+
+**Estado:** Completado y en producción
+**Proceso relacionado:** [[panel-datos-etl]] · [[project-emoflow-ingresos-diario]]
+
+- **Directiva de Samuel:** toda la pestaña Emoflow debe venir DIRECTO de Emoflow; nada de otras
+  fuentes (Emoflow→Supabase cuenta). Auditoría: participación semanal venía de la **hoja de
+  monitorías** (no Emoflow); "participar→aprobar" cruza uso Emoflow con aprobación de Q10.
+- **Bug reportado:** el gráfico semanal se ordenaba alfabéticamente (Sem 1, Sem 10, Sem 2…) —
+  GraficoHistorial ordena por localeCompare del label; con "Sem N" rompe.
+- **Solución:** nueva tabla `emoflow_actividad_semanal` derivada del MISMO CSV de Emoflow
+  (usuarios activos únicos por semana ÷ roster de ciudad = % matrícula activa; semana = lunes ISO).
+  `extract_emoflow_ingresos_diario.py` ahora llena las 2 tablas en una corrida. Migración 002.
+- **Panel:** deja de leer la hoja; grafica % activos por semana/ciudad con eje X por fecha de lunes
+  (orden temporal correcto). Snapshot = última semana COMPLETA (excluye la en curso). "Participar→
+  aprobar" se mantiene pero reetiquetado (aprobación = Q10, no Emoflow), por decisión de Samuel.
+- **Producción:** panel `d3a7a26` (Netlify), script+migración `0d4f396` (admin-usable). La
+  automatización n8n existente (emoflow-ingresos-diario 21:30) ya alimenta ambas tablas — sin cambios.
