@@ -1,7 +1,7 @@
 {
   "Habilidades del ser para Emprendedoras del Siglo XXI": {
     "aprobados": 73,
-    "cursaron": 244
+    "cursaron": 283
   },
   "De la idea a la acción, tu guía para emprender con éxito": {
     "aprobados": 47,
@@ -24,7 +24,7 @@
     "cursaron": 832
   },
   "Fundamentos Lógica de Programación - 2026": {
-    "aprobados": 751,
+    "aprobados": 753,
     "cursaron": 791
   },
   "Introducción a la IA Generativa - 2026": {
@@ -32,7 +32,7 @@
     "cursaron": 791
   },
   "Desarrollo Web Front-End - HTML - 2026": {
-    "aprobados": 414,
+    "aprobados": 473,
     "cursaron": 779
   }
 }
