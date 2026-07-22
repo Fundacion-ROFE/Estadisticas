@@ -223,11 +223,11 @@
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
     "cohorte": "2026",
     "matriculados": 777,
-    "completados": 257,
-    "en_progreso": 476,
-    "sin_iniciar": 44,
-    "pct_completados": 33.1,
-    "promedio_avance": 66.3,
+    "completados": 471,
+    "en_progreso": 268,
+    "sin_iniciar": 38,
+    "pct_completados": 60.6,
+    "promedio_avance": 78.9,
     "programa": "jc"
   },
   {
@@ -297,6 +297,17 @@
     "programa": "jc"
   },
   {
+    "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
+    "cohorte": "2026",
+    "matriculados": 777,
+    "completados": 753,
+    "en_progreso": 13,
+    "sin_iniciar": 11,
+    "pct_completados": 96.9,
+    "promedio_avance": 97.4,
+    "programa": "jc"
+  },
+  {
     "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
     "cohorte": "2026",
     "matriculados": 244,
@@ -306,17 +317,6 @@
     "pct_completados": 29.9,
     "promedio_avance": 32.1,
     "programa": "mr"
-  },
-  {
-    "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
-    "cohorte": "2026",
-    "matriculados": 777,
-    "completados": 751,
-    "en_progreso": 15,
-    "sin_iniciar": 11,
-    "pct_completados": 96.7,
-    "promedio_avance": 97.2,
-    "programa": "jc"
   },
   {
     "curso": "Transforma tu negocio con estrategias digitales",
@@ -425,7 +425,7 @@
     "en_progreso": 5,
     "sin_iniciar": 1,
     "pct_completados": 99.2,
-    "promedio_avance": 99.0,
+    "promedio_avance": 99.1,
     "programa": "jc"
   }
 ]

@@ -1,5 +1,26 @@
 [
   {
+    "id": 9,
+    "cohorte": "2026",
+    "curso": "De la idea a la acción, tu guía para emprender con éxito",
+    "programa": "mr",
+    "cursaron": 136,
+    "activos": 136,
+    "aprobados": 47,
+    "aprobados_retirados": 0,
+    "retirados": 0,
+    "banda_0_25": 73,
+    "banda_26_80": 16,
+    "banda_81_100": 47,
+    "aprobados_total": 47,
+    "no_aprobados": 89,
+    "sin_finalizar": 89,
+    "promedio": 41.9,
+    "pct_aprobados": 34.6,
+    "finalizado": false,
+    "updated_at": "2026-07-21T09:45:24"
+  },
+  {
     "id": 1,
     "cohorte": "2026",
     "curso": "Bienvenidos a Jóvenes creaTIvos",
@@ -18,7 +39,7 @@
     "promedio": 99.98,
     "pct_aprobados": 100.0,
     "finalizado": true,
-    "updated_at": "2026-07-20T14:10:28"
+    "updated_at": "2026-07-22T09:45:17"
   },
   {
     "id": 2,
@@ -36,10 +57,10 @@
     "aprobados_total": 781,
     "no_aprobados": 51,
     "sin_finalizar": 6,
-    "promedio": 99.04,
+    "promedio": 99.1,
     "pct_aprobados": 93.9,
     "finalizado": true,
-    "updated_at": "2026-07-20T14:10:28"
+    "updated_at": "2026-07-22T09:45:17"
   },
   {
     "id": 3,
@@ -57,10 +78,10 @@
     "aprobados_total": 811,
     "no_aprobados": 21,
     "sin_finalizar": 1,
-    "promedio": 99.71,
+    "promedio": 99.72,
     "pct_aprobados": 97.5,
     "finalizado": true,
-    "updated_at": "2026-07-20T14:10:28"
+    "updated_at": "2026-07-22T09:45:17"
   },
   {
     "id": 4,
@@ -81,7 +102,7 @@
     "promedio": 99.83,
     "pct_aprobados": 98.9,
     "finalizado": true,
-    "updated_at": "2026-07-20T14:10:28"
+    "updated_at": "2026-07-22T09:45:17"
   },
   {
     "id": 5,
@@ -90,19 +111,19 @@
     "programa": "jc",
     "cursaron": 791,
     "activos": 777,
-    "aprobados": 751,
+    "aprobados": 753,
     "aprobados_retirados": 0,
     "retirados": 14,
-    "banda_0_25": 14,
-    "banda_26_80": 12,
-    "banda_81_100": 751,
-    "aprobados_total": 751,
-    "no_aprobados": 40,
-    "sin_finalizar": 26,
-    "promedio": 97.18,
-    "pct_aprobados": 94.9,
+    "banda_0_25": 13,
+    "banda_26_80": 11,
+    "banda_81_100": 753,
+    "aprobados_total": 753,
+    "no_aprobados": 38,
+    "sin_finalizar": 24,
+    "promedio": 97.36,
+    "pct_aprobados": 95.2,
     "finalizado": true,
-    "updated_at": "2026-07-20T14:10:28"
+    "updated_at": "2026-07-22T09:45:17"
   },
   {
     "id": 6,
@@ -120,10 +141,10 @@
     "aprobados_total": 765,
     "no_aprobados": 26,
     "sin_finalizar": 12,
-    "promedio": 98.51,
+    "promedio": 98.54,
     "pct_aprobados": 96.7,
     "finalizado": true,
-    "updated_at": "2026-07-20T14:10:28"
+    "updated_at": "2026-07-22T09:45:17"
   },
   {
     "id": 7,
@@ -132,60 +153,39 @@
     "programa": "jc",
     "cursaron": 779,
     "activos": 777,
-    "aprobados": 257,
+    "aprobados": 471,
     "aprobados_retirados": 2,
     "retirados": 0,
-    "banda_0_25": 90,
-    "banda_26_80": 430,
-    "banda_81_100": 257,
-    "aprobados_total": 259,
-    "no_aprobados": 520,
-    "sin_finalizar": 520,
-    "promedio": 66.28,
-    "pct_aprobados": 33.2,
+    "banda_0_25": 71,
+    "banda_26_80": 235,
+    "banda_81_100": 471,
+    "aprobados_total": 473,
+    "no_aprobados": 306,
+    "sin_finalizar": 306,
+    "promedio": 78.86,
+    "pct_aprobados": 60.7,
     "finalizado": false,
-    "updated_at": "2026-07-20T14:10:28"
+    "updated_at": "2026-07-22T09:45:17"
   },
   {
     "id": 8,
     "cohorte": "2026",
     "curso": "Habilidades del ser para Emprendedoras del Siglo XXI",
     "programa": "mr",
-    "cursaron": 244,
+    "cursaron": 283,
     "activos": 244,
     "aprobados": 73,
     "aprobados_retirados": 0,
-    "retirados": 0,
+    "retirados": 39,
     "banda_0_25": 159,
     "banda_26_80": 12,
     "banda_81_100": 73,
     "aprobados_total": 73,
-    "no_aprobados": 171,
+    "no_aprobados": 210,
     "sin_finalizar": 171,
     "promedio": 32.07,
-    "pct_aprobados": 29.9,
+    "pct_aprobados": 25.8,
     "finalizado": false,
-    "updated_at": "2026-07-20T14:10:28"
-  },
-  {
-    "id": 9,
-    "cohorte": "2026",
-    "curso": "De la idea a la acción, tu guía para emprender con éxito",
-    "programa": "mr",
-    "cursaron": 136,
-    "activos": 136,
-    "aprobados": 47,
-    "aprobados_retirados": 0,
-    "retirados": 0,
-    "banda_0_25": 73,
-    "banda_26_80": 16,
-    "banda_81_100": 47,
-    "aprobados_total": 47,
-    "no_aprobados": 89,
-    "sin_finalizar": 89,
-    "promedio": 41.9,
-    "pct_aprobados": 34.6,
-    "finalizado": false,
-    "updated_at": "2026-07-20T14:10:28"
+    "updated_at": "2026-07-22T09:45:17"
   }
 ]

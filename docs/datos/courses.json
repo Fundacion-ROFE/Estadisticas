@@ -1,15 +1,5 @@
 [
   {
-    "id": "4686d3e3-86ff-499c-8a51-95a5b247dc16",
-    "nombre": "BIENVENIDOS A JÓVENES CREATIVOS",
-    "cohorte": "2026",
-    "fecha_inicio": null,
-    "fecha_fin": null,
-    "estado": "activo",
-    "created_at": "2026-07-10T01:30:06.620938",
-    "programa": "jc"
-  },
-  {
     "id": "bceb577b-373f-4d69-bdce-bafcdd79d426",
     "nombre": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
     "cohorte": "2026",
@@ -18,76 +8,6 @@
     "estado": "activo",
     "created_at": "2026-07-10T01:30:06.620938",
     "programa": "mr"
-  },
-  {
-    "id": "da4fad7b-de7f-42fe-92aa-78cb3c536ec7",
-    "nombre": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "cohorte": "2026",
-    "fecha_inicio": null,
-    "fecha_fin": null,
-    "estado": "activo",
-    "created_at": "2026-07-10T01:30:06.620938",
-    "programa": "jc"
-  },
-  {
-    "id": "ffd44d77-40d6-48bf-ac39-50176a3898a8",
-    "nombre": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
-    "cohorte": "2026",
-    "fecha_inicio": null,
-    "fecha_fin": null,
-    "estado": "activo",
-    "created_at": "2026-07-10T01:30:06.620938",
-    "programa": "jc"
-  },
-  {
-    "id": "3eb4d761-51de-4bcd-b2e2-8a7c8f143b2d",
-    "nombre": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
-    "cohorte": "2026",
-    "fecha_inicio": null,
-    "fecha_fin": null,
-    "estado": "activo",
-    "created_at": "2026-07-10T01:30:06.620938",
-    "programa": "jc"
-  },
-  {
-    "id": "bd7d3b0e-a28d-4266-82fb-a0947b2a2143",
-    "nombre": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
-    "cohorte": "2026",
-    "fecha_inicio": null,
-    "fecha_fin": null,
-    "estado": "activo",
-    "created_at": "2026-07-10T01:30:06.620938",
-    "programa": "mr"
-  },
-  {
-    "id": "287d579f-56f1-47ba-8c69-06ce8756f723",
-    "nombre": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
-    "cohorte": "2026",
-    "fecha_inicio": null,
-    "fecha_fin": null,
-    "estado": "activo",
-    "created_at": "2026-07-10T01:30:06.620938",
-    "programa": "jc"
-  },
-  {
-    "id": "c2b84241-8c73-4b84-a09d-2df274a81fbe",
-    "nombre": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
-    "cohorte": "2026",
-    "fecha_inicio": null,
-    "fecha_fin": null,
-    "estado": "activo",
-    "created_at": "2026-07-10T01:30:06.620938",
-    "programa": "jc"
-  },
-  {
-    "id": "ae1c5761-e352-4e0f-a18c-d7321e6f7a37",
-    "nombre": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
-    "cohorte": "2026",
-    "fecha_inicio": null,
-    "fecha_fin": null,
-    "estado": "activo",
-    "created_at": "2026-07-10T01:30:06.620938",
-    "programa": "jc"
   },
   {
     "id": "5c453871-3543-40d1-b630-69c4791a8a5a",
@@ -357,6 +277,86 @@
     "fecha_fin": null,
     "estado": "completado",
     "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "4686d3e3-86ff-499c-8a51-95a5b247dc16",
+    "nombre": "BIENVENIDOS A JÓVENES CREATIVOS",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc"
+  },
+  {
+    "id": "da4fad7b-de7f-42fe-92aa-78cb3c536ec7",
+    "nombre": "DESARROLLO WEB FRONT-END - HTML - 2026",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc"
+  },
+  {
+    "id": "ffd44d77-40d6-48bf-ac39-50176a3898a8",
+    "nombre": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc"
+  },
+  {
+    "id": "3eb4d761-51de-4bcd-b2e2-8a7c8f143b2d",
+    "nombre": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc"
+  },
+  {
+    "id": "bd7d3b0e-a28d-4266-82fb-a0947b2a2143",
+    "nombre": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "mr"
+  },
+  {
+    "id": "287d579f-56f1-47ba-8c69-06ce8756f723",
+    "nombre": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc"
+  },
+  {
+    "id": "c2b84241-8c73-4b84-a09d-2df274a81fbe",
+    "nombre": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc"
+  },
+  {
+    "id": "ae1c5761-e352-4e0f-a18c-d7321e6f7a37",
+    "nombre": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
     "programa": "jc"
   },
   {

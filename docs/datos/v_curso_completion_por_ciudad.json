@@ -95,9 +95,9 @@
     "programa": "jc",
     "grupo_ciudad": "BAQ",
     "matriculados": 131,
-    "completados": 50,
-    "promedio_avance": 73.5,
-    "pct_completados": 38.2
+    "completados": 90,
+    "promedio_avance": 86.5,
+    "pct_completados": 68.7
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
@@ -105,9 +105,9 @@
     "programa": "jc",
     "grupo_ciudad": "BOG",
     "matriculados": 132,
-    "completados": 40,
-    "promedio_avance": 67.8,
-    "pct_completados": 30.3
+    "completados": 79,
+    "promedio_avance": 80.0,
+    "pct_completados": 59.8
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
@@ -115,9 +115,9 @@
     "programa": "jc",
     "grupo_ciudad": "CAL",
     "matriculados": 93,
-    "completados": 44,
-    "promedio_avance": 76.3,
-    "pct_completados": 47.3
+    "completados": 72,
+    "promedio_avance": 88.5,
+    "pct_completados": 77.4
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
@@ -125,9 +125,9 @@
     "programa": "jc",
     "grupo_ciudad": "CTG",
     "matriculados": 99,
-    "completados": 27,
-    "promedio_avance": 62.7,
-    "pct_completados": 27.3
+    "completados": 52,
+    "promedio_avance": 74.3,
+    "pct_completados": 52.5
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
@@ -135,9 +135,9 @@
     "programa": "jc",
     "grupo_ciudad": "GYL",
     "matriculados": 79,
-    "completados": 23,
-    "promedio_avance": 60.6,
-    "pct_completados": 29.1
+    "completados": 36,
+    "promedio_avance": 68.2,
+    "pct_completados": 45.6
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
@@ -145,9 +145,9 @@
     "programa": "jc",
     "grupo_ciudad": "MED",
     "matriculados": 94,
-    "completados": 22,
-    "promedio_avance": 61.2,
-    "pct_completados": 23.4
+    "completados": 41,
+    "promedio_avance": 72.3,
+    "pct_completados": 43.6
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
@@ -155,9 +155,9 @@
     "programa": "jc",
     "grupo_ciudad": "PAN",
     "matriculados": 35,
-    "completados": 14,
-    "promedio_avance": 70.2,
-    "pct_completados": 40.0
+    "completados": 22,
+    "promedio_avance": 84.5,
+    "pct_completados": 62.9
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
@@ -165,9 +165,9 @@
     "programa": "jc",
     "grupo_ciudad": "QTO",
     "matriculados": 39,
-    "completados": 15,
-    "promedio_avance": 63.5,
-    "pct_completados": 38.5
+    "completados": 30,
+    "promedio_avance": 83.5,
+    "pct_completados": 76.9
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
@@ -175,9 +175,9 @@
     "programa": "jc",
     "grupo_ciudad": "UY",
     "matriculados": 65,
-    "completados": 22,
-    "promedio_avance": 63.6,
-    "pct_completados": 33.8
+    "completados": 49,
+    "promedio_avance": 83.1,
+    "pct_completados": 75.4
   },
   {
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
@@ -186,7 +186,7 @@
     "grupo_ciudad": "BAQ",
     "matriculados": 131,
     "completados": 130,
-    "promedio_avance": 99.3,
+    "promedio_avance": 99.4,
     "pct_completados": 99.2
   },
   {
@@ -196,7 +196,7 @@
     "grupo_ciudad": "BOG",
     "matriculados": 132,
     "completados": 130,
-    "promedio_avance": 98.4,
+    "promedio_avance": 98.5,
     "pct_completados": 98.5
   },
   {
@@ -216,7 +216,7 @@
     "grupo_ciudad": "CTG",
     "matriculados": 99,
     "completados": 98,
-    "promedio_avance": 98.4,
+    "promedio_avance": 98.6,
     "pct_completados": 99.0
   },
   {
@@ -236,7 +236,7 @@
     "grupo_ciudad": "MED",
     "matriculados": 94,
     "completados": 94,
-    "promedio_avance": 99.5,
+    "promedio_avance": 99.6,
     "pct_completados": 100.0
   },
   {
@@ -266,7 +266,7 @@
     "grupo_ciudad": "UY",
     "matriculados": 65,
     "completados": 64,
-    "promedio_avance": 99.3,
+    "promedio_avance": 99.4,
     "pct_completados": 98.5
   },
   {
@@ -285,9 +285,9 @@
     "programa": "jc",
     "grupo_ciudad": "BOG",
     "matriculados": 132,
-    "completados": 129,
-    "promedio_avance": 97.6,
-    "pct_completados": 97.7
+    "completados": 130,
+    "promedio_avance": 98.2,
+    "pct_completados": 98.5
   },
   {
     "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
@@ -315,9 +315,9 @@
     "programa": "jc",
     "grupo_ciudad": "GYL",
     "matriculados": 79,
-    "completados": 75,
-    "promedio_avance": 96.6,
-    "pct_completados": 94.9
+    "completados": 76,
+    "promedio_avance": 97.2,
+    "pct_completados": 96.2
   },
   {
     "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
@@ -326,7 +326,7 @@
     "grupo_ciudad": "MED",
     "matriculados": 94,
     "completados": 92,
-    "promedio_avance": 98.4,
+    "promedio_avance": 98.5,
     "pct_completados": 97.9
   },
   {
@@ -356,7 +356,7 @@
     "grupo_ciudad": "UY",
     "matriculados": 65,
     "completados": 63,
-    "promedio_avance": 98.0,
+    "promedio_avance": 98.1,
     "pct_completados": 96.9
   },
   {
@@ -376,7 +376,7 @@
     "grupo_ciudad": "BOG",
     "matriculados": 132,
     "completados": 132,
-    "promedio_avance": 99.9,
+    "promedio_avance": 100.0,
     "pct_completados": 100.0
   },
   {
@@ -386,7 +386,7 @@
     "grupo_ciudad": "CAL",
     "matriculados": 93,
     "completados": 93,
-    "promedio_avance": 99.8,
+    "promedio_avance": 99.9,
     "pct_completados": 100.0
   },
   {
@@ -566,7 +566,7 @@
     "grupo_ciudad": "CAL",
     "matriculados": 93,
     "completados": 92,
-    "promedio_avance": 99.6,
+    "promedio_avance": 99.8,
     "pct_completados": 98.9
   },
   {

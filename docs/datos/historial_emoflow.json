@@ -214,5 +214,17 @@
     "activos_14d": 597,
     "inactivos_30d": 157,
     "fuente": "backfill-historico"
+  },
+  {
+    "fecha": "2026-07-22",
+    "participantes": 827,
+    "con_match_supabase": 759,
+    "ingresos_promedio": 32.9,
+    "ingresos_mediana": 27,
+    "ingresos_max": 388,
+    "activos_7d": 514,
+    "activos_14d": 593,
+    "inactivos_30d": 157,
+    "fuente": "emoflow-api"
   }
 ]
