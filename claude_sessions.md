@@ -2963,3 +2963,645 @@ cifras nacionales dentro de la vista de ciudad. `npm run build` OK (243 kB First
   largo del programa (~82% activos en abril → ~60% ahora): desgaste normal de meses. Samuel decidió
   dejarlo así por ahora (posible alerta futura si una ciudad cae bajo umbral 2 semanas seguidas).
 - Documentado en `docs/procesos/panel-datos-etl.md` (subsección "Tab Emoflow — rehecho").
+
+---
+
+## 2026-07-21 — [mantenimiento] Limpieza de contexto y organización de docs
+
+**Estado:** Completado
+**Proceso relacionado:** documentación general
+
+- **Seguridad (crítico):** `docs/reference-n8n-api-key.md` (JWT de la API de n8n) y
+  `docs/reference-ngrok-tunel-fijo.md` estaban trackeados en `docs/` — que es el root de GitHub
+  Pages y el repo `Fundacion-ROFE/Estadisticas` es **público**. La clave estaba publicada. Se
+  sacaron de git (`git rm`), se conservó copia en `tools/` (gitignoreado) y se añadieron al
+  `.gitignore`. **Pendiente en manos de Samuel:** rotar el JWT en n8n (Settings → n8n API) y
+  actualizar los workflows/scripts que usan la clave vieja (`N8N_CC`, workflow `Rblg81qifVshsRae`).
+- **Basura de git:** `.git-rewrite/` (194 archivos, 1.1 MB) — snapshot residual del `git
+  filter-repo` de la purga del 14-jul — estaba commiteado. Sacado del índice, borrado del disco y
+  gitignoreado. También 2 archivos vacíos en raíz (`2026-07-15.md`, `reference-ngrok-tunel-fijo.md`).
+- **Organización:** creado `docs/archivo/` (con README explicativo). Se movieron ahí 10 docs de
+  planeación ya ejecutada / incidentes resueltos (6 de la raíz + 3 de `docs/` + SECURITY-INCIDENT).
+  La raíz queda limpia: solo `CLAUDE.md` y `claude_sessions.md`. Enlaces rotos corregidos en
+  `panel-datos-etl.md` y `convenciones.md`.
+- **Conservados vivos:** `prioridades-automatizacion-ia.md` (enlazado desde 00-vision),
+  `n8n-workflows-setup.md`, `hojas-intermedias-setup.md`.
+
+---
+
+## 2026-07-21 — [mr-website / wordpress-tocaunavida] Rediseño standalone HTML construido
+
+**Estado:** Construido — pendiente que Samuel suba 6 imágenes y pegue el embed en Elementor
+**Proceso relacionado:** [[wordpress-tocaunavida]] · [[mujeres-rofe-inventario-contenido]]
+
+- Se construyó la landing **Mujeres ROFÉ** como HTML/CSS/JS autocontenido en
+  `tools/mujeres-rofe-redesign/` (gitignoreado). Deliverable para pegar: `wordpress-embed.html`
+  (bloque EMBED con rutas de imagen absolutas); build de trabajo con preview local: `index.html`.
+  Scripts persistidos: `build_wordpress_embed.py`, `build_previews.py`, `quitar_fondo_bombillos.py`.
+- **Bombillos R·O·F·É** (Red/Oportunidades/Formación/Emprendimiento): se recortó el fondo blanco
+  (3 ya venían transparentes; solo amarillo + nova requerían recorte, PIL flood-fill). Cada tarjeta
+  toma el color de su bombillo en borde/resplandor/panel-trasero; amarilla con texto oscuro.
+- **NOVA:** logo transparente sobre su navy original `#070332` (manual de marca) en panel grande y
+  en la fila; disclaimer Erasmus+ en placa blanca; se quitó el placeholder de "socios del consorcio".
+- **UI/dinamismo:** partículas de fondo (canvas) con **formas rosadas** (destellos/aros/corazones que
+  titilan) tras feedback de la dueña ("parecía pantalla sucia"); hover de lectura asistida en texto;
+  glow de color en botones/FAQ/tarjetas; hero con foto `fondo-mr-4.png` que aparece suave en hover;
+  botón back-to-top reubicado para no chocar con el FAB de WhatsApp.
+- **Cambios de contenido (dueña de marca):** "Habilidades blandas"→"Habilidades clave" (Autoconocimiento
+  y liderazgo / Comunicación emocional y estratégica / Visión personal alineada al emprendimiento);
+  "Ventas online"→"Estrategias online"; Emprendimiento → Ideación / Modelo de negocio / Validación y acción.
+- **Imágenes:** 6 nuevas a subir en `2026/07/` (en `Downloads/imagenes-wordpress/`); hero ya existía
+  (`2026/04/fondo-mr-4.png`); cursos y PDF ya en el sitio. Detalle completo en [[wordpress-tocaunavida]].
+
+---
+
+## 2026-07-21 — [panel-datos-etl] Auditoría de centralización + correcciones en vivo + plan panel de riesgo
+
+**Estado:** Correcciones aplicadas en producción · plan de mejora documentado, no implementado
+**Proceso relacionado:** [[panel-datos-etl]] · [[panel-riesgo-mejora]] (nuevo)
+
+- **Auditoría a fondo:** qué fuentes aún no centralizan en Supabase. Metodología: no confiar solo
+  en la documentación — se consultó `GET /workflows/{id}` del n8n **en vivo** vía su API REST, no
+  solo los JSON exportados en `n8n-workflows/`.
+- **Hallazgo crítico:** el workflow `q10-sync-supabase` seguía ejecutando el script DEPRECADO
+  `sync_emoflow.py` (Sheet manual) pese a que la doc decía que `sync_emoflow_api.py` (API directa)
+  quedó encadenado el 2026-07-20 — el cambio se hizo solo en el JSON exportado, nunca se aplicó al
+  workflow real. **Corregido en vivo vía API:** nodo renombrado/reapuntado a `sync_emoflow_api.py`,
+  conexiones reconstruidas a mano (gotcha de PowerShell abajo). Verificado con `GET` posterior.
+- **Contra-hallazgo:** `asistencia-zoom-diario` (`sync_asistencia_supabase` + `calcular_asistencia_promedio`)
+  ya estaba automatizado y activo — la doc de `zoom-asistencia.md` lo listaba como pendiente.
+- **`sync_emoflow_participacion.py` eliminado del pipeline** (confirmado con Samuel que no se
+  quiere): quitados sus 3 nodos del workflow en vivo, script movido a `_obsoletos/`. La tabla
+  `emoflow_participacion_semanal` queda sin escrituras nuevas (no se borró).
+- **Sociodemográficos JC + MR automatizados:** `sync_sociodemograficos.py` y
+  `sync_sociodemograficos_mr.py` dejaron de depender del xlsx descargado a mano de Downloads —
+  ahora leen el Sheet en vivo (gspread, mismos IDs ya conocidos del proyecto). Probados con
+  `--dry-run` primero (números calzaron exacto contra las corridas históricas: 775 JC / 531 MR) y
+  luego corridos de verdad. Nuevo workflow n8n `sociodemograficos-semanal` (lunes 6:00 COT, alerta
+  Telegram en error, no bloqueante) los encadena — antes requerían re-corrida manual.
+- **Gotcha de PowerShell (nuevo, documentar en convenciones):** `ConvertTo-Json` colapsa un array
+  de un solo elemento a escalar (`@(@{...})` con 1 item pierde el nivel de array), lo que rompía
+  el formato `connections.main: [[...]]` que espera la API de n8n (error "object is not iterable").
+  Fix: forzar el array con el operador coma unario (`main = ,@(@{...})`) en cualquier rama `IF`/nodo
+  con una sola conexión de salida.
+- **Documentado y separado (no se ejecuta ahora):** retirados históricos 2023-2025 (limitación de
+  Q10, sin retirados en el Consolidado pasado — 2 caminos documentados para retomar), y
+  `sync_supabase_to_sheets.py`/`export_supabase_json.py` (funcionan pero deprioritizados: sin
+  persona dedicada a analítica que los consuma).
+- **Plan de mejora — Panel de Riesgo:** decisión con Samuel de mantener `panel_riesgo_gui.py` como
+  GUI de escritorio Tkinter (no un panel web nuevo, por privacidad de PII y simplicidad). Plan de
+  3 fases documentado en [[panel-riesgo-mejora]]: (1) migrar sus lectores de Sheets a Supabase,
+  (2) tab "Decisiones" con botones de consulta (en riesgo, sin Emoflow, asistencia <70%, etc.),
+  (3) ficha de estudiante ampliada + export + semáforo. No implementado todavía.
+- **JC sociodemográficos (vivienda/estrato/estado civil/nivel de estudio):** confirmado que no
+  existe fuente para JC (solo MR la tiene). Documentado como pendiente para la preparación de
+  estructura del próximo año — diseñar captura automatizada desde el onboarding, no recolectar
+  a mitad de año.
+- **Contexto capturado:** confirmado con Samuel que la convivencia GitHub Pages/Netlify es
+  transición — el siguiente paso grande de infraestructura es migrar `panel-datos-rofe` de
+  Netlify a un droplet DigitalOcean (límites del free tier). No planeado en detalle aún.
+
+---
+
+## 2026-07-21 (cont.) — [panel-datos-etl / panel-riesgo-mejora] 4 tareas pendientes ejecutadas en paralelo
+
+**Estado:** Las 4 completadas · 1 bug de encoding encontrado y corregido al verificar
+**Proceso relacionado:** [[panel-datos-etl]] · [[panel-riesgo-mejora]] · [[captura-sociodemografica-jc]] (nuevo)
+
+Samuel pidió retomar en paralelo (subagentes independientes, cada uno con contexto propio) los
+4 puntos que habían quedado documentados como "pendientes" en la auditoría de la sesión anterior:
+
+1. **Panel de riesgo — Fase 1 completada:** `tools/panel_riesgo_gui.py` migró `leer_h2test()` a
+   Supabase (`/enrollments` con embeds PostgREST `participants!inner`/`courses!inner`, cohorte
+   actual auto-detectada como `max(cohorte_ingresos.cohorte)`, sin hardcodear año). Mismo shape
+   de retorno — ningún tab/KPI cambió. `leer_avance()` se mantiene en Sheets a propósito (Supabase
+   ya viene de Q10 directo, no puede sustituir el seguimiento manual sin vaciar de sentido el tab
+   "Diferencias"). `leer_retirados()` sigue igual (retirados individuales no existen en Supabase).
+   Verificado con script standalone nuevo (`tools/verificar_supabase_panel_riesgo.py`): JC 777 ==
+   `cohorte_ingresos.activos`, MR 283 == ídem, 9/9 cursos cuadran contra `aprobacion_cursos`.
+2. **Retirados históricos — búsqueda cerrada sin éxito (mayormente):** se buscó en Downloads, el
+   repo, `git log --all --diff-filter=D` y Google Drive. No apareció nada que cierre el hueco
+   completo (JC ~353 sigue sin fuente). Hallazgo parcial menor: pestaña `Inactivas` de
+   `BD-Mujeres ROFÉ 2026.xlsx` tiene 33 filas MR con año de ingreso real 2022-2025, pero el campo
+   "Año-retiro" no es confiable (parece fecha de registro) — no se importó, queda como nota.
+3. **Captura sociodemográfica JC — diseñada, no implementada:** nuevo doc
+   `docs/procesos/captura-sociodemografica-jc.md` — Form propuesto (mismos 4 enums que ya usa MR,
+   sin inventar nuevos), Sheet destino propuesto (pestaña `Sociodemograficos` en el hub de BD
+   Seguimiento), script de sync propuesto `sync_sociodemograficos_jc_extra.py` espejo del de MR.
+   Para desplegar en la preparación del próximo año, no ahora.
+4. **`sync_supabase_to_sheets` / `export_supabase_json` — encadenados en `q10-sync-supabase`:**
+   nuevos nodos tras `¿Emoflow OK?` → `export_supabase_json` → IF → `sync_supabase_to_sheets` →
+   IF → `OK` (stopAndError en cada rama de error, mismo patrón del resto del workflow). Se le
+   agregó `git_commit_y_push()` a `export_supabase_json.py` (los JSON de `docs/datos/` YA estaban
+   trackeados en git — sin push quedarían huérfanos en disco). Advertencia documentada: ese script
+   sigue sin consumidor confirmado (el frontend real consulta Supabase client-side, no lee esos
+   JSON) — se encadenó igual porque así se pidió, pero queda anotado para reconsiderar.
+
+**Bug encontrado y corregido al verificar el resultado de la tarea 4 (no confiar ciegamente en
+el reporte de un subagente):** el agente reportó haber detectado y reparado una "corrupción de
+encoding" en las conexiones del workflow que supuestamente cortaba la ejecución en silencio tras
+`normalize_q10_data`. Verificado directo contra el JSON en vivo (guardado a archivo + leído con
+la herramienta de lectura, no por consola de PowerShell que mutila tildes al mostrarlas): los
+nombres de los 4 nodos IF originales (`¿Normalización OK?`, `¿Carga OK?`, `¿Aprobación OK?`,
+`¿Emoflow OK?`) y sus mensajes de error SÍ estaban corrompidos a literal `?` en el dato real (no
+solo en pantalla) — pero las conexiones seguían siendo consistentes entre sí (mismo nombre
+corrupto en `node.name` y en las referencias de `connections`), así que el ruteo de ejecución
+**nunca estuvo roto** — el diagnóstico de "corte silencioso" del subagente era una sobre-
+interpretación. La corrupción real venía de esta misma sesión: al escribir el primer fix de hoy
+(`sync_emoflow` → `sync_emoflow_api`) se tipeó el texto acentuado directo en un comando de
+PowerShell, y la propia consola/parser de PowerShell mutiló los caracteres no-ASCII antes de que
+llegaran al payload — nunca se detectó porque la verificación de esa vez también se hizo mirando
+consola (mutilada igual, parecía "solo visual"). **Fix real:** script Python puntual
+(`fix_n8n_encoding.py`, en el scratchpad de la sesión, no en el repo) que lee/escribe el workflow
+vía `urllib` con UTF-8 explícito — evita por completo el problema de encoding de PowerShell.
+Verificado con 0 referencias huérfanas y los 4 nombres + 4 mensajes de error restaurados
+correctamente. **Regla para el futuro:** cualquier texto con tildes/¿/ñ que se vaya a mandar a la
+API de n8n, escribirlo con Python (`urllib`+UTF-8), nunca tipeado directo en un comando PowerShell
+— añadido a `docs/convenciones.md`.
+- Re-exportado `n8n-workflows/q10-sync-supabase.json` final (20 nodos, verificado en vivo).
+
+---
+
+## 2026-07-21 — [q10-consolidacion] Histórico + semáforo semanal en SinCompletar
+
+**Estado:** Completado
+**Proceso relacionado:** [[q10-consolidacion]]
+
+- Extendido `tools/exportar_sin_completar.py` (Fase 6) con dos pestañas nuevas en el mismo Sheet
+  `SinCompletar`: `Historico` (snapshot semanal de la cohorte sin completar, marca de agua por
+  semana ISO) y `Semaforo` (contraste semana pasada vs. actual por estudiante: verde 100% /
+  amarillo 45-99.9% / rojo <45%, más columna Tendencia con Δ%). No se tocó n8n — el script ya
+  corre cada 4h en el workflow existente, así que la nueva lógica queda automatizada sin cambios
+  en el JSON.
+- Decisión clave: la cohorte a comparar es SOLO quienes estaban sin completar la semana anterior
+  (según lo pidió Samuel), no toda la matrícula — evita ruido de estudiantes que ya estaban al
+  día. Para saber si alguien llegó a 100% (y por eso desapareció de `SinCompletar`), se agregó una
+  lectura sin filtro de avance (`por_curso_todos`/`ciudades_todos`) que vive solo en memoria de esa
+  corrida — `Historico` nunca guarda completos, así no crece indefinidamente.
+- Emparejamiento semana-a-semana por `(curso, cédula normalizada)` — mismo riesgo que el ledger de
+  aprobación si un nombre de curso cambia entre semanas (cae como "sin dato").
+- Verificado en vivo: dry-run primero (546 matrículas, 11 ciudades, detectó correctamente que no
+  había semana anterior), luego corrida real con permiso de Samuel — `Historico` quedó con 546
+  filas semilla (semana 2026-W30) y `Semaforo` con el placeholder de línea base. El contraste real
+  con semáforo aparecerá la próxima semana ISO.
+- Pendiente: nada bloqueante — el diseño está confirmado por Samuel (3 preguntas de alcance
+  respondidas antes de programar: métrica por estudiante no agregada, histórico en pestaña de
+  Sheet no JSON, pestaña nueva sin reemplazar `SinCompletar`).
+- **Mismo día, backfill de la semana base:** Samuel pidió ver un ejemplo visual del semáforo hoy
+  mismo en vez de esperar una semana. En vez de datos sintéticos, se recuperó la revisión real de
+  Google Drive de `SinCompletar` más cercana al cierre de la semana 13-17 julio (API
+  `files.revisions` con las credenciales del Service Account — Samuel preguntó si se podía vía MCP,
+  pero el MCP de Drive es de su cuenta personal, no del Service Account con acceso al Sheet; se
+  hizo con una llamada directa a la API de Drive). Se parseó esa revisión (768 registros reales) y
+  se sembró en `Historico` como semana `2026-W29`; la corrida normal ya generó el semáforo real:
+  🟢222 · 🟡402 · 🔴144, 0 sin dato. Script de backfill quedó en el scratchpad de la sesión (uso
+  único, no en el repo). Desde la próxima semana ISO el ciclo sigue solo con datos en vivo.
+- **Mismo día, pestaña Balance:** Samuel marcó que el semáforo por estudiante no era accionable
+  como resumen ("66/66 mejoraron o se mantuvieron" no dice nada útil — muchos son estudiantes
+  estancados en 0% que cuentan como "mantuvo") y pidió un panel más visual, ciudad × materia, sin
+  el individuo, con el ejemplo exacto de una tabla que el equipo ya usaba a mano. Se descubrió que
+  esa tabla YA existe como pestaña manual `Balace` en el mismo Sheet — se automatizó como pestaña
+  nueva `Balance` (sin tocar `Balace`) leyendo agregados de `Historico`. Validación clave: los
+  valores de la semana actual coinciden EXACTO con los de `Balace` para las 4 materias que el
+  equipo trackea a mano — confirma que es la misma métrica, ahora automática. Las diferencias en
+  "semana pasada" (backfill del jueves 16 en la noche vs. el lunes que usaba el equipo) son de
+  timing, no de fondo. `Balace` original queda intacta en paralelo.
+- Bug encontrado y corregido en el camino: `updateSheetProperties.frozenColumnCount` chocaba con
+  el merge de la fila título completa ("can't freeze columns which contain only part of a merged
+  cell") — se quitó el merge del título (el texto desborda igual sobre celdas vacías, sin
+  necesidad de merge) en vez de quitar el freeze.
+- **Mismo día, Balance v2 + verificaciones pedidas:** Samuel pidió 4 cosas en un solo mensaje —
+  (1) re-exportar `n8n-workflows/q10-consolidacion.json`: verificado en vivo que es byte-idéntico
+  al workflow de producción (32 nodos, conexiones, metadata) — no hacía falta, los cambios de hoy
+  son enteramente internos al script Python que el workflow ya llamaba. (2) Excel más agradable
+  con colores fuertes que muestren el avance: agregada columna `% avance` por materia (matriculados
+  vs. sin_completar_actual) con colores sólidos (verde/amarillo/rojo, mismos umbrales 100/45/<45
+  que el semáforo), más espacio (filas 30px, columnas 100-150px, bordes entre bloques de materia).
+  (3) Tabla resumen ciudad × cantidad al final de `Balance` (ej. "Bogotá 129→86 ▼-43"), debajo de
+  la tabla principal en la misma pestaña. (4) Confirmar que Balance se adapta al día de la semana
+  (martes-viernes comparan contra el viernes anterior, lunes contra el viernes que acaba de
+  pasar) — verificado con una simulación de `semana_actual()` día por día: YA funcionaba así por
+  diseño (ISO week + congelamiento de semanas cerradas en `Historico`), no requirió cambio de
+  código.
+- Bug nuevo encontrado y corregido: el mismo choque merge-vs-freeze-columns apareció también en
+  el título de la tabla resumen (en otra sección de la misma hoja) — mismo fix, sin merge en la
+  fila de título.
+- Todo verificado en vivo escribiendo al Sheet real (no solo dry-run): colores confirmados por
+  API en celdas puntuales (BOG HTML 51.5%→amarillo, BAQ2 HTML 0.0%→rojo fuerte).
+- **Mismo día, exclusión de perfiles de prueba:** Samuel notó "Pruebas Estudiantes JC", "Jovenes
+  Prueba" y "Pruebas Soporte IT" contaminando los conteos. Ya existía `tools/exclusiones_prueba.json`
+  (usado por `export_aprobacion.py` desde 2026-07-08) pero `exportar_sin_completar.py` nunca lo
+  aplicaba. Agregado `cargar_exclusiones()` + filtro en `leer_sin_completar()` (mismo patrón que
+  aprobación). Se purgaron también las 16 filas de prueba que ya habían quedado en `Historico`
+  (W29+W30) con un script puntual. Efecto verificado: `SIN UBICACIÓN` 9→1, total sin completar
+  546→538, semáforo 768→760 casos, 0 filas de prueba restantes en Historico.
+- Samuel también preguntó por qué existe un grupo `BAQ2` — investigado en la BD Seguimiento: es
+  **1 solo estudiante** (Jeyder Jesús Pallares De La Hoz) con `Grupo="BAQ2"` en vez de `"BAQ"`,
+  casi seguro un typo de captura manual, no un subgrupo real. Queda como pendiente de bajo
+  impacto (corregir la fila en la BD o confirmar con el equipo), documentado en mapa-codigo.md.
+- **Mismo día, corrección BAQ2 → migración de fuente:** Samuel pidió corregir la fila BAQ2 y
+  avisar al equipo. Al ir a corregirla en el Sheet en vivo (`BD Seguimiento de Monitorias`,
+  Seguimiento) se descubrió que **ya estaba corregida ahí** — el BAQ2 solo vivía en el xlsx
+  local desactualizado que `exportar_sin_completar.py` seguía leyendo (12 filas de diferencia
+  contra el Sheet real). En vez de tocar el xlsx, se migró `leer_ubicaciones()` a leer el Sheet
+  vivo directo (mismo patrón que `sync_sociodemograficos.py` migró hoy mismo, mismo Sheet ID
+  `1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8`) — confirmado con el usuario antes de aplicar,
+  ya que cambia la fuente de datos de un script en producción. Efecto: BAQ2 desaparece (10
+  ciudades, no 11); pero SIN UBICACIÓN subió de 1 a 38 filas (13 estudiantes) — verificado
+  caso por caso que es real: existen en Q10/h2test pero no tienen fila en `Seguimiento` en vivo.
+  No es bug de formato (IDs limpios, sin notación científica). Pendiente: confirmar con el
+  equipo si estos 13 están en alguna pestaña por ciudad del mismo Sheet gigante o si de verdad
+  faltan por registrar.
+- No se envió ningún aviso al equipo todavía — no hay canal de equipo confirmado en el proyecto
+  (solo el chat_id personal de Samuel para pushes de Telegram); pendiente que Samuel decida cómo
+  y a quién avisar sobre los 13 estudiantes sin ubicación.
+- **Mismo día, resolución del hallazgo de los 13 + BAQ2 + cambio de métrica:** Samuel pidió (1)
+  revisar las pestañas por ciudad del mismo Sheet gigante, (2) borrar las filas de BAQ2, (3)
+  celdas más grandes en Balance, (4) cambiar % avance a promedio del curso por ciudad **desde la
+  DB** (Supabase), no desde las Sheets.
+  - (1) Los 13 SÍ estaban registrados — cada uno en la pestaña de su propia ciudad (Bogotá:4,
+    Uruguay:3, Guayaquil:1, Barranquilla:1, Cali:1, Medellín:1, Cartagena:2). Se agregó
+    `leer_ubicaciones()` con fallback automático a las 9 pestañas por ciudad (`TABS_CIUDAD`) —
+    resultó que esas pestañas tienen MÁS cobertura que el hub `Seguimiento` (832 cédulas
+    adicionales). Gotcha: el layout de headers no es consistente entre pestañas (fila 0 o fila 1
+    según si hay una celda "Información General" fusionada arriba) — `_leer_tab_ciudad()` prueba
+    ambas. `sin_ubicacion` bajó de 38 a 0.
+  - (2) Se purgó (borrado, no reetiquetado, a pedido explícito) la única fila `ciudad="BAQ2"` que
+    quedaba en `Historico` (semana W29, del backfill). `GRUPO_LABEL["BAQ2"]` se eliminó del código.
+  - (3) Balance: filas 30→36px, columna Ciudad 150→190px, columnas de materia 100→130px,
+    `fontSize=11` en la celda de % avance.
+  - (4) Nueva función `calcular_promedio_avance_supabase()` — consulta Supabase
+    (`enrollments`×`participants!inner`×`courses!inner`, cohorte año actual) y calcula el
+    PROMEDIO real de `porcentaje_avance` por `(grupo_ciudad, curso normalizado)`, reemplazando el
+    cálculo `(matriculados−sin_completar)/matriculados` que antes se derivaba de las Sheets.
+    Verificado antes de implementar con una consulta directa (BAQ×HTML: n=131, promedio=73.5%) —
+    coincide con el valor final en Balance. Valores salen altos (98-100%) en casi todas las
+    materias salvo HTML porque el promedio incluye a los cientos ya completados, no solo a los
+    que faltan — comportamiento esperado de un promedio, documentado para que no se lea como
+    error. Gotcha de frescura: esta columna depende del sync diario `q10-sync-supabase` (9:45),
+    puede ir más atrasada que el resto del reporte (Sheets, cada 4h).
+  - Todo verificado en vivo con dry-run primero y luego corrida real escribiendo al Sheet.
+
+## 2026-07-22 — [postulantes-mr-supabase] Búsqueda de 8 mujeres + plan de unificación de fuentes
+
+**Estado:** Idea (plan documentado, sin implementar)
+**Proceso relacionado:** [[postulantes-mr-supabase]] · [[panel-datos-etl]] · [[mr-actualizacion-datos]]
+
+- Sandra pidió verificar si 8 mujeres (lista externa: nombre, cédula, correo, celular) estaban
+  en la base de datos. Búsqueda en Supabase `participants` por cédula (`q10_id`) y correo: solo
+  2 coincidieron exacto (matriculadas en Q10). Se confirmó que `participants` no tiene columna
+  de celular — no se pudo verificar ese dato desde Supabase.
+- Se conectó directo al Sheet BD-Mujeres ROFÉ (gspread, mismas credenciales de
+  `sync_sociodemograficos_mr.py`) para buscar las 6 restantes en sus 13 pestañas. 1 más
+  apareció (Gina Gleisy González Guette, registrada desde 2024) pero con **cédula distinta**
+  a la de la lista (typo de un dígito: `22519636` vs `22519536` en el Sheet) — identificada
+  como la misma persona por coincidencia exacta de celular. Las otras 5 no aparecen en ningún
+  lado (ni Supabase ni el Sheet completo).
+- **Hallazgo estructural:** Supabase solo tiene 282 de las 5.126 cédulas del Sheet — por diseño,
+  `sync_sociodemograficos_mr.py` solo actualiza a quienes YA tienen matrícula MR en Q10, nunca
+  crea `participants` nuevos. Esto no es un bug de migración; es una limitación de alcance
+  conocida y documentada, pero significa que buscar "¿la conocemos?" solo en Supabase da falsos
+  negativos para postulantes sin curso.
+- Se documentó un plan de 5 fases en [[postulantes-mr-supabase]] para llevar el universo
+  completo de postulantes a una tabla paralela `postulantes_mr` (con `participant_id` nullable
+  como puente), sin tocar `participants` — evita romper los ~15 agregados canónicos que asumen
+  "toda fila = matriculada". Reutiliza `senales_match()` de `actualizar_bd_mr.py` (ya existente)
+  para detectar typos de cédula como el de Gina.
+- Documentadas 2 convenciones nuevas y reutilizables en `convenciones.md`: (1) `participants` =
+  solo matriculados en Q10, nunca crear desde fuentes secundarias — patrón ya seguido por
+  Emoflow y sociodemográficos MR, ahora explícito; (2) detección de typos de cédula por ≥2
+  señales cruzadas (correo/celular/nombre), generalizando `senales_match()`.
+- Entregable adicional: xlsx en Downloads (`busqueda_mujeres_MR.xlsx`) con las 8 filas + columna
+  de resultado/detalle de dónde se buscó cada una.
+- **Pendiente (Fase 0 del plan):** confirmar con Samuel/Sandra el alcance (¿leer también
+  `Cursos`/`Plataforma MR`?), la cadencia (¿único o encadenado a `sociodemograficos-semanal`?)
+  y el nivel de privacidad de la tabla nueva antes de escribir el esquema/script.
+
+## 2026-07-22 (cont.) — [postulantes-mr-supabase] Fases 0-3 completadas: tabla cargada y verificada
+
+- **Fase 0 resuelta:** (1) auditoría confirmó que `Cursos`/`Cursos%`/`Plataforma MR` SÍ aportan
+  193 cédulas exclusivas (no solapan del todo con General∪Inactivas) — se incluyen las 5
+  pestañas; (2) import único por ahora, no encadenado a n8n todavía; (3) PII sin `anon`
+  confirmado.
+- **Fase 1:** migración `docs/migrations/003_postulantes_mr.sql` aplicada vía Supabase MCP
+  (`apply_migration`). Tabla `postulantes_mr` con RLS + `REVOKE ALL FROM anon, authenticated`
+  en el mismo statement. Verificado con anon key real: 401 antes y después de cargar datos.
+- **Fase 2:** `scripts/panel-datos/sync_postulantes_mr.py` — reutiliza conexión de
+  `sync_sociodemograficos_mr.py`, lee las 5 pestañas con precedencia General > Inactivas >
+  Plataforma MR > Cursos > Cursos%, enlaza `participant_id` cuando matchea `q10_id`, nunca crea
+  `participants` nuevos.
+- **Fase 3:** cuadre verificado por SQL (5.351 filas: general=5.125, inactivas=33,
+  plataforma_mr=55, cursos=1, cursos_pct=137; 557 con `participant_id`). El detector de typos
+  (52 detectados) marcó el caso real Gina Gleisy (`22519536`/`22519636`) que originó todo el
+  proceso.
+- **Dos bugs de rendimiento propios encontrados y corregidos en el camino** (documentados en
+  `convenciones.md` como patrones reutilizables): (1) `Supa.get_todo()` sin `offset += page` —
+  loop infinito silencioso que se manifestó exactamente como un cuelgue de red intermitente
+  (cada request individual respondía rápido, sin excepción ni traceback) y costó ~30 min de
+  diagnóstico sospechando el proxy corporativo MITM antes de aislarse con logging por
+  iteración; (2) `items[i+1:]` dentro de un loop de detección de typos — O(n²) en tiempo y
+  memoria transitoria (RSS llegó a 2 GB con ~5.300 filas), reemplazado por bloqueo
+  (correo/celular exacto, tokens de nombre, vecindad numérica de cédula).
+- **Pendiente:** Fase 4 (encadenar a n8n `sociodemograficos-semanal`) y Fase 5 (herramienta de
+  búsqueda unificada `buscar_persona.py` en `tools/`) — no se empezaron, según lo acordado.
+
+## 2026-07-22 — [Migración n8n → DO] Planificación inicial + auditoría en vivo
+
+**Estado:** En progreso (solo planificación, sin ejecución)
+**Proceso relacionado:** [[migracion-n8n-digitalocean]]
+
+- Se creó la nota de proceso a pedido explícito de Samuel, pensada para actualizarse en cada
+  sesión futura que toque el tema (el sistema seguirá cambiando antes de que se decida ejecutar
+  la migración).
+- Auditoría contra la instancia n8n EN VIVO (no contra JSON exportado): 12 workflows activos,
+  solo 4 tipos de credencial guardados en n8n (ninguno OAuth de usuario con redirect URI → sin
+  fricción de re-consentimiento). El OAuth de Drive/YouTube usado por `zoom-yt-grabacion` vive
+  dentro del script Python como refresh_token portable, no en n8n.
+- Hallazgo clave: el verdadero cuello de botella no son las credenciales, son (1) 35 nodos
+  `executeCommand` con rutas Windows hardcoded que llaman scripts Python, y (2) `git push` hacia
+  GitHub escondido en 7 scripts vía Windows Credential Manager (`credential.helper=manager` +
+  `schannel`) — no existe en Linux, requiere resolver deploy key SSH o PAT.
+- Se confirmó (grep) que ningún script usa Selenium/Playwright/chromedriver — Q10 es 100%
+  `requests`, así que el droplet no necesita Chrome headless.
+- Decisión abierta más importante: ya existe un droplet DigitalOcean corriendo Docker Compose
+  para [[mr-website]] (`~/rofe-composal`) — evaluar si se reutiliza (añadir servicio n8n al
+  mismo compose) o se crea uno nuevo dedicado.
+- **Pendiente:** todas las decisiones abiertas quedaron listadas en la nota del proceso; no se
+  tocó ningún workflow real ni se creó infraestructura nueva en esta sesión.
+
+## 2026-07-22 (cont.) — [panel-datos-etl / postulantes-mr-supabase] Investigación MongoDB — cerrada, 99.9% redundante
+
+- Samuel dio acceso a un MongoDB Atlas (backend histórico de la app Mujeres ROFÉ, usado antes
+  para un panel Power BI de terceros; "no se actualiza más de 4 veces al año"). Objetivo: ver
+  qué trae de más antes de gestionar el acceso formalmente con el equipo.
+- Setup: usuario Atlas rol "Read Only" + `MONGO_URI` en `.env.local`. Perfilado (`perfilar_mongo.py`)
+  reveló 7 bases — 3 reales (`mujeres-rofe-db`, `jovenes-creativos`, `emoflow-reports`) y 3 copias
+  de desarrollo descartadas del alcance (`test`, `test-jovenes`, `plataforma_dev`).
+- **Primer cruce (equivocado) contra `participants`:** parecía una brecha enorme (97%/88% de
+  `mujeres-rofe-db.Users` 2023/2024 sin match). **Segundo cruce (correcto) contra `postulantes_mr`**
+  (tabla creada esa misma mañana, ver entrada anterior): 99.9%/99.8% YA estaban ahí — la pestaña
+  "Plataforma MR" del Sheet es casi con certeza un export de este mismo Mongo.
+- De las 6 candidatas restantes: 1 cuenta de prueba (descartada), 1 misma persona con typo de
+  cédula (ya registrada), **4 confirmadas exclusivas de Mongo** — exportadas a Excel en Downloads
+  a pedido de Samuel, no cargadas a Supabase (volumen no justifica tocar producción).
+- **Decisión: no se construye ningún sync — se cierra la investigación.** Scripts quedan como
+  referencia (`extraer_mongo_mr_historico.py` + `cargar_mongo_mr_historico.py`, separados en dos
+  procesos a propósito — ver Gotcha).
+- **Gotcha (root cause real):** al escribir `Supa.get_todo()` desde cero se reintrodujo el mismo
+  bug de `offset += page` faltante ya documentado esa misma mañana en `convenciones.md` — el
+  síntoma (cuelgue sin traceback) llevó a sospechar ~20 min un conflicto `pymongo`/`urllib`
+  inexistente antes de aislarlo loggeando el `offset`. Reforzado en convenciones: nunca reescribir
+  `Supa`/`get_todo` de memoria.
+- Documentado en [[panel-datos-etl#Exploración de MongoDB]], [[convenciones]], [[mapa-codigo]],
+  `00-vision-global.md` y `CLAUDE.md` (árbol + tabla de componentes).
+
+## 2026-07-22 (cont.) — [Correos MR] Reenvío "7mo Encuentro Bogotá" (460) + gotcha multi-día
+
+**Estado:** En progreso (jueves ejecutado por Samuel, viernes/sábado pendientes)
+**Proceso relacionado:** correos Mujeres ROFÉ (`scripts/mujeres-rofe-correos/`)
+
+- Samuel pidió reenviar la invitación al 7mo Encuentro Regional Bogotá (sáb 29-ago) a "todas las
+  mujeres de Bogotá de MR". **Antes de armar nada, verifiqué si ya se había enviado**: sí —
+  campañas `encuentro_bogota_2026_a`/`_b` (234+234=468, todas `OK`) el 2026-07-15 16:33-16:35.
+  Confirmé con Samuel que el reenvío era intencional (duplicado a propósito) antes de tocar nada.
+- Lista refrescada con `_reenvio_lista_bogota.py` (script de un solo uso, borrar tras esta
+  campaña): unión de las listas A+B curadas por Samuel, re-excluyendo contra `email_optout` +
+  `email_bounces`(hard) ACTUALES de Supabase → 8 nuevos hard bounces desde el 15-jul, **460
+  destinatarias finales**. Campaña `encuentro_bogota_2026_reenvio` (mismo contenido, ID nuevo),
+  preview + piloto a samueldavidvida@gmail.com OK.
+- Samuel pidió además 3 envíos, uno por día (jue 23, vie 24, sáb 25, 10 a.m.) a las **mismas 460**
+  cada día — confirmado explícitamente dos veces (fechas + destinatarias) antes de agendar nada.
+- **Gotcha importante:** `enviar_campana.py --enviar` usa `enviados_<ID>.csv` para resumir/saltar
+  correos ya marcados `OK` para ESE ID — si los 3 días usan el mismo ID, el 2º y 3er día no
+  enviarían nada (0 pendientes). Solución: 3 campañas con ID distinto (`_jue23`/`_vie24`/`_sab25`),
+  cada una con su propia copia de la lista de 460, así cada día es un envío independiente y
+  trazable. **Agregado a convenciones.**
+- Creados 3 eventos en Google Calendar (jue 23/vie 24/sáb 25, 10:00-10:30 a.m. América/Bogotá,
+  "Envío correo MR — 7mo Encuentro Bogotá (460)") con el comando exacto de cada día en la
+  descripción — no se automatizó el disparo real (`--enviar` sigue pidiendo `ENVIAR 460` a mano,
+  Regla 3 del skill `/enviar-correo`).
+- De paso, Samuel preguntó el horario del cron de rebotes — verificado EN VIVO (no solo el JSON
+  exportado) contra la API de n8n: `correos-rebotes-diario` (id `N7ouRIdgbomCGNxa`), activo,
+  `30 6 * * *` → 6:30 a.m. todos los días.
+- **Pendiente para Samuel:** correr `--enviar` de `encuentro_bogota_2026_vie24.json` y
+  `_sab25.json` en sus fechas; confirmar que los 3 días llegaron sin error (`enviados_*.csv`).
+
+## 2026-07-22 (cont.) — [Correos JC] Infraestructura de envío para Jóvenes creaTIvos — v1
+
+**Estado:** Completado (piloto OK); falta fuente de lista real antes del primer envío masivo
+**Proceso relacionado:** correos Jóvenes creaTIvos (`scripts/jovenes-creativos-correos/`)
+
+- Samuel preguntó si se podía ver qué correos de JC rebotan. Encontré que no existe (todavía)
+  infraestructura de envío para JC — solo una carpeta con plantilla estática
+  (`recordatorio_charla.html`, fechada "jueves 14 de mayo", sin variables) e imágenes de header,
+  sin script de envío. Expliqué que los rebotes son efecto secundario de un envío real (el DSN de
+  `mailer-daemon` solo aparece si algo se mandó) — no hay "historial" que consultar sin mandar
+  primero.
+- Samuel decidió probar con `comunicaciones@tocaunavida.org` (cuenta ya usada como host de Zoom,
+  no antes para SMTP). Agregué llaves vacías `SMTP_USER_JC`/`SMTP_PASSWORD_JC` a `.env.local` y le
+  di un comando PowerShell para que él mismo pegara la contraseña de aplicación sin que pasara por
+  el chat (lección del incidente de MR del 15-jul). Login SMTP verificado (solo login, sin enviar).
+- **Construida `scripts/jovenes-creativos-correos/enviar_campana.py`** (copia adaptada de la
+  versión MR): cuenta `comunicaciones@`, `FROM_NAME="Equipo Jóvenes creaTIvos"`, sin `IMG_FIRMA`
+  (JC no tiene imagen de footer todavía — simplifiqué `verificar_imagenes()`/`construir_mensaje()`
+  para solo requerir banner). Plantilla parametrizada nueva
+  `templates/email_v2_template_jc.html` (paleta azul `#406C9E`, mismas variables `$ASUNTO`/
+  `$NOMBRE`/`$PARRAFO_INTRO`/`$DATOS_EVENTO`/`$PARRAFO_DESCRIPCION`/`$TEXTO_CTA`/`$URL_CTA`/
+  `$PARRAFO_CIERRE`/`$FIRMA` que ya usa MR).
+- Parametricé el contenido de la charla vieja de mayo como `campanas/recordatorio_charla_ejemplo.json`
+  **solo para validar el render** (preview + piloto a samueldavidvida@gmail.com, ambos OK) — no es
+  una campaña real, la fecha ya pasó.
+- **Pendiente explícito antes de un envío real:** (1) decidir fuente de la lista de destinatarios
+  JC (¿Supabase `participants` con `programa=jc`?), (2) construir captura de rebotes/opt-out
+  equivalente a MR cuando exista un primer envío real (no hay histórico que capturar aún).
+- Documentado en `scripts/jovenes-creativos-correos/README.md` (nuevo, mismo formato que el de MR).
+
+## 2026-07-22 (cont.) — [postulantes-mr-supabase / panel-datos-etl] Fusión de 36 duplicados MR + auditoría de calidad JC y Emoflow (ambos limpios)
+
+- **Fusión de duplicados en `postulantes_mr`:** de los 52 pares detectados, 36 tenían una fila
+  de `General` y otra de otra pestaña — se fusionaron (copiando a `General` los campos que le
+  faltaban) y se borró la fila duplicada. Los 16 casos donde AMBAS filas ya eran de `General`
+  se dejaron intactos (no hay una fuente "ganadora" ahí, requieren revisión humana). Tabla pasó
+  de 5.351 → 5.315 filas. Respaldo de las 36 filas borradas en
+  `tools/postulantes_mr_fusionados_backup_*.json`. Bug encontrado en el camino: `fuente_pestana`
+  era `VARCHAR(20)` y no alcanzaba para `"general+plataforma_mr"` — ampliada a `VARCHAR(40)`
+  (migración `widen_postulantes_mr_fuente_pestana`, aditiva y segura).
+- **Auditoría de calidad JC** (mismo detector de ≥2 señales que MR): universo Seguimiento+S
+  Retirados del xlsx principal = 828 cédulas, 773 (93.4%) con match en `participants`.
+  **0 duplicados detectados** (vs. 52 en MR) — 34 candidatos por cédula parecida, ninguno con
+  segunda señal, todos descartados. Entregable: `Downloads/jc_revision_calidad.xlsx`.
+- **Auditoría de calidad Emoflow** (detector adaptado — `emoflow_ingresos` no tiene cédula ni
+  celular, y el correo ya es UNIQUE por constraint, así que se buscó nombre exacto repetido con
+  correo distinto, y correos parecidos por Levenshtein): 827 filas, 759 (91.8%) con match en
+  `participants` (consistente con el 91.9% ya documentado). **0 duplicados en ambos chequeos.**
+  Entregable: `Downloads/emoflow_revision_calidad.xlsx`.
+- **Hallazgo al revisar la investigación de Mongo (hecha en paralelo por Samuel):** SÍ existe un
+  Mongo propio de JC (`jovenes-creativos.User`/`Applicant`) — nunca se auditó a fondo, solo se
+  usó de reojo para descartar 6 candidatos de MR. Es el hueco más grande pendiente ahora mismo.
+  También sigue abierto el histórico de matrícula real MR en Q10: `courses` solo tiene
+  cohortes 2025/2026 para `programa=mr` (JC sí tiene 2023-2026) — verificado por SQL.
+- **Pendiente:** plan de acción para auditar Mongo JC (análogo al de MR) y plan para decidir
+  cómo cerrar el histórico de matrícula MR 2023/2024 en Q10 — ambos por definir, no ejecutados.
+
+## 2026-07-22 (cont.) — [panel-datos-etl] Los 2 planes ejecutados en paralelo: MR-Q10 cerrado, Mongo JC con hallazgo real
+
+- **Histórico matrícula MR 2023/2024 en Q10 — CERRADO.** Se releyó el sondeo ya cacheado de
+  periodos Q10 (`tools/sondeo_periodos_20260710.json`, hecho para JC el 2026-07-10) sin
+  necesidad de re-loguearse: los periodos 1-24 completos solo traen cursos con nombre JC hasta
+  el periodo 16 ("Único 2025"), donde aparecen los primeros cursos MR mezclados. Ningún periodo
+  2023/2024 tiene un solo curso MR. **Conclusión: Q10 nunca trackeó MR antes de 2025 — no falta
+  ningún import, el hueco en `courses` refleja la realidad.**
+- **Auditoría Mongo JC (`jovenes-creativos.User`/`Applicant`) — hallazgo real, no cerrado.**
+  De 2.560 cédulas extraídas, **466 (18%) son exclusivas** — sin match en `participants` ni en
+  el Sheet BD Seguimiento. Descartados como typos (0 confirmados). Tras excluir 3 cuentas admin:
+  **463 reales** — 378 `EGRESADO` de 2023 (alumnos históricos nunca cruzados con Q10) + 85
+  `ACTUAL` de 2026 (postulantes recientes sin matrícula aún). **Esto corrige la conclusión de
+  hace unas horas en esta misma sesión** ("JC no tiene el embudo de postulación que sí tiene
+  MR") — sí lo tiene, solo que vive en Mongo, no en un Sheet.
+  - Extractor guardado: `scripts/panel-datos/extraer_mongo_jc_historico.py` (mismo patrón de
+    separación extracción/carga que MR). Entregable: `Downloads/jc_mongo_exclusivos.xlsx`.
+  - **No se cargó nada a Supabase** — decisión de crear `postulantes_jc` o no queda pendiente.
+- Documentación actualizada: `panel-datos-etl.md` (2 secciones nuevas), `mapa-codigo.md`
+  (entrada del extractor JC), `CLAUDE.md` (árbol + tabla).
+- **Pendiente para Samuel:** decidir si se construye `postulantes_jc` (mismo patrón que
+  `postulantes_mr`: tabla paralela, `participant_id` nullable, RLS sin anon) dado el volumen
+  real (463, no es un caso negociable como los 4 de MR).
+
+## 2026-07-22 (cont.) — [panel-datos-etl] `postulantes_jc` creada y cargada — decisión tomada
+
+- Samuel confirmó que el hallazgo de Mongo JC era real ("definitivamente nos harían falta")
+  y pidió una columna explícita de trazabilidad de origen Mongo antes de cargar.
+- Migración `docs/migrations/005_postulantes_jc.sql`: tabla `postulantes_jc` (RLS +
+  `REVOKE ALL FROM anon, authenticated` en el mismo statement, verificado 401 con anon key).
+  Columna `fuente` (`mongo_user`/`mongo_applicant`) — el pedido puntual.
+- `cargar_mongo_jc_historico.py` (nuevo, payload → Supabase): a diferencia de `postulantes_mr`
+  (que solo carga cédulas nuevas sobre el Sheet), aquí se cargó el **universo completo** de
+  Mongo (2.556 tras excluir 1 perfil de prueba) — `participant_id` NULL para quien no
+  matriculó (464 exclusivos), poblado para quien sí (2.092). Verificado por SQL: 2.556 filas =
+  2.556 cédulas distintas (constraint sostiene), anon key sigue en 401 tras la carga real.
+- Dry-run corrido antes de la carga real (buena práctica ya establecida) — mismos números,
+  sin sorpresas.
+- Documentación actualizada: `panel-datos-etl.md`, `mapa-codigo.md`, `CLAUDE.md`,
+  `00-vision-global.md` — todas reflejan que la tabla ya existe y está cargada, no que es un
+  plan pendiente.
+- **Con esto, MR y JC quedan en pie de igualdad**: ambos programas tienen ahora una tabla
+  `postulantes_*` que unifica su universo de postulación más allá de lo matriculado en Q10.
+
+## 2026-07-22 (cont.) — [panel-datos-etl] Pruebas de coherencia post-carga — bug real encontrado y corregido
+
+- Samuel pidió pruebas para corroborar que la información de Mongo/`postulantes_jc` es
+  canónica y coherente. Corridos 6 chequeos de solo lectura: estabilidad de conteos, duplicados
+  internos por colección, conflictos User↔Applicant, formato de `documentNumber`, cruce
+  inverso (participantes sin rastro en Mongo, 9.7% — esperable), y spot-check de 15 filas al
+  azar contra Mongo en vivo (15/15 coinciden).
+- **El chequeo de formato encontró un bug real:** 4 `documentNumber` "muy largos" (>11
+  dígitos). 1 era la cuenta admin (`soporte@tocaunavida.org`, ya excluida por rol pese al
+  bug); **3 eran personas reales con la cédula corrompida** por el gotcha float→string
+  (BSON guarda `documentNumber` como `double` cuando es un entero — `norm_id()` del
+  extractor JC no tenía el guard `isinstance(valor, float) and valor.is_integer()` que sí
+  tienen los demás `norm_id` del proyecto).
+- **Corregido:** guard agregado a `extraer_mongo_jc_historico.py`; las 3 filas corrompidas
+  borradas de `postulantes_jc` y re-cargadas con la cédula correcta. **2 de las 3 resultaron
+  SÍ estar matriculadas en Q10** (`con_match_participant` subió de 2.092 a 2.094). Cuenta
+  admin agregada a `tools/exclusiones_prueba.json`.
+- **Revisé si el mismo bug afectaba a MR** (`extraer_mongo_mr_historico.py` tenía el mismo
+  código sin guard): NO — `mujeres-rofe-db.Users` guarda `documentNumber` como string
+  uniformemente (verificado, 5.165/5.165), así que los hallazgos de MR (99.9% redundante,
+  4 exclusivos) no están afectados. Guard agregado ahí también, defensivo.
+- Nueva convención documentada (`convenciones.md`): este gotcha ya se repitió 3 veces en el
+  proyecto — cualquier `norm_id()` nuevo sobre una fuente con IDs numéricos (Mongo, Excel,
+  APIs con tipos JSON laxos) necesita el guard.
+- Verificado tras la corrección: `postulantes_jc` sigue con cédula única (2.556=2.556), anon
+  key sigue en 401.
+
+## 2026-07-22 (cont.) — [panel-datos-etl] Más pruebas: barrido de `norm_id`, detector en `postulantes_jc`, y 5 cuentas institucionales encontradas en `postulantes_mr`
+
+- **Barrido de las 8 funciones `norm_id()` del repo** buscando el mismo gotcha float→string:
+  3 más sin el guard (`export_aprobacion.py`, `normalize_q10_data.py`, `export_retirados.py`)
+  — pero verificado que NO están en riesgo real: sus fuentes fuerzan string antes de llegar
+  ahí (`pd.read_excel(..., dtype=str)` o `gspread.get_all_values()`), así que un float nunca
+  llega a esas funciones. Confirmado, no corregido (no hace falta).
+- **Detector de duplicados corrido por primera vez sobre `postulantes_jc` completa** (2.556
+  filas, nunca se había hecho — solo se había chequeado Mongo contra sí mismo): 1 candidato,
+  probable falso positivo (`Sara Milena Diaz Agredo` / `María Daniela Díaz Agredo` — mismo
+  celular, cédulas consecutivas, nombres de pila distintos → huele a hermanas con cédulas
+  registradas seguidas, no la misma persona).
+- **Hallazgo real: cruce `postulantes_mr` × `postulantes_jc` por cédula dio 7 coincidencias.**
+  Solo 2 son la misma persona real en ambos programas (nombre y correo idénticos — plausible:
+  ex-alumna JC ahora postulante MR). **Las otras 5 eran cuentas institucionales/de soporte
+  metidas en la pestaña `General` del Sheet BD-Mujeres ROFÉ** (`Angie Soporte Mr`,
+  `Laura Soporte Mr`, `Nicoll Líder Monitores`, `Mujeres Rofé Pruebas`, y `Felipe Rios` con
+  correo `soportejc1@tocaunavida.org` en la pestaña `Plataforma MR`) — cuyas cédulas
+  coincidían por casualidad con cédulas reales de personas en el Mongo JC.
+- **Corregido:** las 5 agregadas a `tools/exclusiones_prueba.json` (ya van 9 perfiles de
+  prueba documentados) y borradas de `postulantes_mr` (5.315 → 5.310). Un 6to caso sospechoso
+  (`Sandra Manrique` / `proyectos@tocaunavida.org`) se dejó SIN tocar — podría ser una
+  empleada real, no un patrón tan claro como los otros 5, queda para que Samuel confirme.
+  Verificado tras la limpieza: anon key sigue en 401 en ambas tablas; el overlap
+  `postulantes_mr`×`postulantes_jc` bajó de 7 a 2 (los casos genuinos).
+
+---
+
+## 2026-07-22 — [Correos MR] Captura de rebotes: ahora lee las dos cuentas SMTP
+
+**Estado:** Completado
+**Proceso relacionado:** correos Mujeres ROFÉ (scripts/mujeres-rofe-correos)
+
+- Samuel pidió que los rebotes de AMBAS cuentas remitentes de campañas MR (`mujeres.rofe@` y
+  `envios.mr@`, usadas simultáneamente desde el 7mo Encuentro Regional el 2026-07-15) queden
+  reflejados en la pestaña `Rebotes` del Sheet BD-Mujeres ROFÉ 2026. `capturar_rebotes.py`
+  solo leía IMAP de la primera cuenta.
+- **Cambio (aditivo):** nueva `leer_rebotes_multicuenta()` que itera sobre `SMTP_USER`/
+  `SMTP_PASSWORD` + `SMTP_USER_2`/`SMTP_PASSWORD_2` (si esta última falta, avisa y sigue solo
+  con la principal — no rompe el cron diario). Fusiona con la misma regla de siempre (hard
+  gana sobre soft; a igual severidad, la fecha más reciente). Si una cuenta falla el login
+  IMAP se salta con aviso; solo falla si fallan todas. El workflow n8n `correos-rebotes-diario`
+  no necesitó cambios (solo invoca el script sin parámetros de cuenta).
+- Verificado con corrida real (`--desde 2026-07-15`): 318 DSN de `mujeres.rofe@` + 104 de
+  `envios.mr@` → 134 direcciones fusionadas (19 hard, 115 soft). Upsert a `email_bounces` OK,
+  alerta `alertas_datos` actualizada (110 hard acumulados), Sheet `Rebotes` reescrito con 243
+  filas (225 con nombre).
+- **Incidente menor:** al revisar `.env.local` para confirmar las cuentas, un `sed` de
+  enmascarado no cubrió `SMTP_PASSWORD_2` (el sufijo `_2` no matcheaba el regex) y la
+  app-password quedó visible en la salida de la sesión. Se avisó a Samuel; sigue pendiente la
+  rotación de ambas claves (ya estaba pendiente desde el 2026-07-15 por el mismo tipo de
+  incidente — ver memoria `project-correos-mujeres-rofe`).
+
+---
+
+## 2026-07-22 — [Q10] Schedule Trigger huérfano tras crash OOM: h2test llevaba 4 días sin actualizar
+
+**Estado:** Completado
+**Proceso relacionado:** [[q10-consolidacion]] · [[dashboard-web]]
+
+- Samuel reportó que h2test/el dashboard no se actualizaban solos y necesitaba confirmar si un
+  curso nuevo de Mujeres ROFÉ ya estaba reflejado, justo antes de desconectarse.
+- **Diagnóstico vía API en vivo** (no solo el JSON exportado — ver [[feedback-verificar-n8n-en-vivo]]):
+  `GET /workflows/Rblg81qifVshsRae` mostraba `active: true`, pero `GET /executions?workflowId=...`
+  reveló que la última ejecución real fue el 2026-07-18 05:00 y crasheó (`NodeCrashedError`,
+  posible OOM) en el nodo `Sched: q10_to_sheets`. Desde entonces, **cero disparos en 4 días**
+  pese al Schedule 4h — mientras que los otros 3 workflows en el mismo n8n (mr-actualizacion-datos,
+  q10-sync-supabase, Zoom-Asistencia) sí ejecutaron con normalidad en esos días. Conclusión: el
+  crash del Execute Command dejó el Schedule Trigger de *ese* workflow huérfano sin desactivar el
+  workflow — la mitigación del bat (reactivar `inactive` al arrancar n8n) no lo detecta porque
+  nunca aparece inactivo.
+- **Fix:** ciclo `POST deactivate` + `POST activate` por API re-registró el cron. Confirmado con
+  el timestamp `updatedAt`.
+- **Puesta al día manual inmediata** (toda la cadena, ~10 min): `q10_to_sheets --grupo h1test` →
+  `organizador_headless` → `export_stats` + `export_avance` → `export_aprobacion` →
+  `q10_to_sheets --grupo retirados` → `retirados_headless` → `export_retirados` →
+  `exportar_sin_completar`. Todo con `git push` exitoso.
+- **Resultado para la pregunta original:** sí, el curso nuevo **"Finanzas Inteligentes, gestión
+  para emprendedoras"** (172 estudiantes) ya estaba en Q10 pero no en el dashboard publicado
+  (el snapshot anterior, 2026-07-21T16:02, solo tenía 1 curso MR). Ya quedó publicado en
+  `docs/dashboard/data.json` bajo `mr.por_curso`, clasificado correctamente por la keyword
+  `emprendedoras` sin tocar código.
+- **Chequeo de otros flujos (pedido explícito "revisa cada flujo"):** el pipeline de Supabase
+  (`q10-sync-supabase`, corre 9:45) sí había corrido bien hoy hasta `export_supabase_json` —
+  producción y el frontend de panel-datos-rofe están al día. Solo falló el último paso no-crítico
+  `sync_supabase_to_sheets.py` (faltan pestañas `H1Test`/`H2Test`/`H3Test` en el Sheet de BD
+  Seguimiento — no afecta Supabase ni el sitio público, pendiente crear esas pestañas a mano).
+  También se vio `Zoom - Asistencia` fallando hoy varias veces en el nodo "Reenviar a Grabaciones"
+  ("Invalid JSON in response body") — no se investigó a fondo por tiempo, queda pendiente revisar.
+- Documentado el patrón de detección (comparar `startedAt` más reciente vs. hora actual, no solo
+  `active`) en el Gotcha correspondiente de [[q10-consolidacion]].

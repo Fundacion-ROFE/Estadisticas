@@ -1,7 +1,7 @@
 # Consolidación Q10
 
 **Estado:** Completado
-**Última actualización:** 2026-07-14
+**Última actualización:** 2026-07-21
 **Procesos relacionados:** [[dashboard-web]]
 
 ## Qué hace
@@ -79,10 +79,27 @@ clasifica a cada inhabilitado en "aprobó y se retiró" (4° segmento azul en lo
 sin aprobar" — el % aprobó ya no castiga cursos que el estudiante ganó antes de inhabilitarse.
 Ver detalle en [[mapa-codigo#export_aprobacion.py]].
 
-**Fase 6 — Toma Sin Completar (2026-07-08):** `tools/exportar_sin_completar.py` cruza h2test
-(avance < 100, solo JC) × BD Seguimiento de Monitorias (Grupo = ciudad) por cédula → Sheet privado
-`SinCompletar` con bloques horizontales por ciudad (cursos apilados dentro), para gestión con el
-encargado de cada ciudad. Ver [[mapa-codigo#tools/exportar_sin_completar.py (local, gitignoreado)]].
+**Fase 6 — Toma Sin Completar (2026-07-08, histórico + semáforo + balance 2026-07-21):**
+`tools/exportar_sin_completar.py` cruza h2test (avance < 100, solo JC) × BD Seguimiento de
+Monitorias (Grupo = ciudad) por cédula → Sheet privado `SinCompletar` con bloques horizontales
+por ciudad (cursos apilados dentro), para gestión con el encargado de cada ciudad. Desde
+2026-07-21 la misma corrida también actualiza tres pestañas más:
+- `Historico` — snapshot semanal de esa cohorte, marca de agua por semana ISO.
+- `Semaforo` — contraste semana pasada vs. actual **por estudiante**: verde 100% / amarillo
+  45-99.9% / rojo <45%, más columna de tendencia con el Δ%. Útil para identificar A QUIÉN
+  contactar.
+- `Balance` — panel de resumen **ciudad × materia** (sin individuo), conteo de sin-completar
+  semana pasada vs. actual con semáforo de tendencia por celda, más una 3ª columna **% avance
+  promedio** por Supabase (no de las Sheets — ver Gotcha en mapa-codigo.md) y una tabla resumen
+  por ciudad al final. Pensado para que cada monitor de ciudad lea el estado en segundos —
+  reemplaza en función a la pestaña manual `Balace` que ya llevaba el equipo (validado: coinciden
+  los números de la semana actual).
+
+La ubicación (ciudad/Grupo) se resuelve contra el Sheet vivo `BD Seguimiento de Monitorias`
+(pestaña `Seguimiento` como hub, con fallback a las 9 pestañas por ciudad del mismo Sheet para
+quien el monitor aún no sincronizó al hub) — ya no depende de ningún xlsx local.
+
+Ver [[mapa-codigo#tools/exportar_sin_completar.py (local, gitignoreado)]].
 
 Ambas fases corren al final de las dos ramas del workflow (Schedule 4h y comando Telegram).
 
@@ -93,6 +110,12 @@ aquél genera. Cadena real: `q10 retirados → retirados_headless → export_apr
 → export_sin_completar`. Antes iban al revés y el panel de retirados usaba la cohorte del ciclo
 anterior (atraso de 4h). `export_aprobacion` loguea directo en Q10 (no depende de la pestaña
 Retirados), por eso puede ir primero.
+
+**Verificado en vivo (2026-07-21):** `GET /api/v1/workflows/Rblg81qifVshsRae` confirma el workflow
+`active: true` y la cadena de nodos real bajo `Schedule 4h` termina en
+`Ejecutar export_retirados → Ejecutar export_sin_completar → Responder OK` (mismo orden en la rama
+`Sched:` que corre por Telegram). `exportar_sin_completar.py` sigue corriendo cada 4h, sin cambios
+desde 2026-07-08 — no quedó huérfano ni desconectado. Ver [[feedback-verificar-n8n-en-vivo]].
 
 **Tiempo estimado total (`/actualizar h2test`):** ~4-5 minutos.
 
@@ -155,6 +178,7 @@ Periodos 2026 con datos (verificado 2026-07-05): `20` (Desarrollo-Nivel 3), `21`
 - **Corridas programadas pueden fallar en la madrugada** con "The server closed the connection unexpectedly" (vistas 03:00 y 07:00 del 2026-07-07; la de 23:00 pasó bien). Posible red inestable o mantenimiento de Q10. Si se vuelve patrón, investigar; una falla aislada se autocorrige en el siguiente ciclo de 4 h.
 - **Una fórmula manual en H1Test tumbó todo el pipeline (2026-07-08).** Alguien puso un `FILTRAR(...)` en `J1` de H1Test; quedó en `#NAME?` y dejó H1/I1 como encabezados vacíos duplicados → `get_all_records()` lanza `GSpreadException` en el organizador y **nada de lo que sigue corre** (dashboard congelado, el q10_to_sheets previo sí pasa). Fix doble: (a) fórmula removida de J1 (guardada en la bitácora), (b) lectura tolerante `leer_registros()` que ignora columnas con encabezado vacío/duplicado, aplicada en `organizador_headless.py`, `retirados_headless.py`, `export_retirados.py` y `organizador_Q10.py` (el `.exe` de operadores necesita rebuild para heredar el fix). Regla para humanos: fórmulas de análisis van en una pestaña aparte, nunca en las pestañas del pipeline.
 - **Excluir cédulas de la cohorte exige rebaselinar `maximos.json` (2026-07-09).** La marca de agua (`aplicar_maximos`) guarda el máximo histórico de `cursaron` por curso y **nunca decae**: si el `cursaron` vivo baja respecto al máximo, el déficit se re-suma como retirados (`deficit_cursaron > 0 → c["retirados"] += deficit`). Al excluir desertores la cohorte baja (857→832), así que el watermark viejo (857) los **resucitaría como retirados** anulando la exclusión. Fix: resetear en `maximos.json` las entradas de los cursos afectados (solo JC — los desertores son todos de Jóvenes creaTIvos; las 2 entradas de Mujeres ROFÉ se conservan) para que la corrida las regenere sobre la cohorte nueva. Mismo patrón que usó el fix fantasma revertido. Aplica a cualquier exclusión futura que reduzca la cohorte.
+- **Crash OOM del Execute Command deja el Schedule Trigger sin re-registrarse, con el workflow igual `active: true` (2026-07-22).** El 2026-07-18 05:00 la ejecución del Schedule 4h crasheó en el nodo `Sched: q10_to_sheets` con `NodeCrashedError` / "Workflow did not finish, possible out-of-memory issue" (n8n, no el script Python — el mismo `q10_to_sheets.py` corrió perfecto por terminal después). Tras el crash, el workflow **no volvió a dispararse ni una sola vez en 4 días** (verificado con `GET /executions?workflowId=...`: última ejecución 2026-07-18, ninguna hasta 2026-07-22) aunque `GET /workflows/{id}` seguía devolviendo `active: true` — el bug es que el proceso de n8n sigue vivo (otros workflows del mismo n8n sí ejecutaron con normalidad en esos días) pero el Schedule Trigger de *este* workflow queda huérfano internamente sin desactivar el workflow, así que la mitigación existente del bat (que solo reactiva workflows que aparecen `inactive` al arrancar n8n) no lo detecta. **Fix aplicado:** `POST /workflows/{id}/deactivate` + `POST /workflows/{id}/activate` por API fuerza el re-registro del cron y resolvió el problema; luego se corrió manualmente toda la cadena (`q10_to_sheets --grupo h1test` → `organizador_headless` → `export_stats`/`export_avance` → `export_aprobacion` → `q10_to_sheets --grupo retirados` → `retirados_headless` → `export_retirados` → `exportar_sin_completar`) para ponerse al día de inmediato. **Detección recomendada a futuro:** no basta con `GET /workflows/{id}` (siempre mostrará `active: true`); hay que revisar `GET /executions?workflowId=...&limit=5` y comparar `startedAt` del más reciente contra la hora actual — si pasaron más de ~4-8h sin ejecución nueva con el Schedule activo, el trigger quedó huérfano y toca el ciclo deactivate/activate. Ver [[feedback-verificar-n8n-en-vivo]].
 - **Los Schedule Triggers corrían en timezone de New York.** Sin `GENERIC_TIMEZONE` ni `settings.timezone`, n8n interpreta las horas en America/New_York. Corregido 2026-07-08: timezone `America/Bogota` en ambos workflows (vía API) + `GENERIC_TIMEZONE` en `iniciar_n8n.bat` (aplica al reiniciar). Ver [[convenciones]].
 
 ## Reglas de Anomalías
