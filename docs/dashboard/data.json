@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-21T16:02:00.401843-05:00",
+  "ultima_actualizacion": "2026-07-22T17:34:43.702104-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -15,8 +15,8 @@
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
       "estudiantes": 777,
-      "finalizados": 410,
-      "promedio": 78.86,
+      "finalizados": 439,
+      "promedio": 80.59,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 777,
@@ -26,8 +26,8 @@
     {
       "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
       "estudiantes": 777,
-      "finalizados": 711,
-      "promedio": 99.1,
+      "finalizados": 718,
+      "promedio": 99.14,
       "min": 0.0,
       "max": 101.0,
       "inscritos": 830,
@@ -37,8 +37,8 @@
     {
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
       "estudiantes": 777,
-      "finalizados": 734,
-      "promedio": 97.36,
+      "finalizados": 735,
+      "promedio": 97.38,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 806,
@@ -48,8 +48,8 @@
     {
       "curso": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
       "estudiantes": 777,
-      "finalizados": 747,
-      "promedio": 99.72,
+      "finalizados": 749,
+      "promedio": 99.73,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 854,
@@ -70,8 +70,8 @@
     {
       "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
       "estudiantes": 777,
-      "finalizados": 750,
-      "promedio": 98.54,
+      "finalizados": 751,
+      "promedio": 98.57,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 809,
@@ -97,10 +97,21 @@
     "total_cursos": 7,
     "total_estudiantes_unicos": 777,
     "total_habilitados": 777,
-    "total_db": 1021
+    "total_db": 1094
   },
   "mr": {
     "por_curso": [
+      {
+        "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
+        "estudiantes": 172,
+        "finalizados": 0,
+        "promedio": 0.48,
+        "min": 0.0,
+        "max": 42.0,
+        "inscritos": 172,
+        "promedio_pico": 0.48,
+        "finalizado": false
+      },
       {
         "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
         "estudiantes": 244,
@@ -116,7 +127,7 @@
     "anomalias": [
       {
         "categoria": "AVANCE 0%",
-        "cantidad": 148
+        "cantidad": 318
       },
       {
         "categoria": "AVANCE IRREGULAR",
@@ -124,9 +135,9 @@
       }
     ],
     "totales": {
-      "total_cursos": 1,
-      "total_estudiantes_unicos": 244,
-      "total_habilitados": 244
+      "total_cursos": 2,
+      "total_estudiantes_unicos": 317,
+      "total_habilitados": 317
     }
   },
   "stand": {
