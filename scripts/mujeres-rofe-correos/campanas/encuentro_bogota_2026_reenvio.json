@@ -1,0 +1,14 @@
+{
+  "ID": "encuentro_bogota_2026_reenvio",
+  "programa": "mr",
+  "ASUNTO": "¡Te invitamos a nuestro 7mo Encuentro Regional Mujeres ROFÉ en Bogotá!",
+  "TITULO_EVENTO": "7mo Encuentro Regional Mujeres ROFÉ - Bogotá",
+  "IMG_BANNER": "img/banner_encuentro_bogota_2026.jpeg",
+  "PARRAFO_INTRO": "¡Tenemos excelentes noticias para ti! Estamos organizando nuestro <strong>7mo Encuentro Regional Mujeres ROFÉ</strong> en Bogotá, dirigido a todas las integrantes de la regional Cundinamarca, y nos encantaría contar con tu presencia.",
+  "DATOS_EVENTO": "<strong>Fecha:</strong> Sábado 29 de agosto<br><strong>Hora:</strong> 8:00 a.&nbsp;m. a 12:00 m.<br><strong>Lugar:</strong> Bogotá",
+  "PARRAFO_DESCRIPCION": "Será una jornada llena de integración, aprendizaje y crecimiento: una maravillosa oportunidad para conocernos mejor, compartir experiencias y seguir fortaleciendo nuestra comunidad. Para apoyarnos en la planeación del encuentro, te invitamos a responder el formulario de confirmación antes del <strong>lunes 10 de agosto</strong>.",
+  "TEXTO_CTA": "Confirmar mi asistencia",
+  "URL_CTA": "https://forms.gle/HtcmW5jy9wvNazkW9",
+  "PARRAFO_CIERRE": "¡Esperamos verte allí y seguir construyendo juntas este camino de crecimiento y transformación!",
+  "FIRMA": "Equipo Mujeres ROFÉ"
+}

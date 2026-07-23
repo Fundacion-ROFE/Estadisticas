@@ -2,7 +2,7 @@
 
 **Estado:** Completado
 **Última actualización:** 2026-07-08
-**Procesos relacionados:** [[q10-consolidacion]] (mismo Service Account y patrón de subida) · [[mr-website]] (misma población MR; el website usa MongoDB propio, no sincronizado con esta BD) · [[panel-datos-etl]] (desde 2026-07-10 `sync_sociodemograficos_mr.py` lee el export xlsx de esta BD — pestañas `General` + `Inactivas` — hacia Supabase; es la única fuente de vivienda/estrato/estado_civil/nivel_estudio)
+**Procesos relacionados:** [[q10-consolidacion]] (mismo Service Account y patrón de subida) · [[mr-website]] (misma población MR; el website usa MongoDB propio, no sincronizado con esta BD) · [[panel-datos-etl]] (desde 2026-07-10 `sync_sociodemograficos_mr.py` lee el export xlsx de esta BD — pestañas `General` + `Inactivas` — hacia Supabase; es la única fuente de vivienda/estrato/estado_civil/nivel_estudio) · [[postulantes-mr-supabase]] (plan para llevar el universo completo de postulantes de esta BD a Supabase, no solo las matriculadas)
 
 ## Qué hace
 Sincroniza la pestaña `General` de **BD-Mujeres ROFÉ 2026** con las respuestas del formulario

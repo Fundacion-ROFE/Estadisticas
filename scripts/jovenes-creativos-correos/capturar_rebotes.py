@@ -1,49 +1,37 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-capturar_rebotes.py — Captura de rebotes (bounces) → suppression list (Tarea 7).
+capturar_rebotes.py — Captura de rebotes (bounces) de Jóvenes creaTIvos (calcado de
+scripts/mujeres-rofe-correos/capturar_rebotes.py, cuenta y Sheet propios).
 
-Cierra el hueco detectado por Samuel (2026-07-15): `enviar_campana.py` solo registra la
-ACEPTACIÓN SMTP, no la entrega. Los rebotes ASÍNCRONOS (buzón inválido/lleno) vuelven como
-DSN (Delivery Status Notification) al buzón remitente y nadie los leía. Desde 2026-07-22,
-las campañas MR se envían simultáneamente desde DOS cuentas (`mujeres.rofe@tocaunavida.org`
-y `envios.mr@tocaunavida.org` — ver claude_sessions.md 2026-07-15 "2 cuentas simultáneas"),
-así que este script lee AMBOS buzones y fusiona los rebotes antes de escribir. Este script:
+  1. Lee por IMAP el buzón `soporte@tocaunavida.org` (misma app-password de `.env.local`,
+     SMTP_USER_JC/SMTP_PASSWORD_JC — Gmail admite IMAP con app-password).
+  2. Busca los DSN de `mailer-daemon` desde una fecha, clasifica hard (5.x, permanente) /
+     soft (4.x, temporal).
+  3. Upsert en Supabase `email_bounces` (MISMA tabla que usa MR — PK por email, no distingue
+     programa; correcto porque las direcciones de JC y MR no se solapan).
+  4. Vuelca la foto completa a la pestaña `Rebotes` del Sheet "RebotesJC" (compartido con la
+     Service Account de Q10 el 2026-07-22).
+  5. Marcador `alertas_datos` con id `correos_jc_desactualizados` (separado del de MR para no
+     mezclar los conteos).
 
-  1. Lee los buzones remitentes por IMAP (mismas app-password de `.env.local`, sin
-     credenciales nuevas — Gmail admite IMAP con app-password): `SMTP_USER`/`SMTP_PASSWORD`
-     (cuenta principal) y, si están presentes, `SMTP_USER_2`/`SMTP_PASSWORD_2` (segunda
-     cuenta). Falta la segunda cuenta → avisa y sigue solo con la primera (no falla).
-  2. Busca los DSN de `mailer-daemon` (Mail Delivery Subsystem) desde una fecha.
-  3. Parsea la(s) dirección(es) que rebotaron y su `Status` SMTP → clasifica:
-       - `5.x` = HARD (permanente: dirección no existe / rechazada)  → a suppression list
-       - `4.x` = SOFT (temporal: buzón lleno / greylisting)          → se registra, NO suprime
-  4. Upsert en Supabase `email_bounces` (una fila por dirección, keep tipo peor + último visto).
-  5. Vuelca la foto completa (enriquecida con NOMBRE, cruzando la lista de campaña + participants)
-     a la pestaña `Rebotes` de la BD-Mujeres ROFÉ 2026, para que el equipo reconozca a quién
-     hay que actualizarle el correo. La pestaña `General` resalta en ROJO (formato condicional
-     sobre la columna AUXILIAR) las filas cuyo correo está en Rebotes — se recalcula solo.
-  6. Actualiza el marcador `public.alertas_datos` (id='correos_mr_desactualizados', sin PII,
-     lectura pública) con el total ACUMULADO de hard bounces — fácilmente identificable desde
-     cualquier consulta/dashboard sin tener que escanear email_bounces completa.
-
-La próxima corrida de `extraer_lista_mr_ultimos3anios.py` excluye los HARD automáticamente.
+⚠ Nota (2026-07-22): `soporte@tocaunavida.org` es un buzón de soporte compartido — si además
+recibe otro tráfico de mailer-daemon no relacionado con campañas de JC, este script lo capturaría
+igual (solo filtra por remitente mailer-daemon + fecha, no por campaña). Revisar el reporte en
+`tools/jovenes-creativos-correos/data/rebotes_jc_*.csv` antes de confiar ciegamente en los totales
+hasta que haya un historial de campañas reales.
 
 ⚠ PRIVACIDAD: las direcciones rebotadas (PII) van SOLO a Supabase y a un reporte en `tools/`
 (gitignoreado). A consola solo van conteos. Nunca a GitHub.
-
-Credenciales (de `.env.local` raíz): `SMTP_USER`/`SMTP_PASSWORD` (IMAP) +
-`SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` (escritura).
 
 Uso:
     python capturar_rebotes.py                     # últimos 30 días, escribe
     python capturar_rebotes.py --desde 2026-07-14  # desde una fecha
     python capturar_rebotes.py --dry-run           # solo reporta, no escribe
-Consola (parseable por n8n):
+Consola (parseable):
     RESUMEN: dsn=N rebotes=R hard=H soft=S insertados=I estado=exito
 """
 import argparse
-import csv
 import email
 import imaplib
 import io
@@ -72,25 +60,23 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
 DIRECTORIO_SCRIPT = os.path.dirname(os.path.abspath(__file__))
 PROYECTO_ROOT = os.path.abspath(os.path.join(DIRECTORIO_SCRIPT, "..", ".."))
 RUTA_ENV = os.path.join(PROYECTO_ROOT, ".env.local")
-TOOLS_DATA = os.path.join(PROYECTO_ROOT, "tools", "mujeres-rofe-correos", "data")
+TOOLS_DATA = os.path.join(PROYECTO_ROOT, "tools", "jovenes-creativos-correos", "data")
 
 IMAP_HOST = "imap.gmail.com"
 USER_AGENT = "panel-datos-etl/1.0"
 
-# Google Sheet donde se listan los rebotes (pestaña Rebotes) para el equipo MR — mismo
-# Service Account de Q10. Es la BD-Mujeres ROFÉ 2026 (ya compartida como editor con la SA).
+# Mismo Service Account de Q10, compartido como Editor con "RebotesJC" el 2026-07-22.
 CRED_SA = os.path.join(PROYECTO_ROOT, "scripts", "q10-consolidacion", "credenciales_service_account.json")
-SHEET_ID = "1ZsC4WyY26aOCEMrnZ_l8Tn-l69DB_0ADs5lnecaoEP8"
+SHEET_ID = "1ACj0Dp-xv-f-NByfbyZLW8_h4ba1Bmb7aX7OUT6FKcI"
 SHEET_TAB = "Rebotes"
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-RUTA_LISTA = os.path.join(TOOLS_DATA, "lista_mr_ultimos_3_anios.csv")  # email → nombre (campaña)
 EMAIL_RE = re.compile(r"[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+")
-ENH_STATUS_RE = re.compile(r"\b([245]\.\d{1,3}\.\d{1,3})\b")       # status extendido, ej. 5.1.1
-SMTP_LINE_RE = re.compile(r"\b[245]\d\d[\s-]+[245]\.\d{1,3}\.\d")  # línea "550 5.1.1 ..."
+ENH_STATUS_RE = re.compile(r"\b([245]\.\d{1,3}\.\d{1,3})\b")
+SMTP_LINE_RE = re.compile(r"\b[245]\d\d[\s-]+[245]\.\d{1,3}\.\d")
 
 
 def log(msg):
-    print(f"[capturar-rebotes] {msg}", flush=True)
+    print(f"[capturar-rebotes-jc] {msg}", flush=True)
 
 
 def cargar_env_local():
@@ -105,23 +91,16 @@ def cargar_env_local():
             os.environ.setdefault(k.strip(), v.strip())
 
 
-# ── Parseo de un mensaje DSN ─────────────────────────────────────────────────────
+# ── Parseo de un mensaje DSN (idéntico al de MR) ────────────────────────────────
 def parsear_dsn(msg):
-    """
-    Retorna lista de (email_lower, status, diagnostico) por cada destinatario que rebotó.
-    Prioriza la parte estructurada message/delivery-status (bloques Message con headers
-    Final-Recipient/Status/Diagnostic-Code); si no da nada, cae al texto human-readable.
-    """
     resultados = []
-
-    # 1. Parte estructurada: message/delivery-status es multiparte (lista de Message).
     for parte in msg.walk():
         if parte.get_content_type() != "message/delivery-status":
             continue
         payload = parte.get_payload()
         if not isinstance(payload, list):
             continue
-        for sub in payload:  # cada sub es un bloque de headers
+        for sub in payload:
             rcpt = sub.get("Final-Recipient") or ""
             em = EMAIL_RE.search(rcpt)
             if not em:
@@ -132,7 +111,6 @@ def parsear_dsn(msg):
     if resultados:
         return resultados
 
-    # 2. Fallback: texto plano ("...no se ha entregado a EMAIL... 550 5.1.1 ...").
     for parte in msg.walk():
         if parte.get_content_type() != "text/plain":
             continue
@@ -158,29 +136,19 @@ def clasificar(status):
         return "hard"
     if status.startswith("4"):
         return "soft"
-    return "hard"  # sin status legible en un DSN → tratar como permanente (conservador)
-
-
-# ── Lectura IMAP ─────────────────────────────────────────────────────────────────
-def _combinar(acumulado, em, tipo, status, diag, fecha_iso):
-    """hard gana sobre soft; a igualdad de severidad, la fecha más reciente."""
-    prev = acumulado.get(em)
-    if prev is None or (tipo == "hard" and prev["tipo"] == "soft") or fecha_iso > prev["fecha"]:
-        acumulado[em] = {"tipo": tipo, "codigo": status or "", "fecha": fecha_iso,
-                         "motivo": diag or "sin diagnostico"}
+    return "hard"
 
 
 def leer_rebotes(usuario, password, desde):
-    """Retorna dict email_lower -> {tipo, codigo, fecha, motivo} para UN buzón. Keep: hard gana; fecha más reciente."""
+    """Retorna dict email_lower -> {tipo, codigo, fecha, motivo}."""
     M = imaplib.IMAP4_SSL(IMAP_HOST)
     M.login(usuario, password)
     M.select("INBOX", readonly=True)
 
     desde_imap = desde.strftime("%d-%b-%Y")
-    # DSN vienen de mailer-daemon (Gmail) — buscamos por remitente + fecha.
     typ, data = M.search(None, f'(SINCE {desde_imap} FROM "mailer-daemon")')
     ids = data[0].split() if data and data[0] else []
-    log(f"{len(ids)} mensajes de mailer-daemon desde {desde_imap} ({usuario})")
+    log(f"{len(ids)} mensajes de mailer-daemon desde {desde_imap}")
 
     acumulado = {}
     for num in ids:
@@ -194,7 +162,11 @@ def leer_rebotes(usuario, password, desde):
         except Exception:
             fecha_iso = datetime.now().isoformat(timespec="seconds")
         for em, status, diag in parsear_dsn(msg):
-            _combinar(acumulado, em, clasificar(status), status, diag, fecha_iso)
+            tipo = clasificar(status)
+            prev = acumulado.get(em)
+            if prev is None or (tipo == "hard" and prev["tipo"] == "soft") or fecha_iso > prev["fecha"]:
+                acumulado[em] = {"tipo": tipo, "codigo": status or "", "fecha": fecha_iso,
+                                 "motivo": diag or "sin diagnostico"}
     try:
         M.close()
     except Exception:
@@ -203,32 +175,13 @@ def leer_rebotes(usuario, password, desde):
     return acumulado
 
 
-def leer_rebotes_multicuenta(cuentas, desde):
-    """Lee IMAP de varias cuentas remitentes y fusiona en un solo dict (misma regla:
-    hard gana, fecha más reciente). Retorna (acumulado, cuentas_fallidas). Una cuenta que
-    falla al conectar se salta con aviso — no debe tumbar la captura de las demás."""
-    acumulado = {}
-    fallidas = []
-    for usuario, password in cuentas:
-        try:
-            parcial = leer_rebotes(usuario, password, desde)
-        except imaplib.IMAP4.error as e:
-            log(f"AVISO: no se pudo leer IMAP de {usuario} ({e}) — se sigue con las demás cuentas")
-            fallidas.append(usuario)
-            continue
-        for em, d in parcial.items():
-            _combinar(acumulado, em, d["tipo"], d["codigo"], d["motivo"], d["fecha"])
-    return acumulado, fallidas
-
-
-# ── Escritura Supabase ───────────────────────────────────────────────────────────
 def upsert_bounces(filas):
     url = os.environ.get("SUPABASE_URL", "")
     key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
     if not url or not key:
         log("AVISO: sin credenciales Supabase — no se escribió email_bounces")
         return 0
-    cuerpo = [{"email": em, "programa": "mr", **datos} for em, datos in filas.items()]
+    cuerpo = [{"email": em, "programa": "jc", **datos} for em, datos in filas.items()]
     req = urllib.request.Request(
         url.rstrip("/") + "/rest/v1/email_bounces?on_conflict=email",
         method="POST",
@@ -245,7 +198,7 @@ def upsert_bounces(filas):
 
 def guardar_reporte(filas):
     os.makedirs(TOOLS_DATA, exist_ok=True)
-    ruta = os.path.join(TOOLS_DATA, f"rebotes_{datetime.now():%Y%m%d}.csv")
+    ruta = os.path.join(TOOLS_DATA, f"rebotes_jc_{datetime.now():%Y%m%d}.csv")
     with open(ruta, "w", encoding="utf-8-sig", newline="") as f:
         f.write("email,tipo,codigo,fecha,motivo\n")
         for em, d in sorted(filas.items()):
@@ -254,57 +207,22 @@ def guardar_reporte(filas):
     return ruta
 
 
-# ── Enriquecimiento con nombre + volcado a Google Sheet ──────────────────────────
+# ── Enriquecimiento con nombre (solo Supabase participants — JC no tiene un Excel
+#    "General" equivalente al de MR) + volcado a Google Sheet ──────────────────
 def get_bounces(url, key):
-    """Rebotes de MR ÚNICAMENTE (programa=mr) — email_bounces es compartida con JC
-    (misma tabla, PK por email) desde que JC empezó a capturar rebotes el 2026-07-22;
-    sin este filtro el Sheet/alerta de MR mostraría también los de JC."""
+    """Rebotes de JC ÚNICAMENTE (programa=jc) — email_bounces es compartida con MR
+    (misma tabla, PK por email) desde que ambos programas empezaron a capturar rebotes
+    el 2026-07-22; sin este filtro el Sheet/alerta de JC mostraría también los de MR."""
     req = urllib.request.Request(
-        url.rstrip("/") + "/rest/v1/email_bounces?programa=eq.mr"
+        url.rstrip("/") + "/rest/v1/email_bounces?programa=eq.jc"
         "&select=email,tipo,codigo,fecha,motivo&order=tipo.asc,email.asc",
         headers={"apikey": key, "Authorization": f"Bearer {key}", "User-Agent": USER_AGENT})
     with urllib.request.urlopen(req, timeout=60) as resp:
         return json.loads(resp.read() or b"[]")
 
 
-def nombres_desde_lista():
-    """email_lower → nombre, desde la lista de campaña (tools/, si existe).
-    OJO: esta lista YA excluye los hard bounces, así que no cubre a los rebotados —
-    es solo un complemento; la fuente principal de nombres es la pestaña General."""
-    mapa = {}
-    if not os.path.isfile(RUTA_LISTA):
-        return mapa
-    with open(RUTA_LISTA, encoding="utf-8-sig", newline="") as f:
-        for row in csv.DictReader(f):
-            correo = (row.get("correo") or "").strip().lower()
-            if correo:
-                mapa[correo] = (row.get("nombre") or "").strip()
-    return mapa
-
-
-def nombres_desde_general(sh):
-    """email_lower → nombre, desde la pestaña General de la BD-Mujeres ROFÉ (roster
-    completo, incluye a los rebotados). Mapeo de columnas igual que extraer_excel:
-    nombre=col D (idx 3), correo=col E (idx 4) o H (idx 7)."""
-    out = {}
-    try:
-        ws = sh.worksheet("General")
-    except gspread.WorksheetNotFound:
-        return out
-    for row in ws.get_all_values()[1:]:
-        nombre = row[3].strip() if len(row) > 3 else ""
-        correo = ""
-        if len(row) > 4 and (row[4] or "").strip():
-            correo = row[4].strip().lower()
-        elif len(row) > 7 and (row[7] or "").strip():
-            correo = row[7].strip().lower()
-        if correo:
-            out[correo] = nombre
-    return out
-
-
 def nombres_desde_supabase(url, key, emails):
-    """email_lower → nombre, desde participants (para los que la lista no cubre)."""
+    """email_lower → nombre, desde participants (programa=jc)."""
     out = {}
     if not emails:
         return out
@@ -327,14 +245,13 @@ def nombres_desde_supabase(url, key, emails):
 
 
 def actualizar_alerta(url, key, hard_total, soft_total):
-    """Upsert del marcador public.alertas_datos — fácilmente identificable desde cualquier
-    consulta/dashboard: 'hay correos que pueden estar desactualizados'. Sin PII (solo conteos)."""
+    """Marcador separado del de MR (id distinto) para no mezclar conteos por programa."""
     fila = {
-        "id": "correos_mr_desactualizados",
+        "id": "correos_jc_desactualizados",
         "activa": hard_total > 0,
         "cantidad": hard_total,
         "detalle": f"{hard_total} correos con rebote permanente (hard) + {soft_total} temporales "
-                   f"(soft, buzón lleno) en email_bounces. Ver pestaña Rebotes de BD-Mujeres ROFÉ.",
+                   f"(soft, buzón lleno) en email_bounces. Ver pestaña Rebotes del Sheet RebotesJC.",
         "actualizado_en": datetime.now().isoformat(timespec="seconds"),
     }
     req = urllib.request.Request(
@@ -348,29 +265,24 @@ def actualizar_alerta(url, key, hard_total, soft_total):
 
 
 def escribir_sheet(url, key):
-    """Vuelca la foto completa de email_bounces (enriquecida con nombre) a la pestaña Rebotes."""
+    """Vuelca la foto completa de email_bounces (enriquecida con nombre) a RebotesJC!Rebotes."""
     if not os.path.isfile(CRED_SA):
         log(f"AVISO: no se encontró {CRED_SA} — no se escribió el Sheet")
         return 0
-    bounces = get_bounces(url, key)
-    if not bounces:
+    todos = get_bounces(url, key)
+    if not todos:
         log("Sin rebotes en Supabase — no se escribe el Sheet")
         return 0
 
     creds = Credentials.from_service_account_file(CRED_SA, scopes=SCOPES)
     sh = gspread.authorize(creds).open_by_key(SHEET_ID)
 
-    # Nombres: General (roster completo MR, gana) → lista campaña → participants (Supabase).
-    nombres = nombres_desde_lista()
-    nombres.update({k: v for k, v in nombres_desde_general(sh).items() if v})
-    faltan = [b["email"] for b in bounces if not nombres.get(b["email"])]
-    nombres.update(nombres_desde_supabase(url, key, faltan))
+    nombres = nombres_desde_supabase(url, key, [b["email"] for b in todos])
 
-    # hard primero, luego por nombre
-    bounces.sort(key=lambda b: (0 if b.get("tipo") == "hard" else 1,
-                                (nombres.get(b["email"], "") or "zzz").lower()))
+    todos.sort(key=lambda b: (0 if b.get("tipo") == "hard" else 1,
+                              (nombres.get(b["email"], "") or "zzz").lower()))
     filas = [["Nombre", "Correo", "Tipo", "Codigo", "Fecha", "Motivo"]]
-    for b in bounces:
+    for b in todos:
         fecha = (b.get("fecha") or "")[:10]
         filas.append([nombres.get(b["email"], ""), b["email"], b.get("tipo", ""),
                       b.get("codigo", ""), fecha, b.get("motivo", "")])
@@ -388,35 +300,27 @@ def escribir_sheet(url, key):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Captura de rebotes (IMAP) → email_bounces")
+    ap = argparse.ArgumentParser(description="Captura de rebotes JC (IMAP) → email_bounces")
     ap.add_argument("--desde", help="Fecha inicio YYYY-MM-DD (default: hace 30 días)")
     ap.add_argument("--dry-run", action="store_true", help="No escribe en Supabase ni Sheet")
     ap.add_argument("--no-sheet", action="store_true", help="No actualiza la pestaña Rebotes")
     args = ap.parse_args()
 
     cargar_env_local()
-    usuario = os.environ.get("SMTP_USER", "")
-    password = os.environ.get("SMTP_PASSWORD", "")
+    usuario = os.environ.get("SMTP_USER_JC", "")
+    password = os.environ.get("SMTP_PASSWORD_JC", "")
     if not usuario or not password:
-        log("ERROR: faltan SMTP_USER / SMTP_PASSWORD (.env.local) para IMAP")
+        log("ERROR: faltan SMTP_USER_JC / SMTP_PASSWORD_JC (.env.local) para IMAP")
         print("RESUMEN: dsn=0 rebotes=0 hard=0 soft=0 insertados=0 estado=error_credenciales")
         return 1
-
-    cuentas = [(usuario, password)]
-    usuario2 = os.environ.get("SMTP_USER_2", "")
-    password2 = os.environ.get("SMTP_PASSWORD_2", "")
-    if usuario2 and password2:
-        cuentas.append((usuario2, password2))
-    else:
-        log("AVISO: sin SMTP_USER_2/SMTP_PASSWORD_2 — solo se lee la cuenta principal")
-    log(f"Cuentas a leer: {', '.join(u for u, _ in cuentas)}")
 
     desde = (datetime.strptime(args.desde, "%Y-%m-%d") if args.desde
              else datetime.now() - timedelta(days=30))
 
-    filas, fallidas = leer_rebotes_multicuenta(cuentas, desde)
-    if len(fallidas) == len(cuentas):
-        log("ERROR IMAP: todas las cuentas fallaron al conectar")
+    try:
+        filas = leer_rebotes(usuario, password, desde)
+    except imaplib.IMAP4.error as e:
+        log(f"ERROR IMAP: {e}")
         print("RESUMEN: dsn=0 rebotes=0 hard=0 soft=0 insertados=0 estado=error_imap")
         return 1
 
@@ -433,8 +337,6 @@ def main():
     elif args.dry_run:
         log("dry-run: no se escribió nada")
 
-    # Volcado al Google Sheet (foto completa de email_bounces, enriquecida con nombre) +
-    # marcador de alerta en Supabase (totales ACUMULADOS, no solo lo nuevo de esta corrida).
     if not args.dry_run:
         url = os.environ.get("SUPABASE_URL", "")
         key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")

@@ -3605,3 +3605,322 @@ API de n8n, escribirlo con Python (`urllib`+UTF-8), nunca tipeado directo en un 
   ("Invalid JSON in response body") — no se investigó a fondo por tiempo, queda pendiente revisar.
 - Documentado el patrón de detección (comparar `startedAt` más reciente vs. hora actual, no solo
   `active`) en el Gotcha correspondiente de [[q10-consolidacion]].
+
+## 2026-07-23 — [MR website rediseño] Ronda de ajustes v2 (feedback de la dueña)
+
+**Estado:** Completado (falta subir 1 imagen)
+**Proceso relacionado:** [[wordpress-tocaunavida]]
+
+- Aplicados ~10 ajustes de feedback sobre `tools/mujeres-rofe-redesign/index.html`: hero con texto
+  a la izquierda e imagen fija a la derecha (antes solo en hover), banner de stats eliminado,
+  tarjetas de "4 frentes de apoyo" más grandes, halo amarillo de Formación ahora solo en `:hover`,
+  sección Acompañamiento con espacio de imagen a la izquierda + texto más visible, CTA final movido
+  arriba de NOVA, bloque de stats "10+/50+/1" quitado de NOVA (logo NOVA sin tocar, a pedido
+  explícito), tipografía migrada de Poppins a Gilroy (700 títulos, Light 15px cuerpo — coincide con
+  el manual de marca y con el Kit global de WordPress que ya sirve Gilroy).
+- `build_wordpress_embed.py` se rompía silenciosamente para el hero (buscaba el patrón JS viejo
+  `url('img/inicio.png')` que ya no existe al pasar a `<img>` directo) — corregido y reejecutado;
+  `wordpress-embed.html` regenerado y verificado.
+- Verificado visualmente con Chrome headless (`--headless=new --screenshot`, extensión de Chrome no
+  disponible en esta sesión) contra `python -m http.server 8777`.
+- Pendiente: conseguir/subir `img/acompanamiento.png` y mapearla en el script (mismo patrón que los
+  bombillos) cuando exista.
+
+## 2026-07-23 — [panel-datos-etl] Solidez de Supabase: hallazgo real de seguridad (grants sin REVOKE) + fix con efecto secundario corregido
+
+- Samuel pidió testear otra vez la solidez de la base completa (no solo `postulantes_*`).
+  Chequeos nuevos: duplicados/typos en `participants` (0), integridad referencial de
+  `enrollments`↔`participants`/`courses` (0 huérfanas, 0 fuera de rango), duplicados en
+  `courses` (0), frescura de `participant_metrics`/`cohorte_stats` (recomputados <1 día) —
+  todo limpio.
+- **Barrido de anon-key sobre las 24 tablas del schema `public` — hallazgo real:**
+  `participants`, `emoflow_ingresos`, `email_optout`, `email_bounces` y
+  `participants_snapshots` devolvían `200` con `anon` (aunque `[]` vacío) en vez de `401`.
+  Verificado con `information_schema.role_table_grants`: `anon` tenía GRANT completo
+  (SELECT/INSERT/UPDATE/DELETE/TRUNCATE) en las 5 — protegidas SOLO por "RLS habilitado sin
+  policy" (deniega filas por defecto), sin el `REVOKE` explícito que si tienen
+  `postulantes_mr`/`postulantes_jc`. **Es exactamente el patrón del incidente 2026-07-14**
+  (`asistencia_promedio` con policy permisiva expuso 490 correos) — una sola policy
+  permisiva futura habría vuelto a exponer todo, sin red de seguridad.
+- **Corregido:** `REVOKE ALL ... FROM anon, authenticated` en las 5 tablas (aditivo, no
+  puede romper nada que dependiera de acceso público — no lo había).
+- **Efecto secundario detectado y corregido:** el REVOKE en `participants` rompió
+  `enrollments` y `participant_metrics` — sus policies públicas (`enrollments_publico_lectura`,
+  `metrics_publico_lectura`, pensadas para exponer datos de participantes con
+  `is_public=true`, hoy 0/2.919) hacían un subquery directo contra `participants`, y sin el
+  GRANT ya no podían evaluarse (pasó de "0 filas silenciosamente" a error 401 real). Fix:
+  función `es_publico(p_id uuid)` `SECURITY DEFINER` (mismo patrón ya aceptado del proyecto
+  que `participa_en()`) y las 2 policies reescritas para usarla en vez de tocar
+  `participants` directo. Verificado: `enrollments`/`participant_metrics` vuelven a dar
+  `200`+`[]`, los 5 endpoints PII siguen en `401`, `get_advisors` sin errores nuevos.
+- **Lección:** revocar un GRANT en una tabla puede romper silenciosamente policies de OTRAS
+  tablas que hacen subqueries contra ella — antes de un REVOKE amplio, buscar en
+  `pg_policies` cualquier `qual`/`with_check` que mencione la tabla a revocar.
+
+## 2026-07-23 — [panel-datos-etl] Auditoría estructura completa + análisis Emoflow ↔ resultados
+
+- **Nuevo documento canónico: [[supabase-estructura]]** — diccionario de datos de las 24
+  tablas con estado 🟢/🟡/🔴, llaves de cruce con tasas de match MEDIDAS (emoflow→participants
+  91.8% estable por 2 vías; postulantes_jc→participants 81.9%), y plan priorizado "única
+  fuente de verdad". Enlazado desde mapa-codigo y panel-datos-etl.
+- **Calidad Emoflow cuantificada:** discrepancia 0,7% (186 eventos) entre acumulado-persona y
+  serie diaria — causa raíz: los 2 scripts descargan el CSV con parámetros DISTINTOS
+  (`empresa=Fundación ROFÉ` vs scope=all). 5 días sin datos = arranque real (21-25 mar), no
+  hueco de pipeline. 1 fila huérfana pre-API en emoflow_ingresos. Sin doble conteo del
+  pipeline deprecado (upsert de reemplazo total). 🔴 `emoflow_participacion_semanal` a deprecar.
+- **Suficiencia declarada honestamente:** comparación por ciudad SÍ (n 35-132, normalizable);
+  casos individuales SÍ (759 con participant_id); cruce con aprobación SÍ (por avance);
+  **retiro individual NO — no existe en Supabase** (solo agregado 69/832), es el hueco #1.
+- **Análisis (JC 2026, n=777):** uso mediano 28 check-ins; Spearman uso↔avance ρ=0.337
+  (p≈4e-22); chi² cuartiles×aprobado-80 p≈6e-7 (V=0.202, Q1 92%→Q4 ~100%); logística ajustada
+  (género/edad/ciudad; IRLS numpy propio, statsmodels no disponible): OR 2.36 [1.51-3.69] por
+  log-uso; sensibilidad umbral-100 (base 56.8%): OR 1.90 [1.56-2.31] p=1.3e-10. Ciudades: más
+  uso QTO/BAQ/PAN, menos MED; % activos semanal subiendo MED (+14) y cayendo GYL (−28).
+  Explícito: asociación ≠ causalidad (ambas variables acumuladas al mismo corte).
+- **La verificación (Fase 5) atrapó un bug del propio reporte:** el % aprobado por ciudad se
+  redondeaba como fracción antes de escalar (0.992→1.0→"100.0%") ocultando no-aprobados — la
+  re-derivación por SQL independiente lo destapó; corregido y documentado en mapa-codigo.
+- Entregables: `docs/procesos/supabase-estructura.md` (público, agregados), diagnóstico en
+  panel-datos-etl, `tools/analisis_emoflow_resultados.{py,json}` + dataset CSV (PII, tools/).
+  Sin escrituras en Supabase (solo lectura, según restricción).
+
+## 2026-07-23 (cont.) — [panel-datos-etl] Blindaje QA: suite de 36 tests + triage de 12 hallazgos + 2 migraciones propuestas
+
+- **Suite nueva `test_integridad_supabase.py`** (36 tests, un comando, tolerancias explícitas,
+  `--rapido` para chequeo diario): FKs, unicidad, dominios, cuadres, frescura, superficie anon.
+  Estado: **35 PASS / 1 FAIL** (3 participants con edad=0 — clamp ya agregado a
+  `sync_sociodemograficos.py`, limpieza en migración propuesta).
+- **Superficie anon barrida completa**: 17 vistas (no 21 — el advisor duplica) devuelven SOLO
+  agregados; `v_puntaje_estudiante` (la del incidente 07-14) sigue en 401; RPC
+  `participa_en` revocable (ninguna policy la usa), `es_publico` se propone mover a schema
+  `interno` no expuesto (policies sobreviven por OID). Celdas n<5 en `v_demografia_grupo`
+  (k=1 de género no binario en BAQ) → supresión propuesta.
+- **Los 3 cuadres "sospechosos" eran definicionales, no errores**: 832 = habilitados ∪
+  retirados (2 reingresos); 777 enrollments = "alguna vez activo" vs 765 = "habilitado hoy";
+  Δ0,7% emoflow = params de descarga distintos entre los 2 scripts. Los 3 convertidos en
+  tests permanentes con la definición documentada.
+- **Repo limpio** (tools/ no trackeado, 0 claves hardcodeadas, 0 PII en data.json públicos).
+  **Backups: no hay** (free tier) — runbook de reconstrucción desde fuentes documentado;
+  única pérdida real serían las series historial_* (decisión Pro pendiente).
+- **Matriz de cobertura JC×MR publicada** en [[supabase-estructura]]. Gaps duros: retiro
+  individual (ambos programas — migración `007_retiros_PROPUESTA.sql` lista para aprobar) y
+  **Emoflow=0 en MR** (verificado: 0/1.314 — gap de producto, no de datos). MR además tiene
+  2 métricas de aprobación conviviendo (15,2% por matrícula vs 31,6% por estudiante) —
+  etiquetadas, no contradicción.
+- **Nada aplicado en Supabase** (restricción solo-lectura respetada): correcciones en
+  `006_seguridad_hardening_PROPUESTA.sql` (8 bloques con severidad y verificación
+  post-aplicación) + `007_retiros_PROPUESTA.sql`, esperando aprobación de Samuel.
+- Monitoreo continuo propuesto (workflow `panel-verificacion-diaria` 10:30 + Telegram en
+  fallo) — no implementado hasta aprobar.
+
+## 2026-07-23 (cont.) — [panel-datos-etl] Migración de seguridad aplicada (parcial, 2 bloques descartados) + vista de trazabilidad total `v_persona_360`
+
+- Samuel aprobó completo `006_seguridad_hardening_PROPUESTA.sql`. **Antes de ejecutar, verifiqué
+  dependencias de cada bloque** (mismo hábito que ya evitó romper `enrollments` horas antes) y
+  encontré 2 bloques que romperían cosas reales:
+  - Revocar `participa_en()` a anon habría roto **4 vistas públicas** que la usan internamente
+    y sí reciben tráfico anon (`v_demografia_grupo`, `v_edad_distribucion`,
+    `v_emprendimiento_situacion`, `v_emprendimiento_vs_cursos`) — descartado permanentemente.
+  - Borrar `v_puntaje_estudiante` habría roto `reporte_puntaje.py` (consumidor real vía
+    service_role) — la vista ya estaba correctamente bloqueada para anon, el DROP no aportaba
+    seguridad. Descartado permanentemente.
+  - Los 6 bloques restantes SÍ se aplicaron: `es_publico()` movida a schema `interno` (RPC
+    directo → 404, policies que dependen de ella siguen funcionando), policy `asistencia_zoom`
+    reformada, 6 `COMMENT` de intencionalidad, `v_demografia_grupo` con supresión k-anonimato
+    (n<5→NULL) **corrigiendo además que mi propuesta original omitía el filtro
+    `participa_en(id,'jc')` de la vista real** (lo encontré con `pg_get_viewdef` antes de
+    aplicar), limpieza de 3 `edad=0` y 1 fila huérfana de `emoflow_ingresos`.
+  - Re-corrida la suite completa: **36/36 PASS**.
+- **Vista nueva `v_persona_360`** (a pedido explícito: "todo de una persona en una sola
+  consulta"): une por cédula `participants`+`postulantes_mr`+`postulantes_jc`+
+  `emoflow_ingresos`+`asistencia_promedio` — 8.100 identidades cubiertas. RLS+REVOKE estricto
+  (verificado 401 a anon); uso previsto solo `service_role`. Cierra de facto la Fase 5 de
+  [[postulantes-mr-supabase]] (búsqueda unificada), como vista SQL en vez de script `tools/`.
+- Los 16 pares discordantes de `postulantes_mr` quedan **documentados y sin tocar**, confirmado
+  explícitamente con Samuel — ambas cédulas de cada par siguen activas y consultables.
+- Migraciones aplicadas: `006_seguridad_hardening` (parcial, reescrita para reflejar qué se
+  aplicó/descartó) y `008_v_persona_360.sql` (nueva). `007_retiros_PROPUESTA.sql` sigue sin
+  aplicar. Documentación actualizada en 4 lugares (supabase-estructura, postulantes-mr-supabase,
+  mapa-codigo, CLAUDE.md).
+
+## 2026-07-23 (cont.) — [panel-datos-etl] `en_seguimiento_jc`: alerta de retiro pendiente (Q10 desactualizado vs. el Sheet)
+
+- Samuel explicó la causa raíz de por qué Q10 no sirve como señal de "¿sigue activo hoy?": el
+  equipo borra primero de la pestaña Seguimiento del Sheet cuando alguien se retira, y solo
+  MESES después lo reflejan en Q10. Pidió una columna que marque presencia/ausencia en
+  Seguimiento, con credenciales trazables (reutilizando el Service Account ya usado).
+- Acordado con Samuel: NO es un booleano de retiro confirmado, es **alerta operativa** — si
+  `false` (no está en Seguimiento) pero Q10 sigue activo, queda "esperando confirmación" y se
+  excluye de cualquier análisis estadístico hasta que se resuelva (Q10 confirma, o reaparece =
+  falsa alarma). Alcance: **solo JC** (MR descartado explícitamente — "tiene problemas de
+  gestión respecto a eso").
+- Migración `009_en_seguimiento_jc.sql`: 2 columnas nuevas en `participants`
+  (`en_seguimiento_jc`, `fecha_verificacion_seguimiento`), con el criterio de interpretación
+  documentado en el COMMENT de columna (no solo en docs sueltos).
+- **Bug propio atrapado antes de escribir nada:** la primera corrida (sin escopar a la
+  cohorte actual) marcó 1.557/2.316 participantes JC como "alerta" — resultó ser ruido: el
+  Sheet Seguimiento solo cubre el año en curso, así que TODO el histórico 2023-2025 salía
+  falsamente marcado. Corregido para escopar a cohorte=2026 antes de escribir cualquier dato
+  → bajó a 18 alertas reales, todas con avance Q10 sustancial (46-82%), consistente con la
+  hipótesis de retiro real sin confirmar.
+- `sync_sociodemograficos.py` extendido (segundo paso separado: esta bandera se calcula para
+  TODA la cohorte 2026, no solo quien trae el Sheet — la ausencia es la señal, a diferencia
+  del resto de campos que solo enriquecen). `v_persona_360` recreada (DROP+CREATE, Postgres no
+  permite insertar columnas a mitad de una vista con CREATE OR REPLACE) para incluir la nueva
+  bandera. Verificado: MR intacto (0 filas tocadas), anon sigue en 401, suite completa 36/36.
+
+## 2026-07-23 (cont.) — [panel-datos-etl] Los 18 en alerta se excluyen de "estudiante actual" en todos los sistemas
+
+- Pedido de Samuel algo ambiguo ("que todo lo de seguimiento muestre este dato... como
+  estudiantes actuales") — **paré antes de tocar nada y pregunté** con AskUserQuestion, porque
+  las dos lecturas posibles eran opuestas (¿seguir contándolos con marca visual, o excluirlos?)
+  y una de ellas contradecía lo acordado hace un rato (no tratar la alerta como dato
+  confirmado). Confirmado: se EXCLUYEN de "estudiante actual" en TODOS los sistemas (dashboard
+  público, panel_riesgo, reporte_puntaje).
+- **Decisión de diseño importante:** no se tocan los números canónicos de Q10
+  (`enrollments.estado`, `cohorte_ingresos`) — esos siguen siendo la fuente oficial. El filtro
+  se aplicó SOLO en la capa de visualización/análisis (vistas + herramientas), no en los datos
+  base, para no contaminar lo que ya es oficial/auditable.
+- **11 vistas de Supabase reescritas** con `en_seguimiento_jc IS DISTINCT FROM false`
+  (deliberadamente NOT `=true`, para dejar pasar NULL de histórico 2023-2025 y de TODO MR sin
+  afectarlos): v_demografia_grupo, v_edad_distribucion, v_emprendimiento_situacion,
+  v_emprendimiento_vs_cursos, v_cohorte_estudiantes, v_cohorte_estudiantes_distribucion,
+  v_curso_completion, v_curso_completion_por_ciudad, v_programa_stats,
+  v_programa_stats_por_ciudad, v_puntaje_estudiante. Como el dashboard público de Netlify
+  consume estas vistas directo, quedó cubierto sin tocar ese repo aparte.
+- `panel_riesgo_gui.py` (herramienta local) también editado: la función que arma
+  `por_email_jc` ahora excluye las matrículas en alerta antes de construir el diccionario.
+  `reporte_puntaje.py` no necesitó cambios — hereda el filtro al leer `v_puntaje_estudiante`.
+- Verificado exhaustivo: JC 2026 pasó de 777 → 759 en las 11 vistas (777−18, exacto); MR sin
+  cambios (343); anon sigue accediendo a las vistas públicas (200, solo cambian los números);
+  suite `test_integridad_supabase.py`: 36/36 PASS.
+
+## 2026-07-23 (cont.) — [panel-datos-etl] `v_retiro_probable_jc`: los 18 excluidos ahora aparecen como retiro (categoría separada de la oficial)
+
+- Samuel notó el riesgo correcto: excluir a los 18 de "activos" sin mostrarlos en ningún otro
+  lado del panel Netlify iba a volver a descuadrar los números (mismo tipo de problema ya
+  resuelto en la auditoría anterior) — pidió analizarlos como retiro, distinguiendo si ya
+  habían aprobado antes de desaparecer del Sheet (mismo criterio que `aprobados_retirados`).
+- **Pregunté antes de tocar nada:** ¿se suman a `cohorte_ingresos.retirados` (oficial, 100%
+  Q10) o van en una categoría nueva separada? Samuel confirmó: **separada, sin mezclar** — la
+  cifra oficial de Q10 sigue intacta.
+- Vista nueva `v_retiro_probable_jc` (agregado sin PII, público igual que las demás vistas del
+  panel): 18 total para JC 2026, **7 ya habían aprobado (avance>80) antes de desaparecer del
+  Sheet, 11 no**. Verificado que ninguno de los 18 tiene `enrollments.estado='abandonado'` en
+  Q10 — no hay riesgo de doble conteo con el retiro ya confirmado.
+- 2 tests permanentes agregados a `test_integridad_supabase.py` (cuadre exacto vista↔columna,
+  y aprobado+no_aprobado=total). Suite: **38/38 PASS**.
+
+## 2026-07-23 (cont.) — [panel-datos-etl] Corrección de rumbo: la causa real era un sync desactualizado, no falta de datos
+
+- Samuel levantó el panel Netlify localmente (`~/panel-datos`, `npm run dev`, no la copia
+  vieja de `Downloads/panel-datos-rofe`) y reportó una gráfica por curso (513 aprobados/252
+  pendientes/2 aprobados_retirados/12 retirados = 779 cursaron) que no cuadraba con
+  Seguimiento (760). Investigado: esa gráfica sale de `aprobacion_cursos`, un pipeline
+  TOTALMENTE distinto (`export_aprobacion.py` + reporte Q10 separado + ledger) al que toqué
+  hoy — construí `v_aprobacion_cursos_jc_ajustado` (espejo con las mismas columnas,
+  recalculado desde `en_seguimiento_jc`) como primera respuesta.
+- **Antes de conectarlo al frontend, crucé mis 18 alertas contra `tools/cohorte_2026.json`
+  (la lista oficial de retirados de Q10, regenerada hoy a las 12:04) — hallazgo real: 17 de
+  los 18 YA estaban ahí.** La premisa de la mañana ("Q10 tarda meses") solo aplica a
+  `enrollments.estado` (nunca marca `abandonado`); el OTRO reporte de Q10 (el que usa
+  `export_aprobacion.py`) sí lo trackea bien. El problema real: `cohorte_ingresos` en
+  Supabase tenía la foto de las 9:45 (69 retirados), mientras `docs/aprobacion/data.json` ya
+  se había regenerado a las 12:04 con 74 retirados/760 habilitados — **nunca se subió a
+  Supabase**. Solo 1 de los 18 (`63851795`) es exclusivo de mi detección por Sheet.
+- **Pausé y pregunté antes de seguir construyendo** (dos preguntas: sincronizar ya, y qué
+  hacer con las 3 piezas de hoy) — confirmado: sí sincronizar, y mantener `en_seguimiento_jc`
+  + `v_retiro_probable_jc` + `v_aprobacion_cursos_jc_ajustado` como red de seguridad (detectan
+  huecos entre corridas del pipeline oficial, no están de más).
+- `sync_aprobacion_supabase.py --dry-run` confirmó los números frescos → corrida real →
+  `cohorte_ingresos`/`aprobacion_cursos` actualizados (JC: activos 760, retirados 74 — 760
+  coincide exacto con Seguimiento; MR también resincronizado de paso). Verificado en el curso
+  específico que Samuel reportó: `aprobados_retirados=2` coincide exacto con lo reportado.
+  Suite completa: 38/38 PASS.
+- **Lección para el proyecto:** el pipeline `export_aprobacion.py` → `data.json` →
+  `sync_aprobacion_supabase.py` es de 2 pasos manuales/independientes — puede quedar
+  desactualizado en Supabase aunque el archivo local ya esté fresco. Vale la pena verificar
+  `cohorte_ingresos.updated_at` cuando algo no cuadre, antes de asumir que falta un dato nuevo.
+
+## 2026-07-23 (cont.) — [panel-datos-etl] Barrido completo de coherencia del panel + Seguimiento formalizada como fuente esencial
+
+- Samuel pidió asegurar que TODA la información del panel quede coherente con los cambios de
+  hoy, de cara a la futura plataforma que automatizará la recolección — y formalizar
+  `Seguimiento` como fuente esencial de la DB, no secundaria por ser un Excel.
+- **Inventario completo:** se extrajeron las 24 fuentes exactas que consume el frontend
+  (`lib/api.ts` de `~/panel-datos`, no solo lo que yo recordaba haber tocado). Encontradas
+  2 más sin el ajuste de `en_seguimiento_jc`:
+  - `v_emprendimiento_por_ciudad` — no tenía NINGÚN filtro (ni `participa_en('jc')` ni la
+    alerta), inconsistente con sus vistas hermanas. Corregida.
+  - `cohorte_stats` (tabla, poblada por la función `recompute_aggregates()` tras cada sync)
+    — seguía en 777 para JC 2026. Función editada (excluye `en_seguimiento_jc=false` solo en
+    el cómputo, histórico y MR intactos) y re-ejecutada → 759.
+- Verificado con anon key en vivo: `cohorte_stats` 759, `v_emprendimiento_por_ciudad` suma 681.
+  Suite completa: 38/38 PASS. El resto de fuentes (snapshots `historial_*`, todo lo de
+  Emoflow, `v_mr_demografia`) no necesitaban cambios — están fuera de alcance por diseño.
+- **`Seguimiento` formalizada como fuente esencial** en `convenciones.md`, con la evidencia
+  del día: una vez todo sincronizado, la pestaña dio 759 vs. los 760 del pipeline Q10 fresco
+  — 1 persona de diferencia sobre 777, prueba de que el Sheet operado a mano es tan confiable
+  como Q10 automatizado. Recomendación explícita para la futura plataforma: `Seguimiento`
+  necesita el mismo tratamiento de primera clase que Q10 (sync programado, monitoreo de
+  frescura), no un import manual ocasional.
+
+## 2026-07-23 (cont.) — [panel-datos-etl] `007_retiros` aplicada — esquema listo, sync pendiente
+
+- Samuel pidió aplicar la migración `007_retiros_PROPUESTA.sql` que había quedado como
+  propuesta desde la auditoría de seguridad. Aplicada tal cual estaba escrita: tabla
+  `retiros` (participant_id, cedula, programa, cohorte, fecha_retiro, anio_retiro, motivo,
+  etapa, fuente) + índices + RLS + `REVOKE ALL FROM anon, authenticated`.
+- Verificado: anon key → 401 (checklist estándar de toda tabla PII nueva). Agregada a la
+  lista de tablas protegidas de `test_integridad_supabase.py` (38→39 tests). Suite completa:
+  **39/39 PASS**.
+- **Tabla vacía** — solo se aplicó el esquema, no el sync. Falta escribir
+  `sync_retiros.py` (fuentes ya identificadas: Sheet Retirados JC + S Retirados monitorias +
+  Inactivas MR) para poblarla — es el siguiente paso pendiente si se quiere cerrar de verdad
+  el análisis uso-Emoflow ↔ retención con fechas reales.
+
+## 2026-07-23 (cont.) — [panel-datos-etl] Frontend conectado a las 2 vistas de retiro/verificación
+
+- Samuel preguntó si los paneles ya visualizaban `v_retiro_probable_jc` y
+  `v_aprobacion_cursos_jc_ajustado`. Se confirmó que NO (grep en `~/panel-datos`, 0
+  referencias) y Samuel pidió conectarlas ("agréglo en ese caso").
+- `lib/api.ts`: 2 interfaces nuevas + agregadas al `Promise.all` de `cargarTodo()` (24→26
+  fuentes). `app/page.tsx`: 2 secciones nuevas en Resumen (solo JC, cohorte actual) — alerta
+  de retiro probable (18/7/11) con `EstadoStat`, y tabla de verificación cruzada oficial vs.
+  recalculado por curso (columna ¿Coincide? en verde/rojo, para detectar a simple vista un
+  futuro sync atrasado como el de esta misma sesión).
+- Tabla `retiros` quedó fuera a propósito — sigue vacía, sin sync, nada que mostrar.
+- Dev server local recompiló sin errores. No se verificó visualmente (extensión de Chrome
+  no conectada esta sesión) — pendiente que Samuel confirme en `localhost:3000`.
+
+## 2026-07-23 (cont.) — [panel-datos-etl] Verificación de los 760 de Seguimiento — 1 falso positivo confirmado
+
+- Samuel pegó la lista cruda de 760 emails de la pestaña Seguimiento para verificar el panel
+  contra la realidad. Cruce contra `en_seguimiento_jc`: 755/760 coinciden exacto, 5
+  discrepancias por email.
+- 4 se resolvieron solas: eran 2 personas con dos correos cada una (uno de Q10, otro de su
+  postulación original) — verificadas por cédula directo contra el Sheet en vivo, ambas
+  presentes.
+- La 5ª (Angeles Isabella Navas Rodriguez, cédula 63851795, una de los 18 de
+  `v_retiro_probable_jc`) resultó ser un error de captura en el Sheet: su documento quedó en
+  la columna "Celular" en vez de "ID" (que tiene "293", basura). Confirmado con 3 fuentes
+  independientes (Q10, MongoDB/postulantes_jc, Emoflow) que 63851795 es su cédula real y que
+  sigue activa (84% avance, Emoflow hasta junio). Samuel indicó que el Sheet es inmanipulable
+  para nosotros — no se edita, solo queda documentado en `supabase-estructura.md` como falso
+  positivo confirmado dentro de los 18.
+
+## 2026-07-23 (cont.) — [panel-datos-etl] Corrección: el "documento" de Angeles era su celular
+
+- Samuel preguntó si era correcto que celular y cédula fueran el mismo número para Angeles
+  Isabella Navas Rodriguez — no lo era, y corrigió un diagnóstico previo mío.
+- Comparé su fila contra otros estudiantes PAN del mismo Sheet: "Celular"/"Celular Alterno"
+  siguen sin excepción el patrón panameño (8 dígitos, empieza en 6) en TODO el grupo; "ID"
+  varía en longitud pero nunca tiene esa forma. Su `63851795` encaja exacto con el patrón de
+  celular — es su teléfono, no su documento. Su "ID" real en Seguimiento es `293`, anormalmente
+  corto frente al resto.
+- Corregido en `supabase-estructura.md`: las "3 fuentes independientes" que creía confirmaban
+  su cédula (Q10, postulantes_jc, v_persona_360) en realidad heredan el mismo error de
+  intake — Q10 registró su teléfono como documento desde el origen, y eso se propagó a todo
+  lo demás. Su documento real no está confiablemente en ningún sistema nuestro.
+- Lo que no cambia: sigue sin ser un retiro real (84% avance, Emoflow activo hasta junio) —
+  el q10_id mal cargado igual lleva su actividad real.

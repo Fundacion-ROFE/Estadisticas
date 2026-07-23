@@ -1,0 +1,574 @@
+﻿{
+    "updatedAt":  "2026-07-21T19:28:36.275Z",
+    "createdAt":  "2026-07-21T19:28:36.275Z",
+    "id":  "hO64Z1SOg2A6z88K",
+    "name":  "sociodemograficos-semanal",
+    "description":  null,
+    "active":  true,
+    "isArchived":  false,
+    "nodes":  [
+                  {
+                      "id":  "sdw-001",
+                      "name":  "Schedule Semanal Lunes 6:00",
+                      "parameters":  {
+                                         "rule":  {
+                                                      "interval":  [
+                                                                       [
+                                                                           {
+                                                                               "expression":  "0 6 * * 1",
+                                                                               "field":  "cronExpression"
+                                                                           }
+                                                                       ]
+                                                                   ]
+                                                  }
+                                     },
+                      "type":  "n8n-nodes-base.scheduleTrigger",
+                      "position":  [
+                                       0,
+                                       0
+                                   ],
+                      "typeVersion":  1.2
+                  },
+                  {
+                      "id":  "sdw-002",
+                      "name":  "Ejecutar sync_sociodemograficos",
+                      "parameters":  {
+                                         "command":  "cd \"C:\\Users\\EstudiantesJC\\downloads\\admin-usable\" \u0026\u0026 python scripts\\panel-datos\\sync_sociodemograficos.py"
+                                     },
+                      "type":  "n8n-nodes-base.executeCommand",
+                      "position":  [
+                                       224,
+                                       0
+                                   ],
+                      "typeVersion":  1
+                  },
+                  {
+                      "id":  "sdw-003",
+                      "name":  "�Sociodemograficos JC OK?",
+                      "parameters":  {
+                                         "options":  {
+
+                                                     },
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "version":  2,
+                                                                            "typeValidation":  "strict",
+                                                                            "leftValue":  "",
+                                                                            "caseSensitive":  true
+                                                                        },
+                                                            "conditions":  [
+                                                                               [
+                                                                                   {
+                                                                                       "operator":  {
+                                                                                                        "operation":  "contains",
+                                                                                                        "type":  "string"
+                                                                                                    },
+                                                                                       "rightValue":  "estado=exito",
+                                                                                       "leftValue":  "={{ $json.stdout }}"
+                                                                                   }
+                                                                               ]
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "position":  [
+                                       448,
+                                       0
+                                   ],
+                      "typeVersion":  2.2
+                  },
+                  {
+                      "id":  "sdw-004",
+                      "name":  "Ejecutar sync_sociodemograficos_mr",
+                      "parameters":  {
+                                         "command":  "cd \"C:\\Users\\EstudiantesJC\\downloads\\admin-usable\" \u0026\u0026 python scripts\\panel-datos\\sync_sociodemograficos_mr.py"
+                                     },
+                      "type":  "n8n-nodes-base.executeCommand",
+                      "position":  [
+                                       672,
+                                       -96
+                                   ],
+                      "typeVersion":  1
+                  },
+                  {
+                      "id":  "sdw-005",
+                      "name":  "Error Sociodemograficos JC",
+                      "parameters":  {
+                                         "chatId":  "8141703221",
+                                         "additionalFields":  {
+
+                                                              },
+                                         "text":  "=? Error en sociodemograficos-semanal: sync_sociodemograficos.py fall�\n\n{{ ($json.stderr || $json.stdout || \u0027Sin detalle disponible.\u0027).slice(0, 400) }}"
+                                     },
+                      "credentials":  {
+                                          "telegramApi":  {
+                                                              "id":  "kGTAfWTTp4FATF66",
+                                                              "name":  "Telegram Q10 Bot"
+                                                          }
+                                      },
+                      "type":  "n8n-nodes-base.telegram",
+                      "position":  [
+                                       672,
+                                       96
+                                   ],
+                      "typeVersion":  1.2
+                  },
+                  {
+                      "id":  "sdw-006",
+                      "name":  "�Sociodemograficos MR OK?",
+                      "parameters":  {
+                                         "options":  {
+
+                                                     },
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "version":  2,
+                                                                            "typeValidation":  "strict",
+                                                                            "leftValue":  "",
+                                                                            "caseSensitive":  true
+                                                                        },
+                                                            "conditions":  [
+                                                                               [
+                                                                                   {
+                                                                                       "operator":  {
+                                                                                                        "operation":  "contains",
+                                                                                                        "type":  "string"
+                                                                                                    },
+                                                                                       "rightValue":  "estado=exito",
+                                                                                       "leftValue":  "={{ $json.stdout }}"
+                                                                                   }
+                                                                               ]
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "position":  [
+                                       896,
+                                       -96
+                                   ],
+                      "typeVersion":  2.2
+                  },
+                  {
+                      "id":  "sdw-007",
+                      "name":  "OK",
+                      "parameters":  {
+
+                                     },
+                      "type":  "n8n-nodes-base.noOp",
+                      "position":  [
+                                       1120,
+                                       -192
+                                   ],
+                      "typeVersion":  1
+                  },
+                  {
+                      "id":  "sdw-008",
+                      "name":  "Error Sociodemograficos MR",
+                      "parameters":  {
+                                         "chatId":  "8141703221",
+                                         "additionalFields":  {
+
+                                                              },
+                                         "text":  "=? Error en sociodemograficos-semanal: sync_sociodemograficos_mr.py fall�\n\n{{ ($json.stderr || $json.stdout || \u0027Sin detalle disponible.\u0027).slice(0, 400) }}"
+                                     },
+                      "credentials":  {
+                                          "telegramApi":  {
+                                                              "id":  "kGTAfWTTp4FATF66",
+                                                              "name":  "Telegram Q10 Bot"
+                                                          }
+                                      },
+                      "type":  "n8n-nodes-base.telegram",
+                      "position":  [
+                                       1120,
+                                       0
+                                   ],
+                      "typeVersion":  1.2
+                  }
+              ],
+    "connections":  {
+                        "Schedule Semanal Lunes 6:00":  {
+                                                            "main":  [
+                                                                         [
+                                                                             {
+                                                                                 "node":  "Ejecutar sync_sociodemograficos",
+                                                                                 "type":  "main",
+                                                                                 "index":  0
+                                                                             }
+                                                                         ]
+                                                                     ]
+                                                        },
+                        "Ejecutar sync_sociodemograficos":  {
+                                                                "main":  [
+                                                                             [
+                                                                                 {
+                                                                                     "node":  "�Sociodemograficos JC OK?",
+                                                                                     "type":  "main",
+                                                                                     "index":  0
+                                                                                 }
+                                                                             ]
+                                                                         ]
+                                                            },
+                        "�Sociodemograficos JC OK?":  {
+                                                          "main":  [
+                                                                       [
+                                                                           {
+                                                                               "node":  "Ejecutar sync_sociodemograficos_mr",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           }
+                                                                       ],
+                                                                       [
+                                                                           {
+                                                                               "node":  "Error Sociodemograficos JC",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           }
+                                                                       ]
+                                                                   ]
+                                                      },
+                        "Ejecutar sync_sociodemograficos_mr":  {
+                                                                   "main":  [
+                                                                                [
+                                                                                    {
+                                                                                        "node":  "�Sociodemograficos MR OK?",
+                                                                                        "type":  "main",
+                                                                                        "index":  0
+                                                                                    }
+                                                                                ]
+                                                                            ]
+                                                               },
+                        "�Sociodemograficos MR OK?":  {
+                                                          "main":  [
+                                                                       [
+                                                                           {
+                                                                               "node":  "OK",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           }
+                                                                       ],
+                                                                       [
+                                                                           {
+                                                                               "node":  "Error Sociodemograficos MR",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           }
+                                                                       ]
+                                                                   ]
+                                                      }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "timezone":  "America/Bogota",
+                     "callerPolicy":  "workflowsFromSameOwner",
+                     "availableInMCP":  false
+                 },
+    "staticData":  {
+                       "node:Schedule Semanal Lunes 6:00":  {
+                                                                "recurrenceRules":  [
+
+                                                                                    ]
+                                                            }
+                   },
+    "meta":  null,
+    "pinData":  null,
+    "versionId":  "2438dbde-d118-4f4b-8dff-50cf6342f466",
+    "activeVersionId":  "2438dbde-d118-4f4b-8dff-50cf6342f466",
+    "versionCounter":  4,
+    "triggerCount":  1,
+    "shared":  [
+                   {
+                       "updatedAt":  "2026-07-21T19:28:36.288Z",
+                       "createdAt":  "2026-07-21T19:28:36.288Z",
+                       "role":  "workflow:owner",
+                       "workflowId":  "hO64Z1SOg2A6z88K",
+                       "projectId":  "sCDSlnWeaXfVGSdx",
+                       "project":  {
+                                       "updatedAt":  "2026-06-18T19:33:43.567Z",
+                                       "createdAt":  "2026-06-18T17:26:43.451Z",
+                                       "id":  "sCDSlnWeaXfVGSdx",
+                                       "name":  "Samuel Rojas \u003csoportejunior@tocaunavida.org\u003e",
+                                       "type":  "personal",
+                                       "icon":  null,
+                                       "description":  null,
+                                       "creatorId":  "c9975104-b757-4a51-ad4b-0461d1d32514"
+                                   }
+                   }
+               ],
+    "tags":  [
+
+             ],
+    "activeVersion":  {
+                          "updatedAt":  "2026-07-21T19:28:36.292Z",
+                          "createdAt":  "2026-07-21T19:28:36.292Z",
+                          "versionId":  "2438dbde-d118-4f4b-8dff-50cf6342f466",
+                          "workflowId":  "hO64Z1SOg2A6z88K",
+                          "nodes":  [
+                                        {
+                                            "id":  "sdw-001",
+                                            "name":  "Schedule Semanal Lunes 6:00",
+                                            "parameters":  {
+                                                               "rule":  {
+                                                                            "interval":  [
+                                                                                             [
+                                                                                                 {
+                                                                                                     "expression":  "0 6 * * 1",
+                                                                                                     "field":  "cronExpression"
+                                                                                                 }
+                                                                                             ]
+                                                                                         ]
+                                                                        }
+                                                           },
+                                            "type":  "n8n-nodes-base.scheduleTrigger",
+                                            "position":  [
+                                                             0,
+                                                             0
+                                                         ],
+                                            "typeVersion":  1.2
+                                        },
+                                        {
+                                            "id":  "sdw-002",
+                                            "name":  "Ejecutar sync_sociodemograficos",
+                                            "parameters":  {
+                                                               "command":  "cd \"C:\\Users\\EstudiantesJC\\downloads\\admin-usable\" \u0026\u0026 python scripts\\panel-datos\\sync_sociodemograficos.py"
+                                                           },
+                                            "type":  "n8n-nodes-base.executeCommand",
+                                            "position":  [
+                                                             224,
+                                                             0
+                                                         ],
+                                            "typeVersion":  1
+                                        },
+                                        {
+                                            "id":  "sdw-003",
+                                            "name":  "�Sociodemograficos JC OK?",
+                                            "parameters":  {
+                                                               "options":  {
+
+                                                                           },
+                                                               "conditions":  {
+                                                                                  "options":  {
+                                                                                                  "version":  2,
+                                                                                                  "typeValidation":  "strict",
+                                                                                                  "leftValue":  "",
+                                                                                                  "caseSensitive":  true
+                                                                                              },
+                                                                                  "conditions":  [
+                                                                                                     [
+                                                                                                         {
+                                                                                                             "operator":  {
+                                                                                                                              "operation":  "contains",
+                                                                                                                              "type":  "string"
+                                                                                                                          },
+                                                                                                             "rightValue":  "estado=exito",
+                                                                                                             "leftValue":  "={{ $json.stdout }}"
+                                                                                                         }
+                                                                                                     ]
+                                                                                                 ],
+                                                                                  "combinator":  "and"
+                                                                              }
+                                                           },
+                                            "type":  "n8n-nodes-base.if",
+                                            "position":  [
+                                                             448,
+                                                             0
+                                                         ],
+                                            "typeVersion":  2.2
+                                        },
+                                        {
+                                            "id":  "sdw-004",
+                                            "name":  "Ejecutar sync_sociodemograficos_mr",
+                                            "parameters":  {
+                                                               "command":  "cd \"C:\\Users\\EstudiantesJC\\downloads\\admin-usable\" \u0026\u0026 python scripts\\panel-datos\\sync_sociodemograficos_mr.py"
+                                                           },
+                                            "type":  "n8n-nodes-base.executeCommand",
+                                            "position":  [
+                                                             672,
+                                                             -96
+                                                         ],
+                                            "typeVersion":  1
+                                        },
+                                        {
+                                            "id":  "sdw-005",
+                                            "name":  "Error Sociodemograficos JC",
+                                            "parameters":  {
+                                                               "chatId":  "8141703221",
+                                                               "additionalFields":  {
+
+                                                                                    },
+                                                               "text":  "=? Error en sociodemograficos-semanal: sync_sociodemograficos.py fall�\n\n{{ ($json.stderr || $json.stdout || \u0027Sin detalle disponible.\u0027).slice(0, 400) }}"
+                                                           },
+                                            "credentials":  {
+                                                                "telegramApi":  {
+                                                                                    "id":  "kGTAfWTTp4FATF66",
+                                                                                    "name":  "Telegram Q10 Bot"
+                                                                                }
+                                                            },
+                                            "type":  "n8n-nodes-base.telegram",
+                                            "position":  [
+                                                             672,
+                                                             96
+                                                         ],
+                                            "typeVersion":  1.2
+                                        },
+                                        {
+                                            "id":  "sdw-006",
+                                            "name":  "�Sociodemograficos MR OK?",
+                                            "parameters":  {
+                                                               "options":  {
+
+                                                                           },
+                                                               "conditions":  {
+                                                                                  "options":  {
+                                                                                                  "version":  2,
+                                                                                                  "typeValidation":  "strict",
+                                                                                                  "leftValue":  "",
+                                                                                                  "caseSensitive":  true
+                                                                                              },
+                                                                                  "conditions":  [
+                                                                                                     [
+                                                                                                         {
+                                                                                                             "operator":  {
+                                                                                                                              "operation":  "contains",
+                                                                                                                              "type":  "string"
+                                                                                                                          },
+                                                                                                             "rightValue":  "estado=exito",
+                                                                                                             "leftValue":  "={{ $json.stdout }}"
+                                                                                                         }
+                                                                                                     ]
+                                                                                                 ],
+                                                                                  "combinator":  "and"
+                                                                              }
+                                                           },
+                                            "type":  "n8n-nodes-base.if",
+                                            "position":  [
+                                                             896,
+                                                             -96
+                                                         ],
+                                            "typeVersion":  2.2
+                                        },
+                                        {
+                                            "id":  "sdw-007",
+                                            "name":  "OK",
+                                            "parameters":  {
+
+                                                           },
+                                            "type":  "n8n-nodes-base.noOp",
+                                            "position":  [
+                                                             1120,
+                                                             -192
+                                                         ],
+                                            "typeVersion":  1
+                                        },
+                                        {
+                                            "id":  "sdw-008",
+                                            "name":  "Error Sociodemograficos MR",
+                                            "parameters":  {
+                                                               "chatId":  "8141703221",
+                                                               "additionalFields":  {
+
+                                                                                    },
+                                                               "text":  "=? Error en sociodemograficos-semanal: sync_sociodemograficos_mr.py fall�\n\n{{ ($json.stderr || $json.stdout || \u0027Sin detalle disponible.\u0027).slice(0, 400) }}"
+                                                           },
+                                            "credentials":  {
+                                                                "telegramApi":  {
+                                                                                    "id":  "kGTAfWTTp4FATF66",
+                                                                                    "name":  "Telegram Q10 Bot"
+                                                                                }
+                                                            },
+                                            "type":  "n8n-nodes-base.telegram",
+                                            "position":  [
+                                                             1120,
+                                                             0
+                                                         ],
+                                            "typeVersion":  1.2
+                                        }
+                                    ],
+                          "connections":  {
+                                              "Schedule Semanal Lunes 6:00":  {
+                                                                                  "main":  [
+                                                                                               [
+                                                                                                   {
+                                                                                                       "node":  "Ejecutar sync_sociodemograficos",
+                                                                                                       "type":  "main",
+                                                                                                       "index":  0
+                                                                                                   }
+                                                                                               ]
+                                                                                           ]
+                                                                              },
+                                              "Ejecutar sync_sociodemograficos":  {
+                                                                                      "main":  [
+                                                                                                   [
+                                                                                                       {
+                                                                                                           "node":  "�Sociodemograficos JC OK?",
+                                                                                                           "type":  "main",
+                                                                                                           "index":  0
+                                                                                                       }
+                                                                                                   ]
+                                                                                               ]
+                                                                                  },
+                                              "�Sociodemograficos JC OK?":  {
+                                                                                "main":  [
+                                                                                             [
+                                                                                                 {
+                                                                                                     "node":  "Ejecutar sync_sociodemograficos_mr",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 }
+                                                                                             ],
+                                                                                             [
+                                                                                                 {
+                                                                                                     "node":  "Error Sociodemograficos JC",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 }
+                                                                                             ]
+                                                                                         ]
+                                                                            },
+                                              "Ejecutar sync_sociodemograficos_mr":  {
+                                                                                         "main":  [
+                                                                                                      [
+                                                                                                          {
+                                                                                                              "node":  "�Sociodemograficos MR OK?",
+                                                                                                              "type":  "main",
+                                                                                                              "index":  0
+                                                                                                          }
+                                                                                                      ]
+                                                                                                  ]
+                                                                                     },
+                                              "�Sociodemograficos MR OK?":  {
+                                                                                "main":  [
+                                                                                             [
+                                                                                                 {
+                                                                                                     "node":  "OK",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 }
+                                                                                             ],
+                                                                                             [
+                                                                                                 {
+                                                                                                     "node":  "Error Sociodemograficos MR",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 }
+                                                                                             ]
+                                                                                         ]
+                                                                            }
+                                          },
+                          "authors":  "Samuel Rojas",
+                          "name":  null,
+                          "description":  null,
+                          "autosaved":  false,
+                          "workflowPublishHistory":  [
+                                                         {
+                                                             "createdAt":  "2026-07-21T19:28:36.432Z",
+                                                             "id":  2090,
+                                                             "workflowId":  "hO64Z1SOg2A6z88K",
+                                                             "versionId":  "2438dbde-d118-4f4b-8dff-50cf6342f466",
+                                                             "event":  "activated",
+                                                             "userId":  "c9975104-b757-4a51-ad4b-0461d1d32514"
+                                                         }
+                                                     ]
+                      }
+}

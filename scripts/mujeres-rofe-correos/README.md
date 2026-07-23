@@ -103,9 +103,16 @@ backend con `SUPABASE_SERVICE_ROLE_KEY`; nunca se exponen a la cara pública del
   (`--piloto` → `<id> (piloto)` con enviados=1; `--enviar` → total OK/fallidos). No sube correos
   individuales. Requiere `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` en `.env.local` (los carga
   solo; si faltan, avisa y sigue sin registrar — nunca hace fallar el envío).
-- **`capturar_rebotes.py`** — lee por **IMAP** el buzón remitente (misma app-password de
+- **`capturar_rebotes.py`** — lee por **IMAP** los buzones remitentes (mismas app-password de
   `.env.local`), busca los DSN de `mailer-daemon` desde una fecha, parsea las direcciones que
-  rebotaron + su status SMTP, clasifica hard/soft y hace upsert en `email_bounces`. Además:
+  rebotaron + su status SMTP, clasifica hard/soft y hace upsert en `email_bounces`. **Desde
+  2026-07-22 lee AMBAS cuentas** (`SMTP_USER`/`SMTP_PASSWORD` = `mujeres.rofe@` y
+  `SMTP_USER_2`/`SMTP_PASSWORD_2` = `envios.mr@`, ambas envían campañas MR desde el
+  7mo Encuentro Regional) y fusiona los rebotes de las dos (hard gana sobre soft; a igual
+  severidad, la fecha más reciente) antes de escribir. Si falta la segunda cuenta en
+  `.env.local`, avisa y sigue solo con la principal — no falla. Si una cuenta falla al
+  conectar por IMAP, se salta con aviso y sigue con la(s) otra(s); solo falla si **todas**
+  fallan. Además:
   - Vuelca la **foto completa** de rebotes (enriquecida con **nombre**, cruzando la pestaña
     `General` de la BD-Mujeres ROFÉ + `participants`) a la pestaña **`Rebotes`** del Sheet
     BD-Mujeres ROFÉ 2026 (`1ZsC4WyY26aOCEMrnZ_l8Tn-l69DB_0ADs5lnecaoEP8`) — así el equipo ve a
@@ -193,6 +200,18 @@ contra `lista_mr_ultimos_3_anios.csv` — cobertura 100%, sin duplicados).
 Variables disponibles en el HTML: `$ASUNTO`, `$TITULO_EVENTO`, `$PARRAFO_INTRO`,
 `$PARRAFO_DESCRIPCION`, `$DATOS_EVENTO`, `$PARRAFO_CIERRE`, `$TEXTO_CTA`, `$URL_CTA`, `$FIRMA`,
 y `$NOMBRE` (automático, por destinataria).
+
+### ⚠ Gotcha: reenvíos al mismo grupo en días distintos
+
+`enviar_campana.py --enviar` usa `enviados_<ID>.csv` para **saltar** correos ya marcados `OK`
+para ese `ID` (así es reanudable si se corta a mitad). Esto significa que si quieres mandar el
+**mismo contenido a las mismas personas varios días seguidos** (ej. recordatorio diario de un
+evento), reusar el mismo `ID` los 3 días hace que el 2º y 3er día no envíen nada (0 pendientes).
+
+**Solución:** un `ID` de campaña distinto por día (`evento_dia1`, `evento_dia2`, ...), cada uno
+con su propia copia de `lista_<ID>.csv` (mismo contenido, distinto nombre de archivo). Cada día
+queda como un envío independiente y trazable en su propio `enviados_<ID>.csv`. Ver caso real:
+`campanas/encuentro_bogota_2026_jue23.json` / `_vie24.json` / `_sab25.json` (2026-07-22).
 
 ---
 

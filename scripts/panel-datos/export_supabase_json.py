@@ -17,6 +17,7 @@ import argparse
 import io
 import json
 import os
+import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -112,9 +113,42 @@ def exportar_tabla(supa: Supa, nombre_tabla: str, output_dir: str) -> int:
         return 0
 
 
+# ── Git commit y push ──────────────────────────────────────────────────────────
+def git_commit_y_push(timestamp: str, output_dir: str) -> None:
+    """Mismo patrón que export_stats.py/export_aprobacion.py. `docs/datos/*.json` ya
+    está trackeado en git — sin este paso el directorio queda permanentemente sucio
+    (escrito en disco, nunca commiteado). ⚠️ Ver docs/procesos/panel-datos-etl.md:
+    hoy no hay consumidor confirmado de estos JSON (el frontend real consulta
+    Supabase client-side), así que este commit diario no alimenta nada visible aún."""
+    rel_dir = os.path.relpath(output_dir, PROYECTO_ROOT)
+    pasos = [
+        ["git", "add", rel_dir],
+        ["git", "commit", "-m", f"chore: actualizar export supabase->json [{timestamp}]"],
+        ["git", "push", "origin", "main"],
+    ]
+    for cmd in pasos:
+        resultado = subprocess.run(
+            cmd,
+            cwd=PROYECTO_ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        if resultado.returncode != 0:
+            stderr = resultado.stderr.strip() or resultado.stdout.strip()
+            if cmd[1] == "commit" and "nothing to commit" in stderr.lower():
+                log("  git commit: sin cambios, nada que subir.")
+                return
+            log(f"ADVERTENCIA git ({' '.join(cmd)}): {stderr}")
+            return
+        log(f"  git {cmd[1]}: OK")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Exporta Supabase → JSON (panel Netlify)")
     ap.add_argument("--output-dir", default=DIRECTORIO_DATOS_DEFAULT, help="Directorio de salida")
+    ap.add_argument("--sin-push", action="store_true",
+                    help="Genera el JSON sin git commit/push (pruebas)")
     args = ap.parse_args()
 
     cargar_env_local()
@@ -200,6 +234,13 @@ def main() -> int:
     with open(archivo_manifest, "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)
     log(f"✓ Manifest → {os.path.relpath(archivo_manifest, PROYECTO_ROOT)}")
+
+    if args.sin_push:
+        log("Modo --sin-push: no se toca git.")
+    else:
+        timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M")
+        log("Ejecutando git commit y push...")
+        git_commit_y_push(timestamp, args.output_dir)
 
     log("OK")
     print(f"RESUMEN: tablas={len(tablas)} registros={total_filas} estado=exito")

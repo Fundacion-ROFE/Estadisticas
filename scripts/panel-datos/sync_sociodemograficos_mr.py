@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-sync_sociodemograficos_mr.py — BD-Mujeres ROFÉ (xlsx) → Supabase participants (solo MR).
+sync_sociodemograficos_mr.py — BD-Mujeres ROFÉ (Sheet vivo) → Supabase participants (solo MR).
 
 Espejo de sync_sociodemograficos.py (que cubre JC desde la BD de monitorias). Extrae de la
 pestaña `General` (headers fila 1, cruce por cédula c7): Edad(c12), Ciudad(c13),
@@ -17,9 +17,12 @@ también en JC, la BD de monitorias — corrida después — conserva precedenci
 compartidos; los 4 campos nuevos solo los escribe este script). No crea participantes:
 las ~4.000 mujeres de la BD que no están en Q10 se reportan, no se cargan.
 
-⚠ PRIVACIDAD: PII en memoria y en tools/ solamente. RUTA_BD apunta al export xlsx en
-Downloads — actualizarla cuando cambie la versión del archivo (la fuente viva es el Google
-Sheet de [[mr-actualizacion-datos]], que el workflow n8n actualiza a diario a las 9:30).
+⚠ PRIVACIDAD: PII en memoria y en tools/ solamente.
+
+**2026-07-21: se dejó de leer el xlsx exportado a mano de Downloads — ahora lee el Google
+Sheet en vivo** de [[mr-actualizacion-datos]] (id `1ZsC4WyY26aOCEMrnZ_l8Tn-l69DB_0ADs5lnecaoEP8`,
+pestañas `General`/`Inactivas`), que el workflow n8n `mr-actualizacion-datos` actualiza a
+diario a las 9:30. Permite encadenar este sync a un schedule sin depender de un export manual.
 
 Uso:
     python sync_sociodemograficos_mr.py [--dry-run]
@@ -51,12 +54,15 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
 if sys.stderr.encoding and sys.stderr.encoding.lower() != "utf-8":
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
-from openpyxl import load_workbook
+import gspread
+from google.oauth2.service_account import Credentials
 
 DIRECTORIO_SCRIPT = os.path.dirname(os.path.abspath(__file__))
 PROYECTO_ROOT     = os.path.abspath(os.path.join(DIRECTORIO_SCRIPT, "..", ".."))
 RUTA_ENV          = os.path.join(PROYECTO_ROOT, ".env.local")
-RUTA_BD           = r"C:\Users\EstudiantesJC\Downloads\BD-Mujeres ROFÉ 2026 (2).xlsx"
+RUTA_CREDENCIALES = os.path.join(PROYECTO_ROOT, "scripts", "q10-consolidacion",
+                                 "credenciales_service_account.json")
+SHEET_ID          = "1ZsC4WyY26aOCEMrnZ_l8Tn-l69DB_0ADs5lnecaoEP8"  # BD-Mujeres ROFÉ 2026
 RUTA_REPORTE      = os.path.join(PROYECTO_ROOT, "tools",
                                  f"sociodemograficos_mr_report_{datetime.now():%Y%m%d}.json")
 
@@ -166,18 +172,25 @@ class Supa:
             offset += page
 
 
+def _num(valor, lo, hi) -> int | None:
+    """Celda de texto (Sheet) → int si es dígito y cae en rango, si no None."""
+    v = str(valor).strip() if valor is not None else ""
+    if v.isdigit() and lo <= int(v) <= hi:
+        return int(v)
+    return None
+
+
 def fila_participante(r, idx) -> tuple[str, dict]:
     """(cedula, campos) desde una fila cruda según el mapa de índices 0-based `idx`."""
     ced = norm_id(r[idx["cedula"]])
     if not ced:
         return "", {}
-    edad, estrato = r[idx["edad"]], r[idx["estrato"]]
     emprend = texto(r[idx["emprend"]])
     fila = {
-        "edad": int(edad) if isinstance(edad, (int, float)) and 14 <= edad <= 90 else None,
+        "edad": _num(r[idx["edad"]], 14, 90),
         "ciudad": texto(r[idx["ciudad"]]) or None,
         "nivel_estudio": mapear(r[idx["nivel"]], MAPA_NIVEL),
-        "estrato": int(estrato) if isinstance(estrato, (int, float)) and 1 <= estrato <= 6 else None,
+        "estrato": _num(r[idx["estrato"]], 1, 6),
         "estado_civil": mapear(r[idx["civil"]], MAPA_CIVIL),
         "tipo_vivienda": mapear(r[idx["vivienda"]], MAPA_VIVIENDA),
         "genero": "Femenino",                # programa exclusivo de mujeres
@@ -195,17 +208,23 @@ IDX_INACTIVAS = {"cedula": 4, "civil": 8, "edad": 10, "emprend": 11, "vivienda":
                  "nivel": 15, "estrato": 16, "ciudad": 23}
 
 
+def _conectar_sheet():
+    creds = Credentials.from_service_account_file(
+        RUTA_CREDENCIALES, scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"])
+    return gspread.authorize(creds).open_by_key(SHEET_ID)
+
+
 def extraer_bd() -> dict:
     """{cedula: {edad, ciudad, nivel_estudio, estrato, estado_civil, tipo_vivienda,
                  nombre_emprendimiento, tiene_emprendimiento, genero}}"""
-    log(f"Leyendo {os.path.basename(RUTA_BD)}...")
-    wb = load_workbook(RUTA_BD, read_only=True, data_only=True)
+    log(f"Leyendo Sheet vivo (id {SHEET_ID})...")
+    sh = _conectar_sheet()
 
     datos: dict[str, dict] = {}
     for pestana, idx, min_cols in (("General", IDX_GENERAL, 24), ("Inactivas", IDX_INACTIVAS, 24)):
         n = 0
-        for r in wb[pestana].iter_rows(min_row=2, values_only=True):
-            if not r or len(r) < min_cols:
+        for r in sh.worksheet(pestana).get_all_values()[1:]:
+            if len(r) < min_cols:
                 continue
             ced, fila = fila_participante(r, idx)
             if not ced:
@@ -214,7 +233,6 @@ def extraer_bd() -> dict:
                 datos[ced] = fila
                 n += 1
         log(f"{pestana}: {n} cédulas nuevas (acumulado {len(datos)})")
-    wb.close()
     return datos
 
 
@@ -227,9 +245,6 @@ def main() -> int:
     url, key = os.environ.get("SUPABASE_URL", ""), os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
     if not url or not key:
         log("ERROR: faltan SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY")
-        return 1
-    if not os.path.isfile(RUTA_BD):
-        log(f"ERROR: no existe {RUTA_BD} — actualizar RUTA_BD a la versión vigente")
         return 1
 
     datos = extraer_bd()

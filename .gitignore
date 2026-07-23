@@ -6,6 +6,12 @@ credenciales_service_account.json
 *.har
 *.p12
 *.pem
+# Referencias con claves/tokens — NUNCA a GitHub (docs/ es GitHub Pages público)
+docs/reference-n8n-api-key.md
+docs/reference-ngrok-tunel-fijo.md
+
+# ── Basura de reescritura de historia (git filter-repo/filter-branch) ─────────
+.git-rewrite/
 
 # ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
@@ -24,6 +30,10 @@ scripts/q10-consolidacion/organizador/dist/
 # ── Obsidian (configuración personal del editor) ──────────────────────────────
 docs/.obsidian/
 .obsidian/
+# Artefactos vacíos que Obsidian crea por accidente (canvas/base "Untitled")
+Untitled*.canvas
+Untitled*.base
+Untitled*.md
 
 # ── Carpeta duplicada/anidada ─────────────────────────────────────────────────
 automatizaciones-empresa/

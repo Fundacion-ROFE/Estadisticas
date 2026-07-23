@@ -47,12 +47,18 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 │   ├── cargar_supabase.py      ← payload → Supabase (snapshot + upserts, idempotente)
 │   ├── sync_sociodemograficos.py ← BD monitorias (xlsx) → participants JC (género/edad/ciudad/emp)
 │   ├── sync_sociodemograficos_mr.py ← BD-Mujeres ROFÉ (xlsx) → participants MR (vivienda/estrato/civil/estudios/…)
+│   ├── sync_postulantes_mr.py  ← BD-Mujeres ROFÉ (5 pestañas) → postulantes_mr (universo completo, no solo matriculadas)
 │   ├── sync_aprobacion_supabase.py ← docs/aprobacion/data.json → cohorte_ingresos + aprobacion_cursos (832)
 │   ├── sync_emoflow_api.py     ← Emoflow API (login + descarga CSV) → emoflow_ingresos + historial_emoflow(_ciudad)
 │   ├── sync_emoflow.py         ← [DEPRECATED 2026-07-20] +Ingresos-EmoFlow (Sheet manual) → emoflow_ingresos
 │   ├── sync_emoflow_participacion.py ← bloque EMOFLOW de Estadísticas → emoflow_participacion_semanal
 │   ├── sync_supabase_to_sheets.py ← Supabase → Google Sheets (hojas h1/h2/h3 para el equipo)
-│   └── test_conexion_supabase.py ← Smoke test REST+RLS del proyecto Supabase panel-datos-rofe
+│   ├── test_conexion_supabase.py ← Smoke test REST+RLS del proyecto Supabase panel-datos-rofe
+│   ├── test_integridad_supabase.py ← Suite QA: 36 tests (FKs, unicidad, dominios, cuadres, frescura, anon)
+│   ├── extraer_mongo_mr_historico.py ← mujeres-rofe-db.Users (Mongo Atlas, solo lectura) → payload local (2023/2024)
+│   ├── cargar_mongo_mr_historico.py ← payload Mongo → postulantes_mr (investigación cerrada 2026-07-22, ver mapa-codigo)
+│   ├── extraer_mongo_jc_historico.py ← jovenes-creativos.User/Applicant (Mongo, solo lectura) → payload local
+│   └── cargar_mongo_jc_historico.py ← payload Mongo → postulantes_jc (2.556 filas, 464 exclusivas)
 │
 ├── tools/                      ← LOCAL ONLY — gitignoreado — contiene PII
 │   └── panel_riesgo.py         ← Cruce Avance × h2test por email → reporte de riesgo
@@ -81,6 +87,7 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 | `cargar_supabase.py` | [[panel-datos-etl]] | — | — (escribe en Supabase panel-datos-rofe) |
 | `sync_sociodemograficos.py` | [[panel-datos-etl]] | — | — (BD monitorias → Supabase, JC) |
 | `sync_sociodemograficos_mr.py` | [[panel-datos-etl]] · [[mr-actualizacion-datos]] | — | — (BD-Mujeres ROFÉ → Supabase, MR) |
+| `sync_postulantes_mr.py` | [[panel-datos-etl]] · [[postulantes-mr-supabase]] | — | — (BD-Mujeres ROFÉ completa → Supabase `postulantes_mr`, PII) |
 | `sync_aprobacion_supabase.py` | [[panel-datos-etl]] · [[q10-consolidacion]] | — | — (aprobacion/data.json → Supabase, cohorte 832) |
 | `sync_emoflow_api.py` | [[panel-datos-etl]] | — | — (Emoflow API → Supabase, sin Sheet intermedio) |
 | `sync_emoflow.py` | [[panel-datos-etl]] (DEPRECATED 2026-07-20) | — | — (Sheet manual +Ingresos-EmoFlow → Supabase) |
@@ -90,6 +97,10 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 | `test_cuadre_dashboard.py` | [[panel-datos-etl]] | — | — (Fase 4: cuadre vs aprobación) |
 | Frontend Next.js (repo `panel-datos-rofe`) | [[panel-datos-etl]] | — | https://classy-pasca-eecdd6.netlify.app |
 | `test_conexion_supabase.py` | [[panel-datos-etl]] | — | — (verifica RLS de Supabase con anon key) |
+| `test_integridad_supabase.py` | [[panel-datos-etl]] · [[supabase-estructura]] | — | — (suite QA completa; candidata a chequeo diario n8n) |
+| Vista `v_persona_360` (Supabase) | [[postulantes-mr-supabase]] · [[supabase-estructura]] | — | — (trazabilidad total por cédula, solo service_role) |
+| `extraer_mongo_mr_historico.py` / `cargar_mongo_mr_historico.py` | [[panel-datos-etl]] · [[postulantes-mr-supabase]] | — | — (Mongo Atlas mujeres-rofe-db, solo lectura → postulantes_mr; investigación cerrada 2026-07-22, 99.9% redundante) |
+| `extraer_mongo_jc_historico.py` / `cargar_mongo_jc_historico.py` | [[panel-datos-etl]] | — | — (Mongo Atlas jovenes-creativos, solo lectura → `postulantes_jc`; 2.556 filas, 464 exclusivas, cargado 2026-07-22) |
 | n8n workflow | [[q10-consolidacion]] | [[q10-actualizar]] | — |
 | n8n `q10-sync-supabase` | [[panel-datos-etl]] | — | — (sync diario 9:45 → Supabase) |
 
@@ -102,6 +113,7 @@ Ver [[mapa-codigo]] para firma completa de cada script.
 | Skill | Invocar | Cuándo |
 |---|---|---|
 | compact | `/compact` | Respuestas cortas — ahorra tokens |
+| evaluar | `/evaluar <tarea>` | Antes de arrancar: estima complejidad y recomienda modelo (Haiku/Sonnet/Opus) + prompt de inicio |
 | proceso-nuevo | `/proceso-nuevo <nombre>` | Al iniciar cualquier proceso nuevo |
 | doc-sync | `/doc-sync` | Al cerrar cualquier sesión de trabajo |
 | n8n-standards | automático | Al trabajar con workflows de n8n |

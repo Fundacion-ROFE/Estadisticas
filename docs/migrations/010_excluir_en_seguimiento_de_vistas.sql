@@ -1,0 +1,26 @@
+-- 010 — APLICADA 2026-07-23
+-- Decisión de Samuel: los estudiantes con en_seguimiento_jc=false (alerta de retiro
+-- pendiente de confirmar, ver 009_en_seguimiento_jc.sql) se EXCLUYEN de "estudiante actual"
+-- en TODOS los sistemas de visualización/análisis — no se tocan los números canónicos de
+-- Q10 (enrollments.estado, cohorte_ingresos siguen siendo la fuente oficial), el filtro se
+-- aplica solo en la capa de vistas que consumen el dashboard público y las herramientas
+-- internas (panel_riesgo_gui.py, reporte_puntaje.py vía v_puntaje_estudiante).
+--
+-- Patrón: `en_seguimiento_jc IS DISTINCT FROM false` (no `= true`) — deja pasar NULL
+-- (histórico 2023-2025 y TODO MR, donde la columna nunca se calcula) sin afectarlo.
+--
+-- Verificado tras aplicar: JC 2026 pasó de 777 → 759 participantes en las 11 vistas
+-- (777−18 alertas); MR sin cambios (343); anon sigue accediendo a las vistas públicas (200);
+-- suite test_integridad_supabase.py: 36/36 PASS.
+--
+-- Ver el SQL completo de las 11 vistas reescritas en el historial de aplicación (ejecutado
+-- directo vía Supabase MCP, no desde este archivo — este archivo es el registro/referencia).
+-- Vistas tocadas: v_demografia_grupo, v_edad_distribucion, v_emprendimiento_situacion,
+-- v_emprendimiento_vs_cursos, v_cohorte_estudiantes, v_cohorte_estudiantes_distribucion,
+-- v_curso_completion, v_curso_completion_por_ciudad, v_programa_stats,
+-- v_programa_stats_por_ciudad, v_puntaje_estudiante.
+--
+-- Cambio de código relacionado (no-SQL): tools/panel_riesgo_gui.py — la función que arma
+-- por_email_jc ahora excluye matrículas con en_seguimiento_jc=false antes de construir el
+-- diccionario que alimenta toda la GUI. reporte_puntaje.py no necesitó cambios (hereda el
+-- filtro al leer v_puntaje_estudiante).

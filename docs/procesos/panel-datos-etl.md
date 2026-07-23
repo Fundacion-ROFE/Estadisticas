@@ -1,12 +1,15 @@
 # Panel de Datos Supabase (ETL + Dashboard)
 
-**Estado:** ✅ MVP completo (Fases 0-4) — en producción: https://classy-pasca-eecdd6.netlify.app (2026-07-10)
-**Última actualización:** 2026-07-14
+**Estado:** ✅ MVP completo (Fases 0-4) — en producción: https://venerable-truffle-331f3c.netlify.app
+**Última actualización:** 2026-07-21
 
 ## Frontend (Fase 3) — EN PRODUCCIÓN
-**URL:** https://classy-pasca-eecdd6.netlify.app (deploy automático on push; renombrable en
-Netlify → Site settings → Change site name, ej. `panel-rofe`).
-Repo dedicado: `C:\Users\EstudiantesJC\downloads\panel-datos-rofe` (GitHub conectado a Netlify).
+**URL vigente (2026-07-16, migración de hosting):** https://venerable-truffle-331f3c.netlify.app
+— reemplaza a `classy-pasca-eecdd6.netlify.app` (repo viejo dejó de reflejar commits; se movió el
+mismo historial a **github.com/comunicaciones-ai/Panel-De-Datos**, colaborador `soportejunior-codeJR`
+con Write). Esta sección tenía la URL vieja desactualizada — corregido 2026-07-21 al auditar
+centralización de fuentes (ver [[panel-datos-etl#Fuentes de datos aún no centralizadas]]).
+Deploy automático on push. Repo dedicado local: `C:\Users\EstudiantesJC\downloads\panel-datos-rofe`.
 
 ## Sección por programa + Historial (2026-07-10, pedido de stakeholders)
 - **Programa JC/MR:** columna `courses.programa` (enum `programa_type`), clasificación canónica
@@ -39,10 +42,10 @@ Repo dedicado: `C:\Users\EstudiantesJC\downloads\panel-datos-rofe` (GitHub conec
 - Re-ejecución: idempotente; correr de nuevo solo si Q10 gana periodos históricos nuevos.
 
 ## Sociodemográficos MR (2026-07-10, pedido stakeholders)
-- **Fuente:** `BD-Mujeres ROFÉ 2026 (2).xlsx` (Downloads; la fuente viva es el Google Sheet de
-  [[mr-actualizacion-datos]], actualizado a diario 9:30 por n8n — actualizar `RUTA_BD` al cambiar
-  versión del export). Pestañas: `General` (5.126 cédulas) + `Inactivas` (retiradas, fuente
-  secundaria — General gana). `HerpowerED` NO se lee (copia de General).
+- **Fuente (2026-07-21: pasó a leer el Sheet en vivo, ya no el xlsx exportado a mano):**
+  Google Sheet de [[mr-actualizacion-datos]] (id `1ZsC4WyY26aOCEMrnZ_l8Tn-l69DB_0ADs5lnecaoEP8`),
+  actualizado a diario 9:30 por n8n. Pestañas: `General` (5.126 cédulas) + `Inactivas`
+  (retiradas, fuente secundaria — General gana). `HerpowerED` NO se lee (copia de General).
 - **Script:** `sync_sociodemograficos_mr.py` — espejo del sync JC, restringido a participantes
   con matrícula en cursos `programa=mr` (una cédula en ambos programas no pisa los datos JC de
   la BD monitorias). Mapeo por substring a los enums existentes.
@@ -119,9 +122,15 @@ engagement / calidad.
 - **Hallazgo:** la relación es **monótona pero suave** — banda 1-5: 82.5% de aprobación; banda 31-60: 88.2%.
   Más ingresos correlaciona con más avance, pero la diferencia es de ~6 puntos: sirve para detectar el extremo bajo,
   no como predictor fino.
-- **Automatizado (2026-07-20):** `sync_emoflow_api.py` encadenado al workflow n8n `q10-sync-supabase`
-  tras `¿Aprobación OK?` (nodos `Ejecutar sync_emoflow` → `¿Emoflow OK?` → `OK` / `Error Emoflow`).
-  Corre diario a las 9:45. Credenciales: `EMOFLOW_USER`, `EMOFLOW_PASSWORD` en `.env.local` (nunca en git).
+- **Automatizado — corregido 2026-07-21:** el nodo `sync_emoflow_api.py` se documentó como
+  encadenado el 2026-07-20 pero **el workflow en vivo seguía llamando al script deprecado**
+  `sync_emoflow.py` (Sheet manual) — verificado consultando `GET /workflows/{id}` en vivo, no
+  solo el JSON exportado. Corregido 2026-07-21 vía API: el nodo ahora ejecuta
+  `sync_emoflow_api.py` de verdad (`Ejecutar sync_emoflow_api` → `¿Emoflow OK?` → `OK` /
+  `Error Emoflow`), diario 9:45. **Lección:** el JSON en `n8n-workflows/` puede desalinearse
+  del workflow real si se edita por API sin re-exportar — verificar siempre contra
+  `GET /workflows/{id}` cuando la duda importe. Credenciales: `EMOFLOW_USER`,
+  `EMOFLOW_PASSWORD` en `.env.local` (nunca en git).
 
 ## Puntaje compuesto de "calidad de estudiante" (2026-07-14)
 Vista `v_puntaje_estudiante` (JC, cohorte actual) + `reporte_puntaje.py`. Combina avance Q10,
@@ -246,8 +255,14 @@ hojas u otras fuentes NO). Se auditó cada dato y se corrigió la cadena.
   - "Participar → aprobar" se **mantiene pero etiquetado** (la aprobación viene de **Q10**, cruce).
   - **Gotcha frontend:** PostgREST corta en 1000 filas aunque se pida `limit` mayor → se agregó
     `leerPaginado()` (header Range) en `lib/api.ts`; si no, se perdían los días recientes.
-- **`sync_emoflow_participacion.py` (Sheet de monitorías) sigue existiendo** y corriendo en
-  `q10-sync-supabase`, pero el panel **ya no lo consume**. Candidato a deprecar si nada más lo usa.
+- **`sync_emoflow_participacion.py` — ELIMINADO del pipeline (2026-07-21).** Seguía corriendo
+  a diario en `q10-sync-supabase` sin que el panel lo consumiera desde el rehecho de arriba.
+  Confirmado con Samuel que genuinamente no se quiere: se quitaron los 3 nodos del workflow
+  en vivo (`Ejecutar sync_emoflow_participacion` → `¿Participación OK?` → `Error Participación`,
+  reconectando `¿Emoflow OK?` directo a `OK`) y el script se movió a
+  `scripts/panel-datos/_obsoletos/`. La tabla `emoflow_participacion_semanal` queda en
+  Supabase sin escrituras nuevas (no se borró — es dato histórico, bajo riesgo dejarla
+  dormida; se puede eliminar más adelante si se confirma que nadie la necesita).
 
 ## Cohorte canónica en el panel — "Ingresados 832" (2026-07-10, pedido stakeholders)
 El total mostrado para el año en curso es la **cohorte canónica** (todos los registros del año
@@ -482,16 +497,16 @@ decisión que elimina el netlify.toml problemático del plan original). 4 tabs: 
 Emprendimiento / Demografía, consumiendo las vistas `v_*` + `cohorte_stats` con anon key.
 Identidad ROFÉ (paleta Manual 2025, Century Gothic, logo Aplicación 2). First Load JS 195 kB.
 Preview local: `python -m http.server` sobre `out/`.
-**Procesos relacionados:** [[q10-consolidacion]] · [[dashboard-web]] · [[mr-actualizacion-datos]] · [[bd-seguimiento-monitorias]]
+**Procesos relacionados:** [[q10-consolidacion]] · [[dashboard-web]] · [[mr-actualizacion-datos]] · [[bd-seguimiento-monitorias]] · [[postulantes-mr-supabase]]
 
 ## Qué hace
 Reemplaza Power BI por un panel de visualización alimentado por Supabase (PostgreSQL) como
 fuente única de verdad, con ETL diario vía n8n y frontend Next.js en Netlify. Convive en
 paralelo con el dashboard GitHub Pages existente hasta validar cuadre de cifras.
 
-Plan maestro en la raíz del repo: `PLAN-DATOS-ANALISIS-PROFUNDO.md` ·
-`MATRIZ-DECISIONES-PENDIENTES.md` (completada) · `CLAUDE-CODE-PROMPTS-POR-FASE.md` ·
-`ARQUITECTURA-VISUAL.md` · `PROXIMOS-PASOS-SESION-2.md` — todos revisados/corregidos 2026-07-09.
+Plan maestro histórico (archivado en `docs/archivo/`, fase de planeación 2026-07-09):
+`PLAN-DATOS-ANALISIS-PROFUNDO.md` · `MATRIZ-DECISIONES-PENDIENTES.md` (completada) ·
+`CLAUDE-CODE-PROMPTS-POR-FASE.md` · `ARQUITECTURA-VISUAL.md` · `PROXIMOS-PASOS-SESION-2.md`.
 
 ## Disparador (Trigger)
 - **Workflow n8n `q10-sync-supabase` (ID `uSizw3dNzpb6n53H`), Schedule diario 9:45 COT, activo.**
@@ -525,8 +540,15 @@ progreso · 307 en 0%), 0 errores, 2 advertencias (avances 101 clampeados), 34 d
 - Supabase REST API — proyecto `panel-datos-rofe` (`kbxptoowtnteflhrfwid`, us-east-1)
   - URL: `https://kbxptoowtnteflhrfwid.supabase.co`
   - Keys en `.env.local` (gitignoreado); service_role pendiente de copiar del Dashboard
-- **Datos sociodemográficos — mapeados y cargados (2026-07-09):** fuente = [[bd-seguimiento-monitorias]]
-  (`RUTA_BD` en Downloads; la fuente viva es el Google Sheet — actualizar la ruta al cambiar versión).
+- **Datos sociodemográficos — mapeados y cargados (2026-07-09; automatizado 2026-07-21):**
+  fuente = [[bd-seguimiento-monitorias]], Sheet id `1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8`
+  (mismo Sheet gigante que Emoflow/Avance). `sync_sociodemograficos.py` y
+  `sync_sociodemograficos_mr.py` **dejaron de leer el xlsx exportado a mano de Downloads** —
+  ahora leen el Sheet en vivo vía gspread, lo que permitió encadenarlos a un workflow n8n
+  nuevo: `sociodemograficos-semanal` (lunes 6:00 COT, alerta Telegram en error — no
+  `stopAndError` porque no bloquea el pipeline diario crítico). Antes requerían re-corrida
+  manual cada vez que alguien descargaba una versión nueva de la BD — riesgo de
+  desactualización silenciosa, ya cerrado.
   - Pestaña `Seguimiento` (headers fila 1): ID(c7), Grupo(c2), Fecha Nacimiento(c11), Edad(c12),
     Ciudad(c13), Género(c16) — 768 cédulas.
   - Pestaña `Diagnostico`: Número de documento(c3) + situación emprendimiento(c32, 4 categorías
@@ -618,6 +640,305 @@ nodos de error, como ya la tiene el bot de Q10.
 - Free tier: **pausa el proyecto tras ~1 semana sin actividad** y **no incluye backups automáticos** (eso es plan Pro ~$25/mes). El sync diario lo mantiene vivo si el PC está encendido.
 - Los 5 docs del plan (generados en claude.ai) traían 13 fallas corregidas el 2026-07-09 — ver notas ⚠️ al pie de cada uno.
 
+## Fuentes de datos aún no centralizadas — auditoría + decisiones (2026-07-21)
+Análisis a fondo pedido por Samuel de qué fuentes faltan por centralizar en Supabase, con
+decisión tomada para cada una (no todo se resuelve ahora — algunas quedan documentadas
+adrede como "problema separado" para retomar después, dado que hoy no hay una persona
+dedicada a analítica de datos).
+
+### Retirados históricos (2023-2025) — limitación, no bug (parqueado)
+`importar_historico_q10.py` excluye a propósito los retirados de las cohortes 2023-2025:
+el reporte Consolidado histórico de Q10 **no expone inhabilitados**, solo el reporte de
+matriculados **del periodo activo actual** los distingue. No hay endpoint de Q10 que traiga
+"quién se retiró en 2024", así que no es automatizable con las fuentes que existen hoy.
+**Dos caminos si se quiere cerrar esto en el futuro** (ninguno se ejecuta ahora):
+1. **Aceptar el hueco** — las cohortes pasadas en el panel muestran solo activos/aprobados
+   (ya es el comportamiento actual); documentar la limitación donde se muestre el dato
+   (nota al pie en el frontend) en vez de intentar reconstruirlo.
+2. **Búsqueda puntual** — si en algún backup/Excel viejo del equipo (fuera de Q10) existe un
+   registro de retiros pre-2026, se podría hacer una carga única manual a
+   `cohorte_ingresos`/`aprobacion_cursos` de esas cohortes — pero requiere que ese archivo
+   exista y aparezca; no se sabe si existe.
+
+   **Camino 2 ejecutado (2026-07-21):** búsqueda de solo lectura en `Downloads/` (xlsx/csv con
+   "retirad"/"cancelad"/"desertor"/"aplazad"/2023/2024), en el repo (`docs/archivo/`,
+   `tools/`), en el historial de git (`git log --all --diff-filter=D`) y en Google Drive
+   (`retirados 2023/2024`, "cancelados", "desertores"). Resultado:
+   - **JC — nada nuevo.** La pestaña `S Retirados` de `BD Seguimiento de Monitorias - JC2026.xlsx`
+     (Downloads) solo tiene `Fecha de retiro` en 2026 (55/58 filas) — es el mismo tracking del
+     año en curso ya cubierto, cero rastro de 2023-2024.
+   - **MR — hallazgo parcial, pequeño, YA semi-conectado.** La pestaña `Inactivas` de
+     `BD-Mujeres ROFÉ 2026.xlsx` (Downloads; mismo Sheet que ya lee `sync_sociodemograficos_mr.py`
+     como fuente secundaria) tiene **33 filas usables** con `Año-Ingreso` real de 2022 (2) · 2023
+     (~14) · 2024 (~5) · 2025 (2) y columnas `Motivos`/`Estado`(Retirada)/`Año-retiro`. **Ojo:**
+     `Año-retiro` vale casi siempre 2025 o 2026 — parece ser cuándo se registró la baja en la
+     hoja, NO el año de cohorte de retiro, así que no mapea directo al esquema
+     periodo→cohorte de `importar_historico_q10.py` sin revisarlo caso a caso. Es MR-only (no
+     hay equivalente JC) y cubre una fracción mínima de los ~353 retirados históricos totales
+     (mayoría JC). **Si se quisiera usar:** decidir con el equipo si `Año-Ingreso` es la cohorte
+     correcta para cada fila (vs. Q10), y hacer una carga manual única y pequeña — no amerita
+     automatizar por el volumen. Queda como pendiente opcional, no ejecutado.
+   - **Git history:** sin archivos de retiro histórico borrados alguna vez (el único match de
+     `--diff-filter=D` fue un `git-rewrite` de limpieza de los archivos ACTUALES de retirados,
+     no una fuente vieja perdida).
+   - **Google Drive:** `search_files` con esos términos no devolvió ninguna hoja/archivo
+     dedicado a retiros 2023/2024 fuera de lo ya conectado (solo menciones de "retirados" en
+     reportes semanales/presentaciones existentes).
+   - **Conclusión:** no hay una fuente recuperable que cierre el hueco completo de 2023-2025
+     (sobre todo JC). Queda parqueado; el hallazgo MR de arriba es la única pista con datos
+     reales, y es opcional/menor.
+Se deja documentado aquí para no re-investigarlo desde cero cuando se retome.
+
+### `sync_supabase_to_sheets.py` / `export_supabase_json.py` — continuidad analizada, ENCADENADOS (2026-07-21)
+Ambos existían y funcionaban pero no estaban encadenados a ningún workflow n8n. Decisión previa
+(2026-07-21, misma fecha) fue deprorizarlos; horas después Samuel pidió explícitamente
+encadenarlos igual, así que se revirtió esa decisión:
+
+- `sync_supabase_to_sheets.py`: espeja vistas públicas de Supabase de vuelta a Sheets
+  (`H1Test`/`H2Test`/`H3Test`) para que el equipo consulte sin salir de Excel. Solo lectura de
+  Supabase (anon key) + escritura en Sheets — no toca git.
+- `export_supabase_json.py`: exporta TODAS las tablas/vistas públicas a `docs/datos/*.json`.
+
+**⚠️ Consumidor no confirmado — vigente, no se resolvió con el encadenado.** El docstring del
+script apunta al sitio `venerable-truffle-331f3c.netlify.app` (sitio de producción vigente, ver
+corrección de URL arriba), pero el frontend real de ese repo consulta Supabase **client-side con
+la anon key** (`lib/api.ts`), no lee `docs/datos/*.json`. Es decir: el script se encadenó porque
+así se pidió, pero hoy nadie consume su salida. Reconsiderar si en el futuro el frontend migra a
+JSON estático, o eliminar el paso si se confirma que nunca se va a usar.
+
+**Encadenado al final de `q10-sync-supabase` (2026-07-21):** tras `¿Emoflow OK?` (rama true),
+ahora sigue `Ejecutar export_supabase_json` → `Export JSON OK?` → `Ejecutar sync_supabase_to_sheets`
+→ `Sheets OK?` → `OK`, cada IF con su propio `stopAndError` (mismo patrón del resto de este
+workflow — sin Telegram aquí). 20 nodos totales, verificado con `GET /workflows/{id}` tras el PUT:
+activo, sin referencias huérfanas.
+
+**Decisión sobre el `git push` de `export_supabase_json.py`:** se le agregó `git_commit_y_push()`
+(mismo patrón de `export_stats.py`/`export_aprobacion.py`, con flag `--sin-push` para pruebas) en
+vez de dejarlo solo-disco. Motivo: los archivos de `docs/datos/*.json` **ya estaban trackeados en
+git** (confirmado con `git ls-files` antes de tocar nada) — sin el push, cada corrida diaria dejaría
+el working tree sucio para siempre (escrito en disco, nunca commiteado), degradando lo que ya hay
+en el repo sin nunca actualizarlo. Con el push, al menos el repo se mantiene consistente con la
+última corrida, aunque hoy no haya nada que lea esos archivos.
+
+**Hallazgo colateral durante el encadenado — bug de producción pre-existente, corregido:** al
+verificar el `GET /workflows/{id}` en vivo antes de tocar nada, el objeto `connections` completo
+del workflow tenía **todas** las referencias a nodos IF/stopAndError rotas (claves con `¿`/tildes
+corrompidas a `U+FFFD` que ya no coincidían con el `name` real de esos nodos, corrompido a su vez
+a `?` ASCII plano) — arrastre de una edición de PowerShell anterior ese mismo día (la que quitó
+`sync_emoflow_participacion`, ver sección de arriba). Confirmado con el historial de ejecuciones
+(`GET /executions`): la corrida de las 9:45 de hoy corrió con nombres correctos (antes de esa
+edición); cualquier corrida después de esa hora se habría detenido en silencio justo después de
+`Ejecutar normalize_q10_data`, sin alcanzar ningún IF, ningún `stopAndError`, ni el nodo `OK` —
+sin alertar, porque el error no es una excepción sino un grafo desconectado. Se reparó
+remapeando cada clave/target de `connections` al `name` real de cada nodo (misma normalización en
+todo el flujo, no solo en el tramo nuevo) antes de encadenar los pasos nuevos. Verificado: los 20
+nodos y las 13 conexiones resuelven sin huérfanos. **Lección para la próxima edición por API:** no
+basta con verificar que el PUT no lance excepción — hay que recorrer programáticamente
+`connections` y confirmar que cada clave y cada `target.node` aparece en `nodes[].name` (lo que se
+hizo aquí); un mismatch de encoding no lanza error en el PUT, solo desconecta el grafo en
+silencio.
+
+### Vivienda / estrato / estado civil / nivel de estudio para JC — sin fuente (pendiente próximo año)
+Confirmado: **no existe ninguna fuente para estos 4 campos en Jóvenes creaTIvos** (a
+diferencia de MR, que los tiene vía BD-Mujeres ROFÉ). No es un problema de sync — el dato
+simplemente no se recolecta hoy para JC en ningún formulario/proceso.
+**Plan (para cuando se prepare la estructura del próximo año, no ahora):** al armar el
+onboarding/matrícula de la próxima cohorte, diseñar una captura automatizada de estos 4
+campos desde el arranque (ej. Google Form de inscripción con estas preguntas → Sheet →
+mismo patrón de sync que ya existe para MR) en vez de intentar recolectarlo retroactivo a
+mitad de año. Anotado aquí para no llegar tarde otra vez a esta conversación.
+**Diseño detallado (2026-07-21, sin implementar):** ver [[captura-sociodemografica-jc]] —
+Form propuesto (sin pregunta de género, JC es mixto), pestaña Sheet destino con cruce por
+cédula (mismo criterio de `actualizar_bd_mr.py`) y script `sync_sociodemograficos_jc_extra.py`
+propuesto, reutilizando los mismos 4 enums de `sync_sociodemograficos_mr.py` sin crear
+mapeos nuevos.
+
+### Panel de riesgo (`tools/panel_riesgo_gui.py`) — plan de mejora completo
+Ver [[panel-riesgo-mejora]] — plan de 3 fases para migrarlo de Sheets a Supabase y agregar
+un tab de "Decisiones" con botones de consulta (estudiantes en riesgo, sin Emoflow,
+asistencia baja, etc.). Decisión tomada: se mantiene como GUI de escritorio Tkinter (no se
+construye un panel web nuevo), por privacidad (PII) y simplicidad.
+
+### Contexto — próxima migración Netlify → DigitalOcean
+Confirmado con Samuel: la convivencia GitHub Pages / Netlify es efectivamente una fase de
+transición. El siguiente paso grande después de terminar esta migración a Supabase es mover
+el frontend de `panel-datos-rofe` de Netlify a un droplet de DigitalOcean — Netlify tiene
+límites (free tier) que se van a quedar cortos. No se ha planeado en detalle todavía; queda
+como la "próxima gran decisión" de infraestructura, después de cerrar los puntos de esta
+sección.
+
+## Exploración de MongoDB (backend histórico de las apps ROFÉ) — investigación cerrada 2026-07-22
+Samuel confirmó acceso a una base MongoDB Atlas que alimentaba un panel Power BI de un tercero
+("le pagaron a alguien... millares de datos históricos, no se actualiza más de 4 veces al año").
+Objetivo: ver qué trae de más antes de decidir si vale la pena gestionar el acceso formalmente
+con el equipo. **Conclusión: prácticamente todo ya está en Supabase por otra vía — se cierra sin
+cargar nada, salvo 4 registros puntuales.**
+
+**Acceso:** usuario Atlas rol "Read Only" (solo lectura, verificado — nunca se escribió en Mongo),
+`MONGO_URI` en `.env.local` (mismo patrón que el resto de credenciales del proyecto).
+
+**Lo que hay realmente (7 bases, perfilado con `perfilar_mongo.py`):** no es un export estático —
+son los backends reales (o sus copias) de varias apps:
+- `mujeres-rofe-db.Users` (5.165 docs, 2022-2026) — backend de la plataforma Mujeres ROFÉ, con el
+  mismo detalle sociodemográfico que ya trae MR (estrato, vivienda, estado civil, educación...).
+- `jovenes-creativos.User`/`Applicant` — backend de postulantes/usuarios JC.
+- `Asistencia-JC`, `emoflow-reports` — datasets recientes y chicos (9 y ~860 docs), no históricos.
+- `test`, `test-jovenes`, `plataforma_dev` — copias de desarrollo, descartadas del alcance
+  (mismo patrón de fechas que las bases reales, no autoritativas).
+
+**Primer cruce (equivocado) — contra `participants`:** 97% de `mujeres-rofe-db.Users` 2023 y 88%
+de 2024 no tenían cédula en `participants` (matriculados Q10). Parecía una brecha enorme — pero
+`participants` es la tabla equivocada para comparar: este Mongo es *registro de usuarias de la
+app*, no matrícula/avance en curso (mismo criterio de [[postulantes-mr-supabase]]: universo ≠
+matriculadas).
+
+**Segundo cruce (correcto) — contra `postulantes_mr`:** creada esa misma mañana
+(2026-07-22, ver [[postulantes-mr-supabase]]) desde el Sheet BD-Mujeres ROFÉ, que incluye una
+pestaña **"Plataforma MR"** — un export de una plataforma legada. Al cruzar por cédula:
+**2.583/2.586 (99.9%) de 2023 y 1.004/1.006 (99.8%) de 2024 YA estaban en `postulantes_mr`.**
+Conclusión: "Plataforma MR" es casi con certeza un export de este mismo Mongo (o su misma
+fuente) — el Sheet ya se adelantó a cerrar esta brecha.
+
+**Las 6 candidatas restantes, verificadas una por una** (cruce por cédula Y por email contra
+`participants`, `postulantes_mr`, y las colecciones Mongo de `jovenes-creativos`):
+- 1 es cuenta institucional/prueba (`soporte.it@tocaunavida.org`) — ya en `participants` y en
+  `jovenes-creativos.Applicant`. Descartada.
+- 1 es la misma persona con un typo de cédula (`111505265` en Mongo vs `1110505265`, correcta,
+  ya en `postulantes_mr` fuente "General"). No es nueva.
+- **4 confirmadas exclusivas de Mongo** (sin match en ningún sistema revisado) — exportadas a
+  `Downloads/mongo_mr_nuevas_2023_2024_v2.xlsx` a pedido de Samuel, NO cargadas a Supabase (el
+  volumen no justifica tocar producción; queda como entregable puntual).
+
+**Decisión:** no se construye ningún sync ni import recurrente — la fuente casi no se actualiza y
+ya está cubierta. Si en el futuro se necesita re-verificar algo puntual contra este Mongo, el
+patrón de acceso (usuario Read Only + `MONGO_URI`) y los scripts de extracción/cruce quedan
+disponibles como referencia, no como pipeline activo.
+
+**Gotcha de diagnóstico (root cause corregida, no era lo que parecía):** al escribir
+`cargar_mongo_mr_historico.py` desde cero (en vez de reutilizar el `Supa.get_todo()` ya existente
+de otro script), se reintrodujo el **mismo bug de `offset += page` faltante** ya documentado ese
+mismo día en [[convenciones#Paginación PostgREST: un `offset` que no avanza es un loop infinito silencioso]]
+tras construir `postulantes_mr`. El síntoma llevó a sospechar (incorrectamente, ~20 min) un
+conflicto entre `pymongo` y `urllib`/`truststore` en el mismo proceso — aislado con un test
+standalone que sí funcionaba, y confirmado como loop infinito real solo al loggear el `offset` en
+cada vuelta. **Lección reforzada:** antes de escribir un helper nuevo de paginación PostgREST,
+revisar si ya existe uno para reutilizar/copiar tal cual, no reescribirlo de memoria.
+
+**Separación extracción/carga (patrón nuevo, sí reutilizable):** aun así, separar "extraer de
+Mongo → archivo local" (`extraer_mongo_mr_historico.py`) de "cargar archivo → Supabase"
+(`cargar_mongo_mr_historico.py`) en dos procesos distintos resultó una buena práctica por
+separado: dejó un artefacto (`tools/mongo_mr_historico_payload.json`, PII) revisable antes de
+decidir qué cargar, útil cuando una cohorte necesita revisión humana antes de tocar producción
+(como pidió Samuel para 2023, pendiente con su superior).
+
+## Histórico de matrícula real MR en Q10 (2023/2024) — cerrado 2026-07-22
+
+`courses` solo tenía cohortes `programa=mr` para 2025 (6 cursos) y 2026 (2 cursos) — a
+diferencia de JC, que tiene las 4 (2023-2026). Antes de asumir que era un import faltante, se
+releyó el sondeo ya cacheado (`tools/sondeo_periodos_20260710.json`, hecho el 2026-07-10 para
+JC) para ver si Q10 siquiera conserva periodos MR de 2023/2024 — **sin necesidad de volver a
+loguearse en Q10**, el JSON ya tenía la respuesta.
+
+**Resultado: los periodos 1-24 completos de Q10 solo traen cursos con nombre JC** (Emprendimiento:
+Idea de Negocio JC, Habilidades esenciales, Fundamentos Lógica, Desarrollo Web, Sistema de
+Control de Versiones) **hasta el periodo 16 ("Único 2025")**, donde por primera vez aparecen
+cursos MR mezclados (`De la idea a la acción...`). El periodo 23 ("Único MR-2026") es el primer
+periodo dedicado 100% a MR. Ningún periodo de 2023/2024 tiene un solo curso MR.
+
+**Conclusión: no falta ningún import — Q10 nunca trackeó cursos de Mujeres ROFÉ antes de 2025.**
+La actividad MR de 2023/2024 vivió en otros sistemas (Mongo `mujeres-rofe-db.Users`, pestaña
+"Plataforma MR" del Sheet) que son registro/postulación, no matrícula-con-avance — no hay una
+fuente de "matrícula real 2023/2024" que traer a `enrollments`/`courses`. Se cierra la búsqueda;
+el hueco en `courses` refleja la realidad, no un dato perdido.
+
+## Auditoría Mongo JC (`jovenes-creativos.User`/`Applicant`) — hallazgo real, 2026-07-22
+
+Mismo patrón que la investigación MR, pero con resultado MUY distinto: de **2.560 cédulas**
+extraídas (User: 1.699 + Applicant: 861, precedencia User gana), **2.092 ya estaban** en
+`participants` (programa=jc) o en el Sheet BD Seguimiento (universo de 828 cédulas auditado el
+mismo día, ver [[panel-datos-etl]] sección de calidad JC) — pero **466 son exclusivas de Mongo
+(18%)**. Se descartó que fueran typos de cédula de personas ya conocidas (vecindad numérica +
+coincidencia de nombre/correo dentro del propio Mongo): **0 confirmados**.
+
+Desglose de las 466 (tras excluir 3 cuentas `rol=ADMIN`, quedan 463 reales):
+- **378 `rol=EGRESADO`, casi todas con `creationDate` de 2023** — cuentas de alumnos de
+  cohortes antiguas cuyo registro de app nunca se cruzó contra el histórico de Q10.
+- **85 `rol=ACTUAL`, todas de la colección `Applicant` (2026)** — postulantes recientes que
+  aún no aparecen ni en `participants` ni en el Sheet (rezago normal de inscripción, o
+  candidatos que no llegaron a matricularse).
+
+**Esto corrige una conclusión de la misma sesión** ("JC probablemente no tiene el embudo de
+postulación que sí tiene MR", basada solo en que BD Seguimiento es del tamaño de la cohorte
+matriculada). El embudo sí existe — solo que vive en Mongo, no en un Sheet gigante como en MR.
+
+**Decisión tomada (2026-07-22, mismo día): SÍ se creó `postulantes_jc`** — Samuel confirmó
+que el hallazgo era real e importante ("Mongo tenía datos que definitivamente nos harían
+falta"), pidiendo una columna explícita de trazabilidad de origen. Migración
+`docs/migrations/005_postulantes_jc.sql` (RLS + `REVOKE ALL` de anon/authenticated en el mismo
+statement, verificado 401 con anon key). A diferencia de `postulantes_mr`, aquí se cargó **todo
+el universo Mongo** (2.556 cédulas, no solo los exclusivos) — `participant_id` queda NULL para
+quien no matriculó (2.092 con match, 464 exclusivos) y poblado para quien sí, mismo patrón que
+`postulantes_mr`. Columna `fuente` (`mongo_user`/`mongo_applicant`) deja explícito que el
+origen es Mongo, no un Sheet — el pedido puntual de Samuel.
+
+Scripts: `extraer_mongo_jc_historico.py` (Mongo → payload, separado de la carga por el mismo
+motivo que MR) + `cargar_mongo_jc_historico.py` (payload → `postulantes_jc`, upsert idempotente
+por cédula). Entregable de revisión previo a la carga: `Downloads/jc_mongo_exclusivos.xlsx`
+(463 casos sin match, generado antes de decidir cargar).
+
+**A diferencia de MR:** no hubo gate de `--cohortes` explícito ni revisión de un superior antes
+de cargar — Samuel autorizó la carga completa directamente en el mismo mensaje del hallazgo.
+
+**Pruebas de coherencia post-carga (2026-07-22, mismo día, a pedido de Samuel):** 6 chequeos de
+solo lectura contra Mongo y `postulantes_jc` —
+1. Conteo total estable (Mongo no cambió desde la extracción) ✅
+2. Duplicados de `documentNumber` DENTRO de cada colección: 0 ✅
+3. Conflictos `User` vs `Applicant` (misma cédula, nombre distinto): **0 cédulas comparten
+   ambas colecciones** — la precedencia "User gana" nunca tuvo que decidir nada en la práctica.
+4. Formato de `documentNumber`: 0 vacíos, 0 muy cortos; **4 "muy largos" (>11 dígitos)**.
+5. Cruce inverso — participantes JC matriculados sin ningún rastro en Mongo: 224/2.316 (9.7%,
+   esperable — no todo el que matricula en Q10 pasa por la app).
+6. Spot-check de 15 filas al azar de `postulantes_jc` contra Mongo en vivo: 15/15 coinciden.
+
+**Bug real encontrado por el chequeo 4 — y corregido:** de los 4 `documentNumber` "muy largos",
+1 era la cuenta admin/institucional (`soporte@tocaunavida.org`, `rol=ADMIN`, ya excluida
+correctamente por el filtro de rol pese al bug) y **3 eran personas reales con la cédula
+corrompida por el mismo gotcha float→string ya documentado en convenciones.md** (BSON guarda
+`documentNumber` como `double` cuando el valor es entero — ej. `11086478896.0` — y el
+`norm_id()` del extractor JC no tenía el guard `if isinstance(valor, float) and
+valor.is_integer(): valor = int(valor)` que sí tienen los demás `norm_id` del proyecto,
+agregando un cero espurio de la parte decimal). Corregido en
+`extraer_mongo_jc_historico.py`, las 3 filas corrompidas borradas de `postulantes_jc` y
+re-cargadas con la cédula correcta — **2 de las 3 resultaron SÍ estar matriculadas en Q10**
+(`con_match_participant` subió de 2.092 a 2.094 tras el fix). Cuenta admin agregada a
+`tools/exclusiones_prueba.json` por si algún script futuro procesa esta colección distinto.
+
+## Auditoría de estructura + análisis Emoflow (2026-07-23) — diagnóstico de funcionalidad
+
+Auditoría completa de esquema y calidad (todas las queries en [[supabase-estructura]], el
+diccionario de datos nuevo). Diagnóstico corto:
+
+- **Sirve y está sano:** núcleo Q10 (`participants`/`courses`/`enrollments`/agregados — 0
+  huérfanas, 0 duplicados, frescura <1 día), Emoflow serie real (`emoflow_ingresos_diario`,
+  `emoflow_actividad_semanal`), universos `postulantes_*`, asistencia, correos.
+- **Con observaciones:** `emoflow_ingresos` (1 fila huérfana de la era pre-API; sin cédula →
+  match 91.8% por email), `historial_emoflow(_ciudad)` (snapshots con huecos — usar las series
+  reales en su lugar), `enrollments.estado` (no es resultado académico confiable — usar
+  `porcentaje_avance`).
+- **Roto/redundante:** `emoflow_participacion_semanal` (🔴 fuente vieja de monitorias, ya sin
+  pipeline — deprecar). Discrepancia de 0,7% entre acumulado-persona y serie diaria por
+  **parámetros de descarga distintos** entre los 2 scripts Emoflow (uno filtra
+  `empresa=Fundación ROFÉ`, el otro scope=all) — unificar.
+- **El hueco que importa:** el retiro individual NO existe en Supabase (solo el agregado
+  69/832 en `cohorte_ingresos`) — es la variable de resultado más valiosa y hoy imposible de
+  cruzar con Emoflow. Plan en [[supabase-estructura]] (punto 2).
+
+**Análisis uso Emoflow ↔ resultados (JC 2026, n=777):** asociación positiva, significativa y
+robusta a controles (Spearman ρ=0.337; OR ajustado 2.36 IC95 [1.51-3.69] por log-uso;
+sensibilidad con umbral 100: OR 1.90 [1.56-2.31]). NO establece causalidad (uso y avance son
+acumulados al mismo corte; el uso puede ser marcador de compromiso). Detalle y por-ciudad en
+[[supabase-estructura#Análisis Emoflow 2026-07-23]]; individual solo en `tools/`.
+
 ## Pendiente / Próximos pasos
 - [x] Secret key en `.env.local` (2026-07-09; validada con insert/read/delete real)
 - [x] Fase 1a: `scripts/panel-datos/normalize_q10_data.py` — corrida real 0 errores
@@ -647,7 +968,8 @@ nodos de error, como ya la tiene el bot de Q10.
       manuales de xlsx. Diseño completo en [[hoja-maestra-participantes]] (en espera,
       otras prioridades — 2026-07-10)
 - [ ] Verificar la primera corrida automática (hoy 9:45) en ejecuciones de n8n
-- [ ] Renombrar sitio Netlify (`classy-pasca-eecdd6` → ej. `panel-rofe`) — opcional, Samuel
+- [x] ~~Renombrar sitio Netlify~~ — superado: el sitio se migró de repo (2026-07-16, ver
+      corrección de URL arriba), no solo se renombró. URL vigente: `venerable-truffle-331f3c`.
 - [ ] Fase 2: materialized views (retirados con definición canónica) + decidir campo `programa`
 - [ ] Fase 3: Next.js + Netlify
 - [ ] Fase 4: test de cuadre contra `docs/dashboard|aprobacion|retirados/data.json` antes de reemplazar nada

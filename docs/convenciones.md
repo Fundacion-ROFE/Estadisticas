@@ -49,7 +49,7 @@ variables en `.env.example` (único `.env*` versionado; el resto los excluye `.g
 
 ### Gotcha: secreto commiteado por error
 
-Pasó el 2026-07-14 (ver `SECURITY-INCIDENT.md`). Si el push protection de GitHub bloquea un push:
+Pasó el 2026-07-14 (ver `docs/archivo/SECURITY-INCIDENT.md`). Si el push protection de GitHub bloquea un push:
 
 1. **Primero averiguar si el secreto ya llegó al remoto:** `git branch -r --contains <commit>`.
    Si no devuelve nada, fue un casi accidente y la reescritura de historia lo resuelve del todo.
@@ -278,6 +278,28 @@ credencial en memoria `reference-n8n-api-key`). Reglas aprendidas (2026-07-07 y 
 - Si se inserta un nodo antes de otro que usa `$json`, esas referencias cambian de fuente —
   reemplazarlas por `$('Nombre Del Nodo')` explícito.
 - Al terminar: re-exportar el JSON a `n8n-workflows/` (checklist de CLAUDE.md).
+- **Verificar contra el workflow EN VIVO (`GET /workflows/{id}`), no solo el JSON exportado.**
+  El JSON en `n8n-workflows/` puede desalinearse si un cambio se documentó pero nunca se aplicó
+  con el PUT real, o si se editó por API sin re-exportar después (encontrado 2026-07-21:
+  `sync_emoflow.py` seguía corriendo en producción pese a que la doc decía que se había
+  reemplazado por `sync_emoflow_api.py` el día anterior — el cambio nunca llegó al workflow real).
+- **Nunca tipear texto con tildes/¿/ñ directo en un comando PowerShell hacia la API de n8n.**
+  Encontrado 2026-07-21: al escribir `¿Normalización OK?` (y otros) literal en un `-Command` de
+  PowerShell, la propia consola/parser mutiló los caracteres no-ASCII a `?` **en el dato real
+  enviado**, no solo en la pantalla — y la verificación posterior también se hizo mirando
+  consola (igual de mutilada), así que pareció "solo visual" y pasó desapercibido varias horas.
+  **Fix:** para cualquier payload con acentos, usar un script Python puntual con
+  `urllib.request` + `json.dumps(..., ensure_ascii=False)` / lectura de archivo en UTF-8 — Python
+  maneja el encoding de forma explícita y no depende de la codepage de la consola. Verificar
+  siempre guardando la respuesta a un archivo y leyéndola con una herramienta de lectura de
+  archivos, nunca confiando en lo que se ve impreso en la terminal de PowerShell.
+- **Gotcha de PowerShell — `ConvertTo-Json` colapsa arrays de un solo elemento a escalar.**
+  `connections.<nodo>.main` de n8n espera `[[ {node...} ]]` (array de ramas, cada rama un array
+  de conexiones) — si una rama tiene un solo output, `@(@{...})` se aplana y n8n responde
+  `"object is not iterable"` al hacer PUT. **Fix:** forzar el array con el operador coma unario:
+  `main = ,@(@{ node='X'; type='main'; index=0 })` en vez de `main = @(@(@{...}))`. Con dos ramas
+  (nodo `IF`) el `@(@(...), @(...))` normal sí funciona porque el array externo ya tiene 2
+  elementos y no colapsa — el problema es específico de arrays de longitud 1.
 
 ## Exclusión de usuarios de prueba en exporters
 
@@ -346,6 +368,48 @@ Corolario: el panel público **solo** consume vistas de agregados (`v_emoflow_*`
 Los datos por persona salen por script con `service_role` a `tools/` (gitignoreado), nunca por la
 cara pública. Ver [[panel-datos-etl]].
 
+**Seguimiento 2026-07-23 — la regla no se había aplicado a todo lo antiguo.** Un barrido de anon
+key sobre las 24 tablas de `public` (a raíz de crear `postulantes_mr`/`postulantes_jc` con
+`REVOKE` desde el día uno) encontró que `participants`, `emoflow_ingresos`, `email_optout`,
+`email_bounces` y `participants_snapshots` **nunca tuvieron el `REVOKE`** — solo "RLS sin
+policy" (deniega filas por defecto, pero sin la red de seguridad del `REVOKE`). Cero filas
+expuestas hoy, pero a una policy permisiva de distancia de repetir el incidente. Aplicado el
+`REVOKE` a las 5. **Moraleja: el checklist de "tabla/vista PII nueva" no cubre las tablas
+viejas — vale la pena repetir el barrido completo de vez en cuando, no solo al crear algo.**
+
+**Gotcha nuevo: revocar el GRANT de una tabla puede romper silenciamente las RLS policies de
+OTRAS tablas que le hacen subquery.** Al revocar `participants`, las policies públicas
+`enrollments_publico_lectura` y `metrics_publico_lectura` (pensadas para exponer datos de
+participantes con `is_public=true`) dejaron de poder evaluar su propio `USING (participant_id
+IN (SELECT id FROM participants WHERE is_public = true))` — de "0 filas silenciosamente" pasó a
+error 401 real (`permission denied for table participants`), aunque el 100% de esas dos tablas
+seguían sin depender de ningún row real hoy (`is_public=true` = 0 casos). Fix: función
+`SECURITY DEFINER` (`es_publico(p_id uuid)`, mismo patrón ya aceptado de `participa_en()`) que
+las policies llaman en vez de tocar `participants` directo. **Antes de un `REVOKE` amplio,
+buscar en `pg_policies` (`qual`/`with_check`) cualquier policy de OTRA tabla que mencione la
+tabla a revocar.**
+
+## La pestaña "Seguimiento" es fuente esencial de la DB, no un dato secundario "porque es un Excel"
+
+Decisión de Samuel (2026-07-23), de cara a la futura plataforma que automatice la recolección
+y administración de estos datos: **la pestaña `Seguimiento` del Sheet BD Seguimiento de
+Monitorias JC debe tratarse como fuente de verdad de primer nivel, al mismo rango que Q10** —
+no como un respaldo manual de segunda categoría solo porque vive en una hoja de cálculo.
+
+**Evidencia que respalda esto (mismo día):** al construir `en_seguimiento_jc` (presencia en
+esa pestaña) y compararlo contra el pipeline oficial de Q10 una vez sincronizado
+correctamente, los números casi coinciden exacto — **759 (Seguimiento) vs. 760
+(Q10-`aprobacion_cursos` fresco)**, una diferencia de 1 persona sobre 777. La pestaña, operada
+a mano por el equipo, resultó ser tan confiable como el pipeline automatizado de Q10 — y en el
+momento en que se comparó, más ACTUALIZADA que la foto que tenía Supabase (`cohorte_ingresos`
+llevaba desde las 9:45 sin resincronizar contra una corrida más fresca de las 12:04).
+
+**Implicación para cualquier plataforma nueva:** al diseñar la automatización de recolección,
+`Seguimiento` no debe quedar como un import manual ocasional — necesita el mismo tratamiento
+de primera clase que Q10 (sync programado, monitoreo de frescura, alertas si deja de
+actualizarse). Ver [[supabase-estructura]] para el detalle completo de `en_seguimiento_jc`,
+`v_retiro_probable_jc` y el hallazgo del 2026-07-23.
+
 ## Heurística de etapa con el ledger de avances
 
 Para "¿en qué punto de la ruta perdimos a un estudiante?" cuando **no hay una fecha fiable**:
@@ -354,3 +418,101 @@ curso de la ruta (en orden cronológico, const `RUTA_2026`) con avance ≥ 100. 
 de **secuencia**, no temporal: infiere el progreso alcanzado, no cuándo dejó de estudiar.
 Documentarlo así en la UI para no sobre-prometer precisión. Usado en `export_retirados.py`
 (`etapa_de_retiro`) y el funnel del Tab Tendencia (2026-07-09).
+
+## Supabase `participants` = solo matriculados en Q10 (nunca crear desde fuentes secundarias)
+
+`participants` es la tabla central de Supabase y alimenta ~15 vistas agregadas
+(`cohorte_ingresos`, `v_programa_stats`, `v_cohorte_estudiantes`, etc.) que asumen que **cada
+fila tiene una matrícula real** en Q10. Regla repetida y deliberada en todo el proyecto: Q10 es
+la única fuente de verdad de "quién existe". Por eso ningún script secundario crea filas nuevas
+ahí — solo enriquece las que ya existen:
+
+- `sync_emoflow_api.py`: correos de Emoflow sin match quedan con `participant_id = NULL`, no
+  crean `participants`.
+- `sync_sociodemograficos_mr.py`: mujeres de la BD-Mujeres ROFÉ sin matrícula MR en Q10 se
+  reportan (`sin_match_supabase`), no se cargan.
+
+**Si una fuente nueva trae un universo más grande que "matriculados"** (ej. postulantes,
+candidatas, leads de un formulario), no forzarla dentro de `participants` — crear una tabla
+paralela con `participant_id uuid NULL FK` como puente opcional. Meter esos registros en
+`participants` infla/rompe los agregados canónicos (ej. "Ingresados 832") sin ningún beneficio,
+porque las vistas que los consumen no distinguen "matriculado" de "solo postulante". Ver
+[[postulantes-mr-supabase]] para el primer caso real de este patrón (universo Sheet
+BD-Mujeres ROFÉ: 5.126 postulantes vs 282 matriculadas en Supabase).
+
+## Gotcha recurrente: cédula float → string agrega un cero espurio
+
+Cuando una cédula viene de una fuente que la guarda como número (Excel/openpyxl con
+`1041774123.0`, o BSON/Mongo con `documentNumber` como `double` — ej. `11086478896.0`),
+convertir directo con `str(valor)` dado un float dejar `.0` al final; el strip de caracteres
+no-dígitos (`re.sub(r"\D", "", ...)`) borra el punto pero **conserva el `0` de la parte
+decimal**, agregando un cero espurio a la cédula real. Patrón correcto, usarlo en TODO
+`norm_id()` nuevo:
+
+```python
+def norm_id(valor) -> str:
+    if isinstance(valor, float) and valor.is_integer():
+        valor = int(valor)
+    return re.sub(r"\D", "", str(valor or ""))
+```
+
+Encontrado y corregido 3 veces en el mismo proyecto (`sync_sociodemograficos_mr.py` original;
+`extraer_mongo_jc_historico.py`, 2026-07-22 — 3 personas reales con cédula corrompida ya
+cargada en `postulantes_jc`, detectado por un chequeo de "longitud atípica" y corregido con
+`DELETE` + re-extracción; `extraer_mongo_mr_historico.py`, mismo día, defensivo — ese Mongo
+sí guarda `documentNumber` como string, verificado, pero no cuesta nada el guard). **Cualquier
+fuente que entregue IDs numéricos (Mongo, Excel, APIs con tipos JSON laxos) necesita este
+guard — no asumir que el campo ya viene como texto.**
+
+## Paginación PostgREST: un `offset` que no avanza es un loop infinito silencioso
+
+Patrón `Supa.get_todo()` (usado por `sync_sociodemograficos_mr.py`, `sync_postulantes_mr.py`
+y similares): pagina con `limit`/`offset` hasta que `len(lote) < page`. Si el `offset += page`
+se omite por error, el loop vuelve a pedir `offset=0` para siempre — cada request individual
+responde rápido (<1s) así que **no hay ninguna excepción ni timeout que lo delate**: se ve
+exactamente igual que un cuelgue de red intermitente (encontrado 2026-07-22, costó ~30 min de
+diagnóstico sospechando el proxy corporativo MITM antes de aislarlo con logging por iteración).
+El RSS crece sin límite porque `filas.extend(lote)` acumula duplicados indefinidamente.
+**Si un script con este patrón "se cuelga" sin traceback: loggear el `offset` en cada vuelta
+antes de sospechar de la red.**
+
+**Reincidencia el mismo día (2026-07-22, `cargar_mongo_mr_historico.py`):** el mismo bug volvió a
+aparecer al escribir un `Supa.get_todo()` nuevo desde memoria en vez de copiar el existente —
+esta vez llevó a sospechar (~20 min, incorrectamente) un conflicto entre `pymongo` y
+`urllib`/`truststore` corriendo en el mismo proceso, antes de aislarlo con el mismo truco de
+loggear el `offset`. Ver [[panel-datos-etl#Exploración de MongoDB]]. **Regla reforzada: nunca
+reescribir `Supa`/`get_todo` de memoria — copiar el de un script existente (`sync_postulantes_mr.py`
+es la versión de referencia) o factorizarlo a un módulo común.**
+
+## Nunca slicear una lista grande (`items[i+1:]`) dentro de su propio loop externo
+
+Cualquier comparación por pares sobre una lista de tamaño n (ej. detección de duplicados)
+tentada a escribir `for i, x in enumerate(items): for y in items[i+1:]: ...` — esa slice se
+recrea en cada vuelta del loop externo, O(n²) en tiempo **y** memoria transitoria (no solo el
+número de comparaciones). Con ~5.300 filas esto llegó a 2 GB de RSS (`sync_postulantes_mr.py`,
+2026-07-22) antes de reemplazarse por **bloqueo**: agrupar candidatos por una llave barata que
+comparta al menos una señal real (mismo correo/celular exacto, mismo conjunto de tokens de
+nombre, vecindad numérica si la lista está ordenada) y solo aplicar la comparación cara dentro
+de cada bloque pequeño. Iterar con índices (`range(i+1, len(items))`) en vez de slicear evita
+al menos la explosión de memoria, pero el bloqueo es la solución real de fondo.
+
+## Detección de typos de cédula por señales cruzadas (≥2 de correo/celular/nombre)
+
+Cuando la llave de cruce (cédula) puede tener errores de digitación y no hay otro ID único
+confiable: una sola señal compartida (ej. mismo celular) NO basta para declarar "misma persona,
+cédula con typo" — puede ser coincidencia familiar. Exigir **≥2 señales** (correo, celular,
+nombre, cédula parecida) antes de tratarlo como duplicado. Implementado en
+`scripts/mr-actualizacion-datos/actualizar_bd_mr.py` (`senales_match()`,
+`clasificar_sin_match()`) para el intake del formulario MR; reutilizable en cualquier proceso
+que deba conciliar identidades entre fuentes con cédula potencialmente mal digitada (ver
+[[postulantes-mr-supabase]]).
+
+## Campañas de correo: reenvío al mismo grupo en días distintos → un ID por día
+
+`enviar_campana.py --enviar` (scripts/mujeres-rofe-correos/) usa `enviados_<ID>.csv` para saltar
+correos ya `OK` de ese ID — es lo que permite reanudar un envío cortado. Pero eso mismo hace que
+un recordatorio diario a las MISMAS personas con el mismo ID no envíe nada del 2º día en
+adelante (0 pendientes). Solución: un `ID` de campaña distinto por día (`evento_dia1`,
+`evento_dia2`, ...), cada uno con su propia copia de `lista_<ID>.csv`. Detalle y caso real en
+`scripts/mujeres-rofe-correos/README.md` (sección Gotcha) — campaña `encuentro_bogota_2026_*`
+(2026-07-22).

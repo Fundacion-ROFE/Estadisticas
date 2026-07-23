@@ -1,0 +1,13 @@
+{
+  "ID": "recordatorio_charla_ejemplo",
+  "programa": "jc",
+  "ASUNTO": "Recordatorio: charla de gestión del tiempo — en 20 minutos",
+  "TITULO_EVENTO": "Charla Jóvenes creaTIvos — Gestión del tiempo",
+  "PARRAFO_INTRO": "Les recordamos que en 20 minutos inicia nuestra charla sobre <strong>gestión del tiempo</strong>, un espacio pensado para ayudarles a organizar mejor sus actividades, definir prioridades y encontrar herramientas prácticas para aprovechar su tiempo de manera más efectiva.",
+  "DATOS_EVENTO": "🗓 <strong>Fecha:</strong> Hoy, jueves 14 de mayo<br>🕕 <strong>Hora:</strong> 6:00 p.&nbsp;m. a 7:00 p.&nbsp;m.<br>🔗 <strong>Enlace de conexión:</strong> <a href=\"https://us02web.zoom.us/meeting/register/rqIZui4_RUOtFYZG0Ik35Q\" style=\"color:#406C9E;\">Registrarme</a>",
+  "PARRAFO_DESCRIPCION": "La sesión será liderada por <strong>Ana Margarita Velásquez</strong>, directora de la Fundación, quien compartirá recomendaciones que podrán aplicar tanto en su formación como en su vida diaria. ✨",
+  "TEXTO_CTA": "Conectarme a la charla",
+  "URL_CTA": "https://us02web.zoom.us/meeting/register/rqIZui4_RUOtFYZG0Ik35Q",
+  "PARRAFO_CIERRE": "¡Los esperamos para seguir aprendiendo y creciendo juntos!",
+  "FIRMA": "Equipo Jóvenes creaTIvos"
+}

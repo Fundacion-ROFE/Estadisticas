@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 """
+⚠ OBSOLETO (2026-07-21): eliminado del workflow n8n `q10-sync-supabase`. El panel ya no
+consume `emoflow_participacion_semanal` — "Participación semanal" ahora sale de
+`emoflow_actividad_semanal` (100% API Emoflow, ver `extract_emoflow_ingresos_diario.py`).
+Se conserva solo por si se quiere recuperar el histórico crudo por ciudad; no correr en
+producción. Ver docs/procesos/panel-datos-etl.md.
+
 sync_emoflow_participacion.py — % de participación Emoflow por ciudad → Supabase.
 
 Fuente: pestaña `Estadísticas` de la BD Seguimiento de Monitorias (mismo Google Sheet que

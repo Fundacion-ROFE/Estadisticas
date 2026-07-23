@@ -368,23 +368,41 @@ build_exe.bat
 
 ## `tools/panel_riesgo_gui.py`
 
-**Propósito:** GUI Tkinter de análisis de riesgo. Cruza h2test (Q10) × Avance (manual) por email, clasifica estudiantes y permite explorar los datos con tablas interactivas. Gestiona también la clasificación de cursos por programa.
+**Propósito:** GUI Tkinter de análisis de riesgo. Cruza el avance real de Q10 (ahora leído de Supabase — `participants`/`enrollments`/`courses`, cohorte actual) × Avance (manual, Sheet) por email, clasifica estudiantes y permite explorar los datos con tablas interactivas. Gestiona también la clasificación de cursos por programa.
 
-**Servicios:** Google Sheets API (read — ambos Sheets)
+**Servicios:** Supabase (`panel-datos-rofe`, REST/PostgREST, `service_role`, solo lectura) para `leer_h2test()` · Google Sheets API (read) para `leer_avance()` (pestaña Avance, manual) y `leer_retirados()` (pestaña Retirados — única excepción, ver Gotcha)
 
-**⚠ PRIVACIDAD:** Maneja PII en memoria. Nunca subir a GitHub. `tools/` está en `.gitignore`.
+**⚠ PRIVACIDAD:** Maneja PII en memoria. Nunca subir a GitHub. `tools/` está en `.gitignore`. Credenciales Supabase en `.env.local` raíz (mismo patrón `sync_*.py`); credenciales Sheets en `credenciales_service_account.json`.
 
 **Comando:**
 ```bash
 python tools/panel_riesgo_gui.py
 ```
 
+**Verificación standalone (sin lanzar la GUI):**
+```bash
+python tools/verificar_supabase_panel_riesgo.py
+```
+
 **Arquitectura interna:**
 
 ```
-_worker()  →  leer_h2test() + leer_avance() + cruzar()  →  queue
+_worker()  →  conectar_supabase() + leer_h2test(supa)   (Supabase)
+           +  conectar() + leer_avance(gc)               (Sheet Avance, manual)
+           +  cruzar()  →  queue
 _on_listos()  →  _build_resumen_jc() + _build_tab_mr() + _build_tab_admin()
 ```
+
+**Migración a Supabase (Fase 1 de `panel-riesgo-mejora.md`, 2026-07-21):** `leer_h2test()` dejó
+de leer la pestaña Sheet h2test en vivo — ahora hace GET a `/enrollments` con embeds PostgREST
+(`participants!inner`, `courses!inner`) filtrado a la cohorte actual (detectada como el máximo
+`cohorte` en `cohorte_ingresos`, sin hardcodear el año). Mismo shape de retorno de siempre
+`(q10_jc, q10_mr, cursos_info)` — ningún tab/vista cambió. `leer_avance()` y `leer_retirados()`
+NO cambiaron (decisión documentada en `panel-riesgo-mejora.md`): Avance es una fuente manual
+genuinamente distinta (el tab Diferencias existe para comparar Q10 automático vs manual) y
+Retirados individuales no existen como filas en Supabase (limitación de Q10). Verificado contra
+`cohorte_ingresos`/`aprobacion_cursos`: JC 777 activos y MR 283 activos coinciden exacto, 9/9
+cursos comparados sin diferencia.
 
 **Tabs:**
 
@@ -423,9 +441,11 @@ _on_listos()  →  _build_resumen_jc() + _build_tab_mr() + _build_tab_admin()
 
 | Función | Retorna | Descripción |
 |---|---|---|
-| `leer_h2test(gc)` | `(q10_jc, q10_mr, cursos_info)` | Lee h2test, clasifica por `course_config.json`, retorna dicts por programa + lista de cursos para Admin |
-| `leer_avance(gc)` | `dict[email→{cursos[]}]` | Lee pestaña Avance, colapsa por email |
-| `leer_retirados(gc)` | `list[dict]` | Lee pestaña Retirados; lista vacía si la pestaña no existe (no bloquea el panel) |
+| `leer_h2test(supa)` | `(q10_jc, q10_mr, cursos_info)` | **Supabase** (`enrollments`+`participants`+`courses`, cohorte actual), clasifica por `course_config.json`, retorna dicts por programa + lista de cursos para Admin |
+| `leer_avance(gc)` | `dict[email→{cursos[]}]` | Sheets — lee pestaña Avance (manual), colapsa por email — sin cambios (Fase 1) |
+| `leer_retirados(gc)` | `list[dict]` | Sheets — lee pestaña Retirados; lista vacía si la pestaña no existe (no bloquea el panel) — sin cambios, excepción permanente |
+| `conectar_supabase()` | `_Supa` | Cliente REST mínimo con `service_role` (mismo patrón `sync_*.py`), solo lectura |
+| `_cohorte_actual(supa)` | `str` | Máximo `cohorte` presente en `cohorte_ingresos` — evita hardcodear el año |
 | `cruzar(q10, avance, umbral)` | `(casos, total_av, total_q)` | JOIN por email → atencion/avance_0_cruzado/sin_match_manual/ok |
 | `_build_resumen_jc(...)` | — | Construye tab JC con header + KPIs clickeables + frame de tabla |
 | `_set_jc_view(vista)` | — | Resalta tarjeta activa y regenera tabla según la vista |
@@ -587,6 +607,192 @@ reporta "Sin completar → Sheet (N en K ciudades)"). Al insertar el nodo antes 
 las referencias `$json` de ese nodo (que apuntaban a export_aprobacion) se cambiaron a
 `$('Ejecutar export_aprobacion')`.
 
+**Exclusión de perfiles de prueba (2026-07-21):** este script NO aplicaba
+`tools/exclusiones_prueba.json` (ya usado por `export_aprobacion.py` desde 2026-07-08) — "Jovenes
+Prueba", "Pruebas Estudiantes JC" y "Pruebas Soporte IT" se colaban en los conteos, todos bajo
+`SIN UBICACIÓN` (son cuentas de prueba, no tienen fila real en la BD Seguimiento). Agregado
+`cargar_exclusiones()` (mismo patrón, cédula normalizada) y filtro en `leer_sin_completar()` antes
+de construir `por_curso`/`por_curso_todos` — afecta automáticamente SinCompletar, Historico,
+Semaforo y Balance (todos derivan de esa función). Se purgaron también las 16 filas de prueba que
+ya habían quedado en `Historico` de las corridas previas (semanas W29 y W30) con un script puntual
+de limpieza (no forma parte del repo). Efecto: `SIN UBICACIÓN` bajó de 9 a 1 fila (student×curso;
+el resto de esas 9 eran las cuentas de prueba), total sin completar 546→538, semáforo 768→760
+casos. `Mujeres Prueba` (4° perfil del archivo de exclusiones) no aplica aquí — es de Mujeres ROFÉ,
+este script es solo JC.
+
+**Nota — grupo `BAQ2` en la BD Seguimiento (aclarado y resuelto 2026-07-21):** no era un subgrupo
+real de Barranquilla. Al ir a corregir la fila se descubrió que **el Sheet en vivo ya tenía el
+typo corregido** (`Grupo="BAQ"` para ese estudiante) — el `BAQ2` solo existía en un **xlsx local
+desactualizado** en Downloads (`RUTA_BD`, 12 filas de diferencia contra el Sheet real) que este
+script leía en vez de la fuente viva. Mismo síntoma que motivó la migración de
+`sync_sociodemograficos.py` ese mismo día. Fix aplicado: `leer_ubicaciones(gc)` ahora lee
+directamente el Sheet **`BD Seguimiento de Monitorias`** (`BD_SHEET_ID =
+1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8`, pestaña `Seguimiento`) vía el mismo `gc` que ya
+usa para h2test/SinCompletar — ya no depende de ningún archivo local. `GRUPO_LABEL["BAQ2"]` se
+deja como fallback inofensivo por si el typo reaparece a mano, pero no debería.
+
+**Efecto secundario real de la migración (no un bug):** al leer el Sheet vivo, `SIN UBICACIÓN`
+subió de 1 a 38 filas (student×curso, 13 estudiantes únicos) — verificado uno por uno: estos
+estudiantes SÍ existen en h2test (Q10, con curso incompleto) pero **no tienen fila en absoluto**
+en la pestaña `Seguimiento` en vivo (ni por cédula ni por email), aunque sí estaban en el xlsx
+local viejo. No es un problema de formato de datos (los IDs en el Sheet vivo son strings de
+dígitos limpios, sin notación científica ni comas) — son estudiantes que genuinemente cayeron
+del tracking de monitorías: nadie les asignó ciudad/monitor en la fuente que el equipo mantiene
+hoy.
+
+**Resuelto — fallback a pestañas por ciudad (2026-07-21, mismo día):** el mismo Sheet gigante de
+BD Seguimiento tiene 9 pestañas más, una por ciudad (`Barranquilla`, `Bogotá`, `Cali`,
+`Cartagena`, `Medellín`, `Panamá`, `Guayaquil`, `Quito`, `Uruguay`) que los monitores llenan
+directamente — resultaron tener MÁS cobertura que la pestaña central `Seguimiento` (759 cédulas
+en Seguimiento vs. 832 adicionales solo en las pestañas por ciudad). Los 13 estudiantes sin
+ubicación estaban los 13, cada uno en la pestaña de su propia ciudad. `leer_ubicaciones(gc)`
+ahora hace una segunda pasada: para cada pestaña de `TABS_CIUDAD`, completa SOLO las cédulas que
+`Seguimiento` no tenía (nunca sobreescribe el hub). **Gotcha de formato:** el layout de headers
+NO es consistente entre pestañas — algunas tienen la fila de encabezados en la fila 0, otras en
+la fila 1 (por una celda "Información General" fusionada arriba); `_leer_tab_ciudad()` prueba
+ambas filas y usa la que tenga una columna `id` exacta. Resultado: `sin_ubicacion` bajó de 38 a
+**0**.
+
+**BAQ2 purgado de Historico:** además de la migración, se borró (a pedido explícito, no
+reetiquetado) la única fila con `ciudad="BAQ2"` que había quedado grabada en `Historico` para la
+semana 2026-W29 (del backfill hecho antes de este fix) — pertenecía a Jeyder Jesús Pallares De
+La Hoz, que de aquí en adelante siempre resuelve a `BAQ` correctamente. `GRUPO_LABEL["BAQ2"]` se
+eliminó del código (ya no hace falta ni como fallback).
+
+**Histórico + Semáforo semanal (2026-07-21):** cada corrida ahora escribe dos pestañas más en el
+mismo Sheet `SinCompletar`:
+
+- **`Historico`** — snapshot plano (`Semana | Rango | Ciudad | Curso | Cedula | Nombre | Avance`)
+  de la cohorte sin completar de esa corrida. Marca de agua por semana ISO (`AAAA-Www`, función
+  `semana_actual()`): cada corrida sobrescribe SOLO las filas de la semana en curso — las semanas
+  ya cerradas quedan congeladas. Guarda únicamente incompletos (no el roster completo), así no
+  crece con estudiantes que ya llegaron a 100%.
+- **`Semaforo`** — contraste semana pasada vs. actual, por ciudad → curso → estudiante. Cohorte =
+  quienes estaban SIN COMPLETAR en el histórico de la semana anterior (`semana_mas_reciente_antes()`).
+  Para cada uno se busca su avance de HOY en la lectura en vivo de h2test **sin filtrar** (variable
+  interna `por_curso_todos`/`ciudades_todos`, no se persiste) — así detecta tanto progreso parcial
+  como quienes ya llegaron a 100% (que por eso desaparecieron de `SinCompletar`). Semáforo por caso:
+  verde =100% · amarillo 45–99.9% · rojo <45% (función `_semaforo_color()`). Columna Tendencia:
+  verde si el avance de hoy es ≥ el de la semana pasada, con el Δ%. Si un cédula de la semana
+  anterior no aparece hoy en ningún curso JC, se cuenta como "sin dato" (posible retiro) y se
+  excluye de los conteos. Primera corrida de la vida del Sheet (sin semana previa en `Historico`):
+  pestaña placeholder indicando que es la línea base — el contraste real aparece la semana ISO
+  siguiente.
+
+**Gotcha (histórico y semáforo):** el emparejamiento semana-a-semana es por `(curso, cédula
+normalizada)` — si el nombre de un curso cambia en h2test (o se funden/separan periodos) entre
+una semana y la siguiente, esos estudiantes caen en "sin dato" en vez de contar el progreso real.
+Mismo riesgo que ya existe en `aprobacion_ledger.json` con los cursos fusionados de Desarrollo Web.
+
+**Backfill de la semana base (2026-07-21, uso único):** al no existir todavía una semana anterior
+en `Historico` la primera vez que se corrió esta lógica, se sembró una comparación real (no
+sintética) recuperando la revisión de Google Drive de `SinCompletar` más cercana al cierre de la
+semana 13-17 julio (revisión `108`, generada 2026-07-16 20:54, vía Drive API `files.revisions` con
+las mismas credenciales del Service Account — no requiere MCP). Se descargó como xlsx
+(`exportLinks` de la revisión) y se parseó con un script puntual (`backfill_semana_pasada.py`,
+scratchpad de la sesión, no forma parte del repo) que reconstruye los registros desde el mismo
+layout de bloques que escribe `construir_grid()`. Con esos 768 registros sembrados como semana
+`2026-W29` en `Historico`, la corrida normal del script generó un semáforo real:
+🟢222 completaron · 🟡402 en progreso (45-99%) · 🔴144 en riesgo (<45%), 0 sin dato. Desde la
+siguiente semana ISO el ciclo sigue 100% automático con datos en vivo — este backfill fue
+puntual, no un mecanismo permanente (Drive no garantiza retener revisiones específicas de cada
+semana a futuro).
+
+**Panel Balance (2026-07-21):** el semáforo por estudiante resultó poco accionable a nivel de
+resumen ("66/66 mejoraron o se mantuvieron" no dice nada útil de un vistazo — muchos son
+estudiantes estancados en 0% que cuentan como "se mantuvo"). Se agregó una pestaña más simple,
+**`Balance`**, pensada para que cada monitor de ciudad lea el estado en segundos: tabla
+ciudad × materia (filas = ciudad, columnas = curso con doble sub-columna semana pasada/actual,
+fila `Total` al final), sin ningún dato por estudiante. Métrica = conteo de estudiantes sin
+completar (no promedio ni %). Celda de la semana actual coloreada: verde si bajó o llegó a 0,
+amarillo si se mantuvo igual, rojo si subió (`_color_balance()`). Fuente: agregación de
+`Historico` (`calcular_balance()`), no de `por_curso` directo, para que use la misma semana ISO
+congelada que ya usa el semáforo.
+
+**Nota de validación:** el Sheet ya tenía una pestaña manual **`Balace`** (con ese nombre, sin
+"n") que el equipo llenaba a mano con la misma idea (ciudad × materia × semana). Al comparar,
+los valores de la **semana actual coinciden exactamente** para las 4 materias que el equipo
+trackea a mano (Habilidades esenciales, Emprendimiento, Introducción IA, Introducción Lógica) —
+confirma que `Balance` mide lo mismo que ya validaba el equipo, ahora automático. Los valores de
+"semana pasada" difieren levemente porque el backfill de `Historico` viene de un snapshot del
+jueves 16 en la noche (la revisión de Drive más cercana disponible), no del lunes exacto en que
+el equipo tomaba su dato manual — diferencia de timing, no de métrica. La pestaña `Balace`
+original NO se tocó ni se reemplazó; sigue existiendo en paralelo hasta que el equipo decida
+migrar a `Balance`.
+
+**Balance v2 (2026-07-21, mismo día):** tres mejoras sobre la primera versión, pedidas tras ver
+el resultado inicial:
+
+1. **Tercera columna `% avance` por materia** (`calcular_balance()` ahora recibe
+   `totales_matriculados` — construido en `main()` desde `ciudades_todos`, la lectura SIN
+   filtrar de avance). `% avance = (matriculados − sin_completar_actual) / matriculados × 100`
+   — % de esa ciudad×curso que ya completó. Coloreada con **colores fuertes** (no pastel):
+   `GREEN_STR #34A853` / `YELLOW_STR #F9AB00` / `RED_STR #EA4335`, mismos umbrales que el
+   semáforo por estudiante (100 / 45-99.9 / <45) vía `_semaforo_color()` reutilizado
+   (`_color_pct_fuerte()`). Los conteos semana-pasada/actual mantienen el coloreado pastel de
+   tendencia ya existente (`_color_balance()`) — dos escalas de color con propósitos distintos
+   en la misma tabla, a propósito.
+2. **Más espacio visual:** filas de datos a 30px (antes ~21 default), columnas de materia a
+   100px, columna Ciudad a 150px, borde derecho sólido entre cada bloque de materia
+   (`borde_derecho()`) para separar visualmente sin gastar columnas de por medio.
+3. **Tabla resumen por ciudad al final** (`construir_resumen_ciudades()`): ciudad × cantidad
+   total sin completar (todas las materias sumadas) por semana + columna Tendencia, más fila
+   `Total general`. Va 2 filas debajo de la tabla principal, en la misma pestaña `Balance`
+   (mismo `ws.update()`, rango calculado con `fila_resumen0 = len(grid) + 2`).
+
+**% avance = promedio de Supabase, no % de completación de Sheets (2026-07-21, mismo día):**
+cambio de métrica pedido explícitamente — antes era `(matriculados − sin_completar) / matriculados`
+calculado desde `ciudades_todos` (Sheets); ahora es el **promedio del `porcentaje_avance`
+individual** de todos los matriculados de esa ciudad×curso, consultado directo a Supabase
+(`panel-datos-rofe`, tablas `enrollments` × `participants!inner(grupo_ciudad)` ×
+`courses!inner(nombre,cohorte)`, filtrado a `cohorte=<año actual>`). Nueva función
+`calcular_promedio_avance_supabase()` — solo lectura, credenciales `SUPABASE_URL` /
+`SUPABASE_SERVICE_ROLE_KEY` de `.env.local` (mismo patrón que `scripts/panel-datos/*.py`, nunca
+antes usado en `tools/`). Cruce por `(grupo_ciudad, _norm_curso(curso))` — el nombre de curso en
+Supabase coincide con el de h2test tras normalizar (mayúsculas, sin `\xa0`). Si faltan
+credenciales o falla la consulta, degrada a `{}` (columna en blanco `—`) sin bloquear el resto
+del reporte. **Por qué los valores salen tan altos (98-100% en casi todo menos HTML):** el
+promedio incluye a TODOS los matriculados, no solo a los que faltan — un curso con 750 de 780 ya
+al 100% arrastra el promedio arriba aunque los 30 restantes vayan mal; HTML se ve más bajo
+(60-76%) porque es el curso con más gente aún cursando. Verificado contra Supabase directo antes
+de implementar (BAQ×HTML: n=131, promedio=73.5%, coincide con el valor final en Balance).
+**Nota de frescura:** el resto del pipeline (SinCompletar/Historico/Semaforo/conteos de Balance)
+sigue siendo Sheets en vivo, actualizado cada 4h: la columna `% avance` es la única que depende
+del sync diario `q10-sync-supabase` (9:45 COT) — puede ir hasta ~14h más atrasada que el resto
+del reporte en el peor caso.
+
+**Celdas más grandes (2026-07-21, mismo día):** filas de datos 30px→36px, columna Ciudad
+150px→190px, columnas de cada materia 100px→130px, `fontSize=11` en la celda de `% avance`
+(antes heredaba el tamaño por defecto). Borde derecho sólido entre bloques de materia se
+mantiene igual.
+
+**Gotcha (merges + columnas congeladas):** `updateSheetProperties.frozenColumnCount` aplica a
+**toda la pestaña**, no solo al bloque de arriba — cualquier `mergeCells` que cruce la columna 0
+(congelada) con columnas no congeladas falla con "You can't merge frozen and non-frozen columns"
+(o, si el merge cubre TODO el ancho incluyendo la fila título, "can't freeze columns which
+contain only part of a merged cell" — mismo choque, dos mensajes de error distintos según el
+caso). Aplica igual a la tabla de resumen aunque esté en otra sección de la misma hoja. Fix en
+ambos casos: no merguear la fila de título — dejar el texto en la primera celda sin combinar
+(Sheets lo desborda igual sobre las celdas vacías de la derecha).
+
+**Verificado, sin cambio de código: la comparación semanal ya se adapta al día de la semana.**
+Se pidió confirmar que Balance/Semaforo comparen martes-viernes contra "el viernes anterior", y
+que el lunes siguiente contraste contra el viernes que acaba de pasar. Simulando `semana_actual()`
+con fechas de lunes a domingo (`datetime(2026,7,20..27)`): lunes a domingo de una misma semana
+calendario devuelven el MISMO `semana_iso` (ISO week, Python `isocalendar()`), y el lunes
+siguiente salta a la semana ISO+1. Como `escribir_historico()` solo sobreescribe las filas de la
+semana EN CURSO (las semanas cerradas quedan congeladas — ver sección Histórico), el resultado ya
+es exactamente el pedido: cualquier día martes-domingo compara contra la última semana cerrada
+(que, al no haber avance sábado/domingo, numéricamente equivale al viernes), y el lunes siguiente
+mueve el ancla a la semana que acaba de cerrar. No se tocó `semana_actual()` ni
+`semana_mas_reciente_antes()` — ya estaban correctos.
+
+**Verificado, sin cambio necesario: el workflow n8n no requería re-exportar.** Se comparó el
+workflow en vivo (`GET /api/v1/workflows/Rblg81qifVshsRae`) contra `n8n-workflows/q10-consolidacion.json`
+— 32 nodos, conexiones y metadata **byte-idénticos**. Todos los cambios de esta sesión (Historico,
+Semaforo, Balance) viven enteramente dentro de `exportar_sin_completar.py`, que el workflow ya
+invocaba sin cambios estructurales — no hizo falta tocar ningún nodo.
+
 ## `tools/verificar_retirados_bd.py` (local, gitignoreado)
 
 **Propósito:** Verificación de coherencia de retirados — cruza la pestaña `S Retirados` de la BD Seguimiento de Monitorias (pseudonimizada; restaura ID/nombre/email en memoria con la clave del pseudonimizador `clave_samuel_2026-07-02.json` de Downloads) contra el reporte `Estudiantes cancelados` de Q10 (descarga fresca vía `q10_to_sheets`). Match por cédula normalizada, fallback por nombre. Reporta: en ambas / en BD sin Q10 (→ CSV en `tools/reportes/`) / en Q10-2026 sin BD (informativo). ⚠ Imprime PII en consola — solo local. Última corrida (2026-07-03): 55/55 retirados de la BD confirmados en Q10 por cédula. `python tools/verificar_retirados_bd.py` — actualizar las rutas `RUTA_BD`/`RUTA_CLAVE` cuando cambie la versión del archivo.
@@ -667,10 +873,12 @@ RESUMEN: participants=N courses=K enrollments=M snapshot=S estado=exito
 
 ## `scripts/panel-datos/sync_sociodemograficos.py`
 
-**Propósito:** BD Seguimiento de Monitorias (xlsx en Downloads, `RUTA_BD`) → Supabase participants.
+**Propósito:** BD Seguimiento de Monitorias (Sheet vivo, id `1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8`,
+2026-07-21: dejó de leer el xlsx exportado a mano) → Supabase participants.
 Extrae de `Seguimiento` (ID c7, Grupo c2, Fecha Nacimiento c11, Edad c12, Ciudad c13, Género c16)
 y `Diagnostico` (doc c3, situación emprendimiento c32 → enum 4 categorías). Cruce por cédula;
 actualiza SOLO participantes existentes (sin match → reporte, no se crean). Recomputa agregados.
+**Automatizado:** workflow n8n `sociodemograficos-semanal` (lunes 6:00 COT, Telegram en error).
 
 **Comando:** `python scripts/panel-datos/sync_sociodemograficos.py [--dry-run]`
 
@@ -678,15 +886,25 @@ actualiza SOLO participantes existentes (sin match → reporte, no se crean). Re
 normalizar; convertir a int primero. (2) PGRST102: el bulk upsert de PostgREST exige claves
 idénticas por batch → agrupar filas por conjunto de claves. (3) NOT NULL se valida ANTES del
 ON CONFLICT → upsert parcial necesita eco del `nombre` actual. (4) `Link Emprendimiento` de la BD
-es el Zoom de la clase, no un emprendimiento del estudiante.
+es el Zoom de la clase, no un emprendimiento del estudiante. (5) **`en_seguimiento_jc` (agregado
+2026-07-23) debe escoparse a la cohorte del año en curso** — sin ese filtro, marca como "alerta
+de retiro" a miles de egresados históricos (2023-2025) que nunca estuvieron en ese Sheet.
 
-**Output parseable:** `RESUMEN: actualizados=N sin_match_supabase=X sin_datos=Y estado=exito`
+**`en_seguimiento_jc` (2026-07-23):** alerta operativa de retiro pendiente de confirmar en Q10
+— el equipo borra primero del Sheet, Q10 tarda meses en reflejarlo. `false` = no aparece en
+Seguimiento pero Q10 sigue activo; **no usar como variable de análisis hasta que se confirme**
+(ver [[supabase-estructura]]). Solo JC, cohorte actual (decisión: MR queda fuera, gestión no
+confiable ahí). Se calcula en un segundo paso para TODA la cohorte, no solo quien trae el Sheet
+(la ausencia es la señal). Migración: `docs/migrations/009_en_seguimiento_jc.sql`.
+
+**Output parseable:** `RESUMEN: actualizados=N sin_match_supabase=X sin_datos=Y alertas_retiro_pendiente=Z estado=exito`
 
 ---
 
 ## `scripts/panel-datos/sync_sociodemograficos_mr.py`
 
-**Propósito:** BD-Mujeres ROFÉ (xlsx en Downloads, `RUTA_BD`) → Supabase participants, SOLO
+**Propósito:** BD-Mujeres ROFÉ (Sheet vivo, id `1ZsC4WyY26aOCEMrnZ_l8Tn-l69DB_0ADs5lnecaoEP8`,
+2026-07-21: dejó de leer el xlsx exportado a mano) → Supabase participants, SOLO
 matriculadas en cursos `programa=mr`. Espejo del sync JC. Lee `General` (cédula c7, Edad c12,
 Ciudad c13, Nivel estudios c17, Emprendimiento c19, Estrato c20, Estado civil c21, Vivienda c24)
 e `Inactivas` como fuente secundaria (columnas distintas: cédula c5, civil c9, edad c11,
@@ -710,6 +928,51 @@ históricas restantes ya no figuran en la BD 2026 — cobertura 2025: 26.9%).
 
 ---
 
+## `scripts/panel-datos/sync_postulantes_mr.py`
+
+**Propósito:** universo COMPLETO de postulantes/candidatas Mujeres ROFÉ (no solo matriculadas)
+→ Supabase `postulantes_mr`, tabla paralela a `participants` (ver [[postulantes-mr-supabase]]).
+Reutiliza conexión/credenciales de `sync_sociodemograficos_mr.py` (mismo Sheet, mismo Service
+Account). Lee 5 pestañas: `General`+`Inactivas` (fuente primaria, mismos índices de columna
+que el sync de sociodemográficos) + `Cursos`/`Cursos%`/`Plataforma MR` (exports legados que
+aportan 193 cédulas exclusivas — confirmado en auditoría Fase 0, 2026-07-22, no es basura).
+Precedencia: General > Inactivas > Plataforma MR > Cursos > Cursos% (primera fuente gana).
+Enlaza `participant_id` cuando la cédula matchea un `q10_id` existente; si no, NULL (no crea
+`participants`, ver [[convenciones#Supabase `participants` = solo matriculados en Q10]]).
+
+**Comando:** `python scripts/panel-datos/sync_postulantes_mr.py [--dry-run]`
+**Output parseable:** `RESUMEN: universo=N cargados=X con_match_participant=Y typos_detectados=Z estado=exito`
+
+**Detección de typos de cédula:** `detectar_typos()` NO es fuerza bruta O(n²) — usa bloqueo
+(mismo correo/celular exacto, mismo conjunto de tokens de nombre, vecindad numérica de cédula
+ordenada ventana=8) para generar pares candidatos baratos, y solo ahí aplica el criterio
+completo de ≥2 señales (ver [[convenciones#Detección de typos de cédula por señales cruzadas]]).
+Reporta a `tools/postulantes_mr_report_<fecha>.json` (PII), nunca corrige sola.
+
+**Gotchas:** (1) **`get_todo()` sin `offset += page` es un loop infinito silencioso** — cada
+iteración vuelve a pedir offset=0, la API responde rápido (aparenta funcionar) pero nunca
+termina; RSS crece sin límite (se vio pasar de cientos de MB a 2 GB) porque `filas.extend()`
+seguía acumulando duplicados para siempre. Se manifestó como un "hang de red intermitente" y
+costó ~30 min de diagnóstico (se llegó a sospechar el proxy corporativo MITM) antes de
+encontrarse con logging por iteración — **si un script con este patrón de paginación se
+"cuelga" sin excepción ni traceback, revisar primero que el incremento de `offset` exista**,
+antes de asumir que es la red. (2) La primera versión de `detectar_typos()` usaba
+`items[i+1:]` dentro de un for — genera una slice nueva de tamaño O(n) en cada iteración
+externa, O(n²) en memoria transitoria además de tiempo; con ~5.300 filas eso también se
+manifestó como cuasi-cuelgue con RSS de 2 GB. Fix: bloqueo (arriba), nunca slice dentro de
+un loop sobre una lista grande. (3) `Cursos%` tiene triple header (cohorte/curso/columna) y
+columnas de cédula repetidas por bloque — el offset real de "Número de cédula" está en fila 3
+(índice 2), no en fila 2 como en las demás pestañas. (4) `Plataforma MR` tiene un único header
+(no doble) — asumir doble header ahí detecta mal la columna de cédula (falso positivo con
+"documentType"/"Tipo de documento" al buscar por substring "documento").
+
+**Cuadre verificado 2026-07-22:** 5.351 filas cargadas (general=5.125, inactivas=33,
+plataforma_mr=55, cursos=1, cursos_pct=137 — tras deduplicar por precedencia), 557 con
+`participant_id`, 52 posibles typos detectados (incluye el caso real Gina Gleisy
+22519536/22519636 que motivó todo el proceso). Anon key verificado: 401 (0 filas).
+
+---
+
 ## `scripts/panel-datos/sync_aprobacion_supabase.py`
 
 **Propósito:** `docs/aprobacion/data.json` (agregados canónicos de export_aprobacion, ya públicos,
@@ -729,6 +992,11 @@ etiqueta (`Jóvenes creaTIvos`→jc, `Mujeres ROFÉ`→mr) — un programa nuevo
 ---
 
 ## `scripts/panel-datos/sync_emoflow.py`
+
+**⚠ DEPRECADO (2026-07-21):** el workflow n8n `q10-sync-supabase` seguía llamando a este
+script en producción pese a estar documentado como reemplazado desde el 2026-07-20 —
+corregido: el nodo ahora ejecuta `sync_emoflow_api.py` (API directa de Emoflow, sin Sheet
+intermedio). Este script se conserva por si hace falta volver atrás, pero no correr más.
 
 **Propósito:** Pestaña `+Ingresos-EmoFlow` del Sheet manual → Supabase `emoflow_ingresos`.
 Emoflow es la herramienta de estado de ánimo; hoy se usa como proxy de **"calidad de estudiante"**
@@ -758,6 +1026,26 @@ conoce (retirados fuera de `participants`, o correos personales distintos al de 
 
 **Gotcha:** el reporte con los correos sin match va a `tools/emoflow_report_YYYYMMDD.json` (PII,
 gitignoreado). Duplicados de correo en la hoja → keepMax por ingresos (patrón del proyecto).
+
+---
+
+## `scripts/panel-datos/sync_emoflow_api.py`
+
+**Propósito:** Emoflow API directa (sin Sheet intermedio, 2026-07-20) → Supabase
+`emoflow_ingresos`. `POST /login` (PHPSESSID) → `GET /admin/registro-ingresos-exportar`
+(CSV, log de eventos con timestamp) → agrega por email (suma ingresos, último ingreso) →
+upsert idéntico a `sync_emoflow.py` (mismo destino, misma lógica de match por email).
+
+**Servicios:** API Emoflow (`https://emoflow.sanumbe.com`) · Supabase REST (service_role)
+
+**Credenciales:** `EMOFLOW_URL`/`EMOFLOW_USER`/`EMOFLOW_PASSWORD` + `SUPABASE_URL`/
+`SUPABASE_SERVICE_ROLE_KEY` en `.env.local`.
+
+**Comando:** `python scripts/panel-datos/sync_emoflow_api.py [--dry-run]`
+
+**Automatización (corregida 2026-07-21):** nodo `Ejecutar sync_emoflow_api` en
+`q10-sync-supabase`, tras `¿Aprobación OK?`. Reemplaza a `sync_emoflow.py` — ver nota de
+deprecación arriba.
 
 ---
 
@@ -853,6 +1141,11 @@ vigente** — ver [[asistencia-zoom-flujo]].
 `sync_asistencia_simple.py` — versiones anteriores/experimentales del mismo sync, movidas a
 `scripts/panel-datos/_obsoletos/` (no usar; se conservan solo de referencia histórica).
 
+**Scripts obsoletos (2026-07-21):** `sync_emoflow_participacion.py` — eliminado del workflow
+`q10-sync-supabase` (el panel ya no consume `emoflow_participacion_semanal`, ver
+[[panel-datos-etl#Fuentes de datos aún no centralizadas]]), movido a
+`scripts/panel-datos/_obsoletos/`.
+
 ---
 
 ## `scripts/panel-datos/calcular_asistencia_promedio.py`
@@ -863,14 +1156,228 @@ upsert en Supabase `asistencia_promedio`. Corre después de `sync_asistencia_sup
 
 **Comando:** `python scripts/panel-datos/calcular_asistencia_promedio.py`
 
+---
+
+## `scripts/panel-datos/export_supabase_json.py`
+
+**Propósito:** Exporta TODAS las tablas/vistas públicas de Supabase a JSON individuales en
+`docs/datos/*.json` (uno por tabla, más `manifest.json` con fecha y conteos). Pensado para que el
+panel Netlify pudiera consumir JSON pre-generado en vez de Supabase client-side.
+
+**Servicios:** Supabase REST (anon key — solo agregados vía RLS)
+
+**Comando:**
+```bash
+python scripts/panel-datos/export_supabase_json.py                    # commit + push
+python scripts/panel-datos/export_supabase_json.py --sin-push         # pruebas (no toca git)
+python scripts/panel-datos/export_supabase_json.py --output-dir DIR   # override de salida
+```
+
+**Tablas/vistas exportadas:** `participants`, `courses`, `enrollments`, `v_curso_completion`,
+`v_curso_completion_por_ciudad`, `v_demografia_grupo`, `v_mr_demografia`, `cohorte_stats`,
+`emoflow_ingresos`, `v_emoflow_resumen`, `v_emoflow_por_ciudad`, `v_emoflow_bandas`,
+`v_emoflow_bandas_ciudad`, `historial_emoflow`, `historial_emoflow_ciudad`,
+`emoflow_participacion_semanal`, `cohorte_ingresos`, `aprobacion_cursos`,
+`v_aprobacion_cohorte_stats`, `asistencia_zoom`, `asistencia_promedio`, `historial_cursos`,
+`historial_cursos_ciudad`.
+
+**Output parseable:** `RESUMEN: tablas=N registros=M estado=exito`
+
+**Git commit y push (agregado 2026-07-21):** `git_commit_y_push()` — mismo patrón de
+`export_stats.py`: `git add docs/datos` + commit + `push origin main`. Se agregó porque
+`docs/datos/*.json` ya estaba trackeado en git antes de encadenar el script — sin el push, cada
+corrida diaria dejaría el directorio permanentemente sucio en disco sin llegar nunca al repo.
+
+**⚠️ Sin consumidor confirmado (2026-07-21):** el frontend real de producción
+(`venerable-truffle-331f3c.netlify.app`) consulta Supabase directo desde el cliente (`lib/api.ts`,
+anon key) — NO lee estos JSON. El script está encadenado en `q10-sync-supabase` (pedido expreso
+de Samuel) pese a esto; ver [[panel-datos-etl#`sync_supabase_to_sheets.py` / `export_supabase_json.py` — continuidad analizada, ENCADENADOS (2026-07-21)]]
+para la decisión completa y motivo de mantenerlo así.
+
+**Automatización (2026-07-21):** último tramo de `q10-sync-supabase` (`uSizw3dNzpb6n53H`) —
+`¿Emoflow OK?` (rama true) → `Ejecutar export_supabase_json` → `Export JSON OK?` →
+`Ejecutar sync_supabase_to_sheets` → `Sheets OK?` → `OK` (con `stopAndError` en cada rama de error).
+
+---
+
+## `scripts/panel-datos/sync_supabase_to_sheets.py`
+
+**Propósito:** Espeja vistas públicas de Supabase de vuelta a Google Sheets (`H1Test` =
+participantes, `H2Test` = Emoflow/ingresos, `H3Test` = resumen ejecutivo/KPIs) para que el equipo
+consulte los datos sin salir de Excel. Es de **lectura** (Supabase → Sheets); las escrituras
+manuales en Sheets se cargan a Supabase por el flujo manual existente, no por este script.
+
+**Servicios:** Supabase REST (anon key) · Google Sheets API (write, Service Account)
+
+**Sheet destino:** ID `1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8` (mismo Sheet gigante de
+Avance/Emoflow) — requiere que existan las pestañas `H1Test`/`H2Test`/`H3Test` de antemano (el
+script aborta con advertencia si faltan; no las crea).
+
+**Comando:**
+```bash
+python scripts/panel-datos/sync_supabase_to_sheets.py                  # Sheet ID por defecto
+python scripts/panel-datos/sync_supabase_to_sheets.py --sheet-id ID    # override
+```
+
+**Output parseable:** `RESUMEN: estado=exito` (o `estado=error`)
+
+**No toca git** — solo lee Supabase y escribe en Sheets.
+
+**Automatización (2026-07-21):** encadenado en `q10-sync-supabase`, entre `Export JSON OK?` y
+`Sheets OK?` (ver detalle en la entrada de `export_supabase_json.py` arriba).
+
 **Credenciales:** `.env.local` raíz (mismo patrón `cargar_env_local()`).
+
+---
+
+## `scripts/panel-datos/extraer_mongo_mr_historico.py` + `cargar_mongo_mr_historico.py`
+
+**Propósito:** Investigación de una sola vez (2026-07-22, cerrada — ver
+[[panel-datos-etl#Exploración de MongoDB]]) de un MongoDB Atlas (`mujeres-rofe-db.Users`, backend
+histórico de la app Mujeres ROFÉ) como posible fuente para llenar el hueco MR 2023/2024 en
+Supabase. Resultado: 99.9% redundante con `postulantes_mr` (ya cubierto por la pestaña
+"Plataforma MR" del Sheet BD-Mujeres ROFÉ). Solo 4 registros genuinamente nuevos, exportados a
+Excel y NO cargados — no queda como pipeline activo, se documentan como referencia por si se
+necesita repetir el acceso.
+
+**Servicios:** MongoDB Atlas (usuario Atlas rol "Read Only", solo lectura, nunca escribe) ·
+Supabase REST (`service_role`, solo `postulantes_mr`/`participants`)
+
+**Por qué son DOS scripts separados (no uno):** `pymongo` (extracción) y `urllib`/`truststore`
+(carga a Supabase) en el mismo proceso producen un cuelgue que se ve exactamente como un problema
+de red (investigado ~20 min antes de encontrar la causa real — ver Gotcha abajo). Separar en dos
+procesos lo evita, y de paso deja `tools/mongo_mr_historico_payload.json` (PII, gitignoreado) como
+artefacto revisable antes de decidir qué cargar — útil cuando una cohorte necesita revisión humana
+antes de tocar producción (ver 2023, pendiente con el superior de Samuel).
+
+**Comando:**
+```bash
+python scripts/panel-datos/extraer_mongo_mr_historico.py                    # Mongo → payload local
+python scripts/panel-datos/cargar_mongo_mr_historico.py --dry-run           # solo reporte
+python scripts/panel-datos/cargar_mongo_mr_historico.py --cohortes 2024     # carga solo 2024
+```
+
+**Precedencia de carga:** nunca pisa una cédula que ya exista en `postulantes_mr` (las fuentes
+Sheet ya tienen precedencia establecida) — solo inserta cédulas genuinamente nuevas.
+
+**Gotcha (root cause real, no lo que parecía):** al escribir `Supa.get_todo()` desde cero en vez
+de copiar el ya existente, se reintrodujo el bug de `offset += page` faltante — mismo bug ya
+documentado el mismo día en
+[[convenciones#Paginación PostgREST: un `offset` que no avanza es un loop infinito silencioso]]
+al construir `postulantes_mr`. **Nunca reescribir `Supa`/`get_todo` de memoria — copiar el de
+`sync_postulantes_mr.py`.**
+
+**Scripts de un solo uso relacionados (investigación, no producción):** `test_conexion_mongo.py`
+(smoke test de acceso), `perfilar_mongo.py` (conteos/rangos de fecha por colección),
+`cruzar_mongo_supabase.py` (primer cruce, contra `participants` — quedó obsoleto en favor de
+`cargar_mongo_mr_historico.py --dry-run`, que cruza correctamente contra `postulantes_mr`),
+`exportar_nuevas_mongo_mr.py` (entregable puntual: Excel a Downloads con las candidatas nuevas).
+
+---
+
+## `scripts/panel-datos/extraer_mongo_jc_historico.py` + `cargar_mongo_jc_historico.py`
+
+**Propósito:** Investigación análoga a la de MR, pero para `jovenes-creativos.User` +
+`Applicant` (Mongo Atlas, backend de la app JC) — 2026-07-22. A diferencia de MR (99.9%
+redundante, cerrado sin cargar), aquí el hallazgo fue real y se decidió cargarlo. Ver
+[[panel-datos-etl#Auditoría Mongo JC]] para el detalle completo de la investigación.
+
+**Resultado de la auditoría previa a cargar:** de 2.560 cédulas (User: 1.699 + Applicant: 861,
+User gana si se repite), 466 sin match en `participants` (programa=jc) ni en el Sheet BD
+Seguimiento (universo de 828 auditado el mismo día). Descartados como typos (0 confirmados
+tras chequeo de vecindad de cédula + nombre/correo dentro del propio Mongo). Tras excluir 3
+cuentas `rol=ADMIN`: 463 reales — 378 `EGRESADO` (casi todas 2023, alumnos de cohortes
+antiguas) + 85 `ACTUAL` (postulantes 2026 recientes, `Applicant`).
+
+**Decisión: SÍ se cargó** (a diferencia del hallazgo de MR) → tabla `postulantes_jc`
+(migración `005_postulantes_jc.sql`, RLS + revoke anon). Se cargó el universo COMPLETO de
+Mongo (2.556 tras excluir 1 perfil de prueba), no solo los exclusivos — `participant_id` NULL
+para quien no matriculó (464 exclusivos), poblado para quien sí (2.092), mismo patrón que
+`postulantes_mr`. Columna `fuente` (`mongo_user`/`mongo_applicant`) — pedido explícito de
+Samuel para dejar trazabilidad de que el origen es Mongo, no un Sheet.
+
+**Servicios:** MongoDB Atlas (usuario Atlas rol "Read Only", solo lectura) · Supabase REST
+(`service_role`, `postulantes_jc`/`participants`)
+
+**Identidad en Mongo:** anidada en `profile` (no en el nivel raíz del doc, a diferencia de
+`mujeres-rofe-db.Users`) — `profile.documentNumber`, `profile.completeName`,
+`profile.email`, `profile.phoneNumber`, `profile.rol` (`EGRESADO`/`ACTUAL`/`ADMIN`),
+`profile.city.name`, `profile.promoYear`.
+
+**Comando:**
+```bash
+python scripts/panel-datos/extraer_mongo_jc_historico.py       # Mongo → payload local
+python scripts/panel-datos/cargar_mongo_jc_historico.py --dry-run   # solo reporte
+python scripts/panel-datos/cargar_mongo_jc_historico.py             # carga real (upsert por cédula)
+```
+
+Payload en `tools/mongo_jc_historico_payload.json` (PII, gitignoreado). Entregable de revisión
+generado ANTES de cargar: `Downloads/jc_mongo_exclusivos.xlsx` (463 casos).
+
+**Gotcha evitado:** se reutilizó `Supa.get_todo()`/`dist_lev()`/`senales_match()` de
+`sync_postulantes_mr.py` importándolo como módulo para el análisis exploratorio, en vez de
+reescribirlos — evita repetir el bug de paginación ya documentado dos veces el mismo día.
+
+---
+
+## `scripts/panel-datos/test_integridad_supabase.py`
+
+**Propósito:** suite de integridad/seguridad de la base completa (36 tests, un solo comando,
+SOLO lectura): FKs/huérfanos, unicidad (emails, cédulas, q10_id), dominios (catálogo de
+ciudades, rangos, fechas futuras), cuadres cruzados con **tolerancias explícitas como
+constantes** (Δ emoflow 2%, overlap cohorte [0,5], roster+25), frescura de syncs diarios
+(≤2 días), y superficie anon (10 objetos PII deben dar 401/vacío — usa `SUPABASE_ANON_KEY`
+de `.env.local`). Salida parseable: `RESUMEN: total=N pass=X fail=Y estado=exito|fallo`,
+exit code = nº de fails. Ver triage completo en [[supabase-estructura]].
+
+**Comando:** `python scripts/panel-datos/test_integridad_supabase.py [--rapido]`
+(`--rapido` omite la descarga completa de enrollments — para el chequeo diario post-sync)
+
+**Gotchas:** (1) el test de cohorte NO exige `ingresados = activos+retirados` — la definición
+canónica es cohorte = habilitados **∪** retirados y hay overlap real (2 reingresos en JC 2026);
+exigir igualdad daría falso FAIL permanente. (2) El cuadre emoflow persona↔diario tiene Δ0,7%
+estructural (scripts descargan el CSV con parámetros distintos) — por eso tol 2%, no 0.
+
+---
+
+## `tools/analisis_emoflow_resultados.py` (PII — gitignoreado)
+
+**Propósito:** análisis estadístico uso Emoflow ↔ resultados académicos (JC 2026, n=777
+activos). Solo LECTURA en Supabase. Descriptivos, Spearman/Pearson, chi² por cuartiles de uso
+(V de Cramér), y regresión logística propia (IRLS con numpy — statsmodels no disponible en
+este entorno; scipy para p-values) ajustada por género/edad/ciudad. Salidas:
+`tools/analisis_emoflow_dataset.csv` (PII) y `tools/analisis_emoflow_resultados.json`
+(agregados). Resumen publicable y diccionario de datos: [[supabase-estructura]].
+
+**Comando:** `python tools/analisis_emoflow_resultados.py`
+
+**Gotchas:** (1) redondear una fracción ANTES de escalarla a % la satura (0.992→1.0→"100.0%")
+— ocultó no-aprobados reales por ciudad hasta que la verificación por SQL independiente lo
+atrapó; escalar primero, redondear después. (2) Ciudades con aprobación 100% producen
+separación perfecta en la logística (OR absurdo con IC [0,∞] en ese dummy — inofensivo para
+los demás coeficientes, pero no reportar ese OR). (3) Reutiliza `Supa` importando
+`sync_postulantes_mr` — no reescribir el cliente (gotcha del offset).
+
+---
+
+## Vista `v_persona_360` (Supabase, no es un script)
+
+**Propósito:** trazabilidad total por cédula en una sola consulta — pedido explícito de
+Samuel tras el blindaje QA. Une `participants` + `postulantes_mr` + `postulantes_jc` +
+`emoflow_ingresos` + `asistencia_promedio` por cédula (email para los 2 últimos). Migración:
+`docs/migrations/008_v_persona_360.sql`. Detalle y ejemplo de uso en [[supabase-estructura]].
+Cierra la Fase 5 de [[postulantes-mr-supabase]] (búsqueda unificada) como vista SQL en vez de
+script Python — misma idea, sin duplicar lógica de cruce.
+
+**Uso:** `GET /rest/v1/v_persona_360?cedula=eq.<cedula>` — **solo `service_role`** (RLS+REVOKE
+estricto, verificado 401 a anon). Nunca exponer al frontend público.
 
 ---
 
 ## Dependencias comunes
 
 ```
-gspread · google-auth · truststore · requests · pandas · openpyxl
+gspread · google-auth · truststore · requests · pandas · openpyxl · pymongo
 ```
 
 Ver `scripts/q10-consolidacion/requirements.txt` para versiones exactas.
