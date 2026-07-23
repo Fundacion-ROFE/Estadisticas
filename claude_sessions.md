@@ -3973,3 +3973,20 @@ API de n8n, escribirlo con Python (`urllib`+UTF-8), nunca tipeado directo en un 
   Corregido insertando el nodo en la cadena diaria ENTRE normalize y cargar_supabase (orden
   deliberado: flag fresco antes del snapshot), con IF + stopAndError. Workflow re-exportado.
 - Suite de integridad: 39 → **44/44 PASS** (5 tests nuevos para las vistas canónicas).
+
+## 2026-07-23 (cont.) — [panel-datos-etl] Cadencia casi-tiempo-real en ventana 17:30–07:30
+
+- Samuel pidió actualizaciones fuera de horario laboral (17:30–07:30) para tener el entorno
+  fresco al entrar y al salir sin que los picos afecten el trabajo.
+- Al medir duraciones reales en n8n: el `Bot Q10` (scraper con browser headless) va de 2,8 min
+  a **309 min**; el pipeline del panel va de 0,2 a 4,3 min (lee Sheets+Supabase, no Q10). No se
+  podían tratar igual → diseño de dos velocidades:
+  - `Bot Q10 - Actualizar Grupos`: cada 4h → `0 17,21,1,5 * * *` (a 2h se solaparían browsers)
+  - `q10-sync-supabase`: cada 2h → `30 17,19,21,23,1,3,5,7 * * *` (8 corridas, ninguna 08–17h)
+  - El scraper arranca en punto y el pipeline a los :30 porque el primero produce
+    `docs/aprobacion/data.json` que el segundo consume — 30 min de colchón.
+- `telegramTrigger` del bot intacto: el equipo sigue disparando updates a demanda.
+- **Deuda detectada:** `sync_supabase_to_sheets.py` (último nodo) falla desde hace días — las
+  hojas H1Test/H2Test/H3Test fueron borradas del Sheet. Los pasos de datos anteriores sí
+  terminan en éxito (el panel se actualiza bien), pero con 8 corridas el fallo pasa de 1 a 8
+  por día. Pendiente: recrear las hojas o retirar el paso.

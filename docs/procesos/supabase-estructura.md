@@ -388,6 +388,42 @@ conservador correcto. Workflow re-exportado a `n8n-workflows/q10-sync-supabase.j
 Nota: `sociodemograficos-semanal` sigue activo por `sync_sociodemograficos_mr.py`; el JC corre
 dos veces los lunes, lo cual es inocuo (idempotente).
 
+### Cadencia casi-tiempo-real en ventana fuera de horario laboral (2026-07-23)
+
+Samuel pidió que el entorno esté actualizado "al entrar y al salir" y que los picos de carga
+no interfieran con el trabajo: actualizaciones **de 17:30 a 07:30**, y mencionó tanto "cada 4
+horas" como "cada 2 horas". Al medir duraciones reales en n8n resultó que **no se puede
+tratar igual a los dos workflows**, y ambos números terminaron aplicando:
+
+| Workflow | Qué hace | Duración real medida | Cadencia nueva |
+|---|---|---|---|
+| `Bot Q10 - Actualizar Grupos` | **Scrapea Q10** (browser headless) → Sheets → `export_aprobacion.py` → `docs/aprobacion/data.json` | **2,8 min a 309 min (5 h)**, muy variable | **cada 4 h**: `0 17,21,1,5 * * *` |
+| `q10-sync-supabase` | Lee Sheets + Supabase (NO toca Q10) → panel | 0,2–4,3 min, estable | **cada 2 h**: `30 17,19,21,23,1,3,5,7 * * *` |
+
+**Por qué el scraper no puede ir cada 2 h:** una corrida llegó a 309 min. A 2 h de cadencia se
+solaparían varias sesiones de browser headless contra Q10 simultáneamente. A 4 h se mantiene la
+densidad que ya tenía (no se empeora un riesgo preexistente) y se saca de la franja laboral.
+
+**Por qué el pipeline del panel sí puede ir cada 2 h:** `normalize_q10_data.py` lee la hoja
+h2test, no Q10 directamente — por eso corre en menos de 5 min. Es seguro.
+
+**Orden de dependencia (importante):** el scraper produce `docs/aprobacion/data.json`, que
+`sync_aprobacion_supabase.py` consume dentro del pipeline. Por eso el scraper arranca en punto
+(17:00, 21:00…) y el pipeline a los :30 — media hora de colchón. Las cifras oficiales de
+aprobación se refrescan cada 4 h; el resto del panel (Seguimiento, avance, Emoflow) cada 2 h.
+
+**Resultado:** 8 corridas del panel al día, ninguna entre 08:00 y 17:00. Entorno fresco a las
+07:30 (llegada) y 17:30 (salida). El `telegramTrigger` del bot quedó intacto — el equipo sigue
+pudiendo disparar actualizaciones a demanda desde Telegram.
+
+⚠️ **Deuda detectada al medir esto:** el último nodo del pipeline
+(`sync_supabase_to_sheets.py`) **viene fallando desde hace días** — las hojas `H1Test`,
+`H2Test`, `H3Test` ya no existen en el Sheet (alguien las borró) y el script aborta pidiendo
+que se creen. Todos los pasos de datos anteriores terminan en `exito`, así que **el panel se
+actualiza bien**; lo único roto es el volcado de vuelta a Sheets para el equipo. Con 8
+corridas diarias esto pasa de 1 a 8 fallos por día — pendiente decidir si se recrean las hojas
+o se retira el paso.
+
 ### Verificación cruzada corregida + hallazgo estructural (2026-07-23)
 
 Samuel reportó que la tabla de verificación cruzada (oficial vs. `v_aprobacion_cursos_jc_ajustado`)
