@@ -6,7 +6,7 @@
     "sin_emprendimiento": 336,
     "porcentaje_con_emprendimiento": 0.0,
     "edad_promedio": null,
-    "computed_at": "2026-07-22T14:45:16.144891",
+    "computed_at": "2026-07-23T14:45:20.198869",
     "programa": "jc"
   },
   {
@@ -16,7 +16,7 @@
     "sin_emprendimiento": 470,
     "porcentaje_con_emprendimiento": 0.0,
     "edad_promedio": null,
-    "computed_at": "2026-07-22T14:45:16.144891",
+    "computed_at": "2026-07-23T14:45:20.198869",
     "programa": "jc"
   },
   {
@@ -26,7 +26,7 @@
     "sin_emprendimiento": 733,
     "porcentaje_con_emprendimiento": 0.0,
     "edad_promedio": 48.0,
-    "computed_at": "2026-07-22T14:45:16.144891",
+    "computed_at": "2026-07-23T14:45:20.198869",
     "programa": "jc"
   },
   {
@@ -36,7 +36,7 @@
     "sin_emprendimiento": 794,
     "porcentaje_con_emprendimiento": 21.85,
     "edad_promedio": 36.71,
-    "computed_at": "2026-07-22T14:45:16.144891",
+    "computed_at": "2026-07-23T14:45:20.198869",
     "programa": "mr"
   },
   {
@@ -45,18 +45,18 @@
     "con_emprendimiento": 98,
     "sin_emprendimiento": 679,
     "porcentaje_con_emprendimiento": 12.61,
-    "edad_promedio": 18.01,
-    "computed_at": "2026-07-22T14:45:16.144891",
+    "edad_promedio": 18.02,
+    "computed_at": "2026-07-23T14:45:20.198869",
     "programa": "jc"
   },
   {
     "cohorte": "2026",
-    "total_participantes": 283,
-    "con_emprendimiento": 184,
-    "sin_emprendimiento": 99,
-    "porcentaje_con_emprendimiento": 65.02,
-    "edad_promedio": 39.54,
-    "computed_at": "2026-07-22T14:45:16.144891",
+    "total_participantes": 343,
+    "con_emprendimiento": 197,
+    "sin_emprendimiento": 146,
+    "porcentaje_con_emprendimiento": 57.43,
+    "edad_promedio": 39.76,
+    "computed_at": "2026-07-23T14:45:20.198869",
     "programa": "mr"
   }
 ]

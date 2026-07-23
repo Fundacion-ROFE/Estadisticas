@@ -350,16 +350,6 @@
     "programa": "jc"
   },
   {
-    "id": "ae1c5761-e352-4e0f-a18c-d7321e6f7a37",
-    "nombre": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
-    "cohorte": "2026",
-    "fecha_inicio": null,
-    "fecha_fin": null,
-    "estado": "activo",
-    "created_at": "2026-07-10T01:30:06.620938",
-    "programa": "jc"
-  },
-  {
     "id": "6ef158fa-6fde-4ed5-9f52-7e0a49a92a9f",
     "nombre": "Proyecto Final - 2026",
     "cohorte": "2025",
@@ -388,5 +378,25 @@
     "estado": "completado",
     "created_at": "2026-07-10T14:42:08.052523",
     "programa": "mr"
+  },
+  {
+    "id": "37dfdf2e-4529-4ea0-9566-6b4671e81ddc",
+    "nombre": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-23T14:45:15.712024",
+    "programa": "mr"
+  },
+  {
+    "id": "ae1c5761-e352-4e0f-a18c-d7321e6f7a37",
+    "nombre": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc"
   }
 ]

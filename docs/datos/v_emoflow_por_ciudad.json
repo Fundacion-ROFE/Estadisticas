@@ -2,47 +2,47 @@
   {
     "grupo_ciudad": "BAQ",
     "participantes": 137,
-    "ingresos_promedio": 40.4,
+    "ingresos_promedio": 40.7,
     "ingresos_mediana": 30,
-    "activos_7d": 72,
-    "inactivos_30d": 27
+    "activos_7d": 71,
+    "inactivos_30d": 28
   },
   {
     "grupo_ciudad": "BOG",
     "participantes": 143,
-    "ingresos_promedio": 30.8,
-    "ingresos_mediana": 24,
-    "activos_7d": 83,
+    "ingresos_promedio": 31.1,
+    "ingresos_mediana": 25,
+    "activos_7d": 85,
     "inactivos_30d": 36
   },
   {
     "grupo_ciudad": "CAL",
     "participantes": 107,
-    "ingresos_promedio": 33.6,
-    "ingresos_mediana": 29,
-    "activos_7d": 75,
-    "inactivos_30d": 18
+    "ingresos_promedio": 33.7,
+    "ingresos_mediana": 30,
+    "activos_7d": 77,
+    "inactivos_30d": 19
   },
   {
     "grupo_ciudad": "CTG",
     "participantes": 106,
-    "ingresos_promedio": 28.7,
+    "ingresos_promedio": 28.9,
     "ingresos_mediana": 24,
-    "activos_7d": 74,
-    "inactivos_30d": 19
+    "activos_7d": 76,
+    "inactivos_30d": 20
   },
   {
     "grupo_ciudad": "GYL",
     "participantes": 80,
-    "ingresos_promedio": 33.1,
+    "ingresos_promedio": 33.2,
     "ingresos_mediana": 26,
-    "activos_7d": 42,
+    "activos_7d": 43,
     "inactivos_30d": 17
   },
   {
     "grupo_ciudad": "MED",
     "participantes": 99,
-    "ingresos_promedio": 25.3,
+    "ingresos_promedio": 25.5,
     "ingresos_mediana": 18,
     "activos_7d": 56,
     "inactivos_30d": 17
@@ -50,17 +50,17 @@
   {
     "grupo_ciudad": "PAN",
     "participantes": 39,
-    "ingresos_promedio": 37.4,
+    "ingresos_promedio": 37.7,
     "ingresos_mediana": 30,
-    "activos_7d": 25,
+    "activos_7d": 23,
     "inactivos_30d": 5
   },
   {
     "grupo_ciudad": "QTO",
     "participantes": 39,
-    "ingresos_promedio": 42.0,
+    "ingresos_promedio": 42.4,
     "ingresos_mediana": 38,
-    "activos_7d": 32,
+    "activos_7d": 28,
     "inactivos_30d": 3
   },
   {
@@ -68,7 +68,7 @@
     "participantes": 77,
     "ingresos_promedio": 31.2,
     "ingresos_mediana": 28,
-    "activos_7d": 55,
+    "activos_7d": 54,
     "inactivos_30d": 15
   }
 ]

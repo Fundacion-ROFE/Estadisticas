@@ -102,11 +102,11 @@
     "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
     "cohorte": "2026",
     "matriculados": 777,
-    "completados": 765,
-    "en_progreso": 4,
+    "completados": 766,
+    "en_progreso": 3,
     "sin_iniciar": 8,
-    "pct_completados": 98.5,
-    "promedio_avance": 98.5,
+    "pct_completados": 98.6,
+    "promedio_avance": 98.6,
     "programa": "jc"
   },
   {
@@ -220,14 +220,25 @@
     "programa": "jc"
   },
   {
+    "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
+    "cohorte": "2026",
+    "matriculados": 172,
+    "completados": 0,
+    "en_progreso": 6,
+    "sin_iniciar": 166,
+    "pct_completados": 0.0,
+    "promedio_avance": 1.0,
+    "programa": "mr"
+  },
+  {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
     "cohorte": "2026",
     "matriculados": 777,
-    "completados": 471,
-    "en_progreso": 268,
-    "sin_iniciar": 38,
-    "pct_completados": 60.6,
-    "promedio_avance": 78.9,
+    "completados": 513,
+    "en_progreso": 227,
+    "sin_iniciar": 37,
+    "pct_completados": 66.0,
+    "promedio_avance": 81.2,
     "programa": "jc"
   },
   {

@@ -95,9 +95,9 @@
     "programa": "jc",
     "grupo_ciudad": "BAQ",
     "matriculados": 131,
-    "completados": 90,
-    "promedio_avance": 86.5,
-    "pct_completados": 68.7
+    "completados": 93,
+    "promedio_avance": 87.6,
+    "pct_completados": 71.0
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
@@ -105,9 +105,9 @@
     "programa": "jc",
     "grupo_ciudad": "BOG",
     "matriculados": 132,
-    "completados": 79,
-    "promedio_avance": 80.0,
-    "pct_completados": 59.8
+    "completados": 86,
+    "promedio_avance": 82.1,
+    "pct_completados": 65.2
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
@@ -115,9 +115,9 @@
     "programa": "jc",
     "grupo_ciudad": "CAL",
     "matriculados": 93,
-    "completados": 72,
-    "promedio_avance": 88.5,
-    "pct_completados": 77.4
+    "completados": 80,
+    "promedio_avance": 92.3,
+    "pct_completados": 86.0
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
@@ -125,9 +125,9 @@
     "programa": "jc",
     "grupo_ciudad": "CTG",
     "matriculados": 99,
-    "completados": 52,
-    "promedio_avance": 74.3,
-    "pct_completados": 52.5
+    "completados": 59,
+    "promedio_avance": 77.3,
+    "pct_completados": 59.6
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
@@ -135,9 +135,9 @@
     "programa": "jc",
     "grupo_ciudad": "GYL",
     "matriculados": 79,
-    "completados": 36,
-    "promedio_avance": 68.2,
-    "pct_completados": 45.6
+    "completados": 41,
+    "promedio_avance": 70.4,
+    "pct_completados": 51.9
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
@@ -145,9 +145,9 @@
     "programa": "jc",
     "grupo_ciudad": "MED",
     "matriculados": 94,
-    "completados": 41,
-    "promedio_avance": 72.3,
-    "pct_completados": 43.6
+    "completados": 48,
+    "promedio_avance": 75.7,
+    "pct_completados": 51.1
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
@@ -155,9 +155,9 @@
     "programa": "jc",
     "grupo_ciudad": "PAN",
     "matriculados": 35,
-    "completados": 22,
-    "promedio_avance": 84.5,
-    "pct_completados": 62.9
+    "completados": 23,
+    "promedio_avance": 85.4,
+    "pct_completados": 65.7
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
@@ -165,9 +165,9 @@
     "programa": "jc",
     "grupo_ciudad": "QTO",
     "matriculados": 39,
-    "completados": 30,
-    "promedio_avance": 83.5,
-    "pct_completados": 76.9
+    "completados": 32,
+    "promedio_avance": 86.6,
+    "pct_completados": 82.1
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
@@ -175,9 +175,9 @@
     "programa": "jc",
     "grupo_ciudad": "UY",
     "matriculados": 65,
-    "completados": 49,
-    "promedio_avance": 83.1,
-    "pct_completados": 75.4
+    "completados": 51,
+    "promedio_avance": 84.4,
+    "pct_completados": 78.5
   },
   {
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
@@ -196,7 +196,7 @@
     "grupo_ciudad": "BOG",
     "matriculados": 132,
     "completados": 130,
-    "promedio_avance": 98.5,
+    "promedio_avance": 98.6,
     "pct_completados": 98.5
   },
   {
@@ -206,7 +206,7 @@
     "grupo_ciudad": "CAL",
     "matriculados": 93,
     "completados": 93,
-    "promedio_avance": 99.7,
+    "promedio_avance": 99.8,
     "pct_completados": 100.0
   },
   {
@@ -216,7 +216,7 @@
     "grupo_ciudad": "CTG",
     "matriculados": 99,
     "completados": 98,
-    "promedio_avance": 98.6,
+    "promedio_avance": 98.8,
     "pct_completados": 99.0
   },
   {
@@ -246,7 +246,7 @@
     "grupo_ciudad": "PAN",
     "matriculados": 35,
     "completados": 35,
-    "promedio_avance": 99.8,
+    "promedio_avance": 99.9,
     "pct_completados": 100.0
   },
   {
@@ -276,7 +276,7 @@
     "grupo_ciudad": "BAQ",
     "matriculados": 131,
     "completados": 130,
-    "promedio_avance": 99.3,
+    "promedio_avance": 99.5,
     "pct_completados": 99.2
   },
   {
@@ -286,7 +286,7 @@
     "grupo_ciudad": "BOG",
     "matriculados": 132,
     "completados": 130,
-    "promedio_avance": 98.2,
+    "promedio_avance": 98.3,
     "pct_completados": 98.5
   },
   {
@@ -426,7 +426,7 @@
     "grupo_ciudad": "PAN",
     "matriculados": 35,
     "completados": 35,
-    "promedio_avance": 99.9,
+    "promedio_avance": 100.0,
     "pct_completados": 100.0
   },
   {
@@ -556,7 +556,7 @@
     "grupo_ciudad": "BOG",
     "matriculados": 132,
     "completados": 130,
-    "promedio_avance": 98.4,
+    "promedio_avance": 98.5,
     "pct_completados": 98.5
   },
   {
@@ -565,9 +565,9 @@
     "programa": "jc",
     "grupo_ciudad": "CAL",
     "matriculados": 93,
-    "completados": 92,
-    "promedio_avance": 99.8,
-    "pct_completados": 98.9
+    "completados": 93,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
   },
   {
     "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
