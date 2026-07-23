@@ -67,6 +67,8 @@ RUTA_CREDENCIALES = os.path.join(PROYECTO_ROOT, "scripts", "q10-consolidacion",
 SHEET_ID          = "1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8"  # BD Seguimiento de Monitorias
 RUTA_REPORTE      = os.path.join(PROYECTO_ROOT, "tools",
                                  f"sociodemograficos_report_{datetime.now():%Y%m%d}.json")
+RUTA_EXCEPCIONES_SEGUIMIENTO = os.path.join(PROYECTO_ROOT, "tools",
+                                            "excepciones_seguimiento_jc.json")
 
 USER_AGENT = "panel-datos-etl/1.0"  # Supabase rechaza secrets con UA de navegador
 LOTE       = 500
@@ -236,10 +238,20 @@ def main() -> int:
     jc_q10_ids = {r["q10_id"] for r in jc_participantes if r.get("q10_id")}
     log(f"Participantes JC cohorte {ANIO_COHORTE_ACTUAL} (para en_seguimiento_jc): {len(jc_q10_ids)}")
 
+    # Excepciones confirmadas: casos donde q10_id nunca va a matchear contra la cédula real
+    # de Seguimiento (ej. Q10 registró el celular como documento) pero se investigó y se
+    # confirmó que la persona sigue activa — no son un retiro real. Ver tools/excepciones_seguimiento_jc.json.
+    excepciones_ids = set()
+    if os.path.isfile(RUTA_EXCEPCIONES_SEGUIMIENTO):
+        with open(RUTA_EXCEPCIONES_SEGUIMIENTO, encoding="utf-8") as f:
+            excepciones_ids = {c["q10_id"] for c in json.load(f).get("casos", [])}
+        if excepciones_ids:
+            log(f"Excepciones confirmadas (forzadas a en_seguimiento_jc=true): {len(excepciones_ids)}")
+
     hoy = datetime.now().date().isoformat()
     filas_seguimiento = [
         {"q10_id": ced, "nombre": existentes[ced],
-         "en_seguimiento_jc": ced in cedulas_seguimiento,
+         "en_seguimiento_jc": ced in cedulas_seguimiento or ced in excepciones_ids,
          "fecha_verificacion_seguimiento": hoy,
          "updated_at": datetime.now().isoformat(timespec="seconds")}
         for ced in sorted(jc_q10_ids) if ced in existentes

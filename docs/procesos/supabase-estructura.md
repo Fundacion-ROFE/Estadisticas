@@ -327,7 +327,23 @@ es un falso positivo por un error de intake en Q10 (teléfono usado como documen
 retiro real. Samuel confirmó (2026-07-23): dejar todo tal cual está — Tipo ID `Pasaporte`
 = `293` (su documento real) y `63851795` es su celular, no hace falta corregir nada en
 Supabase (el `q10_id` sigue funcionando como llave de matrícula interna, aunque no coincida
-con su documento real). Caso cerrado.
+con su documento real).
+
+**Corrección aplicada (mismo día): se pidió que volviera a contar como activa en los
+paneles.** Como su `q10_id` (63851795) nunca va a matchear contra el "ID" real de Seguimiento
+(293), forzar `en_seguimiento_jc` una sola vez con un UPDATE manual se habría revertido en el
+siguiente sync automático. Se aplicó el mismo patrón que ya existía para las cuentas de
+prueba (`tools/exclusiones_prueba.json`): nuevo archivo
+**`tools/excepciones_seguimiento_jc.json`** (PII, gitignoreado) con su caso documentado, y
+`sync_sociodemograficos.py` modificado para forzar `en_seguimiento_jc=true` en cualquier
+`q10_id` listado ahí, sin importar el match contra Seguimiento. Sync corrido en real:
+
+- `v_cohorte_estudiantes` (JC 2026): activos 759→**760** (coincide exacto con el oficial de
+  Q10), al_dia 749→**750**.
+- `v_retiro_probable_jc`: total 18→**17**, aprobado 7→**6**.
+- `cohorte_stats.total_participantes`: 759→**760**.
+
+Caso cerrado — persiste correctamente en cada sync futuro sin intervención manual.
 
 ### `v_persona_360` — trazabilidad total por persona (2026-07-23)
 

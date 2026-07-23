@@ -3924,3 +3924,16 @@ API de n8n, escribirlo con Python (`urllib`+UTF-8), nunca tipeado directo en un 
   lo demás. Su documento real no está confiablemente en ningún sistema nuestro.
 - Lo que no cambia: sigue sin ser un retiro real (84% avance, Emoflow activo hasta junio) —
   el q10_id mal cargado igual lleva su actividad real.
+
+## 2026-07-23 (cont.) — [panel-datos-etl] Angeles vuelve a contar como activa en los paneles
+
+- Samuel pidió agregar a Angeles Isabella Navas Rodriguez (el caso de falso positivo
+  investigado hoy) como existente en los paneles. Un UPDATE manual de una sola vez se habría
+  revertido en el próximo sync (su q10_id=63851795 nunca matchea contra su ID real de
+  Seguimiento, 293).
+- Solución durable: `tools/excepciones_seguimiento_jc.json` (nuevo, mismo patrón que
+  `exclusiones_prueba.json`) + `sync_sociodemograficos.py` modificado para forzar
+  `en_seguimiento_jc=true` en los q10_id listados ahí. Corrido en real.
+- Verificado: `v_cohorte_estudiantes` JC 2026 activos 759→760 (coincide exacto con el oficial
+  de Q10), `v_retiro_probable_jc` 18→17, `cohorte_stats.total_participantes` 759→760. Persiste
+  en cada sync futuro sin intervención manual.
