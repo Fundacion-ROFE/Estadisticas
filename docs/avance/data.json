@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-23T12:02:40.679897-05:00",
+  "ultima_actualizacion": "2026-07-23T16:02:15.578685-05:00",
   "segmento": "Logica-Nivel 2-2026",
   "por_curso": [
     {
@@ -13,55 +13,55 @@
     },
     {
       "nombre": "Hackea Tu Cerebro",
-      "estudiantes": 779,
-      "aprobados": 773,
-      "pct_aprobados": 99.2,
-      "promedio": 99.58,
+      "estudiantes": 762,
+      "aprobados": 757,
+      "pct_aprobados": 99.3,
+      "promedio": 99.57,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "Habilidades Esenciales",
-      "estudiantes": 779,
-      "aprobados": 740,
-      "pct_aprobados": 95.0,
-      "promedio": 99.45,
+      "estudiantes": 762,
+      "aprobados": 734,
+      "pct_aprobados": 96.3,
+      "promedio": 99.49,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "Emprendimiento",
-      "estudiantes": 778,
-      "aprobados": 701,
-      "pct_aprobados": 90.1,
-      "promedio": 98.95,
+      "estudiantes": 761,
+      "aprobados": 709,
+      "pct_aprobados": 93.2,
+      "promedio": 99.35,
       "min": 0.0,
       "max": 101.0
     },
     {
       "nombre": "IA",
-      "estudiantes": 777,
-      "aprobados": 748,
-      "pct_aprobados": 96.3,
-      "promedio": 98.51,
+      "estudiantes": 760,
+      "aprobados": 743,
+      "pct_aprobados": 97.8,
+      "promedio": 99.48,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "Lógica de Programación",
-      "estudiantes": 765,
-      "aprobados": 735,
-      "pct_aprobados": 96.1,
-      "promedio": 98.48,
+      "estudiantes": 760,
+      "aprobados": 733,
+      "pct_aprobados": 96.4,
+      "promedio": 98.69,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "HTML",
-      "estudiantes": 765,
-      "aprobados": 457,
-      "pct_aprobados": 59.7,
-      "promedio": 82.47,
+      "estudiantes": 760,
+      "aprobados": 458,
+      "pct_aprobados": 60.3,
+      "promedio": 83.06,
       "min": 0.0,
       "max": 100.0
     },
@@ -104,10 +104,10 @@
   ],
   "totales": {
     "total_cursos": 11,
-    "total_registros": 8531,
+    "total_registros": 8453,
     "estudiantes_unicos_id": 780,
-    "promedio_general": 93.01,
-    "total_aprobados": 7338
+    "promedio_general": 93.16,
+    "total_aprobados": 7318
   },
   "anomalias": [
     {
@@ -116,7 +116,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 237
+      "cantidad": 228
     },
     {
       "categoria": "AVANCE IRREGULAR",
