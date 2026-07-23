@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-23T12:01:38.301377-05:00",
+  "ultima_actualizacion": "2026-07-23T16:01:52.850256-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -15,8 +15,8 @@
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
       "estudiantes": 760,
-      "finalizados": 457,
-      "promedio": 83.01,
+      "finalizados": 460,
+      "promedio": 83.16,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 777,
@@ -60,7 +60,7 @@
       "curso": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
       "estudiantes": 760,
       "finalizados": 773,
-      "promedio": 99.83,
+      "promedio": 99.84,
       "min": 22.0,
       "max": 100.0,
       "inscritos": 862,
@@ -105,7 +105,7 @@
         "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
         "estudiantes": 172,
         "finalizados": 0,
-        "promedio": 1.28,
+        "promedio": 1.35,
         "min": 0.0,
         "max": 45.0,
         "inscritos": 172,
@@ -127,7 +127,7 @@
     "anomalias": [
       {
         "categoria": "AVANCE 0%",
-        "cantidad": 311
+        "cantidad": 308
       },
       {
         "categoria": "AVANCE IRREGULAR",
