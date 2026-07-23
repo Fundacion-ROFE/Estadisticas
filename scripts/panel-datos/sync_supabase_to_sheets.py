@@ -1,16 +1,35 @@
 # -*- coding: utf-8 -*-
 """
-sync_supabase_to_sheets.py — Sincronización Supabase → Sheets (H1Test, H2Test, H3Test).
+sync_supabase_to_sheets.py — Sincronización Supabase → Google Sheets (uso de Emoflow).
 
-Objetivo: mantener hojas de lectura fácil en Google Sheets para que el equipo pueda
-consultar/editar los datos sin abandonar Excel. Las vistas públicas de Supabase se
-espejo en pestañas H1Test (Participantes), H2Test (Emoflow), H3Test (Resumen).
+Objetivo: dejar en Google Sheets una hoja de lectura fácil para que el equipo consulte
+el uso de Emoflow por estudiante sin entrar al panel ni a Supabase.
 
-⚠️ NOTA: Este script es principalmente de LECTURA (Supabase → Sheets).
-Escrituras manuales en Sheets se cargan en Supabase a través del flujo manual.
+Escribe UNA pestaña: `AUTO_Emoflow_Uso` (la crea si no existe).
+
+⚠️ La pestaña se BORRA ENTERA (`clear()`) en cada corrida — por eso el prefijo `AUTO_`:
+   nada escrito a mano ahí sobrevive. No renombrar sin actualizar TAB_EMOFLOW abajo.
+
+⚠️ NUNCA apuntar este script al Sheet `1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs`
+   (pestaña `h2test`): ese es el export CRUDO de Q10 que lee `normalize_q10_data.py`,
+   la ENTRADA de todo el pipeline. Un `clear()` ahí lo destruiría. La similitud de
+   nombres `h2test` / `H2Test` es coincidencia — ver docs/procesos/supabase-estructura.md.
+
+**2026-07-23 — reescrito.** Antes intentaba escribir 3 pestañas (H1Test/H2Test/H3Test) y
+venía fallando a diario. Dos causas: (a) las pestañas fueron borradas del Sheet, y
+(b) el script había quedado desactualizado frente al esquema —
+`participants.cedula`/`participants.programa` no existen (son `q10_id` y viven en
+`courses`), y la vista `v_aprobacion_cohorte_stats` tampoco. Decisión: dejar solo Emoflow,
+que es la parte que sí funciona. Las funciones de Participantes y Resumen quedan abajo
+DESACTIVADAS y sin llamar, como referencia por si el equipo las vuelve a pedir.
+
+Usa SERVICE_ROLE (no anon): `emoflow_ingresos` es PII y anon quedó revocado (401) en el
+hardening de seguridad del 2026-07-14/23.
 
 Uso:
     python sync_supabase_to_sheets.py [--sheet-id <id>]
+Consola (parseable por n8n):
+    RESUMEN: filas=N estado=exito
 
 Fundación ROFÉ | Jóvenes creaTIvos
 """
@@ -44,8 +63,10 @@ RUTA_ENV = os.path.join(PROYECTO_ROOT, ".env.local")
 RUTA_CREDENCIALES = os.path.join(PROYECTO_ROOT, "scripts", "q10-consolidacion",
                                  "credenciales_service_account.json")
 
-# Sheet ID por defecto (el mismo de Q10/Avance/Emoflow manual)
+# Sheet destino: BD Seguimiento de Monitorias (donde trabaja el equipo).
+# NO es el Sheet de h2test — ver la advertencia del docstring.
 SHEET_ID_DEFAULT = "1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8"
+TAB_EMOFLOW      = "AUTO_Emoflow_Uso"
 
 USER_AGENT = "panel-datos-etl/1.0"
 
@@ -100,8 +121,60 @@ class Supa:
             offset += page
 
 
+def sincronizar_emoflow(supa: Supa, ws) -> int:
+    """`AUTO_Emoflow_Uso`: uso de Emoflow por persona + su estado canónico.
+
+    La columna Estado traduce el cruce con `participants.en_seguimiento_jc` para que la
+    hoja se explique sola: el CSV de Emoflow arrastra gente que ya no es estudiante
+    (retiros y postulantes de años anteriores), y sin esa columna los totales de la hoja
+    no cuadrarían con el panel. Ver docs/procesos/supabase-estructura.md.
+    """
+    log(f"Sincronizando {TAB_EMOFLOW}...")
+
+    filas = supa.get_todo(
+        "/emoflow_ingresos?select=email,nombre,grupo_ciudad,ingresos,ultimo_ingreso,"
+        "participant_id&order=ingresos.desc"
+    )
+    # id → en_seguimiento_jc, para clasificar sin una segunda consulta por fila
+    seguimiento = {
+        p["id"]: p.get("en_seguimiento_jc")
+        for p in supa.get_todo("/participants?select=id,en_seguimiento_jc")
+    }
+
+    def estado(pid) -> str:
+        if not pid or pid not in seguimiento:
+            return "Sin matrícula en Q10"
+        return "Retiro probable" if seguimiento[pid] is False else "Estudiante actual"
+
+    datos = [["Email", "Nombre", "Ciudad", "Ingresos al Sistema", "Último Ingreso", "Estado"]]
+    for f in filas:
+        datos.append([
+            f.get("email") or "",
+            f.get("nombre") or "",
+            f.get("grupo_ciudad") or "",
+            f.get("ingresos") or 0,
+            f.get("ultimo_ingreso") or "",
+            estado(f.get("participant_id")),
+        ])
+
+    log(f"  Escribiendo {len(datos) - 1} registros...")
+    ws.clear()
+    ws.append_rows(datos)
+    return len(datos) - 1
+
+
+# ---------------------------------------------------------------------------
+# DESACTIVADAS (2026-07-23). No se llaman desde main(). Ambas quedaron rotas contra el
+# esquema actual y se conservan solo como referencia si el equipo vuelve a pedir estas
+# hojas — arreglarlas exige reescribir las consultas, no solo recrear las pestañas:
+#   · sincronizar_h1_participantes: `participants.cedula` y `participants.programa` no
+#     existen (son `q10_id`, y el programa vive en `courses` vía `enrollments`) → HTTP 400.
+#   · sincronizar_h3_resumen: la vista `v_aprobacion_cohorte_stats` no existe (HTTP 404) y
+#     los campos que lee de `cohorte_stats` (ingresados/activos/aprobados/…) tampoco —
+#     hoy esa tabla trae total_participantes/con_emprendimiento/edad_promedio.
+# ---------------------------------------------------------------------------
 def sincronizar_h1_participantes(supa: Supa, ws_h1) -> None:
-    """H1Test: Participantes + programa + ciudad (datos brutos para referencia)."""
+    """[DESACTIVADA] H1Test: Participantes + programa + ciudad."""
     log("Sincronizando H1Test (Participantes)...")
 
     # Participantes con programa y ciudad
@@ -155,7 +228,7 @@ def sincronizar_h2_emoflow(supa: Supa, ws_h2) -> None:
 
 
 def sincronizar_h3_resumen(supa: Supa, ws_h3) -> None:
-    """H3Test: Resumen ejecutivo — KPIs de la cohorte actual."""
+    """[DESACTIVADA] H3Test: Resumen ejecutivo — KPIs de la cohorte actual."""
     log("Sincronizando H3Test (Resumen Ejecutivo)...")
 
     # Estadísticas generales
@@ -210,54 +283,46 @@ def main() -> int:
 
     cargar_env_local()
 
-    # Credenciales Supabase
+    # SERVICE_ROLE, no anon: `emoflow_ingresos` es PII y anon está revocado (401).
     url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_ANON_KEY")  # Anon key es suficiente (lectura de vistas públicas)
+    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
     if not url or not key:
-        log("ERROR: falta SUPABASE_URL o SUPABASE_ANON_KEY (.env.local)")
+        log("ERROR: falta SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY (.env.local)")
         return 1
 
-    # Conectar a Supabase
     supa = Supa(url, key)
 
-    # Conectar a Google Sheets
     creds = Credentials.from_service_account_file(
         RUTA_CREDENCIALES,
         scopes=["https://www.googleapis.com/auth/spreadsheets"],
     )
     sh = gspread.authorize(creds).open_by_key(args.sheet_id)
 
-    # Verificar que existan las hojas H1Test, H2Test, H3Test (deben existir en el Sheet)
-    hojas_existentes = {w.title for w in sh.worksheets()}
-    hojas_necesarias = ["H1Test", "H2Test", "H3Test"]
-
-    log(f"Hojas disponibles en el Sheet: {hojas_existentes}")
-
-    hojas_faltantes = [h for h in hojas_necesarias if h not in hojas_existentes]
-    if hojas_faltantes:
-        log(f"⚠️ ADVERTENCIA: faltan hojas {hojas_faltantes} en el Sheet.")
-        log(f"   Por favor crea manualmente las hojas H1Test, H2Test, H3Test en: https://docs.google.com/spreadsheets/d/{args.sheet_id}")
-        log(f"   Luego ejecuta este script de nuevo.")
+    # Guardarraíl: si alguien apunta el script al Sheet de h2test, abortar antes de
+    # tocar nada — un clear() ahí destruiría la entrada del pipeline (ver docstring).
+    SHEET_H2TEST_PROHIBIDO = "1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs"
+    if args.sheet_id == SHEET_H2TEST_PROHIBIDO:
+        log("ERROR: ese Sheet es el export crudo de Q10 (entrada del pipeline). Abortando.")
+        print("RESUMEN: filas=0 estado=error")
         return 1
 
-    # Sincronizar
     try:
-        ws_h1 = sh.worksheet("H1Test")
-        sincronizar_h1_participantes(supa, ws_h1)
+        # Crear la pestaña si no existe: evita el fallo diario que traía este paso.
+        try:
+            ws = sh.worksheet(TAB_EMOFLOW)
+        except gspread.WorksheetNotFound:
+            log(f"La pestaña '{TAB_EMOFLOW}' no existe — creándola...")
+            ws = sh.add_worksheet(title=TAB_EMOFLOW, rows="1000", cols="10")
 
-        ws_h2 = sh.worksheet("H2Test")
-        sincronizar_h2_emoflow(supa, ws_h2)
-
-        ws_h3 = sh.worksheet("H3Test")
-        sincronizar_h3_resumen(supa, ws_h3)
+        n = sincronizar_emoflow(supa, ws)
 
         log("OK")
-        print("RESUMEN: estado=exito")
+        print(f"RESUMEN: filas={n} estado=exito")
         return 0
 
     except Exception as e:
         log(f"ERROR: {e}")
-        print("RESUMEN: estado=error")
+        print("RESUMEN: filas=0 estado=error")
         return 1
 
 
