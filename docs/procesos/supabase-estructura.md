@@ -345,6 +345,87 @@ prueba (`tools/exclusiones_prueba.json`): nuevo archivo
 
 Caso cerrado — persiste correctamente en cada sync futuro sin intervención manual.
 
+### Auditoría de coherencia total del panel vs. la verdad canónica (2026-07-23)
+
+A pedido de Samuel ("cerciorarnos que todo lo que visualizamos de JC use esta nueva verdad"),
+se auditaron **las 26 fuentes** que consume `lib/api.ts`, contrastando cada una contra el
+universo canónico (pestaña Seguimiento → `en_seguimiento_jc` → 760).
+
+**Resultado: 21 coherentes, 5 no.** Las coherentes dan 760 exacto (`cohorte_stats`,
+`v_cohorte_estudiantes`, `v_programa_stats`, `v_curso_completion`,
+`v_cohorte_estudiantes_distribucion`, `cohorte_ingresos.activos`) o un subconjunto explicable
+por cobertura de datos (`v_demografia_grupo` 759 = 1 sin `grupo_ciudad`;
+`v_edad_distribucion` 757 = 3 sin edad; `v_emprendimiento_*` 681 = cobertura de la encuesta).
+
+**Brecha 1 — el bloque Emoflow ignoraba el filtro (4 vistas + 1 tabla).**
+`v_emoflow_resumen` / `_por_ciudad` / `_bandas` / `_bandas_ciudad` reportaban **827** y
+`emoflow_actividad_semanal.roster` **844**, con el panel diciendo 760 arriba. Desglose
+verificado de los 827: **742** canónicos + **17** en retiro probable + **68 sin
+`participant_id`** (nunca fueron participantes en Supabase; 56 de ellos sí están en
+`postulantes_jc` → son postulantes/retirados antiguos, la misma brecha estructural 832 vs 777).
+**Decisión de Samuel: no reemplazar, sino permitir ver ambos universos.** Migración
+`011_emoflow_canonico.sql` (aplicada) agrega 4 vistas paralelas `_canonico` con las mismas
+columnas; las originales quedan intactas. El frontend gana un toggle
+**"Solo estudiantes actuales" (742, default) / "Todos (histórico)" (827)**. Dato interesante:
+el promedio de ingresos sube de 33,1 a 35,3 al filtrar — los excluidos usaban menos Emoflow,
+consistente con ser retirados. 5 tests permanentes agregados (39→**44/44 PASS**).
+
+**Brecha 2 (crítica) — la verdad canónica se refrescaba SEMANAL, el panel sincroniza DIARIO.**
+Verificado contra la API de n8n **en vivo** (no solo el JSON exportado):
+`sync_sociodemograficos.py` —el único script que calcula `en_seguimiento_jc`— vivía solo en
+`sociodemograficos-semanal` (lunes 6:00), mientras `q10-sync-supabase` corre a diario 9:45.
+Consecuencias: (a) de martes a domingo el panel podía contar como activo a alguien que el
+equipo ya sacó del Sheet — hasta **6 días de desfase** sobre el dato más canónico que
+tenemos; (b) peor, `cargar_supabase.py` escribe el snapshot diario de `historial_cursos`
+desde `v_curso_completion`, que depende de ese flag rancio → **la serie histórica heredaba el
+desfase de forma permanente** (el snapshot de hoy quedó en 777, no 760).
+**Corregido:** `sync_sociodemograficos` insertado en la cadena diaria **entre
+`normalize_q10_data` y `cargar_supabase`** (con su nodo IF + `stopAndError`, siguiendo el
+patrón del workflow). Ese orden es deliberado: el flag se refresca ANTES de que se escriba el
+snapshot del día. Un participante creado por el sync de Q10 ese mismo día queda con
+`en_seguimiento_jc=NULL`, que `IS DISTINCT FROM false` deja pasar como activo — comportamiento
+conservador correcto. Workflow re-exportado a `n8n-workflows/q10-sync-supabase.json`.
+Nota: `sociodemograficos-semanal` sigue activo por `sync_sociodemograficos_mr.py`; el JC corre
+dos veces los lunes, lo cual es inocuo (idempotente).
+
+### Verificación cruzada corregida + hallazgo estructural (2026-07-23)
+
+Samuel reportó que la tabla de verificación cruzada (oficial vs. `v_aprobacion_cursos_jc_ajustado`)
+salía completamente vacía en "oficial" y "Revisar" en las 7 filas. Dos causas, una de display y
+una real:
+
+**1) Bug de comparación (arreglado):** el frontend comparaba `curso === curso` con igualdad
+exacta de string, pero los nombres vienen en formato distinto en cada fuente — oficial en
+Título ("Hackea tu cerebro..."), recalculado en MAYÚSCULAS crudas de `courses.nombre`
+("HACKEA TU CEREBRO..."). Nunca iban a matchear. Arreglado comparando normalizado
+(`trim().toUpperCase()`) en `app/page.tsx`.
+
+**2) "Cursaron (recalculado)" no era una métrica real (rediseñada, a pedido de Samuel):**
+en Supabase, **los 777 participantes de la cohorte tienen fila de `enrollments` para los 7
+cursos por construcción** (se cargan en bloque al matricular, incluso con avance=0%) — por
+eso ese número daba 777 fijo en las 7 filas, sin variar como el oficial (832/791/779, que sí
+refleja participación real por curso desde Q10). Reemplazada por **"Cursando ahora"** =
+`banda_0_25 + banda_26_80` (activos con avance <80% en ESE curso puntual) — sí varía de forma
+útil (HTML: 247 cursando vs. Lógica: 12, Emprendimiento: 3), responde "qué estudiantes
+quedan" en vez de fingir un "cursaron" no comparable. La columna "¿Coincide?" ahora solo
+evalúa Aprobados (la única pareja con la misma definición en ambos lados).
+
+**3) Hallazgo real, no un bug — el "Revisar" en Aprobados de 4 de los 7 cursos es esperado:**
+Q10 tiene **832 ingresados totales** (`cohorte_ingresos`: 760 activos + 74 retirados
+oficiales acumulados), pero Supabase solo llegó a cargar **777** (760 activos + 17 de la
+alerta de retiro reciente) — **~55 personas que Q10 ya procesó como retiradas hace tiempo
+nunca se cargaron en Supabase** (confirma H7, documentado antes: "n=777 = alguna vez cargado
+activo en enrollments"). El recálculo desde Supabase sub-cuenta aprobados en los cursos
+**tempranos** de la ruta (Bienvenida: 72 aprobados-retirados oficiales vs. solo 17 posibles
+en Supabase; Habilidades 52; Hackea 65; Emprendimiento 24) porque esos ~55 retirados antiguos
+sí alcanzaron a completarlos antes de irse. En los cursos **tardíos** (Lógica: 5,
+IA: 10) casi no hay diferencia — esos retirados antiguos probablemente se fueron antes de
+llegar tan lejos, así que su ausencia en Supabase no distorsiona esos dos cursos. Por eso
+Lógica e IA dan "Sí" y los otros 4 dan "Revisar" — **es el patrón esperado, no indica un sync
+atrasado.** Nota agregada directamente en el panel para que el equipo no lo confunda con algo
+roto. Cerrar esta brecha de raíz requeriría cargar retroactivamente esas ~55 personas
+(back-fill histórico) — no se hizo, queda fuera de alcance de esta sesión.
+
 ### `v_persona_360` — trazabilidad total por persona (2026-07-23)
 
 Vista nueva (`docs/migrations/008_v_persona_360.sql`), a pedido explícito: "para un informe

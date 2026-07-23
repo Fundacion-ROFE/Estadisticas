@@ -3937,3 +3937,39 @@ API de n8n, escribirlo con Python (`urllib`+UTF-8), nunca tipeado directo en un 
 - Verificado: `v_cohorte_estudiantes` JC 2026 activos 759→760 (coincide exacto con el oficial
   de Q10), `v_retiro_probable_jc` 18→17, `cohorte_stats.total_participantes` 759→760. Persiste
   en cada sync futuro sin intervención manual.
+
+## 2026-07-23 (cont.) — [panel-datos-etl] Verificación cruzada: bug de comparación + hallazgo estructural
+
+- Samuel reportó la tabla de verificación cruzada vacía en "oficial" y "Revisar" en las 7
+  filas. Causa 1 (bug, arreglado): el match de curso comparaba string exacto entre nombres en
+  Título (oficial) y MAYÚSCULAS (recalculado, crudo de `courses.nombre`) — nunca coincidían.
+  Fix: comparar normalizado (`trim().toUpperCase()`).
+- Causa 2 (rediseño, a pedido de Samuel): "Cursaron (recalculado)" daba 777 fijo en las 7
+  filas porque en Supabase todo participante tiene enrollment en los 7 cursos por
+  construcción — no reflejaba participación real. Reemplazada por "Cursando ahora" =
+  banda_0_25+banda_26_80 (activos <80% en ese curso puntual), que sí varía de forma útil.
+  "¿Coincide?" ahora solo evalúa Aprobados.
+- Hallazgo real (no bug): Q10 tiene 832 ingresados totales, Supabase solo cargó 777 — ~55
+  retirados antiguos de Q10 nunca entraron a Supabase. Por eso 4 de 7 cursos (los tempranos
+  de la ruta) siguen dando "Revisar" en Aprobados de forma esperada — los cursos tardíos
+  (Lógica, IA) sí coinciden. Documentado en el panel y en supabase-estructura.md para que no
+  se confunda con un sync atrasado. Backfill de esas 55 personas queda fuera de alcance.
+
+## 2026-07-23 (cont.) — [panel-datos-etl] Auditoría de las 26 fuentes vs. la verdad canónica
+
+- Samuel pidió verificar que TODO lo que el panel visualiza de JC use la nueva verdad
+  canónica (Seguimiento → en_seguimiento_jc → 760). Auditadas las 26 fuentes de `lib/api.ts`:
+  **21 coherentes, 5 no**.
+- **Brecha 1 (Emoflow):** 4 vistas reportaban 827 y `emoflow_actividad_semanal.roster` 844.
+  Desglose: 742 canónicos + 17 en retiro probable + 68 sin participant_id (postulantes/
+  retirados antiguos, 56 de ellos en postulantes_jc). Samuel pidió poder ver AMBOS universos →
+  migración `011_emoflow_canonico.sql` con 4 vistas `_canonico` paralelas (originales intactas)
+  + toggle en el panel "Solo estudiantes actuales" (default) / "Todos (histórico)".
+- **Brecha 2 (crítica):** verificado en n8n EN VIVO — `sync_sociodemograficos.py`, el único
+  script que calcula `en_seguimiento_jc`, corría SOLO los lunes 6:00, mientras el panel
+  sincroniza diario 9:45. Hasta 6 días de desfase sobre el dato más canónico; y como
+  `cargar_supabase.py` escribe el snapshot de `historial_cursos` desde `v_curso_completion`,
+  la serie histórica heredaba el desfase permanentemente (snapshot de hoy: 777, no 760).
+  Corregido insertando el nodo en la cadena diaria ENTRE normalize y cargar_supabase (orden
+  deliberado: flag fresco antes del snapshot), con IF + stopAndError. Workflow re-exportado.
+- Suite de integridad: 39 → **44/44 PASS** (5 tests nuevos para las vistas canónicas).

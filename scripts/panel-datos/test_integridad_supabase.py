@@ -218,6 +218,27 @@ def main() -> int:
         test(f"v_retiro_probable_jc {r['cohorte']}: aprobado+no_aprobado=total",
              suma == r["retiro_probable_total"], f"{suma} vs {r['retiro_probable_total']}")
 
+    # Vistas Emoflow canónicas (migración 011): deben ser un SUBCONJUNTO estricto de las
+    # originales y cuadrar exacto contra el cruce emoflow×participants vigentes. Si alguien
+    # vuelve a tocar una de las dos familias y se desalinean, esto lo caza.
+    emo_todos = supa.get_todo("/v_emoflow_resumen?select=participantes")
+    emo_canon = supa.get_todo("/v_emoflow_resumen_canonico?select=participantes")
+    n_todos = emo_todos[0]["participantes"] if emo_todos else 0
+    n_canon = emo_canon[0]["participantes"] if emo_canon else 0
+    test("v_emoflow_resumen_canonico ⊆ v_emoflow_resumen",
+         0 < n_canon <= n_todos, f"canonico={n_canon} vs todos={n_todos}")
+    # cruce independiente: filas de emoflow con participante vigente (en_seguimiento_jc≠false)
+    emo_match = [e for e in emo if e.get("participant_id")]
+    ids_alerta = {p["id"] for p in jc_alertas}
+    esperado = sum(1 for e in emo_match if e["participant_id"] not in ids_alerta)
+    test("v_emoflow_resumen_canonico cuadra con emoflow×participants vigentes",
+         n_canon == esperado, f"vista={n_canon} vs cruce={esperado}")
+    for vista in ("v_emoflow_por_ciudad_canonico", "v_emoflow_bandas_canonico",
+                  "v_emoflow_bandas_ciudad_canonico"):
+        filas = supa.get_todo(f"/{vista}?select=participantes")
+        suma_v = sum(f["participantes"] for f in filas)
+        test(f"{vista} suma = resumen canónico", suma_v == n_canon, f"{suma_v} vs {n_canon}")
+
     # ---------- E. Frescura ----------
     print("\n== E. Frescura (syncs diarios) ==")
     max_corte = max((e["fecha_corte"] for e in emo if e.get("fecha_corte")), default="")

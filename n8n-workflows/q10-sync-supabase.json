@@ -1,1244 +1,664 @@
-﻿{
-    "updatedAt":  "2026-07-21T20:17:29.597Z",
-    "createdAt":  "2026-07-10T01:37:42.705Z",
-    "id":  "uSizw3dNzpb6n53H",
-    "name":  "q10-sync-supabase",
-    "description":  null,
-    "active":  true,
-    "isArchived":  false,
-    "nodes":  [
-                  {
-                      "parameters":  {
-                                         "rule":  {
-                                                      "interval":  [
-                                                                       {
-                                                                           "triggerAtHour":  9,
-                                                                           "triggerAtMinute":  45
-                                                                       }
-                                                                   ]
-                                                  }
-                                     },
-                      "type":  "n8n-nodes-base.scheduleTrigger",
-                      "typeVersion":  1.2,
-                      "position":  [
-                                       0,
-                                       0
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000001",
-                      "name":  "Schedule Diario 9:45"
-                  },
-                  {
-                      "parameters":  {
-                                         "command":  "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos \u0026\u0026 python normalize_q10_data.py"
-                                     },
-                      "type":  "n8n-nodes-base.executeCommand",
-                      "typeVersion":  1,
-                      "position":  [
-                                       224,
-                                       0
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000002",
-                      "name":  "Ejecutar normalize_q10_data"
-                  },
-                  {
-                      "parameters":  {
-                                         "conditions":  {
-                                                            "options":  {
-                                                                            "caseSensitive":  true,
-                                                                            "leftValue":  "",
-                                                                            "typeValidation":  "strict",
-                                                                            "version":  2
-                                                                        },
-                                                            "conditions":  [
-                                                                               {
-                                                                                   "leftValue":  "={{ $json.stdout }}",
-                                                                                   "rightValue":  "estado=exito",
-                                                                                   "operator":  {
-                                                                                                    "type":  "string",
-                                                                                                    "operation":  "contains"
-                                                                                                }
-                                                                               }
-                                                                           ],
-                                                            "combinator":  "and"
-                                                        },
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.if",
-                      "typeVersion":  2.2,
-                      "position":  [
-                                       448,
-                                       0
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000003",
-                      "name":  "¿Normalización OK?"
-                  },
-                  {
-                      "parameters":  {
-                                         "command":  "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos \u0026\u0026 python cargar_supabase.py"
-                                     },
-                      "type":  "n8n-nodes-base.executeCommand",
-                      "typeVersion":  1,
-                      "position":  [
-                                       672,
-                                       -96
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000004",
-                      "name":  "Ejecutar cargar_supabase"
-                  },
-                  {
-                      "parameters":  {
-                                         "conditions":  {
-                                                            "options":  {
-                                                                            "caseSensitive":  true,
-                                                                            "leftValue":  "",
-                                                                            "typeValidation":  "strict",
-                                                                            "version":  2
-                                                                        },
-                                                            "conditions":  [
-                                                                               {
-                                                                                   "leftValue":  "={{ $json.stdout }}",
-                                                                                   "rightValue":  "estado=exito",
-                                                                                   "operator":  {
-                                                                                                    "type":  "string",
-                                                                                                    "operation":  "contains"
-                                                                                                }
-                                                                               }
-                                                                           ],
-                                                            "combinator":  "and"
-                                                        },
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.if",
-                      "typeVersion":  2.2,
-                      "position":  [
-                                       896,
-                                       -96
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000005",
-                      "name":  "¿Carga OK?"
-                  },
-                  {
-                      "parameters":  {
-
-                                     },
-                      "type":  "n8n-nodes-base.noOp",
-                      "typeVersion":  1,
-                      "position":  [
-                                       2912,
-                                       -288
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000006",
-                      "name":  "OK"
-                  },
-                  {
-                      "parameters":  {
-                                         "errorMessage":  "=Normalización Q10→Supabase falló. Salida: {{ $json.stdout }} {{ $json.stderr }}"
-                                     },
-                      "type":  "n8n-nodes-base.stopAndError",
-                      "typeVersion":  1,
-                      "position":  [
-                                       672,
-                                       96
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000007",
-                      "name":  "Error Normalización"
-                  },
-                  {
-                      "parameters":  {
-                                         "errorMessage":  "=Carga a Supabase falló (o con advertencias FK). Salida: {{ $json.stdout }} {{ $json.stderr }}"
-                                     },
-                      "type":  "n8n-nodes-base.stopAndError",
-                      "typeVersion":  1,
-                      "position":  [
-                                       1120,
-                                       0
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000008",
-                      "name":  "Error Carga"
-                  },
-                  {
-                      "parameters":  {
-                                         "command":  "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos \u0026\u0026 python sync_aprobacion_supabase.py"
-                                     },
-                      "type":  "n8n-nodes-base.executeCommand",
-                      "typeVersion":  1,
-                      "position":  [
-                                       1120,
-                                       -192
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000009",
-                      "name":  "Ejecutar sync_aprobacion"
-                  },
-                  {
-                      "parameters":  {
-                                         "conditions":  {
-                                                            "options":  {
-                                                                            "caseSensitive":  true,
-                                                                            "leftValue":  "",
-                                                                            "typeValidation":  "strict",
-                                                                            "version":  2
-                                                                        },
-                                                            "conditions":  [
-                                                                               {
-                                                                                   "leftValue":  "={{ $json.stdout }}",
-                                                                                   "rightValue":  "estado=exito",
-                                                                                   "operator":  {
-                                                                                                    "type":  "string",
-                                                                                                    "operation":  "contains"
-                                                                                                }
-                                                                               }
-                                                                           ],
-                                                            "combinator":  "and"
-                                                        },
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.if",
-                      "typeVersion":  2.2,
-                      "position":  [
-                                       1344,
-                                       -192
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000010",
-                      "name":  "¿Aprobación OK?"
-                  },
-                  {
-                      "parameters":  {
-                                         "errorMessage":  "=Sync de aprobación (832) a Supabase falló. Salida: {{ $json.stdout }} {{ $json.stderr }}"
-                                     },
-                      "type":  "n8n-nodes-base.stopAndError",
-                      "typeVersion":  1,
-                      "position":  [
-                                       1568,
-                                       -32
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000011",
-                      "name":  "Error Aprobación"
-                  },
-                  {
-                      "parameters":  {
-                                         "command":  "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos \u0026\u0026 python sync_emoflow_api.py"
-                                     },
-                      "type":  "n8n-nodes-base.executeCommand",
-                      "typeVersion":  1,
-                      "position":  [
-                                       1568,
-                                       -192
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000012",
-                      "name":  "Ejecutar sync_emoflow_api"
-                  },
-                  {
-                      "parameters":  {
-                                         "conditions":  {
-                                                            "options":  {
-                                                                            "caseSensitive":  true,
-                                                                            "leftValue":  "",
-                                                                            "typeValidation":  "strict",
-                                                                            "version":  2
-                                                                        },
-                                                            "conditions":  [
-                                                                               {
-                                                                                   "leftValue":  "={{ $json.stdout }}",
-                                                                                   "rightValue":  "estado=exito",
-                                                                                   "operator":  {
-                                                                                                    "type":  "string",
-                                                                                                    "operation":  "contains"
-                                                                                                }
-                                                                               }
-                                                                           ],
-                                                            "combinator":  "and"
-                                                        },
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.if",
-                      "typeVersion":  2.2,
-                      "position":  [
-                                       1792,
-                                       -192
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000013",
-                      "name":  "¿Emoflow OK?"
-                  },
-                  {
-                      "parameters":  {
-                                         "errorMessage":  "=Sync de Emoflow (ingresos al sistema) a Supabase falló. Salida: {{ $json.stdout }} {{ $json.stderr }}"
-                                     },
-                      "type":  "n8n-nodes-base.stopAndError",
-                      "typeVersion":  1,
-                      "position":  [
-                                       2016,
-                                       -16
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000014",
-                      "name":  "Error Emoflow"
-                  },
-                  {
-                      "parameters":  {
-                                         "command":  "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos \u0026\u0026 python export_supabase_json.py"
-                                     },
-                      "type":  "n8n-nodes-base.executeCommand",
-                      "typeVersion":  1,
-                      "position":  [
-                                       2016,
-                                       -192
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000015",
-                      "name":  "Ejecutar export_supabase_json"
-                  },
-                  {
-                      "parameters":  {
-                                         "conditions":  {
-                                                            "options":  {
-                                                                            "caseSensitive":  true,
-                                                                            "leftValue":  "",
-                                                                            "typeValidation":  "strict",
-                                                                            "version":  2
-                                                                        },
-                                                            "conditions":  [
-                                                                               {
-                                                                                   "leftValue":  "={{ $json.stdout }}",
-                                                                                   "rightValue":  "estado=exito",
-                                                                                   "operator":  {
-                                                                                                    "type":  "string",
-                                                                                                    "operation":  "contains"
-                                                                                                }
-                                                                               }
-                                                                           ],
-                                                            "combinator":  "and"
-                                                        },
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.if",
-                      "typeVersion":  2.2,
-                      "position":  [
-                                       2240,
-                                       -192
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000016",
-                      "name":  "Export JSON OK?"
-                  },
-                  {
-                      "parameters":  {
-                                         "errorMessage":  "=Export Supabase-\u003eJSON fallo. Salida: {{ $json.stdout }} {{ $json.stderr }}"
-                                     },
-                      "type":  "n8n-nodes-base.stopAndError",
-                      "typeVersion":  1,
-                      "position":  [
-                                       2240,
-                                       32
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000017",
-                      "name":  "Error Export JSON"
-                  },
-                  {
-                      "parameters":  {
-                                         "command":  "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos \u0026\u0026 python sync_supabase_to_sheets.py"
-                                     },
-                      "type":  "n8n-nodes-base.executeCommand",
-                      "typeVersion":  1,
-                      "position":  [
-                                       2464,
-                                       -192
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000018",
-                      "name":  "Ejecutar sync_supabase_to_sheets"
-                  },
-                  {
-                      "parameters":  {
-                                         "conditions":  {
-                                                            "options":  {
-                                                                            "caseSensitive":  true,
-                                                                            "leftValue":  "",
-                                                                            "typeValidation":  "strict",
-                                                                            "version":  2
-                                                                        },
-                                                            "conditions":  [
-                                                                               {
-                                                                                   "leftValue":  "={{ $json.stdout }}",
-                                                                                   "rightValue":  "estado=exito",
-                                                                                   "operator":  {
-                                                                                                    "type":  "string",
-                                                                                                    "operation":  "contains"
-                                                                                                }
-                                                                               }
-                                                                           ],
-                                                            "combinator":  "and"
-                                                        },
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "type":  "n8n-nodes-base.if",
-                      "typeVersion":  2.2,
-                      "position":  [
-                                       2688,
-                                       -192
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000019",
-                      "name":  "Sheets OK?"
-                  },
-                  {
-                      "parameters":  {
-                                         "errorMessage":  "=Sync Supabase-\u003eSheets fallo. Salida: {{ $json.stdout }} {{ $json.stderr }}"
-                                     },
-                      "type":  "n8n-nodes-base.stopAndError",
-                      "typeVersion":  1,
-                      "position":  [
-                                       2688,
-                                       32
-                                   ],
-                      "id":  "q10sb-0001-0001-0001-000000000020",
-                      "name":  "Error Sheets"
-                  }
-              ],
-    "connections":  {
-                        "Schedule Diario 9:45":  {
-                                                     "main":  [
-                                                                  [
-                                                                      {
-                                                                          "node":  "Ejecutar normalize_q10_data",
-                                                                          "type":  "main",
-                                                                          "index":  0
-                                                                      }
-                                                                  ]
-                                                              ]
-                                                 },
-                        "Ejecutar normalize_q10_data":  {
-                                                            "main":  [
-                                                                         [
-                                                                             {
-                                                                                 "node":  "¿Normalización OK?",
-                                                                                 "type":  "main",
-                                                                                 "index":  0
-                                                                             }
-                                                                         ]
-                                                                     ]
-                                                        },
-                        "¿Normalización OK?":  {
-                                                   "main":  [
-                                                                [
-                                                                    {
-                                                                        "node":  "Ejecutar cargar_supabase",
-                                                                        "type":  "main",
-                                                                        "index":  0
-                                                                    }
-                                                                ],
-                                                                [
-                                                                    {
-                                                                        "node":  "Error Normalización",
-                                                                        "type":  "main",
-                                                                        "index":  0
-                                                                    }
-                                                                ]
-                                                            ]
-                                               },
-                        "Ejecutar cargar_supabase":  {
-                                                         "main":  [
-                                                                      [
-                                                                          {
-                                                                              "node":  "¿Carga OK?",
-                                                                              "type":  "main",
-                                                                              "index":  0
-                                                                          }
-                                                                      ]
-                                                                  ]
-                                                     },
-                        "¿Carga OK?":  {
-                                           "main":  [
-                                                        [
-                                                            {
-                                                                "node":  "Ejecutar sync_aprobacion",
-                                                                "type":  "main",
-                                                                "index":  0
-                                                            }
-                                                        ],
-                                                        [
-                                                            {
-                                                                "node":  "Error Carga",
-                                                                "type":  "main",
-                                                                "index":  0
-                                                            }
-                                                        ]
-                                                    ]
-                                       },
-                        "Ejecutar sync_aprobacion":  {
-                                                         "main":  [
-                                                                      [
-                                                                          {
-                                                                              "node":  "¿Aprobación OK?",
-                                                                              "type":  "main",
-                                                                              "index":  0
-                                                                          }
-                                                                      ]
-                                                                  ]
-                                                     },
-                        "¿Aprobación OK?":  {
-                                                "main":  [
-                                                             [
-                                                                 {
-                                                                     "node":  "Ejecutar sync_emoflow_api",
-                                                                     "type":  "main",
-                                                                     "index":  0
-                                                                 }
-                                                             ],
-                                                             [
-                                                                 {
-                                                                     "node":  "Error Aprobación",
-                                                                     "type":  "main",
-                                                                     "index":  0
-                                                                 }
-                                                             ]
-                                                         ]
-                                            },
-                        "Ejecutar sync_emoflow_api":  {
-                                                          "main":  [
-                                                                       [
-                                                                           {
-                                                                               "node":  "¿Emoflow OK?",
-                                                                               "type":  "main",
-                                                                               "index":  0
-                                                                           }
-                                                                       ]
-                                                                   ]
-                                                      },
-                        "¿Emoflow OK?":  {
-                                             "main":  [
-                                                          [
-                                                              {
-                                                                  "node":  "Ejecutar export_supabase_json",
-                                                                  "type":  "main",
-                                                                  "index":  0
-                                                              }
-                                                          ],
-                                                          [
-                                                              {
-                                                                  "node":  "Error Emoflow",
-                                                                  "type":  "main",
-                                                                  "index":  0
-                                                              }
-                                                          ]
-                                                      ]
-                                         },
-                        "Ejecutar export_supabase_json":  {
-                                                              "main":  [
-                                                                           [
-                                                                               {
-                                                                                   "node":  "Export JSON OK?",
-                                                                                   "type":  "main",
-                                                                                   "index":  0
-                                                                               }
-                                                                           ]
-                                                                       ]
-                                                          },
-                        "Export JSON OK?":  {
-                                                "main":  [
-                                                             [
-                                                                 {
-                                                                     "node":  "Ejecutar sync_supabase_to_sheets",
-                                                                     "type":  "main",
-                                                                     "index":  0
-                                                                 }
-                                                             ],
-                                                             [
-                                                                 {
-                                                                     "node":  "Error Export JSON",
-                                                                     "type":  "main",
-                                                                     "index":  0
-                                                                 }
-                                                             ]
-                                                         ]
-                                            },
-                        "Ejecutar sync_supabase_to_sheets":  {
-                                                                 "main":  [
-                                                                              [
-                                                                                  {
-                                                                                      "node":  "Sheets OK?",
-                                                                                      "type":  "main",
-                                                                                      "index":  0
-                                                                                  }
-                                                                              ]
-                                                                          ]
-                                                             },
-                        "Sheets OK?":  {
-                                           "main":  [
-                                                        [
-                                                            {
-                                                                "node":  "OK",
-                                                                "type":  "main",
-                                                                "index":  0
-                                                            }
-                                                        ],
-                                                        [
-                                                            {
-                                                                "node":  "Error Sheets",
-                                                                "type":  "main",
-                                                                "index":  0
-                                                            }
-                                                        ]
-                                                    ]
-                                       }
-                    },
-    "settings":  {
-                     "executionOrder":  "v1",
-                     "callerPolicy":  "workflowsFromSameOwner",
-                     "timezone":  "America/Bogota",
-                     "availableInMCP":  false
-                 },
-    "staticData":  {
-                       "node:Schedule Diario 9:45":  {
-                                                         "recurrenceRules":  [
-
-                                                                             ]
-                                                     }
-                   },
-    "meta":  null,
-    "pinData":  {
-
-                },
-    "versionId":  "e22a0f43-862d-4cb4-8b6b-6153abc7390b",
-    "activeVersionId":  "e22a0f43-862d-4cb4-8b6b-6153abc7390b",
-    "versionCounter":  32,
-    "triggerCount":  1,
-    "shared":  [
-                   {
-                       "updatedAt":  "2026-07-10T01:37:42.754Z",
-                       "createdAt":  "2026-07-10T01:37:42.754Z",
-                       "role":  "workflow:owner",
-                       "workflowId":  "uSizw3dNzpb6n53H",
-                       "projectId":  "sCDSlnWeaXfVGSdx",
-                       "project":  {
-                                       "updatedAt":  "2026-06-18T19:33:43.567Z",
-                                       "createdAt":  "2026-06-18T17:26:43.451Z",
-                                       "id":  "sCDSlnWeaXfVGSdx",
-                                       "name":  "Samuel Rojas \u003csoportejunior@tocaunavida.org\u003e",
-                                       "type":  "personal",
-                                       "icon":  null,
-                                       "description":  null,
-                                       "creatorId":  "c9975104-b757-4a51-ad4b-0461d1d32514"
-                                   }
-                   }
-               ],
-    "tags":  [
-
-             ],
-    "activeVersion":  {
-                          "updatedAt":  "2026-07-21T20:17:29.598Z",
-                          "createdAt":  "2026-07-21T20:17:29.598Z",
-                          "versionId":  "e22a0f43-862d-4cb4-8b6b-6153abc7390b",
-                          "workflowId":  "uSizw3dNzpb6n53H",
-                          "nodes":  [
-                                        {
-                                            "parameters":  {
-                                                               "rule":  {
-                                                                            "interval":  [
-                                                                                             {
-                                                                                                 "triggerAtHour":  9,
-                                                                                                 "triggerAtMinute":  45
-                                                                                             }
-                                                                                         ]
-                                                                        }
-                                                           },
-                                            "type":  "n8n-nodes-base.scheduleTrigger",
-                                            "typeVersion":  1.2,
-                                            "position":  [
-                                                             0,
-                                                             0
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000001",
-                                            "name":  "Schedule Diario 9:45"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "command":  "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos \u0026\u0026 python normalize_q10_data.py"
-                                                           },
-                                            "type":  "n8n-nodes-base.executeCommand",
-                                            "typeVersion":  1,
-                                            "position":  [
-                                                             224,
-                                                             0
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000002",
-                                            "name":  "Ejecutar normalize_q10_data"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "conditions":  {
-                                                                                  "options":  {
-                                                                                                  "caseSensitive":  true,
-                                                                                                  "leftValue":  "",
-                                                                                                  "typeValidation":  "strict",
-                                                                                                  "version":  2
-                                                                                              },
-                                                                                  "conditions":  [
-                                                                                                     {
-                                                                                                         "leftValue":  "={{ $json.stdout }}",
-                                                                                                         "rightValue":  "estado=exito",
-                                                                                                         "operator":  {
-                                                                                                                          "type":  "string",
-                                                                                                                          "operation":  "contains"
-                                                                                                                      }
-                                                                                                     }
-                                                                                                 ],
-                                                                                  "combinator":  "and"
-                                                                              },
-                                                               "options":  {
-
-                                                                           }
-                                                           },
-                                            "type":  "n8n-nodes-base.if",
-                                            "typeVersion":  2.2,
-                                            "position":  [
-                                                             448,
-                                                             0
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000003",
-                                            "name":  "¿Normalización OK?"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "command":  "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos \u0026\u0026 python cargar_supabase.py"
-                                                           },
-                                            "type":  "n8n-nodes-base.executeCommand",
-                                            "typeVersion":  1,
-                                            "position":  [
-                                                             672,
-                                                             -96
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000004",
-                                            "name":  "Ejecutar cargar_supabase"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "conditions":  {
-                                                                                  "options":  {
-                                                                                                  "caseSensitive":  true,
-                                                                                                  "leftValue":  "",
-                                                                                                  "typeValidation":  "strict",
-                                                                                                  "version":  2
-                                                                                              },
-                                                                                  "conditions":  [
-                                                                                                     {
-                                                                                                         "leftValue":  "={{ $json.stdout }}",
-                                                                                                         "rightValue":  "estado=exito",
-                                                                                                         "operator":  {
-                                                                                                                          "type":  "string",
-                                                                                                                          "operation":  "contains"
-                                                                                                                      }
-                                                                                                     }
-                                                                                                 ],
-                                                                                  "combinator":  "and"
-                                                                              },
-                                                               "options":  {
-
-                                                                           }
-                                                           },
-                                            "type":  "n8n-nodes-base.if",
-                                            "typeVersion":  2.2,
-                                            "position":  [
-                                                             896,
-                                                             -96
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000005",
-                                            "name":  "¿Carga OK?"
-                                        },
-                                        {
-                                            "parameters":  {
-
-                                                           },
-                                            "type":  "n8n-nodes-base.noOp",
-                                            "typeVersion":  1,
-                                            "position":  [
-                                                             2912,
-                                                             -288
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000006",
-                                            "name":  "OK"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "errorMessage":  "=Normalización Q10→Supabase falló. Salida: {{ $json.stdout }} {{ $json.stderr }}"
-                                                           },
-                                            "type":  "n8n-nodes-base.stopAndError",
-                                            "typeVersion":  1,
-                                            "position":  [
-                                                             672,
-                                                             96
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000007",
-                                            "name":  "Error Normalización"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "errorMessage":  "=Carga a Supabase falló (o con advertencias FK). Salida: {{ $json.stdout }} {{ $json.stderr }}"
-                                                           },
-                                            "type":  "n8n-nodes-base.stopAndError",
-                                            "typeVersion":  1,
-                                            "position":  [
-                                                             1120,
-                                                             0
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000008",
-                                            "name":  "Error Carga"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "command":  "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos \u0026\u0026 python sync_aprobacion_supabase.py"
-                                                           },
-                                            "type":  "n8n-nodes-base.executeCommand",
-                                            "typeVersion":  1,
-                                            "position":  [
-                                                             1120,
-                                                             -192
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000009",
-                                            "name":  "Ejecutar sync_aprobacion"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "conditions":  {
-                                                                                  "options":  {
-                                                                                                  "caseSensitive":  true,
-                                                                                                  "leftValue":  "",
-                                                                                                  "typeValidation":  "strict",
-                                                                                                  "version":  2
-                                                                                              },
-                                                                                  "conditions":  [
-                                                                                                     {
-                                                                                                         "leftValue":  "={{ $json.stdout }}",
-                                                                                                         "rightValue":  "estado=exito",
-                                                                                                         "operator":  {
-                                                                                                                          "type":  "string",
-                                                                                                                          "operation":  "contains"
-                                                                                                                      }
-                                                                                                     }
-                                                                                                 ],
-                                                                                  "combinator":  "and"
-                                                                              },
-                                                               "options":  {
-
-                                                                           }
-                                                           },
-                                            "type":  "n8n-nodes-base.if",
-                                            "typeVersion":  2.2,
-                                            "position":  [
-                                                             1344,
-                                                             -192
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000010",
-                                            "name":  "¿Aprobación OK?"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "errorMessage":  "=Sync de aprobación (832) a Supabase falló. Salida: {{ $json.stdout }} {{ $json.stderr }}"
-                                                           },
-                                            "type":  "n8n-nodes-base.stopAndError",
-                                            "typeVersion":  1,
-                                            "position":  [
-                                                             1568,
-                                                             -32
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000011",
-                                            "name":  "Error Aprobación"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "command":  "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos \u0026\u0026 python sync_emoflow_api.py"
-                                                           },
-                                            "type":  "n8n-nodes-base.executeCommand",
-                                            "typeVersion":  1,
-                                            "position":  [
-                                                             1568,
-                                                             -192
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000012",
-                                            "name":  "Ejecutar sync_emoflow_api"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "conditions":  {
-                                                                                  "options":  {
-                                                                                                  "caseSensitive":  true,
-                                                                                                  "leftValue":  "",
-                                                                                                  "typeValidation":  "strict",
-                                                                                                  "version":  2
-                                                                                              },
-                                                                                  "conditions":  [
-                                                                                                     {
-                                                                                                         "leftValue":  "={{ $json.stdout }}",
-                                                                                                         "rightValue":  "estado=exito",
-                                                                                                         "operator":  {
-                                                                                                                          "type":  "string",
-                                                                                                                          "operation":  "contains"
-                                                                                                                      }
-                                                                                                     }
-                                                                                                 ],
-                                                                                  "combinator":  "and"
-                                                                              },
-                                                               "options":  {
-
-                                                                           }
-                                                           },
-                                            "type":  "n8n-nodes-base.if",
-                                            "typeVersion":  2.2,
-                                            "position":  [
-                                                             1792,
-                                                             -192
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000013",
-                                            "name":  "¿Emoflow OK?"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "errorMessage":  "=Sync de Emoflow (ingresos al sistema) a Supabase falló. Salida: {{ $json.stdout }} {{ $json.stderr }}"
-                                                           },
-                                            "type":  "n8n-nodes-base.stopAndError",
-                                            "typeVersion":  1,
-                                            "position":  [
-                                                             2016,
-                                                             -16
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000014",
-                                            "name":  "Error Emoflow"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "command":  "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos \u0026\u0026 python export_supabase_json.py"
-                                                           },
-                                            "type":  "n8n-nodes-base.executeCommand",
-                                            "typeVersion":  1,
-                                            "position":  [
-                                                             2016,
-                                                             -192
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000015",
-                                            "name":  "Ejecutar export_supabase_json"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "conditions":  {
-                                                                                  "options":  {
-                                                                                                  "caseSensitive":  true,
-                                                                                                  "leftValue":  "",
-                                                                                                  "typeValidation":  "strict",
-                                                                                                  "version":  2
-                                                                                              },
-                                                                                  "conditions":  [
-                                                                                                     {
-                                                                                                         "leftValue":  "={{ $json.stdout }}",
-                                                                                                         "rightValue":  "estado=exito",
-                                                                                                         "operator":  {
-                                                                                                                          "type":  "string",
-                                                                                                                          "operation":  "contains"
-                                                                                                                      }
-                                                                                                     }
-                                                                                                 ],
-                                                                                  "combinator":  "and"
-                                                                              },
-                                                               "options":  {
-
-                                                                           }
-                                                           },
-                                            "type":  "n8n-nodes-base.if",
-                                            "typeVersion":  2.2,
-                                            "position":  [
-                                                             2240,
-                                                             -192
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000016",
-                                            "name":  "Export JSON OK?"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "errorMessage":  "=Export Supabase-\u003eJSON fallo. Salida: {{ $json.stdout }} {{ $json.stderr }}"
-                                                           },
-                                            "type":  "n8n-nodes-base.stopAndError",
-                                            "typeVersion":  1,
-                                            "position":  [
-                                                             2240,
-                                                             32
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000017",
-                                            "name":  "Error Export JSON"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "command":  "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos \u0026\u0026 python sync_supabase_to_sheets.py"
-                                                           },
-                                            "type":  "n8n-nodes-base.executeCommand",
-                                            "typeVersion":  1,
-                                            "position":  [
-                                                             2464,
-                                                             -192
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000018",
-                                            "name":  "Ejecutar sync_supabase_to_sheets"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "conditions":  {
-                                                                                  "options":  {
-                                                                                                  "caseSensitive":  true,
-                                                                                                  "leftValue":  "",
-                                                                                                  "typeValidation":  "strict",
-                                                                                                  "version":  2
-                                                                                              },
-                                                                                  "conditions":  [
-                                                                                                     {
-                                                                                                         "leftValue":  "={{ $json.stdout }}",
-                                                                                                         "rightValue":  "estado=exito",
-                                                                                                         "operator":  {
-                                                                                                                          "type":  "string",
-                                                                                                                          "operation":  "contains"
-                                                                                                                      }
-                                                                                                     }
-                                                                                                 ],
-                                                                                  "combinator":  "and"
-                                                                              },
-                                                               "options":  {
-
-                                                                           }
-                                                           },
-                                            "type":  "n8n-nodes-base.if",
-                                            "typeVersion":  2.2,
-                                            "position":  [
-                                                             2688,
-                                                             -192
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000019",
-                                            "name":  "Sheets OK?"
-                                        },
-                                        {
-                                            "parameters":  {
-                                                               "errorMessage":  "=Sync Supabase-\u003eSheets fallo. Salida: {{ $json.stdout }} {{ $json.stderr }}"
-                                                           },
-                                            "type":  "n8n-nodes-base.stopAndError",
-                                            "typeVersion":  1,
-                                            "position":  [
-                                                             2688,
-                                                             32
-                                                         ],
-                                            "id":  "q10sb-0001-0001-0001-000000000020",
-                                            "name":  "Error Sheets"
-                                        }
-                                    ],
-                          "connections":  {
-                                              "Schedule Diario 9:45":  {
-                                                                           "main":  [
-                                                                                        [
-                                                                                            {
-                                                                                                "node":  "Ejecutar normalize_q10_data",
-                                                                                                "type":  "main",
-                                                                                                "index":  0
-                                                                                            }
-                                                                                        ]
-                                                                                    ]
-                                                                       },
-                                              "Ejecutar normalize_q10_data":  {
-                                                                                  "main":  [
-                                                                                               [
-                                                                                                   {
-                                                                                                       "node":  "¿Normalización OK?",
-                                                                                                       "type":  "main",
-                                                                                                       "index":  0
-                                                                                                   }
-                                                                                               ]
-                                                                                           ]
-                                                                              },
-                                              "¿Normalización OK?":  {
-                                                                         "main":  [
-                                                                                      [
-                                                                                          {
-                                                                                              "node":  "Ejecutar cargar_supabase",
-                                                                                              "type":  "main",
-                                                                                              "index":  0
-                                                                                          }
-                                                                                      ],
-                                                                                      [
-                                                                                          {
-                                                                                              "node":  "Error Normalización",
-                                                                                              "type":  "main",
-                                                                                              "index":  0
-                                                                                          }
-                                                                                      ]
-                                                                                  ]
-                                                                     },
-                                              "Ejecutar cargar_supabase":  {
-                                                                               "main":  [
-                                                                                            [
-                                                                                                {
-                                                                                                    "node":  "¿Carga OK?",
-                                                                                                    "type":  "main",
-                                                                                                    "index":  0
-                                                                                                }
-                                                                                            ]
-                                                                                        ]
-                                                                           },
-                                              "¿Carga OK?":  {
-                                                                 "main":  [
-                                                                              [
-                                                                                  {
-                                                                                      "node":  "Ejecutar sync_aprobacion",
-                                                                                      "type":  "main",
-                                                                                      "index":  0
-                                                                                  }
-                                                                              ],
-                                                                              [
-                                                                                  {
-                                                                                      "node":  "Error Carga",
-                                                                                      "type":  "main",
-                                                                                      "index":  0
-                                                                                  }
-                                                                              ]
-                                                                          ]
-                                                             },
-                                              "Ejecutar sync_aprobacion":  {
-                                                                               "main":  [
-                                                                                            [
-                                                                                                {
-                                                                                                    "node":  "¿Aprobación OK?",
-                                                                                                    "type":  "main",
-                                                                                                    "index":  0
-                                                                                                }
-                                                                                            ]
-                                                                                        ]
-                                                                           },
-                                              "¿Aprobación OK?":  {
-                                                                      "main":  [
-                                                                                   [
-                                                                                       {
-                                                                                           "node":  "Ejecutar sync_emoflow_api",
-                                                                                           "type":  "main",
-                                                                                           "index":  0
-                                                                                       }
-                                                                                   ],
-                                                                                   [
-                                                                                       {
-                                                                                           "node":  "Error Aprobación",
-                                                                                           "type":  "main",
-                                                                                           "index":  0
-                                                                                       }
-                                                                                   ]
-                                                                               ]
-                                                                  },
-                                              "Ejecutar sync_emoflow_api":  {
-                                                                                "main":  [
-                                                                                             [
-                                                                                                 {
-                                                                                                     "node":  "¿Emoflow OK?",
-                                                                                                     "type":  "main",
-                                                                                                     "index":  0
-                                                                                                 }
-                                                                                             ]
-                                                                                         ]
-                                                                            },
-                                              "¿Emoflow OK?":  {
-                                                                   "main":  [
-                                                                                [
-                                                                                    {
-                                                                                        "node":  "Ejecutar export_supabase_json",
-                                                                                        "type":  "main",
-                                                                                        "index":  0
-                                                                                    }
-                                                                                ],
-                                                                                [
-                                                                                    {
-                                                                                        "node":  "Error Emoflow",
-                                                                                        "type":  "main",
-                                                                                        "index":  0
-                                                                                    }
-                                                                                ]
-                                                                            ]
-                                                               },
-                                              "Ejecutar export_supabase_json":  {
-                                                                                    "main":  [
-                                                                                                 [
-                                                                                                     {
-                                                                                                         "node":  "Export JSON OK?",
-                                                                                                         "type":  "main",
-                                                                                                         "index":  0
-                                                                                                     }
-                                                                                                 ]
-                                                                                             ]
-                                                                                },
-                                              "Export JSON OK?":  {
-                                                                      "main":  [
-                                                                                   [
-                                                                                       {
-                                                                                           "node":  "Ejecutar sync_supabase_to_sheets",
-                                                                                           "type":  "main",
-                                                                                           "index":  0
-                                                                                       }
-                                                                                   ],
-                                                                                   [
-                                                                                       {
-                                                                                           "node":  "Error Export JSON",
-                                                                                           "type":  "main",
-                                                                                           "index":  0
-                                                                                       }
-                                                                                   ]
-                                                                               ]
-                                                                  },
-                                              "Ejecutar sync_supabase_to_sheets":  {
-                                                                                       "main":  [
-                                                                                                    [
-                                                                                                        {
-                                                                                                            "node":  "Sheets OK?",
-                                                                                                            "type":  "main",
-                                                                                                            "index":  0
-                                                                                                        }
-                                                                                                    ]
-                                                                                                ]
-                                                                                   },
-                                              "Sheets OK?":  {
-                                                                 "main":  [
-                                                                              [
-                                                                                  {
-                                                                                      "node":  "OK",
-                                                                                      "type":  "main",
-                                                                                      "index":  0
-                                                                                  }
-                                                                              ],
-                                                                              [
-                                                                                  {
-                                                                                      "node":  "Error Sheets",
-                                                                                      "type":  "main",
-                                                                                      "index":  0
-                                                                                  }
-                                                                              ]
-                                                                          ]
-                                                             }
-                                          },
-                          "authors":  "Samuel Rojas",
-                          "name":  null,
-                          "description":  null,
-                          "autosaved":  false,
-                          "workflowPublishHistory":  [
-                                                         {
-                                                             "createdAt":  "2026-07-21T20:17:29.837Z",
-                                                             "id":  2096,
-                                                             "workflowId":  "uSizw3dNzpb6n53H",
-                                                             "versionId":  "e22a0f43-862d-4cb4-8b6b-6153abc7390b",
-                                                             "event":  "activated",
-                                                             "userId":  "c9975104-b757-4a51-ad4b-0461d1d32514"
-                                                         },
-                                                         {
-                                                             "createdAt":  "2026-07-21T20:17:29.746Z",
-                                                             "id":  2095,
-                                                             "workflowId":  "uSizw3dNzpb6n53H",
-                                                             "versionId":  "e22a0f43-862d-4cb4-8b6b-6153abc7390b",
-                                                             "event":  "deactivated",
-                                                             "userId":  "c9975104-b757-4a51-ad4b-0461d1d32514"
-                                                         }
-                                                     ]
-                      }
+{
+  "name": "q10-sync-supabase",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9,
+              "triggerAtMinute": 45
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "q10sb-0001-0001-0001-000000000001",
+      "name": "Schedule Diario 9:45"
+    },
+    {
+      "parameters": {
+        "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python normalize_q10_data.py"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "q10sb-0001-0001-0001-000000000002",
+      "name": "Ejecutar normalize_q10_data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.stdout }}",
+              "rightValue": "estado=exito",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "q10sb-0001-0001-0001-000000000003",
+      "name": "Â¿NormalizaciÃ³n OK?"
+    },
+    {
+      "parameters": {
+        "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python cargar_supabase.py"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        672,
+        -96
+      ],
+      "id": "q10sb-0001-0001-0001-000000000004",
+      "name": "Ejecutar cargar_supabase"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.stdout }}",
+              "rightValue": "estado=exito",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        -96
+      ],
+      "id": "q10sb-0001-0001-0001-000000000005",
+      "name": "Â¿Carga OK?"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2912,
+        -288
+      ],
+      "id": "q10sb-0001-0001-0001-000000000006",
+      "name": "OK"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=NormalizaciÃ³n Q10â†’Supabase fallÃ³. Salida: {{ $json.stdout }} {{ $json.stderr }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        672,
+        96
+      ],
+      "id": "q10sb-0001-0001-0001-000000000007",
+      "name": "Error NormalizaciÃ³n"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Carga a Supabase fallÃ³ (o con advertencias FK). Salida: {{ $json.stdout }} {{ $json.stderr }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        0
+      ],
+      "id": "q10sb-0001-0001-0001-000000000008",
+      "name": "Error Carga"
+    },
+    {
+      "parameters": {
+        "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python sync_aprobacion_supabase.py"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        -192
+      ],
+      "id": "q10sb-0001-0001-0001-000000000009",
+      "name": "Ejecutar sync_aprobacion"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.stdout }}",
+              "rightValue": "estado=exito",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1344,
+        -192
+      ],
+      "id": "q10sb-0001-0001-0001-000000000010",
+      "name": "Â¿AprobaciÃ³n OK?"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Sync de aprobaciÃ³n (832) a Supabase fallÃ³. Salida: {{ $json.stdout }} {{ $json.stderr }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        -32
+      ],
+      "id": "q10sb-0001-0001-0001-000000000011",
+      "name": "Error AprobaciÃ³n"
+    },
+    {
+      "parameters": {
+        "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python sync_emoflow_api.py"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        -192
+      ],
+      "id": "q10sb-0001-0001-0001-000000000012",
+      "name": "Ejecutar sync_emoflow_api"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.stdout }}",
+              "rightValue": "estado=exito",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1792,
+        -192
+      ],
+      "id": "q10sb-0001-0001-0001-000000000013",
+      "name": "Â¿Emoflow OK?"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Sync de Emoflow (ingresos al sistema) a Supabase fallÃ³. Salida: {{ $json.stdout }} {{ $json.stderr }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        -16
+      ],
+      "id": "q10sb-0001-0001-0001-000000000014",
+      "name": "Error Emoflow"
+    },
+    {
+      "parameters": {
+        "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python export_supabase_json.py"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        -192
+      ],
+      "id": "q10sb-0001-0001-0001-000000000015",
+      "name": "Ejecutar export_supabase_json"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.stdout }}",
+              "rightValue": "estado=exito",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2240,
+        -192
+      ],
+      "id": "q10sb-0001-0001-0001-000000000016",
+      "name": "Export JSON OK?"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Export Supabase->JSON fallo. Salida: {{ $json.stdout }} {{ $json.stderr }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        2240,
+        32
+      ],
+      "id": "q10sb-0001-0001-0001-000000000017",
+      "name": "Error Export JSON"
+    },
+    {
+      "parameters": {
+        "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python sync_supabase_to_sheets.py"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2464,
+        -192
+      ],
+      "id": "q10sb-0001-0001-0001-000000000018",
+      "name": "Ejecutar sync_supabase_to_sheets"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.stdout }}",
+              "rightValue": "estado=exito",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2688,
+        -192
+      ],
+      "id": "q10sb-0001-0001-0001-000000000019",
+      "name": "Sheets OK?"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Sync Supabase->Sheets fallo. Salida: {{ $json.stdout }} {{ $json.stderr }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        2688,
+        32
+      ],
+      "id": "q10sb-0001-0001-0001-000000000020",
+      "name": "Error Sheets"
+    },
+    {
+      "parameters": {
+        "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable && python scripts/panel-datos/sync_sociodemograficos.py"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        448,
+        -300
+      ],
+      "id": "q10sb-0001-0001-0001-000000000090",
+      "name": "Ejecutar sync_sociodemograficos"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ .stdout }}",
+              "rightValue": "estado=exito",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        600,
+        -300
+      ],
+      "id": "q10sb-0001-0001-0001-000000000091",
+      "name": "Sociodem OK?"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Fallo sync_sociodemograficos (en_seguimiento_jc no se actualizo)"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        600,
+        -440
+      ],
+      "id": "q10sb-0001-0001-0001-000000000092",
+      "name": "Error Sociodem"
+    }
+  ],
+  "connections": {
+    "Schedule Diario 9:45": {
+      "main": [
+        [
+          {
+            "node": "Ejecutar normalize_q10_data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ejecutar normalize_q10_data": {
+      "main": [
+        [
+          {
+            "node": "Â¿NormalizaciÃ³n OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Â¿NormalizaciÃ³n OK?": {
+      "main": [
+        [
+          {
+            "node": "Ejecutar sync_sociodemograficos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error NormalizaciÃ³n",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ejecutar cargar_supabase": {
+      "main": [
+        [
+          {
+            "node": "Â¿Carga OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Â¿Carga OK?": {
+      "main": [
+        [
+          {
+            "node": "Ejecutar sync_aprobacion",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Carga",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ejecutar sync_aprobacion": {
+      "main": [
+        [
+          {
+            "node": "Â¿AprobaciÃ³n OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Â¿AprobaciÃ³n OK?": {
+      "main": [
+        [
+          {
+            "node": "Ejecutar sync_emoflow_api",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error AprobaciÃ³n",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ejecutar sync_emoflow_api": {
+      "main": [
+        [
+          {
+            "node": "Â¿Emoflow OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Â¿Emoflow OK?": {
+      "main": [
+        [
+          {
+            "node": "Ejecutar export_supabase_json",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Emoflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ejecutar export_supabase_json": {
+      "main": [
+        [
+          {
+            "node": "Export JSON OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Export JSON OK?": {
+      "main": [
+        [
+          {
+            "node": "Ejecutar sync_supabase_to_sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Export JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ejecutar sync_supabase_to_sheets": {
+      "main": [
+        [
+          {
+            "node": "Sheets OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets OK?": {
+      "main": [
+        [
+          {
+            "node": "OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ejecutar sync_sociodemograficos": {
+      "main": [
+        [
+          {
+            "node": "Sociodem OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sociodem OK?": {
+      "main": [
+        [
+          {
+            "node": "Ejecutar cargar_supabase",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Sociodem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "timezone": "America/Bogota",
+    "availableInMCP": false
+  }
 }
