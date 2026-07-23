@@ -1,9 +1,9 @@
 {
-  "ultima_actualizacion": "2026-07-22T17:39:40.824489-05:00",
+  "ultima_actualizacion": "2026-07-23T09:05:50.644087-05:00",
   "anio": "2026",
   "totales": {
-    "total_retirados": 82,
-    "cancelados": 55,
+    "total_retirados": 94,
+    "cancelados": 67,
     "desertores": 0,
     "aplazados": 0,
     "sin_registro_hoja": 27
@@ -11,7 +11,7 @@
   "por_tipo": [
     {
       "tipo": "Cancelado",
-      "cantidad": 55
+      "cantidad": 67
     },
     {
       "tipo": "Sin registro de retiro",
@@ -21,7 +21,7 @@
   "por_causa": [
     {
       "causa": "Voluntario",
-      "cantidad": 55
+      "cantidad": 67
     },
     {
       "causa": "Sin registro de retiro",
@@ -31,7 +31,7 @@
   "por_programa": [
     {
       "programa": "Jóvenes creaTIvos",
-      "cantidad": 57
+      "cantidad": 69
     },
     {
       "programa": "Mujeres ROFÉ",
@@ -53,7 +53,7 @@
     },
     {
       "mes": "2026-07",
-      "cantidad": 1
+      "cantidad": 13
     }
   ],
   "por_etapa": [
@@ -75,22 +75,22 @@
     {
       "orden": 3,
       "etapa": "Habilidades esenciales para ser un emprendedor exitoso",
-      "cantidad": 25
+      "cantidad": 28
     },
     {
       "orden": 4,
       "etapa": "Emprendimiento: Idea de Negocio JC",
-      "cantidad": 10
+      "cantidad": 14
     },
     {
       "orden": 5,
       "etapa": "Introducción a la IA Generativa - 2026",
-      "cantidad": 0
+      "cantidad": 2
     },
     {
       "orden": 6,
       "etapa": "Fundamentos Lógica de Programación - 2026",
-      "cantidad": 0
+      "cantidad": 3
     },
     {
       "orden": 7,
