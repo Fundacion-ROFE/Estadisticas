@@ -1,9 +1,9 @@
 {
-  "ultima_actualizacion": "2026-07-23T09:05:50.644087-05:00",
+  "ultima_actualizacion": "2026-07-23T12:04:18.953140-05:00",
   "anio": "2026",
   "totales": {
-    "total_retirados": 94,
-    "cancelados": 67,
+    "total_retirados": 99,
+    "cancelados": 72,
     "desertores": 0,
     "aplazados": 0,
     "sin_registro_hoja": 27
@@ -11,7 +11,7 @@
   "por_tipo": [
     {
       "tipo": "Cancelado",
-      "cantidad": 67
+      "cantidad": 72
     },
     {
       "tipo": "Sin registro de retiro",
@@ -21,7 +21,7 @@
   "por_causa": [
     {
       "causa": "Voluntario",
-      "cantidad": 67
+      "cantidad": 72
     },
     {
       "causa": "Sin registro de retiro",
@@ -31,7 +31,7 @@
   "por_programa": [
     {
       "programa": "Jóvenes creaTIvos",
-      "cantidad": 69
+      "cantidad": 74
     },
     {
       "programa": "Mujeres ROFÉ",
@@ -53,7 +53,7 @@
     },
     {
       "mes": "2026-07",
-      "cantidad": 13
+      "cantidad": 18
     }
   ],
   "por_etapa": [
@@ -85,12 +85,12 @@
     {
       "orden": 5,
       "etapa": "Introducción a la IA Generativa - 2026",
-      "cantidad": 2
+      "cantidad": 5
     },
     {
       "orden": 6,
       "etapa": "Fundamentos Lógica de Programación - 2026",
-      "cantidad": 3
+      "cantidad": 5
     },
     {
       "orden": 7,
