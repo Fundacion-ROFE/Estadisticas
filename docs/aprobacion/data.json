@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-23T09:00:10.005684-05:00",
+  "ultima_actualizacion": "2026-07-23T12:04:04.619429-05:00",
   "anio": "2026",
   "nota_metodo": "Cohorte = matriculados del periodo (habilitados + inhabilitados). Aprobado = avance > 80 (desde 2026-07-09; antes >= 100). Un inhabilitado que ya había superado el 80 cuenta como 'aprobó y se retiró' (no pierde su logro); solo los retirados sin superar 80 cuentan como no aprobados. Cada curso trae bandas de progreso de los activos: banda_0_25 / banda_26_80 / banda_81_100 (suman a 'activos').",
   "por_curso": [
@@ -9,14 +9,14 @@
       "periodos": [
         "Habilidades-Nivel 1-2026"
       ],
-      "activos": 765,
-      "aprobados": 765,
-      "aprobados_retirados": 67,
+      "activos": 760,
+      "aprobados": 760,
+      "aprobados_retirados": 72,
       "retirados": 0,
       "cursaron": 832,
       "banda_0_25": 0,
       "banda_26_80": 0,
-      "banda_81_100": 765,
+      "banda_81_100": 760,
       "aprobados_total": 832,
       "no_aprobados": 0,
       "sin_finalizar": 0,
@@ -31,18 +31,18 @@
       "periodos": [
         "Habilidades-Nivel 1-2026"
       ],
-      "activos": 765,
-      "aprobados": 762,
-      "aprobados_retirados": 19,
+      "activos": 760,
+      "aprobados": 757,
+      "aprobados_retirados": 24,
       "retirados": 48,
       "cursaron": 832,
       "banda_0_25": 1,
       "banda_26_80": 2,
-      "banda_81_100": 762,
+      "banda_81_100": 757,
       "aprobados_total": 781,
       "no_aprobados": 51,
       "sin_finalizar": 3,
-      "promedio": 99.43,
+      "promedio": 99.44,
       "pct_aprobados": 93.9,
       "pct_no_aprobados": 6.1,
       "finalizado": true
@@ -53,14 +53,14 @@
       "periodos": [
         "Habilidades-Nivel 1-2026"
       ],
-      "activos": 765,
-      "aprobados": 764,
-      "aprobados_retirados": 47,
+      "activos": 760,
+      "aprobados": 759,
+      "aprobados_retirados": 52,
       "retirados": 20,
       "cursaron": 832,
       "banda_0_25": 1,
       "banda_26_80": 0,
-      "banda_81_100": 764,
+      "banda_81_100": 759,
       "aprobados_total": 811,
       "no_aprobados": 21,
       "sin_finalizar": 1,
@@ -75,14 +75,14 @@
       "periodos": [
         "Habilidades-Nivel 1-2026"
       ],
-      "activos": 765,
-      "aprobados": 763,
-      "aprobados_retirados": 60,
+      "activos": 760,
+      "aprobados": 758,
+      "aprobados_retirados": 65,
       "retirados": 7,
       "cursaron": 832,
       "banda_0_25": 1,
       "banda_26_80": 1,
-      "banda_81_100": 763,
+      "banda_81_100": 758,
       "aprobados_total": 823,
       "no_aprobados": 9,
       "sin_finalizar": 2,
@@ -97,18 +97,18 @@
       "periodos": [
         "Logica-Nivel 2-2026"
       ],
-      "activos": 765,
-      "aprobados": 750,
-      "aprobados_retirados": 3,
-      "retirados": 23,
+      "activos": 760,
+      "aprobados": 748,
+      "aprobados_retirados": 5,
+      "retirados": 26,
       "cursaron": 791,
-      "banda_0_25": 5,
-      "banda_26_80": 10,
-      "banda_81_100": 750,
+      "banda_0_25": 4,
+      "banda_26_80": 8,
+      "banda_81_100": 748,
       "aprobados_total": 753,
       "no_aprobados": 38,
-      "sin_finalizar": 15,
-      "promedio": 98.48,
+      "sin_finalizar": 12,
+      "promedio": 98.69,
       "pct_aprobados": 95.2,
       "pct_no_aprobados": 4.8,
       "finalizado": true
@@ -119,18 +119,18 @@
       "periodos": [
         "Logica-Nivel 2-2026"
       ],
-      "activos": 765,
-      "aprobados": 761,
-      "aprobados_retirados": 5,
+      "activos": 760,
+      "aprobados": 756,
+      "aprobados_retirados": 10,
       "retirados": 21,
       "cursaron": 791,
       "banda_0_25": 3,
       "banda_26_80": 1,
-      "banda_81_100": 761,
+      "banda_81_100": 756,
       "aprobados_total": 766,
       "no_aprobados": 25,
       "sin_finalizar": 4,
-      "promedio": 99.46,
+      "promedio": 99.48,
       "pct_aprobados": 96.8,
       "pct_no_aprobados": 3.2,
       "finalizado": true
@@ -142,20 +142,20 @@
         "Desarrollo-Nivel 3-2026",
         "Desarrollo-Avanzado-2026"
       ],
-      "activos": 765,
-      "aprobados": 513,
+      "activos": 760,
+      "aprobados": 514,
       "aprobados_retirados": 2,
-      "retirados": 12,
+      "retirados": 17,
       "cursaron": 779,
-      "banda_0_25": 55,
-      "banda_26_80": 197,
-      "banda_81_100": 513,
-      "aprobados_total": 515,
-      "no_aprobados": 264,
-      "sin_finalizar": 252,
-      "promedio": 82.47,
-      "pct_aprobados": 66.1,
-      "pct_no_aprobados": 33.9,
+      "banda_0_25": 51,
+      "banda_26_80": 195,
+      "banda_81_100": 514,
+      "aprobados_total": 516,
+      "no_aprobados": 263,
+      "sin_finalizar": 246,
+      "promedio": 83.01,
+      "pct_aprobados": 66.2,
+      "pct_no_aprobados": 33.8,
       "finalizado": false
     },
     {
@@ -191,13 +191,13 @@
       "aprobados_retirados": 0,
       "retirados": 25,
       "cursaron": 197,
-      "banda_0_25": 168,
-      "banda_26_80": 4,
+      "banda_0_25": 167,
+      "banda_26_80": 5,
       "banda_81_100": 0,
       "aprobados_total": 0,
       "no_aprobados": 197,
       "sin_finalizar": 172,
-      "promedio": 0.98,
+      "promedio": 1.28,
       "pct_aprobados": 0.0,
       "pct_no_aprobados": 100.0,
       "finalizado": false
@@ -208,15 +208,15 @@
       "programa": "Jóvenes creaTIvos",
       "cursos": 7,
       "cursaron": 5689,
-      "aprobados": 5281,
-      "aprobados_retirados": 203,
-      "retirados": 131,
-      "sin_finalizar": 277,
-      "matriculas_activas": 5355,
+      "aprobados": 5282,
+      "aprobados_retirados": 230,
+      "retirados": 139,
+      "sin_finalizar": 268,
+      "matriculas_activas": 5320,
       "pct_aprobados": 92.8,
       "estudiantes_cohorte": 832,
-      "retirados_unicos": 69,
-      "habilitados_unicos": 765
+      "retirados_unicos": 74,
+      "habilitados_unicos": 760
     },
     {
       "programa": "Mujeres ROFÉ",
@@ -236,19 +236,19 @@
   "totales": {
     "total_cursos": 9,
     "total_matriculas": 6169,
-    "total_aprobados": 5354,
-    "total_aprobados_retirados": 203,
-    "total_retirados_2026": 94,
+    "total_aprobados": 5355,
+    "total_aprobados_retirados": 230,
+    "total_retirados_2026": 99,
     "estudiantes_cohorte_2026": 1174
   },
   "anomalias": {
     "inhabilitados_sin_retiro": 27,
-    "retirados_unicos_2026": 94
+    "retirados_unicos_2026": 99
   },
   "periodos": [
     {
       "periodo": "Desarrollo-Nivel 3-2026",
-      "matriculados": 493
+      "matriculados": 489
     },
     {
       "periodo": "Logica-Nivel 2-2026",
@@ -264,7 +264,7 @@
     },
     {
       "periodo": "Desarrollo-Avanzado-2026",
-      "matriculados": 274
+      "matriculados": 273
     }
   ]
 }
