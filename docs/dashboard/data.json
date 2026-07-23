@@ -1,9 +1,9 @@
 {
-  "ultima_actualizacion": "2026-07-23T08:01:20.198233-05:00",
+  "ultima_actualizacion": "2026-07-23T12:01:38.301377-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
-      "estudiantes": 765,
+      "estudiantes": 760,
       "finalizados": 776,
       "promedio": 100.0,
       "min": 100.0,
@@ -14,9 +14,9 @@
     },
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-      "estudiantes": 765,
+      "estudiantes": 760,
       "finalizados": 457,
-      "promedio": 82.46,
+      "promedio": 83.01,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 777,
@@ -25,9 +25,9 @@
     },
     {
       "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
-      "estudiantes": 765,
+      "estudiantes": 760,
       "finalizados": 718,
-      "promedio": 99.43,
+      "promedio": 99.44,
       "min": 0.0,
       "max": 101.0,
       "inscritos": 830,
@@ -36,9 +36,9 @@
     },
     {
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
-      "estudiantes": 765,
+      "estudiantes": 760,
       "finalizados": 735,
-      "promedio": 98.48,
+      "promedio": 98.69,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 806,
@@ -47,7 +47,7 @@
     },
     {
       "curso": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
-      "estudiantes": 765,
+      "estudiantes": 760,
       "finalizados": 749,
       "promedio": 99.75,
       "min": 0.0,
@@ -58,7 +58,7 @@
     },
     {
       "curso": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
-      "estudiantes": 765,
+      "estudiantes": 760,
       "finalizados": 773,
       "promedio": 99.83,
       "min": 22.0,
@@ -69,9 +69,9 @@
     },
     {
       "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
-      "estudiantes": 765,
+      "estudiantes": 760,
       "finalizados": 751,
-      "promedio": 99.46,
+      "promedio": 99.48,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 809,
@@ -86,7 +86,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 34
+      "cantidad": 31
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -95,9 +95,9 @@
   ],
   "totales": {
     "total_cursos": 7,
-    "total_estudiantes_unicos": 765,
-    "total_habilitados": 765,
-    "total_db": 1082
+    "total_estudiantes_unicos": 760,
+    "total_habilitados": 760,
+    "total_db": 1077
   },
   "mr": {
     "por_curso": [
@@ -105,7 +105,7 @@
         "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
         "estudiantes": 172,
         "finalizados": 0,
-        "promedio": 0.97,
+        "promedio": 1.28,
         "min": 0.0,
         "max": 45.0,
         "inscritos": 172,
@@ -127,7 +127,7 @@
     "anomalias": [
       {
         "categoria": "AVANCE 0%",
-        "cantidad": 314
+        "cantidad": 311
       },
       {
         "categoria": "AVANCE IRREGULAR",
