@@ -1,5 +1,11 @@
 {
+  "updatedAt": "2026-07-24T16:54:54.956Z",
+  "createdAt": "2026-06-22T15:18:02.327Z",
+  "id": "Rblg81qifVshsRae",
   "name": "Bot Q10 - Actualizar Grupos",
+  "description": null,
+  "active": true,
+  "isArchived": false,
   "nodes": [
     {
       "parameters": {
@@ -46,7 +52,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const msg = $input.item.json.message || {};\nconst text = (msg.text || '').trim();\nconst chatId = msg.chat?.id;\n\n// Mapa de procesos disparables manualmente. 'q10' usa la cadena existente del bot.\nconst PROCESOS = {\n  q10:        { comando: null, nombre: 'Q10 \u00e2\u2020\u2019 Sheets + Dashboard' },\n  panel:      { comando: 'cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python normalize_q10_data.py && python cargar_supabase.py && python sync_aprobacion_supabase.py && python sync_emoflow_api.py && python export_supabase_json.py && python sync_supabase_to_sheets.py', nombre: 'Pipeline Panel de Datos \u00e2\u2020\u2019 Supabase' },\n  asistencia: { comando: 'cd C:/Users/EstudiantesJC/downloads/admin-usable && python scripts/panel-datos/sync_asistencia_supabase.py && python scripts/panel-datos/calcular_asistencia_promedio.py', nombre: 'Asistencia Zoom \u00e2\u2020\u2019 Supabase' },\n  mr:         { comando: 'cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/mr-actualizacion-datos && python actualizar_bd_mr.py', nombre: 'Form MR2024 \u00e2\u2020\u2019 BD Mujeres ROF\u00c3\u2030' },\n  rebotes:    { comando: 'cd C:/Users/EstudiantesJC/Downloads/Admin-usable && python scripts/mujeres-rofe-correos/capturar_rebotes.py', nombre: 'Captura rebotes de correo' },\n  alerta:     { comando: 'cd C:/Users/EstudiantesJC/Downloads/Admin-usable && python scripts/panel-datos/alerta_desercion.py --csv', nombre: 'Alerta de deserci\u00c3\u00b3n' },\n  backfill:   { comando: 'cd /d C:\\\\Users\\\\EstudiantesJC\\\\downloads\\\\admin-usable && python scripts\\\\zoom-youtube\\\\backfill_grabaciones.py --dias 2', nombre: 'Backfill grabaciones Zoom \u00e2\u2020\u2019 YouTube/Drive' },\n};\n\nconst m = text.match(/^\\/actualizar\\s+(\\w+)$/i);\nconst proceso = m ? m[1].toLowerCase() : null;\nconst valido = proceso !== null && Object.prototype.hasOwnProperty.call(PROCESOS, proceso);\n\nreturn [{ json: {\n  valido,\n  proceso: valido ? proceso : null,\n  comando: valido ? PROCESOS[proceso].comando : null,\n  nombre: valido ? PROCESOS[proceso].nombre : null,\n  chat_id: chatId,\n  texto_original: text\n}}];"
+        "jsCode": "const msg = $input.item.json.message || {};\nconst text = (msg.text || '').trim();\nconst chatId = msg.chat?.id;\n\n// Mapa de procesos disparables manualmente. 'q10' usa la cadena existente del bot.\nconst PROCESOS = {\n  q10:        { comando: null, nombre: 'Q10 → Sheets + Dashboard' },\n  panel:      { comando: 'cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python normalize_q10_data.py && python cargar_supabase.py && python sync_aprobacion_supabase.py && python sync_emoflow_api.py && python export_supabase_json.py && python sync_supabase_to_sheets.py', nombre: 'Pipeline Panel de Datos → Supabase' },\n  asistencia: { comando: 'cd C:/Users/EstudiantesJC/downloads/admin-usable && python scripts/panel-datos/sync_asistencia_supabase.py && python scripts/panel-datos/calcular_asistencia_promedio.py', nombre: 'Asistencia Zoom → Supabase' },\n  mr:         { comando: 'cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/mr-actualizacion-datos && python actualizar_bd_mr.py', nombre: 'Form MR2024 → BD Mujeres ROFÉ' },\n  rebotes:    { comando: 'cd C:/Users/EstudiantesJC/Downloads/Admin-usable && python scripts/mujeres-rofe-correos/capturar_rebotes.py', nombre: 'Captura rebotes de correo' },\n  alerta:     { comando: 'cd C:/Users/EstudiantesJC/Downloads/Admin-usable && python scripts/panel-datos/alerta_desercion.py --csv', nombre: 'Alerta de deserción' },\n  backfill:   { comando: 'cd /d C:\\\\Users\\\\EstudiantesJC\\\\downloads\\\\admin-usable && python scripts\\\\zoom-youtube\\\\backfill_grabaciones.py --dias 2', nombre: 'Backfill grabaciones Zoom → YouTube/Drive' },\n};\n\nconst m = text.match(/^\\/actualizar\\s+(\\w+)$/i);\nconst proceso = m ? m[1].toLowerCase() : null;\nconst valido = proceso !== null && Object.prototype.hasOwnProperty.call(PROCESOS, proceso);\n\nreturn [{ json: {\n  valido,\n  proceso: valido ? proceso : null,\n  comando: valido ? PROCESOS[proceso].comando : null,\n  nombre: valido ? PROCESOS[proceso].nombre : null,\n  chat_id: chatId,\n  texto_original: text\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -93,7 +99,7 @@
     {
       "parameters": {
         "chatId": "={{ $json.chat_id }}",
-        "text": "No entiendo ese comando.\n\nComandos disponibles:\n/actualizar q10 \u00e2\u20ac\u201d Q10 \u00e2\u2020\u2019 Sheets + Dashboard\n/actualizar panel \u00e2\u20ac\u201d Pipeline Panel de Datos (Supabase/Netlify)\n/actualizar asistencia \u00e2\u20ac\u201d Asistencia Zoom \u00e2\u2020\u2019 Supabase\n/actualizar mr \u00e2\u20ac\u201d Form MR2024 \u00e2\u2020\u2019 BD Mujeres ROF\u00c3\u2030\n/actualizar rebotes \u00e2\u20ac\u201d Captura rebotes de correo\n/actualizar alerta \u00e2\u20ac\u201d Alerta de deserci\u00c3\u00b3n\n/actualizar backfill \u00e2\u20ac\u201d Grabaciones Zoom \u00e2\u2020\u2019 YouTube/Drive",
+        "text": "No entiendo ese comando.\n\nComandos disponibles:\n/actualizar q10 — Q10 → Sheets + Dashboard\n/actualizar panel — Pipeline Panel de Datos (Supabase/Netlify)\n/actualizar asistencia — Asistencia Zoom → Supabase\n/actualizar mr — Form MR2024 → BD Mujeres ROFÉ\n/actualizar rebotes — Captura rebotes de correo\n/actualizar alerta — Alerta de deserción\n/actualizar backfill — Grabaciones Zoom → YouTube/Drive",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
@@ -500,7 +506,7 @@
         "options": {}
       },
       "id": "manual-node-0001-0001-000000000001",
-      "name": "\u00c2\u00bfEs q10?",
+      "name": "¿Es q10?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
@@ -511,7 +517,7 @@
     {
       "parameters": {
         "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
-        "text": "=\u00e2\udc8f\u00b3 Ejecutando actualizaci\u00c3\u00b3n manual: {{ $('Parsear Comando').first().json.nombre }}\u00e2\u20ac\u00a6\nTe aviso cuando termine.",
+        "text": "=⏳ Ejecutando actualización manual: {{ $('Parsear Comando').first().json.nombre }}…\nTe aviso cuando termine.",
         "additionalFields": {}
       },
       "id": "manual-node-0002-0002-000000000002",
@@ -546,7 +552,7 @@
     {
       "parameters": {
         "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
-        "text": "={{ (() => {\n  const nombre = $('Parsear Comando').first().json.nombre;\n  const exit = $json.exitCode !== undefined ? $json.exitCode : -1;\n  const ok = exit === 0;\n  const salida = ((ok ? ($json.stdout || '') : (($json.stderr || '') || ($json.stdout || ''))).trim()).slice(-800);\n  return (ok ? '\\u2705 ' : '\\u26a0\\ufe0f ') + nombre + (ok ? ' \u00e2\u20ac\u201d completado' : ' \u00e2\u20ac\u201d ERROR (exit ' + exit + ')') + (salida ? '\\n\\n' + salida : '');\n})() }}",
+        "text": "={{ (() => {\n  const nombre = $('Parsear Comando').first().json.nombre;\n  const exit = $json.exitCode !== undefined ? $json.exitCode : -1;\n  const ok = exit === 0;\n  const salida = ((ok ? ($json.stdout || '') : (($json.stderr || '') || ($json.stdout || ''))).trim()).slice(-800);\n  return (ok ? '\\u2705 ' : '\\u26a0\\ufe0f ') + nombre + (ok ? ' — completado' : ' — ERROR (exit ' + exit + ')') + (salida ? '\\n\\n' + salida : '');\n})() }}",
         "additionalFields": {}
       },
       "id": "manual-node-0004-0004-000000000004",
@@ -592,7 +598,7 @@
       "main": [
         [
           {
-            "node": "\u00c2\u00bfEs q10?",
+            "node": "¿Es q10?",
             "type": "main",
             "index": 0
           }
@@ -840,7 +846,7 @@
         ]
       ]
     },
-    "\u00c2\u00bfEs q10?": {
+    "¿Es q10?": {
       "main": [
         [
           {
@@ -885,6 +891,997 @@
     "executionOrder": "v1",
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false,
-    "timezone": "America/Bogota"
+    "timezone": "America/Bogota",
+    "errorWorkflow": "8BL0kqnJDbyWMzpg"
+  },
+  "staticData": {
+    "node:Schedule 4h": {
+      "recurrenceRules": [
+        16
+      ]
+    }
+  },
+  "meta": null,
+  "pinData": {},
+  "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
+  "activeVersionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
+  "versionCounter": 2491,
+  "triggerCount": 2,
+  "shared": [
+    {
+      "updatedAt": "2026-06-22T15:18:02.332Z",
+      "createdAt": "2026-06-22T15:18:02.332Z",
+      "role": "workflow:owner",
+      "workflowId": "Rblg81qifVshsRae",
+      "projectId": "sCDSlnWeaXfVGSdx",
+      "project": {
+        "updatedAt": "2026-06-18T19:33:43.567Z",
+        "createdAt": "2026-06-18T17:26:43.451Z",
+        "id": "sCDSlnWeaXfVGSdx",
+        "name": "Samuel Rojas <soportejunior@tocaunavida.org>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-07-23T21:36:21.041Z",
+    "createdAt": "2026-07-23T21:36:21.041Z",
+    "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
+    "workflowId": "Rblg81qifVshsRae",
+    "nodes": [
+      {
+        "parameters": {
+          "updates": [
+            "message"
+          ],
+          "additionalFields": {}
+        },
+        "type": "n8n-nodes-base.telegramTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          0,
+          304
+        ],
+        "id": "a1b2c3d4-0001-0001-0001-000000000001",
+        "name": "Telegram Trigger",
+        "webhookId": "7f3a2b1c-4d5e-6f70-8901-2b3c4d5e6f7a",
+        "credentials": {
+          "telegramApi": {
+            "id": "kGTAfWTTp4FATF66",
+            "name": "Telegram Q10 Bot"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "cronExpression",
+                "expression": "0 17,21,1,5 * * *"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          0,
+          -208
+        ],
+        "id": "sched-node-0001-0001-0001-000000000001",
+        "name": "Schedule 4h"
+      },
+      {
+        "parameters": {
+          "jsCode": "const msg = $input.item.json.message || {};\nconst text = (msg.text || '').trim();\nconst chatId = msg.chat?.id;\n\n// Mapa de procesos disparables manualmente. 'q10' usa la cadena existente del bot.\nconst PROCESOS = {\n  q10:        { comando: null, nombre: 'Q10 → Sheets + Dashboard' },\n  panel:      { comando: 'cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python normalize_q10_data.py && python cargar_supabase.py && python sync_aprobacion_supabase.py && python sync_emoflow_api.py && python export_supabase_json.py && python sync_supabase_to_sheets.py', nombre: 'Pipeline Panel de Datos → Supabase' },\n  asistencia: { comando: 'cd C:/Users/EstudiantesJC/downloads/admin-usable && python scripts/panel-datos/sync_asistencia_supabase.py && python scripts/panel-datos/calcular_asistencia_promedio.py', nombre: 'Asistencia Zoom → Supabase' },\n  mr:         { comando: 'cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/mr-actualizacion-datos && python actualizar_bd_mr.py', nombre: 'Form MR2024 → BD Mujeres ROFÉ' },\n  rebotes:    { comando: 'cd C:/Users/EstudiantesJC/Downloads/Admin-usable && python scripts/mujeres-rofe-correos/capturar_rebotes.py', nombre: 'Captura rebotes de correo' },\n  alerta:     { comando: 'cd C:/Users/EstudiantesJC/Downloads/Admin-usable && python scripts/panel-datos/alerta_desercion.py --csv', nombre: 'Alerta de deserción' },\n  backfill:   { comando: 'cd /d C:\\\\Users\\\\EstudiantesJC\\\\downloads\\\\admin-usable && python scripts\\\\zoom-youtube\\\\backfill_grabaciones.py --dias 2', nombre: 'Backfill grabaciones Zoom → YouTube/Drive' },\n};\n\nconst m = text.match(/^\\/actualizar\\s+(\\w+)$/i);\nconst proceso = m ? m[1].toLowerCase() : null;\nconst valido = proceso !== null && Object.prototype.hasOwnProperty.call(PROCESOS, proceso);\n\nreturn [{ json: {\n  valido,\n  proceso: valido ? proceso : null,\n  comando: valido ? PROCESOS[proceso].comando : null,\n  nombre: valido ? PROCESOS[proceso].nombre : null,\n  chat_id: chatId,\n  texto_original: text\n}}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          224,
+          304
+        ],
+        "id": "a1b2c3d4-0001-0001-0001-000000000002",
+        "name": "Parsear Comando"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "cond-valido-001",
+                "leftValue": "={{ $json.valido }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals",
+                  "rightType": "any"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          448,
+          304
+        ],
+        "id": "a1b2c3d4-0001-0001-0001-000000000003",
+        "name": "Comando valido?"
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $json.chat_id }}",
+          "text": "No entiendo ese comando.\n\nComandos disponibles:\n/actualizar q10 — Q10 → Sheets + Dashboard\n/actualizar panel — Pipeline Panel de Datos (Supabase/Netlify)\n/actualizar asistencia — Asistencia Zoom → Supabase\n/actualizar mr — Form MR2024 → BD Mujeres ROFÉ\n/actualizar rebotes — Captura rebotes de correo\n/actualizar alerta — Alerta de deserción\n/actualizar backfill — Grabaciones Zoom → YouTube/Drive",
+          "additionalFields": {}
+        },
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          672,
+          464
+        ],
+        "id": "a1b2c3d4-0001-0001-0001-000000000004",
+        "name": "Enviar Ayuda",
+        "webhookId": "ba8f0ab3-359c-4beb-b72a-3bf6dff83812",
+        "credentials": {
+          "telegramApi": {
+            "id": "kGTAfWTTp4FATF66",
+            "name": "Telegram Q10 Bot"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python q10_to_sheets.py --grupo h1test"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          672,
+          144
+        ],
+        "id": "a1b2c3d4-0001-0001-0001-000000000005",
+        "name": "Ejecutar q10_to_sheets"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "cond-exito-001",
+                "leftValue": "={{ $json.exitCode }}",
+                "rightValue": 0,
+                "operator": {
+                  "type": "number",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          912,
+          144
+        ],
+        "id": "a1b2c3d4-0001-0001-0001-000000000006",
+        "name": "Exito Q10?"
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
+          "text": "={{ (() => {\n  const stderr = $('Ejecutar q10_to_sheets').first().json.stderr || $('Ejecutar q10_to_sheets').first().json.stdout || 'Sin detalle disponible.';\n  return '\\u274C Error extrayendo datos de Q10\\n\\n' + stderr.slice(0, 400);\n})() }}",
+          "additionalFields": {}
+        },
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1120,
+          320
+        ],
+        "id": "a1b2c3d4-0001-0001-0001-000000000008",
+        "name": "Responder Error Q10",
+        "webhookId": "2353600c-fd15-4efb-8c2d-9aa740d088d6",
+        "credentials": {
+          "telegramApi": {
+            "id": "kGTAfWTTp4FATF66",
+            "name": "Telegram Q10 Bot"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion/organizador && python organizador_headless.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          1120,
+          48
+        ],
+        "id": "a1b2c3d4-0001-0001-0001-000000000013",
+        "name": "Ejecutar organizador"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "cond-org-001",
+                "leftValue": "={{ $json.exitCode }}",
+                "rightValue": 0,
+                "operator": {
+                  "type": "number",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          1344,
+          48
+        ],
+        "id": "a1b2c3d4-0001-0001-0001-000000000014",
+        "name": "Exito Organizador?"
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
+          "text": "={{ (() => {\n  const stderr = $('Ejecutar organizador').first().json.stderr || $('Ejecutar organizador').first().json.stdout || 'Sin detalle disponible.';\n  return '\\u274C Error en el organizador\\n\\n' + stderr.slice(0, 400);\n})() }}",
+          "additionalFields": {}
+        },
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1568,
+          224
+        ],
+        "id": "a1b2c3d4-0001-0001-0001-000000000015",
+        "name": "Responder Error Organizador",
+        "webhookId": "4436a7fe-2d36-4109-a85d-c208aa6f276a",
+        "credentials": {
+          "telegramApi": {
+            "id": "kGTAfWTTp4FATF66",
+            "name": "Telegram Q10 Bot"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python export_stats.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          1568,
+          -80
+        ],
+        "id": "a1b2c3d4-0001-0001-0001-000000000010",
+        "name": "Ejecutar export_stats"
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python export_avance.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          1792,
+          -80
+        ],
+        "id": "a1b2c3d4-0001-0001-0001-000000000011",
+        "name": "Ejecutar export_avance"
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
+          "text": "={{ (() => {\n  const stdoutQ10 = $('Ejecutar q10_to_sheets').first().json.stdout || '';\n  const stdoutOrg = $('Ejecutar organizador').first().json.stdout || '';\n  const stdoutRet = $('Organizar retirados').first().json.stdout || '';\n  const mQ10 = stdoutQ10.match(/RESUMEN: grupo=\\S+ filas=(\\d+) estado=exito/);\n  const mOrg = stdoutOrg.match(/RESUMEN: cursos=(\\d+) estudiantes=(\\d+) habilitados=(\\d+) promedio=([\\d.]+)/);\n  const mRet = stdoutRet.match(/RESUMEN: retirados=(\\d+) cancelados=(\\d+) desertores=(\\d+) aplazados=(\\d+)/);\n  const filasQ10    = mQ10 ? mQ10[1] : '?';\n  const cursos      = mOrg ? mOrg[1] : '?';\n  const estudiantes = mOrg ? mOrg[2] : '?';\n  const habilitados = mOrg ? mOrg[3] : '?';\n  const promedio    = mOrg ? mOrg[4] : '?';\n  const retirados   = mRet ? mRet[1] : '?';\n  const cancelados  = mRet ? mRet[2] : '?';\n  const statsOk  = $('Ejecutar export_stats').first().json.exitCode === 0;\n  const avanceOk = $('Ejecutar export_avance').first().json.exitCode === 0;\n  const retOk    = $('Ejecutar export_retirados').first().json.exitCode === 0;\n  const aprobOk  = $('Ejecutar export_aprobacion').first().json.exitCode === 0;\n  const mAprob   = ($('Ejecutar export_aprobacion').first().json.stdout || '').match(/EXPORT: cursos=\\d+ matriculas=(\\d+) aprobados=(\\d+) estado=exito/);\n  const pctAprob = mAprob ? (100 * mAprob[2] / mAprob[1]).toFixed(1) + '%' : '?';\n  const sinCompOk = $json.exitCode === 0;\n  const mSinComp  = ($json.stdout || '').match(/RESUMEN: cursos=\\d+ matriculas_sin_completar=(\\d+) ciudades=(\\d+) sin_ubicacion=\\d+ estado=exito/);\n  const nSinComp  = mSinComp ? mSinComp[1] : '?';\n  const nCiudades = mSinComp ? mSinComp[2] : '?';\n  const ok = (v) => v ? '\\u2705' : '\\u26A0\\uFE0F';\n  return '\\u2705 Q10 actualizado\\n\\n' +\n    '\\ud83d\\udce5 Filas Q10: ' + filasQ10 + '\\n' +\n    '\\ud83d\\udcca Cursos: ' + cursos + ' | Activos: ' + habilitados + ' | Total: ' + estudiantes + ' | Prom: ' + promedio + '%\\n' +\n    '\\ud83d\\udeaa Retirados: ' + retirados + ' (' + cancelados + ' cancelados)\\n' +\n    ok(statsOk) + ' Stats \\u2192 GitHub Pages\\n' +\n    ok(avanceOk) + ' Avance \\u2192 GitHub Pages\\n' +\n    ok(retOk) + ' Retirados \\u2192 GitHub Pages\\n' +\n    ok(aprobOk) + ' Aprobaci\\u00f3n \\u2192 GitHub Pages (' + pctAprob + ' aprob\\u00f3)\\n' +\n    ok(sinCompOk) + ' Sin completar \\u2192 Sheet (' + nSinComp + ' en ' + nCiudades + ' ciudades)\\n' +\n    '\\n\\ud83c\\udf10 fundacion-rofe.github.io/Estadisticas/dashboard/';\n})() }}",
+          "additionalFields": {}
+        },
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          3040,
+          -80
+        ],
+        "id": "a1b2c3d4-0001-0001-0001-000000000012",
+        "name": "Responder OK",
+        "webhookId": "4e661c92-be02-445f-8bd4-ba74c9a0a9bd",
+        "credentials": {
+          "telegramApi": {
+            "id": "kGTAfWTTp4FATF66",
+            "name": "Telegram Q10 Bot"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python q10_to_sheets.py --grupo h1test"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          224,
+          -208
+        ],
+        "id": "sched-node-0001-0001-0001-000000000002",
+        "name": "Sched: q10_to_sheets"
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion/organizador && python organizador_headless.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          448,
+          -208
+        ],
+        "id": "sched-node-0001-0001-0001-000000000003",
+        "name": "Sched: organizador"
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python export_stats.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          672,
+          -208
+        ],
+        "id": "sched-node-0001-0001-0001-000000000004",
+        "name": "Sched: export_stats"
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python export_avance.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          880,
+          -208
+        ],
+        "id": "sched-node-0001-0001-0001-000000000005",
+        "name": "Sched: export_avance"
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python q10_to_sheets.py --grupo retirados"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          2000,
+          -80
+        ],
+        "id": "ret-node-0001-0001-0001-000000000001",
+        "name": "Ejecutar retirados"
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion/organizador && python retirados_headless.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          2208,
+          -80
+        ],
+        "id": "ret-node-0001-0001-0001-000000000002",
+        "name": "Organizar retirados"
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python export_retirados.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          2416,
+          -80
+        ],
+        "id": "ret-node-0001-0001-0001-000000000003",
+        "name": "Ejecutar export_retirados"
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python q10_to_sheets.py --grupo retirados"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          1088,
+          -208
+        ],
+        "id": "ret-node-0001-0001-0001-000000000004",
+        "name": "Sched: retirados"
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion/organizador && python retirados_headless.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          1296,
+          -208
+        ],
+        "id": "ret-node-0001-0001-0001-000000000005",
+        "name": "Sched: organizar retirados"
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python export_retirados.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          1504,
+          -208
+        ],
+        "id": "ret-node-0001-0001-0001-000000000006",
+        "name": "Sched: export_retirados"
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python export_aprobacion.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          1712,
+          -256
+        ],
+        "id": "aprob-node-0001-0001-0001-000000000001",
+        "name": "Sched: export_aprobacion"
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/q10-consolidacion && python export_aprobacion.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          2624,
+          -80
+        ],
+        "id": "aprob-node-0001-0001-0001-000000000002",
+        "name": "Ejecutar export_aprobacion"
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable && python tools/exportar_sin_completar.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          1952,
+          -272
+        ],
+        "id": "a2913cd4-d38a-4a44-93e6-968d07a039a8",
+        "name": "Sched: export_sin_completar"
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable && python tools/exportar_sin_completar.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          2832,
+          -80
+        ],
+        "id": "e92b6e05-7c11-4dee-acba-b7acca007274",
+        "name": "Ejecutar export_sin_completar"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "cond-es-q10-001",
+                "leftValue": "={{ $json.proceso }}",
+                "rightValue": "q10",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "manual-node-0001-0001-000000000001",
+        "name": "¿Es q10?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          448,
+          560
+        ]
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
+          "text": "=⏳ Ejecutando actualización manual: {{ $('Parsear Comando').first().json.nombre }}…\nTe aviso cuando termine.",
+          "additionalFields": {}
+        },
+        "id": "manual-node-0002-0002-000000000002",
+        "name": "Avisar inicio manual",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          672,
+          704
+        ],
+        "credentials": {
+          "telegramApi": {
+            "id": "kGTAfWTTp4FATF66",
+            "name": "Telegram Q10 Bot"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "command": "={{ $('Parsear Comando').first().json.comando }}"
+        },
+        "id": "manual-node-0003-0003-000000000003",
+        "name": "Ejecutar proceso manual",
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          896,
+          704
+        ],
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
+          "text": "={{ (() => {\n  const nombre = $('Parsear Comando').first().json.nombre;\n  const exit = $json.exitCode !== undefined ? $json.exitCode : -1;\n  const ok = exit === 0;\n  const salida = ((ok ? ($json.stdout || '') : (($json.stderr || '') || ($json.stdout || ''))).trim()).slice(-800);\n  return (ok ? '\\u2705 ' : '\\u26a0\\ufe0f ') + nombre + (ok ? ' — completado' : ' — ERROR (exit ' + exit + ')') + (salida ? '\\n\\n' + salida : '');\n})() }}",
+          "additionalFields": {}
+        },
+        "id": "manual-node-0004-0004-000000000004",
+        "name": "Responder resultado manual",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1120,
+          704
+        ],
+        "credentials": {
+          "telegramApi": {
+            "id": "kGTAfWTTp4FATF66",
+            "name": "Telegram Q10 Bot"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Telegram Trigger": {
+        "main": [
+          [
+            {
+              "node": "Parsear Comando",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parsear Comando": {
+        "main": [
+          [
+            {
+              "node": "Comando valido?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Comando valido?": {
+        "main": [
+          [
+            {
+              "node": "¿Es q10?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Enviar Ayuda",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ejecutar q10_to_sheets": {
+        "main": [
+          [
+            {
+              "node": "Exito Q10?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Exito Q10?": {
+        "main": [
+          [
+            {
+              "node": "Ejecutar organizador",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Responder Error Q10",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ejecutar organizador": {
+        "main": [
+          [
+            {
+              "node": "Exito Organizador?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Exito Organizador?": {
+        "main": [
+          [
+            {
+              "node": "Ejecutar export_stats",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Responder Error Organizador",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ejecutar export_stats": {
+        "main": [
+          [
+            {
+              "node": "Ejecutar export_avance",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ejecutar export_avance": {
+        "main": [
+          [
+            {
+              "node": "Ejecutar retirados",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sched: q10_to_sheets": {
+        "main": [
+          [
+            {
+              "node": "Sched: organizador",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sched: organizador": {
+        "main": [
+          [
+            {
+              "node": "Sched: export_stats",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sched: export_stats": {
+        "main": [
+          [
+            {
+              "node": "Sched: export_avance",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Schedule 4h": {
+        "main": [
+          [
+            {
+              "node": "Sched: q10_to_sheets",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ejecutar retirados": {
+        "main": [
+          [
+            {
+              "node": "Organizar retirados",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Organizar retirados": {
+        "main": [
+          [
+            {
+              "node": "Ejecutar export_aprobacion",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ejecutar export_retirados": {
+        "main": [
+          [
+            {
+              "node": "Ejecutar export_sin_completar",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sched: export_avance": {
+        "main": [
+          [
+            {
+              "node": "Sched: retirados",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sched: retirados": {
+        "main": [
+          [
+            {
+              "node": "Sched: organizar retirados",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sched: organizar retirados": {
+        "main": [
+          [
+            {
+              "node": "Sched: export_aprobacion",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sched: export_retirados": {
+        "main": [
+          [
+            {
+              "node": "Sched: export_sin_completar",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ejecutar export_aprobacion": {
+        "main": [
+          [
+            {
+              "node": "Ejecutar export_retirados",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sched: export_aprobacion": {
+        "main": [
+          [
+            {
+              "node": "Sched: export_retirados",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ejecutar export_sin_completar": {
+        "main": [
+          [
+            {
+              "node": "Responder OK",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "¿Es q10?": {
+        "main": [
+          [
+            {
+              "node": "Ejecutar q10_to_sheets",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Avisar inicio manual",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Avisar inicio manual": {
+        "main": [
+          [
+            {
+              "node": "Ejecutar proceso manual",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ejecutar proceso manual": {
+        "main": [
+          [
+            {
+              "node": "Responder resultado manual",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Samuel Rojas",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-07-23T21:36:23.399Z",
+        "id": 2108,
+        "workflowId": "Rblg81qifVshsRae",
+        "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
+        "event": "activated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-24T15:22:28.221Z",
+        "id": 2110,
+        "workflowId": "Rblg81qifVshsRae",
+        "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
+        "event": "activated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-24T15:23:33.629Z",
+        "id": 2112,
+        "workflowId": "Rblg81qifVshsRae",
+        "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
+        "event": "activated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-24T16:54:56.990Z",
+        "id": 2121,
+        "workflowId": "Rblg81qifVshsRae",
+        "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
+        "event": "activated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-23T21:36:22.243Z",
+        "id": 2107,
+        "workflowId": "Rblg81qifVshsRae",
+        "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
+        "event": "deactivated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-24T15:22:27.002Z",
+        "id": 2109,
+        "workflowId": "Rblg81qifVshsRae",
+        "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
+        "event": "deactivated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-24T15:23:32.510Z",
+        "id": 2111,
+        "workflowId": "Rblg81qifVshsRae",
+        "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
+        "event": "deactivated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-24T16:54:55.722Z",
+        "id": 2120,
+        "workflowId": "Rblg81qifVshsRae",
+        "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
+        "event": "deactivated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      }
+    ]
   }
 }

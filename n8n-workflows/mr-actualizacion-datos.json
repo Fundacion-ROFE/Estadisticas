@@ -1,50 +1,11 @@
 {
-  "active": true,
-  "connections": {
-    "Schedule Diario 7:30": {
-      "main": [
-        [
-          {
-            "node": "Ejecutar actualizar_bd_mr",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Ejecutar actualizar_bd_mr": {
-      "main": [
-        [
-          {
-            "node": "¿Éxito?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "¿Éxito?": {
-      "main": [
-        [
-          {
-            "node": "OK",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Marcar Error",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "description": null,
+  "updatedAt": "2026-07-24T16:54:26.070Z",
+  "createdAt": "2026-07-07T15:23:02.818Z",
   "id": "LgkDbNPERYgKMrYj",
   "name": "mr-actualizacion-datos",
+  "description": null,
+  "active": true,
+  "isArchived": false,
   "nodes": [
     {
       "parameters": {
@@ -138,12 +99,54 @@
       "name": "Marcar Error"
     }
   ],
-  "pinData": null,
+  "connections": {
+    "Schedule Diario 7:30": {
+      "main": [
+        [
+          {
+            "node": "Ejecutar actualizar_bd_mr",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ejecutar actualizar_bd_mr": {
+      "main": [
+        [
+          {
+            "node": "¿Éxito?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Éxito?": {
+      "main": [
+        [
+          {
+            "node": "OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Marcar Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
   "settings": {
     "executionOrder": "v1",
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false,
-    "timezone": "America/Bogota"
+    "timezone": "America/Bogota",
+    "errorWorkflow": "8BL0kqnJDbyWMzpg"
   },
   "staticData": {
     "node:Schedule Diario 7:30": {
@@ -153,5 +156,209 @@
       "recurrenceRules": []
     }
   },
-  "versionCounter": 9
+  "meta": null,
+  "pinData": null,
+  "versionId": "65ee1c57-e53a-4c77-baeb-1d1790b4b7f0",
+  "activeVersionId": "65ee1c57-e53a-4c77-baeb-1d1790b4b7f0",
+  "versionCounter": 19,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-07-07T15:23:02.866Z",
+      "createdAt": "2026-07-07T15:23:02.866Z",
+      "role": "workflow:owner",
+      "workflowId": "LgkDbNPERYgKMrYj",
+      "projectId": "sCDSlnWeaXfVGSdx",
+      "project": {
+        "updatedAt": "2026-06-18T19:33:43.567Z",
+        "createdAt": "2026-06-18T17:26:43.451Z",
+        "id": "sCDSlnWeaXfVGSdx",
+        "name": "Samuel Rojas <soportejunior@tocaunavida.org>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-07-08T20:17:13.377Z",
+    "createdAt": "2026-07-08T20:17:13.377Z",
+    "versionId": "65ee1c57-e53a-4c77-baeb-1d1790b4b7f0",
+    "workflowId": "LgkDbNPERYgKMrYj",
+    "nodes": [
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "days",
+                "daysInterval": 1,
+                "triggerAtHour": 9,
+                "triggerAtMinute": 30
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          0,
+          0
+        ],
+        "id": "mrupd-0001-0001-0001-000000000001",
+        "name": "Schedule Diario 9:30"
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/mr-actualizacion-datos && python actualizar_bd_mr.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          224,
+          0
+        ],
+        "id": "mrupd-0001-0001-0001-000000000002",
+        "name": "Ejecutar actualizar_bd_mr"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "leftValue": "={{ $json.stdout }}",
+                "rightValue": "estado=exito",
+                "operator": {
+                  "type": "string",
+                  "operation": "contains"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          448,
+          0
+        ],
+        "id": "mrupd-0001-0001-0001-000000000003",
+        "name": "¿Éxito?"
+      },
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          672,
+          -96
+        ],
+        "id": "mrupd-0001-0001-0001-000000000004",
+        "name": "OK"
+      },
+      {
+        "parameters": {
+          "errorMessage": "=Actualización BD-Mujeres ROFÉ falló. Salida: {{ $json.stdout }} {{ $json.stderr }}"
+        },
+        "type": "n8n-nodes-base.stopAndError",
+        "typeVersion": 1,
+        "position": [
+          672,
+          96
+        ],
+        "id": "mrupd-0001-0001-0001-000000000005",
+        "name": "Marcar Error"
+      }
+    ],
+    "connections": {
+      "Schedule Diario 7:30": {
+        "main": [
+          [
+            {
+              "node": "Ejecutar actualizar_bd_mr",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ejecutar actualizar_bd_mr": {
+        "main": [
+          [
+            {
+              "node": "¿Éxito?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "¿Éxito?": {
+        "main": [
+          [
+            {
+              "node": "OK",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Marcar Error",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Samuel Rojas",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-07-08T20:17:13.536Z",
+        "id": 2037,
+        "workflowId": "LgkDbNPERYgKMrYj",
+        "versionId": "65ee1c57-e53a-4c77-baeb-1d1790b4b7f0",
+        "event": "activated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-24T16:54:26.262Z",
+        "id": 2117,
+        "workflowId": "LgkDbNPERYgKMrYj",
+        "versionId": "65ee1c57-e53a-4c77-baeb-1d1790b4b7f0",
+        "event": "activated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-08T20:17:13.458Z",
+        "id": 2036,
+        "workflowId": "LgkDbNPERYgKMrYj",
+        "versionId": "65ee1c57-e53a-4c77-baeb-1d1790b4b7f0",
+        "event": "deactivated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-07-24T16:54:26.190Z",
+        "id": 2116,
+        "workflowId": "LgkDbNPERYgKMrYj",
+        "versionId": "65ee1c57-e53a-4c77-baeb-1d1790b4b7f0",
+        "event": "deactivated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      }
+    ]
+  }
 }
