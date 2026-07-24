@@ -30,6 +30,16 @@
     "programa": "jc"
   },
   {
+    "id": "bceb577b-373f-4d69-bdce-bafcdd79d426",
+    "nombre": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "mr"
+  },
+  {
     "id": "3eb4d761-51de-4bcd-b2e2-8a7c8f143b2d",
     "nombre": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
     "cohorte": "2026",
@@ -68,16 +78,6 @@
     "estado": "activo",
     "created_at": "2026-07-10T01:30:06.620938",
     "programa": "jc"
-  },
-  {
-    "id": "bceb577b-373f-4d69-bdce-bafcdd79d426",
-    "nombre": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
-    "cohorte": "2026",
-    "fecha_inicio": null,
-    "fecha_fin": null,
-    "estado": "activo",
-    "created_at": "2026-07-10T01:30:06.620938",
-    "programa": "mr"
   },
   {
     "id": "5c453871-3543-40d1-b630-69c4791a8a5a",

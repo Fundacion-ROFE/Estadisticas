@@ -1,26 +1,5 @@
 [
   {
-    "id": 1,
-    "cohorte": "2026",
-    "curso": "Bienvenidos a Jóvenes creaTIvos",
-    "programa": "jc",
-    "cursaron": 832,
-    "activos": 760,
-    "aprobados": 760,
-    "aprobados_retirados": 72,
-    "retirados": 0,
-    "banda_0_25": 0,
-    "banda_26_80": 0,
-    "banda_81_100": 760,
-    "aprobados_total": 832,
-    "no_aprobados": 0,
-    "sin_finalizar": 0,
-    "promedio": 100.0,
-    "pct_aprobados": 100.0,
-    "finalizado": true,
-    "updated_at": "2026-07-24T11:05:32"
-  },
-  {
     "id": 9,
     "cohorte": "2026",
     "curso": "De la idea a la acción, tu guía para emprender con éxito",
@@ -42,6 +21,27 @@
     "updated_at": "2026-07-21T09:45:24"
   },
   {
+    "id": 1,
+    "cohorte": "2026",
+    "curso": "Bienvenidos a Jóvenes creaTIvos",
+    "programa": "jc",
+    "cursaron": 832,
+    "activos": 760,
+    "aprobados": 760,
+    "aprobados_retirados": 72,
+    "retirados": 0,
+    "banda_0_25": 0,
+    "banda_26_80": 0,
+    "banda_81_100": 760,
+    "aprobados_total": 832,
+    "no_aprobados": 0,
+    "sin_finalizar": 0,
+    "promedio": 100.0,
+    "pct_aprobados": 100.0,
+    "finalizado": true,
+    "updated_at": "2026-07-24T12:36:03"
+  },
+  {
     "id": 2,
     "cohorte": "2026",
     "curso": "Emprendimiento: Idea de Negocio JC",
@@ -60,7 +60,7 @@
     "promedio": 99.44,
     "pct_aprobados": 93.9,
     "finalizado": true,
-    "updated_at": "2026-07-24T11:05:32"
+    "updated_at": "2026-07-24T12:36:03"
   },
   {
     "id": 3,
@@ -81,7 +81,7 @@
     "promedio": 99.75,
     "pct_aprobados": 97.5,
     "finalizado": true,
-    "updated_at": "2026-07-24T11:05:32"
+    "updated_at": "2026-07-24T12:36:03"
   },
   {
     "id": 4,
@@ -102,7 +102,7 @@
     "promedio": 99.84,
     "pct_aprobados": 98.9,
     "finalizado": true,
-    "updated_at": "2026-07-24T11:05:32"
+    "updated_at": "2026-07-24T12:36:03"
   },
   {
     "id": 5,
@@ -123,7 +123,7 @@
     "promedio": 98.69,
     "pct_aprobados": 95.2,
     "finalizado": true,
-    "updated_at": "2026-07-24T11:05:32"
+    "updated_at": "2026-07-24T12:36:03"
   },
   {
     "id": 6,
@@ -144,7 +144,7 @@
     "promedio": 99.48,
     "pct_aprobados": 96.8,
     "finalizado": true,
-    "updated_at": "2026-07-24T11:05:32"
+    "updated_at": "2026-07-24T12:36:03"
   },
   {
     "id": 7,
@@ -165,7 +165,7 @@
     "promedio": 83.24,
     "pct_aprobados": 66.8,
     "finalizado": false,
-    "updated_at": "2026-07-24T11:05:32"
+    "updated_at": "2026-07-24T12:36:03"
   },
   {
     "id": 8,
@@ -186,7 +186,7 @@
     "promedio": 32.07,
     "pct_aprobados": 25.8,
     "finalizado": false,
-    "updated_at": "2026-07-24T11:05:32"
+    "updated_at": "2026-07-24T12:36:03"
   },
   {
     "id": 107,
@@ -207,6 +207,6 @@
     "promedio": 1.67,
     "pct_aprobados": 0.0,
     "finalizado": false,
-    "updated_at": "2026-07-24T11:05:32"
+    "updated_at": "2026-07-24T12:36:03"
   }
 ]
