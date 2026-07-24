@@ -1,32 +1,26 @@
 {
-  "fecha_exportacion": "2026-07-24T11:08:05.153380",
-  "total_registros": 1162,
-  "tablas_exportadas": 23,
-  "bases": {
-    "participantes": [
-      "participants"
-    ],
-    "cursos": [
-      "courses",
-      "enrollments",
-      "v_curso_completion"
-    ],
-    "emoflow": [
-      "emoflow_ingresos",
-      "v_emoflow_resumen",
-      "emoflow_participacion_semanal"
-    ],
-    "aprobacion": [
-      "cohorte_ingresos",
-      "aprobacion_cursos"
-    ],
-    "asistencia": [
-      "asistencia_zoom",
-      "asistencia_promedio"
-    ],
-    "historial": [
-      "historial_cursos",
-      "historial_emoflow"
-    ]
+  "fecha_exportacion": "2026-07-24T11:47:06.621489",
+  "total_registros": 991,
+  "tablas_configuradas": 16,
+  "tablas_exportadas_ok": 16,
+  "tablas_fallidas": [],
+  "tablas_con_0_filas": [],
+  "detalle": {
+    "courses": 40,
+    "v_curso_completion": 40,
+    "v_curso_completion_por_ciudad": 63,
+    "v_demografia_grupo": 9,
+    "v_mr_demografia": 26,
+    "cohorte_stats": 6,
+    "v_emoflow_resumen": 1,
+    "v_emoflow_por_ciudad": 9,
+    "v_emoflow_bandas": 5,
+    "v_emoflow_bandas_ciudad": 43,
+    "historial_emoflow": 21,
+    "historial_emoflow_ciudad": 54,
+    "cohorte_ingresos": 2,
+    "aprobacion_cursos": 10,
+    "historial_cursos": 158,
+    "historial_cursos_ciudad": 504
   }
 }
