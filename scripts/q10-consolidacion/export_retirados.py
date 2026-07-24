@@ -275,25 +275,54 @@ def guardar_json(datos: dict) -> None:
 
 
 # ── Git commit y push ──────────────────────────────────────────────────────────
-def git_commit_y_push(timestamp: str) -> None:
-    pasos = [
-        ["git", "add", os.path.join("docs", "retirados", "data.json")],
-        ["git", "commit", "-m", f"chore: actualizar retirados [{timestamp}]"],
-        ["git", "push", "origin", "main"],
-    ]
-    for cmd in pasos:
-        resultado = subprocess.run(
-            cmd,
+def git_commit_y_push(timestamp: str) -> bool:
+    """Retorna True si el push salió bien (o no había nada que publicar), False si falló."""
+    ruta_relativa = os.path.join("docs", "retirados", "data.json")
+
+    try:
+        resultado_status = subprocess.run(
+            ["git", "status", "--porcelain", "--", ruta_relativa],
             cwd=PROYECTO_ROOT,
             capture_output=True,
             text=True,
             encoding="utf-8",
+            timeout=180,
         )
+    except subprocess.TimeoutExpired:
+        log("ERROR git (status --porcelain): timeout tras 180s")
+        return False
+    if resultado_status.returncode != 0:
+        stderr = resultado_status.stderr.strip() or resultado_status.stdout.strip()
+        log(f"ERROR git (status --porcelain): {stderr}")
+        return False
+    if not resultado_status.stdout.strip():
+        log("  git: sin cambios, no hay nada que publicar.")
+        return True
+
+    pasos = [
+        ["git", "add", ruta_relativa],
+        ["git", "commit", "-m", f"chore: actualizar retirados [{timestamp}]"],
+        ["git", "push", "origin", "main"],
+    ]
+    for cmd in pasos:
+        try:
+            resultado = subprocess.run(
+                cmd,
+                cwd=PROYECTO_ROOT,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=180,
+            )
+        except subprocess.TimeoutExpired:
+            log(f"ERROR git ({' '.join(cmd)}): timeout tras 180s")
+            return False
         if resultado.returncode != 0:
             stderr = resultado.stderr.strip() or resultado.stdout.strip()
-            log(f"ADVERTENCIA git ({' '.join(cmd)}): {stderr}")
-            return
+            log(f"ERROR git ({' '.join(cmd)}): {stderr}")
+            return False
         log(f"  git {cmd[1]}: OK")
+    return True
 
 
 # ── Lectura tolerante ─────────────────────────────────────────────────────────
@@ -353,7 +382,14 @@ def main() -> None:
         else:
             timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M")
             log("Ejecutando git commit y push...")
-            git_commit_y_push(timestamp)
+            if not git_commit_y_push(timestamp):
+                t_err = datos["totales"]
+                print(
+                    f"EXPORT: retirados={t_err['total_retirados']} "
+                    f"cancelados={t_err['cancelados']} estado=error detalle=git_push_fallido",
+                    flush=True,
+                )
+                sys.exit(1)
 
         t = datos["totales"]
         log("=" * 60)

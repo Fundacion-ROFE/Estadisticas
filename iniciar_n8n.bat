@@ -46,6 +46,10 @@ set "NODE_TLS_REJECT_UNAUTHORIZED=0"
 set "N8N_DIAGNOSTICS_ENABLED=false"
 :: Sin esto n8n usa America/New_York en los Schedule Triggers
 set "GENERIC_TIMEZONE=America/Bogota"
+:: Git 100% desatendido: nunca colgarse esperando un prompt de credencial
+:: (executeCommand con git push heredaria este entorno como hijo de n8n)
+set "GCM_INTERACTIVE=never"
+set "GIT_TERMINAL_PROMPT=0"
 
 echo [1/4] Iniciando tunel ngrok (dominio fijo)...
 tasklist /FI "IMAGENAME eq ngrok.exe" /NH 2>nul | findstr /i "ngrok" >nul 2>&1

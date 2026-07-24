@@ -496,13 +496,34 @@ def actualizar_history(datos: dict) -> bool:
 
 
 # ── Git commit y push ──────────────────────────────────────────────────────────
-def git_commit_y_push(timestamp: str, incluir_history: bool = False) -> None:
+def git_commit_y_push(timestamp: str, incluir_history: bool = False) -> bool:
+    """Retorna True si el push salió bien (o no había nada que publicar), False si falló."""
     archivos = [
         os.path.join("docs", "dashboard", "data.json"),
         os.path.join("docs", "dashboard", "maximos_cursos.json"),
     ]
     if incluir_history:
         archivos.append(os.path.join("docs", "dashboard", "history.json"))
+
+    try:
+        resultado_status = subprocess.run(
+            ["git", "status", "--porcelain", "--"] + archivos,
+            cwd=PROYECTO_ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=180,
+        )
+    except subprocess.TimeoutExpired:
+        log("ERROR git (status --porcelain): timeout tras 180s")
+        return False
+    if resultado_status.returncode != 0:
+        stderr = resultado_status.stderr.strip() or resultado_status.stdout.strip()
+        log(f"ERROR git (status --porcelain): {stderr}")
+        return False
+    if not resultado_status.stdout.strip():
+        log("  git: sin cambios, no hay nada que publicar.")
+        return True
 
     sufijo = " +history" if incluir_history else ""
     pasos = [
@@ -511,18 +532,24 @@ def git_commit_y_push(timestamp: str, incluir_history: bool = False) -> None:
         ["git", "push", "origin", "main"],
     ]
     for cmd in pasos:
-        resultado = subprocess.run(
-            cmd,
-            cwd=PROYECTO_ROOT,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-        )
+        try:
+            resultado = subprocess.run(
+                cmd,
+                cwd=PROYECTO_ROOT,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=180,
+            )
+        except subprocess.TimeoutExpired:
+            log(f"ERROR git ({' '.join(cmd)}): timeout tras 180s")
+            return False
         if resultado.returncode != 0:
             stderr = resultado.stderr.strip() or resultado.stdout.strip()
-            log(f"ADVERTENCIA git ({' '.join(cmd)}): {stderr}")
-            return
+            log(f"ERROR git ({' '.join(cmd)}): {stderr}")
+            return False
         log(f"  git {cmd[1]}: OK")
+    return True
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -569,7 +596,13 @@ def main() -> None:
         else:
             timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M")
             log("Ejecutando git commit y push...")
-            git_commit_y_push(timestamp, incluir_history=nuevo_snapshot)
+            if not git_commit_y_push(timestamp, incluir_history=nuevo_snapshot):
+                print(
+                    f"EXPORT: cursos_jc={len(pc_jc)} cursos_mr={len(pc_mr)} "
+                    f"cursos_stand={len(pc_stand)} estado=error detalle=git_push_fallido",
+                    flush=True,
+                )
+                sys.exit(1)
 
         log("=" * 60)
         log(f"  Cursos JC           : {len(pc_jc)}")
