@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-23T17:01:18.040046-05:00",
+  "ultima_actualizacion": "2026-07-24T17:01:19.487188-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -13,21 +13,21 @@
       "finalizado": true
     },
     {
-      "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
+      "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
       "estudiantes": 760,
-      "finalizados": 461,
-      "promedio": 83.24,
+      "finalizados": 482,
+      "promedio": 84.33,
       "min": 0.0,
       "max": 100.0,
-      "inscritos": 777,
-      "promedio_pico": 54.38,
+      "inscritos": 760,
+      "promedio_pico": 84.33,
       "finalizado": false
     },
     {
       "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
       "estudiantes": 760,
       "finalizados": 718,
-      "promedio": 99.44,
+      "promedio": 99.46,
       "min": 0.0,
       "max": 101.0,
       "inscritos": 830,
@@ -38,7 +38,7 @@
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
       "estudiantes": 760,
       "finalizados": 735,
-      "promedio": 98.69,
+      "promedio": 98.83,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 806,
@@ -71,7 +71,7 @@
       "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
       "estudiantes": 760,
       "finalizados": 751,
-      "promedio": 99.48,
+      "promedio": 99.49,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 809,
@@ -86,7 +86,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 31
+      "cantidad": 30
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -105,9 +105,9 @@
         "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
         "estudiantes": 172,
         "finalizados": 0,
-        "promedio": 1.6,
+        "promedio": 1.71,
         "min": 0.0,
-        "max": 52.0,
+        "max": 64.0,
         "inscritos": 172,
         "promedio_pico": 0.48,
         "finalizado": false
@@ -127,7 +127,7 @@
     "anomalias": [
       {
         "categoria": "AVANCE 0%",
-        "cantidad": 308
+        "cantidad": 307
       },
       {
         "categoria": "AVANCE IRREGULAR",
