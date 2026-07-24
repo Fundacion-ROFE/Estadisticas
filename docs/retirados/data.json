@@ -1,12 +1,12 @@
 {
-  "ultima_actualizacion": "2026-07-24T08:44:52.230080-05:00",
+  "ultima_actualizacion": "2026-07-24T17:02:45.012503-05:00",
   "anio": "2026",
   "totales": {
-    "total_retirados": 99,
+    "total_retirados": 104,
     "cancelados": 72,
     "desertores": 0,
     "aplazados": 0,
-    "sin_registro_hoja": 27
+    "sin_registro_hoja": 32
   },
   "por_tipo": [
     {
@@ -15,7 +15,7 @@
     },
     {
       "tipo": "Sin registro de retiro",
-      "cantidad": 27
+      "cantidad": 32
     }
   ],
   "por_causa": [
@@ -25,13 +25,13 @@
     },
     {
       "causa": "Sin registro de retiro",
-      "cantidad": 27
+      "cantidad": 32
     }
   ],
   "por_programa": [
     {
       "programa": "Jóvenes creaTIvos",
-      "cantidad": 74
+      "cantidad": 79
     },
     {
       "programa": "Mujeres ROFÉ",
@@ -95,7 +95,7 @@
     {
       "orden": 7,
       "etapa": "Desarrollo Web Front-End - HTML - 2026",
-      "cantidad": 2
+      "cantidad": 7
     }
   ],
   "ruta": [
