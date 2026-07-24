@@ -31,8 +31,28 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # ── Configuración ─────────────────────────────────────────────────────────────
-Q10_USUARIO  = "soporte@tocaunavida.org"
-Q10_PASSWORD = "JCMR$Form!26"
+# P0 seguridad 2026-07-24: credenciales fuera del código. Viven en
+# scripts/q10-consolidacion/.env (gitignoreado). Prioridad: entorno > archivo.
+def _cargar_env_junto_al_script() -> None:
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(env_path):
+        with open(env_path, encoding="utf-8") as _f:
+            for _linea in _f:
+                _linea = _linea.strip()
+                if not _linea or _linea.startswith("#") or "=" not in _linea:
+                    continue
+                _k, _, _v = _linea.partition("=")
+                os.environ.setdefault(_k.strip(), _v.strip())
+
+_cargar_env_junto_al_script()
+
+Q10_USUARIO  = os.environ.get("Q10_USUARIO", "").strip()
+Q10_PASSWORD = os.environ.get("Q10_PASSWORD", "").strip()
+if not Q10_USUARIO or not Q10_PASSWORD:
+    raise RuntimeError(
+        "Q10_USUARIO/Q10_PASSWORD no definidos. Agregarlos a "
+        "scripts/q10-consolidacion/.env (ver .env.example). P0 2026-07-24."
+    )
 Q10_BASE_URL = "https://site6.q10.com"
 
 CREDENCIALES_JSON = "credenciales_service_account.json"

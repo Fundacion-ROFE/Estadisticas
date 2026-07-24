@@ -2849,7 +2849,7 @@ cifras nacionales dentro de la vista de ciudad. `npm run build` OK (243 kB First
 - **Cambios en n8n:** actualizar workflow `q10-sync-supabase.json`: reemplazar comando `sync_emoflow.py` por `sync_emoflow_api.py`.
   El nodo IF (`¿Emoflow OK?`) y stopAndError siguen sin cambios.
 - **Documentación:** CLAUDE.md (arquitectura + tabla componentes), memoria actualizada, referencia API nueva, MEMORY.md indexado.
-- **Credenciales:** `EMOFLOW_USER=Rofe123`, `EMOFLOW_PASSWORD=Rofe123@` en `.env.local` (nunca en git).
+- **Credenciales:** `EMOFLOW_USER=[REDACTADO — ver EMOFLOW_USER en .env.local]`, `EMOFLOW_PASSWORD=[REDACTADO — ver EMOFLOW_PASSWORD en .env.local]` en `.env.local` (nunca en git).
 - **Testing:** --dry-run exitoso, test real exitoso (826 filas a Supabase, snapshots históricos guardados).
 - Script `sync_emoflow.py` marcado como DEPRECATED 2026-07-20 pero se mantiene por inercia.
 
@@ -3990,3 +3990,21 @@ API de n8n, escribirlo con Python (`urllib`+UTF-8), nunca tipeado directo en un 
   hojas H1Test/H2Test/H3Test fueron borradas del Sheet. Los pasos de datos anteriores sí
   terminan en éxito (el panel se actualiza bien), pero con 8 corridas el fallo pasa de 1 a 8
   por día. Pendiente: recrear las hojas o retirar el paso.
+
+
+## 2026-07-24 — [plan-produccion] Auditoría 4-agentes + plan de producción para ejecutar con Sonnet
+
+- Se corrieron 4 auditorías paralelas de solo-lectura (ETL panel-datos, GUI panel_riesgo,
+  n8n+git, docs/pendientes) para fundamentar un plan de puesta en producción de la DB.
+- Hallazgo CRÍTICO nuevo: credenciales Q10 (q10_to_sheets.py:34-35) y Emoflow
+  (emoflow_api_test.py:19-20) en texto plano DENTRO de archivos trackeados del repo
+  público de GitHub Pages -> P0: rotar + mover a .env + filter-repo.
+- Hallazgos clave: git_commit_y_push() con "éxito silencioso" en los 5 exporters (push
+  falla y el script igual imprime estado=exito, sin timeout); rama Sched: del Bot Q10 sin
+  ningún IF/alerta; bug ={{ .stdout }} en q10-sync-supabase; sync_supabase_to_sheets
+  probablemente YA arreglado el 07-23 (verificar ejecución en vivo); leer_asistencia_zoom()
+  de la GUI con key pública hardcodeada y posiblemente roto desde el 07-14.
+- Entregable: docs/procesos/plan-produccion-datos-2026-07-24.md — P0 seguridad + 5 olas
+  (salvaguardas, 4 tracks paralelos, gate de verificación, GUI 8 tabs con v_persona_360,
+  panel Netlify con v_retiros_stats), prompts listos para subagentes Sonnet, criterios
+  Go/No-Go y rollback. Pendiente de ejecución.

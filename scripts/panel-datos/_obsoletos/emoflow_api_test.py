@@ -1,9 +1,11 @@
+# OBSOLETO (P0 2026-07-24): script exploratorio; credenciales movidas a entorno.
 # -*- coding: utf-8 -*-
 """
 emoflow_api_test.py — Reconocimiento de API de Emoflow
 Intenta: login → descarga CSV → inspecciona estructura
 """
 
+import os
 import requests
 import sys
 import io
@@ -16,9 +18,10 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
 BASE_URL = "https://emoflow.sanumbe.com"
-USER = "Rofe123"
-PASSWORD = "Rofe123@"
-
+USER = os.environ.get("EMOFLOW_USER", "")
+PASSWORD = os.environ.get("EMOFLOW_PASSWORD", "")
+if not USER or not PASSWORD:
+    raise RuntimeError("Definir EMOFLOW_USER/EMOFLOW_PASSWORD (.env.local). P0 2026-07-24")
 session = requests.Session()
 
 # Opción 1: Leer formulario de login para encontrar nombre de campos
