@@ -991,12 +991,50 @@ etiqueta (`Jóvenes creaTIvos`→jc, `Mujeres ROFÉ`→mr) — un programa nuevo
 
 ---
 
-## `scripts/panel-datos/sync_emoflow.py`
+## `scripts/panel-datos/sync_retiros.py`
 
-**⚠ DEPRECADO (2026-07-21):** el workflow n8n `q10-sync-supabase` seguía llamando a este
-script en producción pese a estar documentado como reemplazado desde el 2026-07-20 —
-corregido: el nodo ahora ejecuta `sync_emoflow_api.py` (API directa de Emoflow, sin Sheet
-intermedio). Este script se conserva por si hace falta volver atrás, pero no correr más.
+**Propósito (2026-07-24, Track B de la Ola 1):** cierra el gap #1 de la auditoría 2026-07-23 —
+el retiro solo existía como agregado (`cohorte_ingresos.retirados`); este script carga la fila
+**individual** (cédula + fecha + motivo), habilitando el análisis uso-Emoflow ↔ retención.
+Upsert idempotente en `retiros` (`on_conflict=cedula,cohorte,programa`).
+
+**Fuentes (dos Sheets, mismo Service Account):**
+- **JC:** pestaña `Retirados` del Sheet h2test (`1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs`)
+  — `Identificacion, Nombre, TipoDocumento, Telefono, Programa, Sede, FechaCancelacion, Causa,
+  Descripcion, Tipo`. Verificado en vivo 2026-07-24: 370 filas, 100% `Programa=Jóvenes
+  creaTIvos`, 0 cédulas duplicadas.
+- **MR:** pestaña `Inactivas` del Sheet BD-Mujeres ROFÉ (`1ZsC4WyY26aOCEMrnZ_l8Tn-l69DB_0ADs5lnecaoEP8`)
+  — sin headers estables por nombre; índices 0-based fijados a mano (`cedula`=col 4, `Motivos`=25,
+  `Estado`=26, `Año-retiro`=27). ~33 filas usables.
+
+**Mapeo clave:** `cohorte` JC = `'2026'` si la cédula está en
+`tools/cohorte_2026.json:por_programa["Jóvenes creaTIvos"].retirados`, si no año de
+`FechaCancelacion` (histórico, best-effort); `cohorte` MR = `Año-retiro` tal cual (advertencia
+del propio esquema `007`: puede ser año de registro de la baja, no cohorte real). `etapa`
+(JC) reutiliza `etapa_de_retiro()` (adaptada de `export_retirados.py`) contra
+`tools/aprobacion_ledger.json`; MR queda `NULL` (sin ruta de cursos equivalente). `programa`
+usa el valor real del enum `programa_type` (`'jc'`/`'mr'` minúscula, no `'JC'`/`'MR'`).
+
+**Comando:** `python scripts/panel-datos/sync_retiros.py [--dry-run]`
+**Output parseable:** `RESUMEN: jc=N mr=M total=T cargados=C con_match_participant=K estado=exito|dry_run`
+
+**Estado verificado (2026-07-24, service_role):** 403 filas — `jc/2023`=144, `jc/2024`=126,
+`jc/2025`=3, `jc/2026`=72, `jc/no_cohorte`=25, `mr/2025`=25, `mr/2026`=8. Ver [[supabase-estructura]]
+para el detalle de la tabla `retiros` 🟢.
+
+**Automatización:** nodo "Ejecutar sync_retiros" insertado en `q10-sync-supabase`
+(`uSizw3dNzpb6n53H`) después de "Ejecutar sync_aprobacion" (Track B, Ola 1).
+
+---
+
+## `scripts/panel-datos/_obsoletos/sync_emoflow.py`
+
+**⚠ DEPRECADO (2026-07-21), movido a `_obsoletos/` (2026-07-24):** el workflow n8n
+`q10-sync-supabase` seguía llamando a este script en producción pese a estar documentado
+como reemplazado desde el 2026-07-20 — corregido: el nodo ahora ejecuta `sync_emoflow_api.py`
+(API directa de Emoflow, sin Sheet intermedio). Este script se conserva por si hace falta
+volver atrás, pero no correr más. La ruta bajo `scripts/panel-datos/` (sin `_obsoletos/`)
+ya no existe — actualizar cualquier referencia vieja.
 
 **Propósito:** Pestaña `+Ingresos-EmoFlow` del Sheet manual → Supabase `emoflow_ingresos`.
 Emoflow es la herramienta de estado de ánimo; hoy se usa como proxy de **"calidad de estudiante"**
@@ -1010,7 +1048,7 @@ vía los **ingresos al sistema** (contador acumulado por estudiante). Normaliza 
 
 **Comando:**
 ```bash
-python scripts/panel-datos/sync_emoflow.py [--dry-run]
+python scripts/panel-datos/_obsoletos/sync_emoflow.py [--dry-run]
 ```
 
 **⚠ Llave de cruce = EMAIL.** Emoflow **no expone la cédula** — el correo normalizado (lower+trim)
@@ -1041,11 +1079,22 @@ upsert idéntico a `sync_emoflow.py` (mismo destino, misma lógica de match por 
 **Credenciales:** `EMOFLOW_URL`/`EMOFLOW_USER`/`EMOFLOW_PASSWORD` + `SUPABASE_URL`/
 `SUPABASE_SERVICE_ROLE_KEY` en `.env.local`.
 
-**Comando:** `python scripts/panel-datos/sync_emoflow_api.py [--dry-run]`
+**Comando:** `python scripts/panel-datos/sync_emoflow_api.py [--dry-run] [--purgar-huerfanos]`
+
+**Detección de filas huérfanas (agregado 2026-07-24):** el upsert nunca borra — si un
+usuario desaparece del CSV del día, su fila en `emoflow_ingresos` queda congelada para
+siempre. Al final de cada corrida real (no en `--dry-run`) el script compara el set de
+emails del CSV de hoy contra el set de emails ya en la tabla; los ausentes se reportan en
+`RESUMEN` (`huerfanos=N`) y en el JSON de `tools/emoflow_api_report_*.json` (PII,
+gitignoreado). Con `--purgar-huerfanos` los borra vía `DELETE .../emoflow_ingresos?email=in.(...)`
+(service_role). La huérfana conocida de `fecha_corte=2026-07-21` se purgó a mano el
+2026-07-24 (1 fila, `DELETE ...?fecha_corte=lt.2026-07-24`) — ver gotcha en
+[[supabase-estructura]].
 
 **Automatización (corregida 2026-07-21):** nodo `Ejecutar sync_emoflow_api` en
 `q10-sync-supabase`, tras `¿Aprobación OK?`. Reemplaza a `sync_emoflow.py` — ver nota de
-deprecación arriba.
+deprecación arriba. 🙋 Pendiente: decidir si el nodo pasa a llamar con `--purgar-huerfanos`
+siempre, o se deja manual/semanal.
 
 ---
 
@@ -1156,6 +1205,12 @@ upsert en Supabase `asistencia_promedio`. Corre después de `sync_asistencia_sup
 
 **Comando:** `python scripts/panel-datos/calcular_asistencia_promedio.py`
 
+**Contrato de salida (corregido 2026-07-24):** antes retornaba 0 (éxito) aunque TODOS los
+upserts fallaran — el IF de n8n buscaba el marcador `[OK]` en el stdout y nunca lo veía fallar
+en falso negativo, pero tampoco en verdadero fallo. Ahora: si `errores > 0` tras sincronizar
+con Supabase → imprime `[ERROR]` (ya NO imprime `[OK]`) y `return 1`. Solo imprime `[OK]` y
+retorna 0 si los 0 errores fueron reales.
+
 ---
 
 ## `scripts/panel-datos/export_supabase_json.py`
@@ -1173,26 +1228,49 @@ python scripts/panel-datos/export_supabase_json.py --sin-push         # pruebas 
 python scripts/panel-datos/export_supabase_json.py --output-dir DIR   # override de salida
 ```
 
-**Tablas/vistas exportadas:** `participants`, `courses`, `enrollments`, `v_curso_completion`,
-`v_curso_completion_por_ciudad`, `v_demografia_grupo`, `v_mr_demografia`, `cohorte_stats`,
-`emoflow_ingresos`, `v_emoflow_resumen`, `v_emoflow_por_ciudad`, `v_emoflow_bandas`,
-`v_emoflow_bandas_ciudad`, `historial_emoflow`, `historial_emoflow_ciudad`,
-`emoflow_participacion_semanal`, `cohorte_ingresos`, `aprobacion_cursos`,
-`v_aprobacion_cohorte_stats`, `asistencia_zoom`, `asistencia_promedio`, `historial_cursos`,
+**Tablas/vistas exportadas (recortado 2026-07-24, de 23 a 16, verificado en vivo con la anon
+key — no de suposiciones):** `courses`, `v_curso_completion`, `v_curso_completion_por_ciudad`,
+`v_demografia_grupo`, `v_mr_demografia`, `cohorte_stats`, `v_emoflow_resumen`,
+`v_emoflow_por_ciudad`, `v_emoflow_bandas`, `v_emoflow_bandas_ciudad`, `historial_emoflow`,
+`historial_emoflow_ciudad`, `cohorte_ingresos`, `aprobacion_cursos`, `historial_cursos`,
 `historial_cursos_ciudad`.
 
-**Output parseable:** `RESUMEN: tablas=N registros=M estado=exito`
+Se sacaron 7: `participants`/`emoflow_ingresos`/`asistencia_zoom`/`asistencia_promedio` (HTTP
+401 con anon key — PII con RLS+REVOKE, nunca iban a traer nada por diseño), `enrollments`
+(HTTP 200 pero 0 filas siempre — la policy pública filtra por `participants.is_public`, que
+hoy es `false` en el 100% de los casos, mismo ruido que un 401), `v_aprobacion_cohorte_stats`
+(HTTP 404 — la vista no existe en Supabase) y `emoflow_participacion_semanal` (🔴 deprecada,
+ver [[supabase-estructura]], candidata a DROP en migración `012` — propuesta, no aplicada).
+Nota: la auditoría previa (plan-produccion-datos-2026-07-24.md) estimaba "6 tablas PII
+siempre vacías"; la sonda en vivo del 2026-07-24 confirmó 5 (4×401 + 1×200-con-0-filas) más
+la vista inexistente y la deprecada aparte — 7 exclusiones en total, no 8.
 
-**Git commit y push (agregado 2026-07-21):** `git_commit_y_push()` — mismo patrón de
-`export_stats.py`: `git add docs/datos` + commit + `push origin main`. Se agregó porque
-`docs/datos/*.json` ya estaba trackeado en git antes de encadenar el script — sin el push, cada
-corrida diaria dejaría el directorio permanentemente sucio en disco sin llegar nunca al repo.
+**Output parseable (endurecido 2026-07-24):**
+`RESUMEN: tablas=N ok=K fallidas=F registros=M estado=exito|error`. Antes SIEMPRE imprimía
+`estado=exito` sin verificar si alguna tabla vino vacía o dio error (éxito silencioso). Ahora:
+cada tabla configurada que dé excepción HTTP o **0 filas** (ya no debería pasar — las que sí
+vuelven vacías por diseño se sacaron de la lista) marca la corrida entera como
+`estado=error` + `sys.exit(1)`, **y en ese caso el script NO intenta el `git push`** (no
+publica un export a medias) — igual que un fallo de `git push` real termina en el mismo
+contrato de error.
 
-**⚠️ Sin consumidor confirmado (2026-07-21):** el frontend real de producción
-(`venerable-truffle-331f3c.netlify.app`) consulta Supabase directo desde el cliente (`lib/api.ts`,
-anon key) — NO lee estos JSON. El script está encadenado en `q10-sync-supabase` (pedido expreso
-de Samuel) pese a esto; ver [[panel-datos-etl#`sync_supabase_to_sheets.py` / `export_supabase_json.py` — continuidad analizada, ENCADENADOS (2026-07-21)]]
-para la decisión completa y motivo de mantenerlo así.
+**Manifest dinámico (2026-07-24):** `manifest.json` ya NO tiene un diccionario `bases`
+hardcodeado (podía desincronizarse de la lista real de `tablas`) — ahora se genera desde los
+resultados reales de la corrida: `tablas_configuradas`, `tablas_exportadas_ok`,
+`tablas_fallidas` (con el detalle del error) y `detalle` (conteo real por tabla exportada).
+
+**Git commit y push (agregado 2026-07-21, endurecido 2026-07-24 con el mismo patrón A1 de
+`export_stats.py`):** `git_commit_y_push()` ahora usa `timeout=180` por cada `subprocess.run`
+de git, detecta "sin cambios" con `git status --porcelain` (retorna `True`, no es fallo), y
+retorna `False` si `add`/`commit`/`push` fallan o expiran — `main()` convierte un `False` en
+`estado=error` + `sys.exit(1)` en vez de la ADVERTENCIA silenciosa de antes.
+
+**⚠️ Sin consumidor confirmado (2026-07-21, sigue así al 2026-07-24):** el frontend real de
+producción (`venerable-truffle-331f3c.netlify.app`) consulta Supabase directo desde el
+cliente (`lib/api.ts`, anon key) — NO lee estos JSON. El script sigue encadenado en
+`q10-sync-supabase` (pedido expreso de Samuel) pese a esto; ver [[panel-datos-etl#`sync_supabase_to_sheets.py` / `export_supabase_json.py` — continuidad analizada, ENCADENADOS (2026-07-21)]]
+para la decisión completa y motivo de mantenerlo así. 🙋 Pendiente decisión de Samuel: mantener
+sin fecha de retiro, o ponerle una.
 
 **Automatización (2026-07-21):** último tramo de `q10-sync-supabase` (`uSizw3dNzpb6n53H`) —
 `¿Emoflow OK?` (rama true) → `Ejecutar export_supabase_json` → `Export JSON OK?` →
@@ -1202,16 +1280,18 @@ para la decisión completa y motivo de mantenerlo así.
 
 ## `scripts/panel-datos/sync_supabase_to_sheets.py`
 
-**Propósito:** Espeja vistas públicas de Supabase de vuelta a Google Sheets (`H1Test` =
-participantes, `H2Test` = Emoflow/ingresos, `H3Test` = resumen ejecutivo/KPIs) para que el equipo
-consulte los datos sin salir de Excel. Es de **lectura** (Supabase → Sheets); las escrituras
-manuales en Sheets se cargan a Supabase por el flujo manual existente, no por este script.
+**Propósito (reescrito 2026-07-23):** Espeja Supabase → Google Sheets para que el equipo
+consulte datos de Emoflow sin salir de Excel. Ya NO escribe `H1Test`/`H2Test`/`H3Test` (código
+muerto, esas funciones quedaron desactivadas) — escribe **una sola pestaña**,
+`AUTO_Emoflow_Uso`, que el propio script **autocrea** si no existe. Es de **lectura**
+(Supabase → Sheets); las escrituras manuales en Sheets se cargan a Supabase por el flujo
+manual existente, no por este script.
 
 **Servicios:** Supabase REST (anon key) · Google Sheets API (write, Service Account)
 
-**Sheet destino:** ID `1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8` (mismo Sheet gigante de
-Avance/Emoflow) — requiere que existan las pestañas `H1Test`/`H2Test`/`H3Test` de antemano (el
-script aborta con advertencia si faltan; no las crea).
+**Sheet destino:** ID `1eO73hL9Bq_X8T11g3aPAEkq6QkKfMRNykru7to8GDdo` — Sheet **AUTO dedicado**
+(no el Sheet gigante de Avance/Emoflow `1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8`, que era
+el destino viejo con H1/H2/H3).
 
 **Comando:**
 ```bash
@@ -1222,6 +1302,16 @@ python scripts/panel-datos/sync_supabase_to_sheets.py --sheet-id ID    # overrid
 **Output parseable:** `RESUMEN: estado=exito` (o `estado=error`)
 
 **No toca git** — solo lee Supabase y escribe en Sheets.
+
+**⚠️ Gotcha cerrado 2026-07-24 — no era "ya estaba verde":** la auditoría previa (2026-07-23)
+daba por resuelta la deuda solo por la reescritura de código (single-tab autocreada). En
+producción seguía fallando con `APIError 403`: la Service Account
+`q10-automatizacion@n8n-automatizacion-q10.iam.gserviceaccount.com` tenía **solo Viewer** en
+el Sheet AUTO dedicado — puede leer pero no `addSheet`/escribir, así que nunca lograba
+autocrear ni poblar `AUTO_Emoflow_Uso`. Fix real (sesión principal, 2026-07-24): se compartió
+el Sheet `1eO73hL9...GDdo` con la SA como **Editor**. Tras el cambio de permiso, re-corrida
+verde confirmada. **Gotcha general:** cualquier script que auto-crea pestañas/hojas necesita
+la SA como Editor, no solo Viewer — ver [[convenciones]].
 
 **Automatización (2026-07-21):** encadenado en `q10-sync-supabase`, entre `Export JSON OK?` y
 `Sheets OK?` (ver detalle en la entrada de `export_supabase_json.py` arriba).
@@ -1322,13 +1412,21 @@ reescribirlos — evita repetir el bug de paginación ya documentado dos veces e
 
 ## `scripts/panel-datos/test_integridad_supabase.py`
 
-**Propósito:** suite de integridad/seguridad de la base completa (36 tests, un solo comando,
-SOLO lectura): FKs/huérfanos, unicidad (emails, cédulas, q10_id), dominios (catálogo de
-ciudades, rangos, fechas futuras), cuadres cruzados con **tolerancias explícitas como
-constantes** (Δ emoflow 2%, overlap cohorte [0,5], roster+25), frescura de syncs diarios
-(≤2 días), y superficie anon (10 objetos PII deben dar 401/vacío — usa `SUPABASE_ANON_KEY`
-de `.env.local`). Salida parseable: `RESUMEN: total=N pass=X fail=Y estado=exito|fallo`,
-exit code = nº de fails. Ver triage completo en [[supabase-estructura]].
+**Propósito:** suite de integridad/seguridad de la base completa (un solo comando,
+SOLO lectura): FKs/huérfanos, unicidad (emails, cédulas, q10_id, y desde 2026-07-24
+`retiros(cedula,cohorte,programa)`), dominios (catálogo de ciudades, rangos, fechas futuras),
+cuadres cruzados con **tolerancias explícitas como constantes** (Δ emoflow 2%, overlap cohorte
+[0,5], roster+25, y desde 2026-07-24 `retiros` vs `cohorte_ingresos.retirados` tol 3), frescura
+de syncs diarios (≤2 días, incluye `retiros poblada`), y superficie anon (11 objetos PII deben
+dar 401/vacío, incluye `retiros` — usa `SUPABASE_ANON_KEY` de `.env.local`). Salida parseable:
+`RESUMEN: total=N pass=X fail=Y estado=exito|fallo`, exit code = nº de fails. Ver triage
+completo en [[supabase-estructura]].
+
+**Corrida real (2026-07-24, cierre de Ola 1, tras los cambios de Track B+C):**
+`RESUMEN: total=47 pass=47 fail=0 estado=exito` — 47/47 PASS, incluye las 3 pruebas nuevas de
+`retiros` (unicidad, cuadre vs `cohorte_ingresos`, frescura) y confirma sano el cambio de
+Track C sobre `emoflow_ingresos` (826 filas tras purgar la huérfana de `fecha_corte=2026-07-21`,
+0 huérfanas de `participant_id`, email único).
 
 **Comando:** `python scripts/panel-datos/test_integridad_supabase.py [--rapido]`
 (`--rapido` omite la descarga completa de enrollments — para el chequeo diario post-sync)

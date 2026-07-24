@@ -206,6 +206,12 @@ def main():
         print(f"    ✗ Error: {e}\n")
         return 1
 
+    if errores > 0:
+        print("="*80)
+        print(f"[ERROR] Sincronización con {errores} error(es) — ver detalle arriba")
+        print("="*80 + "\n")
+        return 1
+
     print("="*80)
     print("[OK] Sincronización completada")
     print("="*80 + "\n")

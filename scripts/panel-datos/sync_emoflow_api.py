@@ -143,6 +143,16 @@ class Supa:
             )
         return len(filas)
 
+    def borrar_por_email(self, tabla: str, emails: list) -> int:
+        """DELETE de filas cuyo email esté en la lista dada (in lotes, filtro in.(...))."""
+        total = 0
+        for i in range(0, len(emails), LOTE):
+            lote = emails[i : i + LOTE]
+            valores = ",".join(lote)
+            self._req("DELETE", f"/{tabla}?email=in.({valores})", prefer="return=minimal")
+            total += len(lote)
+        return total
+
 
 def norm_email(valor: str) -> str:
     return (valor or "").strip().lower()
@@ -270,6 +280,10 @@ def procesar_csv_emoflow(csv_text: str) -> tuple[list[dict], dict]:
 def main() -> int:
     ap = argparse.ArgumentParser(description="Emoflow API → Supabase")
     ap.add_argument("--dry-run", action="store_true", help="no escribe en Supabase")
+    ap.add_argument(
+        "--purgar-huerfanos", action="store_true",
+        help="borra de emoflow_ingresos los emails que ya no vienen en el CSV del día",
+    )
     args = ap.parse_args()
 
     cargar_env_local()
@@ -394,10 +408,35 @@ def main() -> int:
         supa.upsert("historial_emoflow_ciudad", filas_hc, "fecha,grupo_ciudad")
         log(f"Historial Emoflow ciudad: snapshot {hoy} con {len(filas_hc)} ciudades")
 
+    # Detectar filas huérfanas: emails que hoy existen en emoflow_ingresos pero ya
+    # no vinieron en el CSV del día (el upsert nunca borra — un usuario que desaparece
+    # del CSV deja una fila congelada para siempre). Ver gotcha en supabase-estructura.md.
+    log("Buscando filas huérfanas en emoflow_ingresos (email ausente del CSV de hoy)...")
+    emails_csv = {fila["email"] for fila in filas}
+    emails_tabla = {
+        norm_email(f.get("email"))
+        for f in supa.get_todo("/emoflow_ingresos?select=email")
+    }
+    huerfanos = sorted(e for e in emails_tabla if e and e not in emails_csv)
+
+    if huerfanos:
+        log(f"  ⚠️ {len(huerfanos)} fila(s) huérfana(s) detectada(s)")
+        reporte["huerfanos"] = {"total": len(huerfanos), "emails": huerfanos}
+        with open(RUTA_REPORTE, "w", encoding="utf-8") as f:
+            json.dump(reporte, f, ensure_ascii=False, indent=2)
+
+        if args.purgar_huerfanos:
+            borrados = supa.borrar_por_email("emoflow_ingresos", huerfanos)
+            log(f"  ✓ {borrados} fila(s) huérfana(s) borrada(s) (--purgar-huerfanos)")
+        else:
+            log("  (usa --purgar-huerfanos para borrarlas; detalle completo en el reporte)")
+    else:
+        log("  sin huérfanas")
+
     log("OK")
     print(
         f"RESUMEN: filas={len(filas)} con_match={con_match} "
-        f"sin_match={len(sin_match)} estado=exito"
+        f"sin_match={len(sin_match)} huerfanos={len(huerfanos)} estado=exito"
     )
     return 0
 

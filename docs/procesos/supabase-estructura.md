@@ -1,13 +1,16 @@
 # Supabase panel-datos-rofe — Estructura y diccionario de datos
 
 **Estado:** Auditoría completa + suite de blindaje 2026-07-23 (35/36 tests PASS; 1 hallazgo de
-datos corregido en pipeline, limpieza en migración propuesta).
-**Última actualización:** 2026-07-23 (QA/seguridad)
+datos corregido en pipeline, limpieza en migración propuesta). Higiene ETL + `retiros` poblada
+en la Ola 1 (2026-07-24, ver secciones fechadas abajo). Suite corrida al cierre de la Ola 1
+(2026-07-24, tras Track B+C): **`RESUMEN: total=47 pass=47 fail=0 estado=exito`**.
+**Última actualización:** 2026-07-24 (Ola 1 — Tracks B/C)
 **Procesos relacionados:** [[panel-datos-etl]] · [[postulantes-mr-supabase]] · [[mapa-codigo]]
 
-> Proyecto `kbxptoowtnteflhrfwid` (us-east-1). 24 tablas en `public` + ~20 vistas de agregados.
-> Toda afirmación de este documento salió de queries ejecutadas el 2026-07-22/23 (auditoría de
-> solidez + auditoría Emoflow); no de suposiciones.
+> Proyecto `kbxptoowtnteflhrfwid` (us-east-1). **25 tablas** en `public` (24 + `retiros`,
+> corregido 2026-07-24 — el conteo de 24 no la incluía) + ~20 vistas de agregados.
+> Toda afirmación de este documento salió de queries ejecutadas el 2026-07-22/23/24 (auditoría de
+> solidez + auditoría Emoflow + verificación en vivo de la Ola 1); no de suposiciones.
 
 ## Convenciones de estado
 
@@ -154,16 +157,22 @@ matrícula Q10). Fuente casi estática (el Mongo se actualiza ~4 veces/año).
 ## Plan priorizado — "única fuente de verdad"
 
 1. **(hecho 2026-07-23)** REVOKE anon en las 5 tablas PII sin red de seguridad.
-2. **Retiro individual**: única variable de resultado NO disponible en Supabase (solo agregado
-   69). Traer la pestaña Retirados del Sheet (cédula + fecha + motivo) a una tabla
-   `retiros` con FK a participants — habilitaría el análisis retención↔Emoflow que hoy es
-   imposible. *Prioridad alta para análisis.*
-3. **Deprecar `emoflow_participacion_semanal`** (🔴): sin consumidores nuevos; archivar.
-4. **Purgar la fila huérfana** de `emoflow_ingresos` (`fecha_corte` viejo) o hacer que
-   `sync_emoflow_api.py` marque/eliminé filas que ya no vienen en el CSV.
+2. **(hecho 2026-07-24, Track B)** Retiro individual: `sync_retiros.py` pobló `retiros`
+   (403 filas) desde la pestaña Retirados del Sheet JC + Inactivas MR — habilita el análisis
+   retención↔Emoflow que antes era imposible. Ver sección `retiros` 🟢 arriba.
+3. **Deprecar `emoflow_participacion_semanal`** (🔴): sin consumidores nuevos. Migración
+   `012_drop_emoflow_participacion_semanal.sql` **escrita 2026-07-24, NO aplicada** — pendiente
+   🙋 OK de Samuel (respaldo ya existe incidentalmente en `tools/backups/supabase_20260724_*/`
+   vía `respaldo_supabase.py`). Ver `docs/migrations/README.md`.
+4. **(hecho 2026-07-24, Track C)** Purgada la fila huérfana de `emoflow_ingresos`
+   (`fecha_corte=2026-07-21`, 1 fila, vía service_role). Además `sync_emoflow_api.py` ahora
+   detecta huérfanas nuevas en cada corrida y las reporta en `RESUMEN`
+   (`--purgar-huerfanos` para borrarlas automáticamente) — ver [[mapa-codigo]].
 5. **Unificar el parámetro de descarga del CSV Emoflow** entre los 2 scripts (`empresa=`
-   filtrado vs scope=all) para que persona-acumulado y serie diaria cuadren exacto.
-6. **Fase 4 de postulantes_mr** (n8n semanal) + resolver los 16 pares discordantes.
+   filtrado vs scope=all) para que persona-acumulado y serie diaria cuadren exacto. Sigue
+   pendiente (no tocado en la Ola 1).
+6. **Fase 4 de postulantes_mr** (n8n semanal) + resolver los 16 pares discordantes (recordatorio
+   pendiente para Samuel: `Downloads/postulantes_mr_disonancias_general.xlsx`).
 7. PK formal en `historial_emoflow(_ciudad)` (hoy solo UNIQUE) — cosmético, baja prioridad.
 
 ## Blindaje QA/Seguridad 2026-07-23 — triage de hallazgos
@@ -185,7 +194,9 @@ de verificación que ya evitó romper `enrollments` horas antes):
   `v_emprendimiento_vs_cursos`); borrar `v_puntaje_estudiante` (tiene consumidor real,
   `reporte_puntaje.py`, ya estaba correctamente bloqueada para anon).
 
-`007_retiros_PROPUESTA.sql` sigue sin aplicar — pendiente de decisión sobre el diseño.
+`007_retiros_APLICADA.sql` (renombrada de `_PROPUESTA` el 2026-07-24, contenido sin cambios):
+esquema aplicado desde el 2026-07-23 y tabla `retiros` poblada el 2026-07-24 — ver sección
+`retiros` 🟢 más abajo (ya no está pendiente de decisión, se cerró).
 
 ### `en_seguimiento_jc` — alerta de retiro pendiente de confirmar (2026-07-23)
 
@@ -274,14 +285,16 @@ diarios, correctos tal cual quedaron en su momento, no se re-escriben retroactiv
 Emoflow, no de "estudiante activo"; `v_mr_demografia` — MR, fuera de alcance) no necesitaron
 cambios. Suite completa tras estos 2 fixes: 38/38 PASS.
 
-### `retiros` — esquema aplicado (2026-07-23)
+### `retiros` 🟢 — 403 filas (poblada 2026-07-24, Track B de la Ola 1)
 
-`docs/migrations/007_retiros_PROPUESTA.sql` aplicada (solo esquema: tabla + índices + RLS +
-`REVOKE`, verificado 401 con anon key). Tabla **vacía** — el script de sync
-(`sync_retiros.py`, fuentes: Sheet Retirados JC + S Retirados monitorias + Inactivas MR) sigue
-sin escribirse, es el siguiente paso para cerrar de verdad el gap #1 (retiro individual con
-fecha, necesario para el análisis uso-Emoflow ↔ retención). Agregada a la lista de tablas PII
-verificadas por `test_integridad_supabase.py` (ahora 39 tests).
+`docs/migrations/007_retiros_APLICADA.sql` aplicada (tabla + índices + RLS + `REVOKE`,
+verificado 401 con anon key; renombrada de `_PROPUESTA` a `_APLICADA` el 2026-07-24 — el
+contenido ya decía "aplicada", solo el nombre del archivo mentía). `sync_retiros.py` (fuentes:
+pestaña Retirados del Sheet JC + pestaña Inactivas de BD-Mujeres ROFÉ) cerró el gap #1 (retiro
+individual con fecha, necesario para el análisis uso-Emoflow ↔ retención). Verificado en vivo
+(service_role, 2026-07-24): 403 filas — `jc/2023`=144, `jc/2024`=126, `jc/2025`=3, `jc/2026`=72,
+`jc/no_cohorte`=25, `mr/2025`=25, `mr/2026`=8. Detalle del mapeo/idempotencia en
+[[mapa-codigo]] (entrada `sync_retiros.py`).
 
 **Complemento (mismo día): `v_retiro_probable_jc`.** Excluir a los 18 de "activos" sin
 mostrarlos en ningún otro lado habría vuelto a romper el cuadre de cifras (mismo problema que
@@ -543,21 +556,23 @@ Límite honesto: series históricas cuyas fuentes ya no existen (`historial_*` v
 | Avance cursos (individual) | 🟢 5.439 matrículas 2026 | 🟢 existe (480 cursaron; 194 con avance>0) |
 | Aprobación (agregado) | 🟢 92,8% por matrícula / 88,3% por estudiante | 🟢 pero **dos métricas distintas conviven**: 15,2% (por matrícula, data.json) vs 31,6% (por estudiante, cohorte_ingresos) — no es contradicción, son denominadores distintos; etiquetar siempre cuál se usa |
 | Asistencia Zoom | 🟢 490 estudiantes | 🟡 mezclada en las mismas tablas (sin split por programa verificado) |
-| **Retiro individual** | 🔴 solo agregado (69) | 🔴 solo agregado (25) + 33 filas históricas en Inactivas |
+| **Retiro individual** | 🟢 `retiros` (72 jc/2026 + 144/126/3 históricas + 25 no_cohorte) | 🟢 `retiros` (8 mr/2026 + 25 mr/2025) |
 
-**Qué le falta a MR para replicar el análisis uso↔resultado de JC:** (1) Emoflow — no está
-desplegado para MR; sin eso no hay variable de uso (gap de producto, no de datos); (2) retiro
-individual (igual que JC — lo cubre `007_retiros`); (3) definición única de aprobación
-(etiquetar métrica). Con avance individual ya disponible, si Emoflow se habilitara para MR el
-análisis sería replicable tal cual.
+**(cerrado 2026-07-24, Track B)** `sync_retiros.py` pobló `retiros` para ambos programas —
+la fila "Retiro individual" de esta matriz ya no es 🔴, es 🟢. Queda pendiente de verdad: (1)
+Emoflow — no está desplegado para MR; sin eso no hay variable de uso (gap de producto, no de
+datos); (2) definición única de aprobación (etiquetar métrica). Con avance individual y retiro
+individual ya disponibles para MR, si Emoflow se habilitara el análisis sería replicable tal cual.
 
-### Deprecación formal (plan, no ejecutado)
+### Deprecación formal
 
 1. `emoflow_participacion_semanal` (🔴): sin pipeline (nodo eliminado 2026-07-21), sin
-   consumidores nuevos. Plan: (a) verificar que el frontend ya no la consulte, (b) exportar
-   CSV de respaldo a `tools/`, (c) DROP en una migración futura (008). Hasta entonces: no usar.
-2. `sync_emoflow.py` (deprecado 2026-07-20): ya fuera de n8n; mover a `_obsoletos/` en la
-   próxima limpieza de repo (hoy sigue en `scripts/panel-datos/` con warning en el header).
+   consumidores nuevos. **(2026-07-24)** Ya excluida de `export_supabase_json.py`; respaldo ya
+   existe incidentalmente vía `respaldo_supabase.py` (`tools/backups/`); migración
+   `012_drop_emoflow_participacion_semanal.sql` **escrita, NO aplicada** — pendiente 🙋 OK de
+   Samuel para el DROP final. Hasta entonces: no usar para análisis nuevos.
+2. `sync_emoflow.py` (deprecado 2026-07-20): **(hecho 2026-07-24)** movido a
+   `scripts/panel-datos/_obsoletos/`.
 
 ### Monitoreo continuo (propuesta — pendiente de aprobación)
 

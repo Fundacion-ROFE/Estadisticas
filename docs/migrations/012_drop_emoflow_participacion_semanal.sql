@@ -1,0 +1,64 @@
+-- ============================================================================
+-- 012 — DROP `emoflow_participacion_semanal` — PROPUESTA, NO APLICADA (2026-07-24)
+-- Requiere 🙋 OK explícito de Samuel antes de correrse. Escrita por el Track C
+-- de la Ola 1 (plan-produccion-datos-2026-07-24.md, sección "Track C", punto 5/6);
+-- NO ejecutada en producción.
+--
+-- Motivo: tabla 🔴 marcada obsoleta en supabase-estructura.md — fuente vieja
+-- (bloque EMOFLOW de la hoja de monitorias vía sync_emoflow_participacion.py,
+-- ya movido a scripts/panel-datos/_obsoletos/, nodo n8n eliminado 2026-07-21).
+-- Reemplazada por `emoflow_actividad_semanal` (misma pregunta, fuente real desde
+-- timestamps del CSV Emoflow, sin el intermediario de la hoja de monitorias).
+-- Sin consumidor nuevo confirmado (el panel Netlify usa `emoflow_actividad_semanal`).
+-- Ya excluida de `export_supabase_json.py` (ver ese script, 2026-07-24).
+--
+-- Reversibilidad: este DROP se diseñó para poder deshacerse completo —
+-- CREATE TABLE con el mismo esquema + reimport de un respaldo previo.
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- PASO PREVIO OBLIGATORIO (fuera de esta migración, NO ejecutado todavía):
+-- exportar respaldo de la tabla ANTES del DROP. Dos vías ya disponibles hoy:
+--   (a) `scripts/panel-datos/respaldo_supabase.py` (Ola 0.3) ya incluye
+--       `emoflow_participacion_semanal` en su lista de tablas — su próxima
+--       corrida diaria deja `tools/backups/supabase_YYYYMMDD_HHMM/
+--       emoflow_participacion_semanal.json` (171 filas esperadas). Confirmar
+--       que existe un backup POSTERIOR a la decisión de Samuel antes de aplicar.
+--   (b) Alternativa manual (CSV, si se prefiere ese formato):
+--       GET /rest/v1/emoflow_participacion_semanal?select=*
+--       con SUPABASE_SERVICE_ROLE_KEY → guardar en
+--       tools/backups/emoflow_participacion_semanal_PRE_DROP_<fecha>.csv
+-- Ninguno de los dos se ejecutó desde este track — queda pendiente para quien
+-- aplique la migración.
+-- ----------------------------------------------------------------------------
+
+-- ----------------------------------------------------------------------------
+-- DROP propuesto (comentado a propósito — descomentar solo tras el respaldo
+-- Y la aprobación explícita de Samuel):
+-- DROP TABLE IF EXISTS public.emoflow_participacion_semanal;
+-- ----------------------------------------------------------------------------
+
+-- ----------------------------------------------------------------------------
+-- REIMPORT (rollback si el DROP resulta un error): recrear el esquema y
+-- volver a cargar el respaldo JSON/CSV del paso previo.
+--
+-- CREATE TABLE public.emoflow_participacion_semanal (
+--   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--   fecha_corte    DATE NOT NULL,
+--   semana         INTEGER,
+--   grupo_ciudad   VARCHAR(10) NOT NULL,
+--   seleccionados  INTEGER,
+--   real           INTEGER,
+--   completado     INTEGER,
+--   avance_pct     NUMERIC(5,2),
+--   fuente         VARCHAR(40),
+--   created_at     TIMESTAMP DEFAULT NOW(),
+--   UNIQUE (fecha_corte, grupo_ciudad)
+-- );
+-- ALTER TABLE public.emoflow_participacion_semanal ENABLE ROW LEVEL SECURITY;
+-- REVOKE ALL ON public.emoflow_participacion_semanal FROM anon, authenticated;
+--
+-- Reimport de datos: POST /rest/v1/emoflow_participacion_semanal con el JSON
+-- del respaldo (service_role, Prefer: resolution=merge-duplicates), en lotes,
+-- mismo patrón que `Supa.upsert()` en los scripts de sync_*.py del proyecto.
+-- ============================================================================

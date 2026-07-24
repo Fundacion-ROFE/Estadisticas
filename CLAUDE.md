@@ -27,6 +27,9 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 │   ├── dashboard/              ← Tab 1: stats Q10 (data.json ← export_stats.py)
 │   ├── avance/                 ← Tab 2: avance manual (data.json ← export_avance.py)
 │   ├── retirados/              ← Panel retirados (data.json ← export_retirados.py)
+│   ├── aprobacion/             ← Panel aprobación (data.json ← export_aprobacion.py)
+│   ├── datos/                  ← Export Supabase→JSON, 1 archivo por tabla + manifest.json (← export_supabase_json.py; sin consumidor confirmado)
+│   ├── mujeres-rofe/           ← Landing MR rediseñada (HTML estático, no genera data.json)
 │   ├── asistencia/             ← Standalone backup (no en dashboard activo)
 │   └── diferencias/            ← Standalone backup (no en dashboard activo)
 │
@@ -49,16 +52,17 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 │   ├── sync_sociodemograficos_mr.py ← BD-Mujeres ROFÉ (xlsx) → participants MR (vivienda/estrato/civil/estudios/…)
 │   ├── sync_postulantes_mr.py  ← BD-Mujeres ROFÉ (5 pestañas) → postulantes_mr (universo completo, no solo matriculadas)
 │   ├── sync_aprobacion_supabase.py ← docs/aprobacion/data.json → cohorte_ingresos + aprobacion_cursos (832)
-│   ├── sync_emoflow_api.py     ← Emoflow API (login + descarga CSV) → emoflow_ingresos + historial_emoflow(_ciudad)
-│   ├── sync_emoflow.py         ← [DEPRECATED 2026-07-20] +Ingresos-EmoFlow (Sheet manual) → emoflow_ingresos
-│   ├── sync_emoflow_participacion.py ← bloque EMOFLOW de Estadísticas → emoflow_participacion_semanal
-│   ├── sync_supabase_to_sheets.py ← Supabase → Google Sheets (hojas h1/h2/h3 para el equipo)
+│   ├── sync_emoflow_api.py     ← Emoflow API (login + descarga CSV) → emoflow_ingresos + historial_emoflow(_ciudad); purga huérfanos
+│   ├── sync_retiros.py         ← Sheets (Retirados JC / Inactivas MR) → retiros (retiro individual)
+│   ├── sync_supabase_to_sheets.py ← Supabase → Google Sheets (hoja AUTO_Emoflow_Uso para el equipo)
+│   ├── respaldo_supabase.py    ← Todas las tablas base → tools/backups/supabase_<fecha>/ (retención 14 días)
 │   ├── test_conexion_supabase.py ← Smoke test REST+RLS del proyecto Supabase panel-datos-rofe
-│   ├── test_integridad_supabase.py ← Suite QA: 36 tests (FKs, unicidad, dominios, cuadres, frescura, anon)
+│   ├── test_integridad_supabase.py ← Suite QA: tests (FKs, unicidad, dominios, cuadres, frescura, anon)
 │   ├── extraer_mongo_mr_historico.py ← mujeres-rofe-db.Users (Mongo Atlas, solo lectura) → payload local (2023/2024)
 │   ├── cargar_mongo_mr_historico.py ← payload Mongo → postulantes_mr (investigación cerrada 2026-07-22, ver mapa-codigo)
 │   ├── extraer_mongo_jc_historico.py ← jovenes-creativos.User/Applicant (Mongo, solo lectura) → payload local
-│   └── cargar_mongo_jc_historico.py ← payload Mongo → postulantes_jc (2.556 filas, 464 exclusivas)
+│   ├── cargar_mongo_jc_historico.py ← payload Mongo → postulantes_jc (2.556 filas, 464 exclusivas)
+│   └── _obsoletos/             ← sync_emoflow.py, sync_emoflow_participacion.py y otros scripts sin rol en producción
 │
 ├── tools/                      ← LOCAL ONLY — gitignoreado — contiene PII
 │   └── panel_riesgo.py         ← Cruce Avance × h2test por email → reporte de riesgo
@@ -89,11 +93,12 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 | `sync_sociodemograficos_mr.py` | [[panel-datos-etl]] · [[mr-actualizacion-datos]] | — | — (BD-Mujeres ROFÉ → Supabase, MR) |
 | `sync_postulantes_mr.py` | [[panel-datos-etl]] · [[postulantes-mr-supabase]] | — | — (BD-Mujeres ROFÉ completa → Supabase `postulantes_mr`, PII) |
 | `sync_aprobacion_supabase.py` | [[panel-datos-etl]] · [[q10-consolidacion]] | — | — (aprobacion/data.json → Supabase, cohorte 832) |
-| `sync_emoflow_api.py` | [[panel-datos-etl]] | — | — (Emoflow API → Supabase, sin Sheet intermedio) |
-| `sync_emoflow.py` | [[panel-datos-etl]] (DEPRECATED 2026-07-20) | — | — (Sheet manual +Ingresos-EmoFlow → Supabase) |
-| `sync_emoflow_participacion.py` | [[panel-datos-etl]] | — | — (% participación semanal por ciudad → Supabase) |
+| `sync_emoflow_api.py` | [[panel-datos-etl]] | — | — (Emoflow API → Supabase, sin Sheet intermedio; detecta/purga huérfanos con `--purgar-huerfanos`) |
+| `sync_emoflow.py` | [[panel-datos-etl]] (DEPRECATED 2026-07-20, movido a `_obsoletos/` 2026-07-24) | — | — (Sheet manual +Ingresos-EmoFlow → Supabase) |
+| `sync_retiros.py` | [[panel-datos-etl]] | — | — (Sheets Retirados JC / Inactivas MR → Supabase `retiros`, retiro individual) |
 | `extract_emoflow_ingresos_diario.py` | [[panel-datos-etl]] | — | — (CSV Emoflow → emoflow_ingresos_diario: serie diaria real por ciudad) |
-| `sync_supabase_to_sheets.py` | [[panel-datos-etl]] | — | — (Supabase → hojas h1/h2/h3 en Google Sheets para equipo) |
+| `sync_supabase_to_sheets.py` | [[panel-datos-etl]] | — | — (Supabase → hoja `AUTO_Emoflow_Uso` en Google Sheets para equipo; SA con permiso Editor) |
+| `respaldo_supabase.py` | [[panel-datos-etl]] | — | — (todas las tablas base → `tools/backups/`, retención 14 días) |
 | `test_cuadre_dashboard.py` | [[panel-datos-etl]] | — | — (Fase 4: cuadre vs aprobación) |
 | Frontend Next.js (repo `panel-datos-rofe`) | [[panel-datos-etl]] | — | https://classy-pasca-eecdd6.netlify.app |
 | `test_conexion_supabase.py` | [[panel-datos-etl]] | — | — (verifica RLS de Supabase con anon key) |
@@ -102,7 +107,7 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 | `extraer_mongo_mr_historico.py` / `cargar_mongo_mr_historico.py` | [[panel-datos-etl]] · [[postulantes-mr-supabase]] | — | — (Mongo Atlas mujeres-rofe-db, solo lectura → postulantes_mr; investigación cerrada 2026-07-22, 99.9% redundante) |
 | `extraer_mongo_jc_historico.py` / `cargar_mongo_jc_historico.py` | [[panel-datos-etl]] | — | — (Mongo Atlas jovenes-creativos, solo lectura → `postulantes_jc`; 2.556 filas, 464 exclusivas, cargado 2026-07-22) |
 | n8n workflow | [[q10-consolidacion]] | [[q10-actualizar]] | — |
-| n8n `q10-sync-supabase` | [[panel-datos-etl]] | — | — (sync diario 9:45 → Supabase) |
+| n8n `q10-sync-supabase` | [[panel-datos-etl]] | — | — (sync cada 2h, `30 17,19,21,23,1,3,5,7 * * *` → Supabase) |
 
 Ver [[mapa-codigo]] para firma completa de cada script.
 

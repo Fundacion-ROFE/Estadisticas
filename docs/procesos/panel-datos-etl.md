@@ -973,3 +973,55 @@ acumulados al mismo corte; el uso puede ser marcador de compromiso). Detalle y p
 - [ ] Fase 2: materialized views (retirados con definición canónica) + decidir campo `programa`
 - [ ] Fase 3: Next.js + Netlify
 - [ ] Fase 4: test de cuadre contra `docs/dashboard|aprobacion|retirados/data.json` antes de reemplazar nada
+
+## Corrección de documentación desactualizada — nodos y cadencia reales (2026-07-24)
+
+La cadencia y el conteo de nodos de `q10-sync-supabase` (`uSizw3dNzpb6n53H`) documentados
+arriba (sección 2026-07-21: "20 nodos totales", "diario 9:45") quedaron desactualizados por
+cambios posteriores no reflejados aquí — corregido en el Track C de la Ola 1
+(plan-produccion-datos-2026-07-24.md), verificado con `GET /workflows/uSizw3dNzpb6n53H` en
+vivo (ID de trigger tomado de `ola1_prompts.md`, ver Ola 1 · Anexo A):
+
+- **Nodos reales: 23** (no 20). El delta son los nodos agregados tras el 2026-07-21
+  (`Ejecutar export_supabase_json`/`Export JSON OK?`/`Ejecutar sync_supabase_to_sheets`/
+  `Sheets OK?` ya estaban contados; el resto del delta viene de ajustes posteriores al mismo
+  workflow — no re-auditados línea por línea en este track, solo el conteo total).
+- **Cadencia real: `30 17,19,21,23,1,3,5,7 * * *`** (cada 2 h, ventana 17:30–07:30 COT) — NO
+  "diario 9:45" como quedó escrito en la sección de 2026-07-21 (esa fue la cadencia ORIGINAL
+  antes de pasar a la ventana nocturna de dos velocidades; el nombre del trigger en n8n seguía
+  diciendo "Schedule Diario 9:45" pese a que la expresión cron ya no correspondía — renombrado
+  a "Schedule 2h (17:30–07:30)" en el Track A de la misma ola).
+- Las referencias a "9:45" en las secciones fechadas ANTES del 2026-07-21 arriba (Fase 1b,
+  cohorte canónica, etc.) se dejan tal cual — son verdad histórica de cuando se escribieron,
+  no se reescribe el pasado. Esta sección es la corrección vigente para cualquier lectura
+  posterior del estado actual.
+
+**Otros cierres de este track (2026-07-24):**
+- `sync_supabase_to_sheets.py` / `export_supabase_json.py` — el gotcha de permisos de la SA
+  (403 al autocrear pestaña) se cerró de verdad hoy compartiendo el Sheet AUTO dedicado como
+  Editor; ver detalle en [[mapa-codigo]] y [[supabase-estructura]]. La sección de 2026-07-21
+  arriba ("ENCADENADOS") describía el encadenado correcto pero no conocía este bug de permisos
+  (apareció después).
+- `export_supabase_json.py` recortado de 23 a 16 tablas/vistas configuradas (7 fuera: 4 PII con
+  401 vía anon, 1 siempre-0-filas por RLS, 1 vista inexistente, 1 deprecada) + `estado=error`
+  real si algo falla + manifest dinámico. Detalle completo en [[mapa-codigo]].
+- `calcular_asistencia_promedio.py`: ya no imprime `[OK]` si `errores > 0` — retorna 1.
+- `sync_emoflow_api.py`: detecta y (opcionalmente, `--purgar-huerfanos`) borra filas huérfanas
+  de `emoflow_ingresos`; la huérfana conocida (`fecha_corte=2026-07-21`) se purgó a mano.
+- `sync_emoflow.py` movido a `_obsoletos/`; migraciones `006`/`007` renombradas de `_PROPUESTA`
+  a `_APLICADA(_PARCIAL)` (su contenido ya decía "aplicada", el nombre mentía); migración `012`
+  (DROP `emoflow_participacion_semanal`) escrita pero **NO aplicada** — pendiente 🙋 OK de
+  Samuel. Ver `docs/migrations/README.md` (nuevo).
+
+**Cierre verificado con corridas reales (2026-07-24, no solo `py_compile`):**
+- `export_supabase_json.py` corrido a mano completo, CON push real, antes de la cadena
+  nocturna: `RESUMEN: tablas=16 ok=16 fallidas=0 filas_cero=ninguna registros=991 estado=exito`
+  — commit `9ae1f4e`, confirmado en `git log`. El diseño de "0 filas = error" se refinó a pedido
+  de Samuel tras la revisión: solo `cohorte_stats`/`aprobacion_cursos`/`historial_cursos`
+  (constante `NUNCA_VACIAS`) abortan la corrida si dan 0 filas; el resto de la lista solo genera
+  advertencia (`filas_cero=[...]` en el RESUMEN y en `manifest.json`) sin tumbar las 8 corridas
+  nocturnas por un agregado que se vacíe de forma legítima.
+- `test_integridad_supabase.py` corrido completo al cierre (cambio real en Supabase: la
+  purga de la fila huérfana de `emoflow_ingresos` vía service_role): **`RESUMEN: total=47
+  pass=47 fail=0 estado=exito`** — incluye las 3 pruebas nuevas de `retiros` (Track B) y
+  confirma sana la purga de Track C.

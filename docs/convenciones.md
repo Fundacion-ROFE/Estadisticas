@@ -65,6 +65,29 @@ Pasó el 2026-07-14 (ver `docs/archivo/SECURITY-INCIDENT.md`). Si el push protec
 4. **Verificar sobre todos los objetos**, no solo los commits vivos:
    `git cat-file --batch-all-objects --batch-check` + grep del literal en cada blob.
 
+### Gotcha: git debe quedar 100% no-interactivo para que n8n no se cuelgue
+
+Un `git push` de un exporter corriendo dentro de un nodo `executeCommand` de n8n que dispara un
+prompt de credencial (por ejemplo, cache de credential-manager vencido) **cuelga el nodo para
+siempre** — nada lo mata, el workflow nunca termina ni reporta error. Endurecido (Track A, Ola 1,
+2026-07-24) con tres capas independientes:
+
+1. `git config --global credential.interactive never` — Git nunca pide credenciales de forma
+   interactiva, en ninguna sesión de esta máquina.
+2. En `iniciar_n8n.bat`, junto al resto de `set` de entorno: `set GCM_INTERACTIVE=never` y
+   `set GIT_TERMINAL_PROMPT=0` — refuerzo a nivel de proceso hijo de n8n (por si algún día corre
+   con un `HOME`/perfil distinto al de la sesión interactiva de Samuel, donde la config global no
+   aplicaría).
+3. `git config --local credential.helper manager` fijado también a nivel de repo (no depender
+   solo de la config global, que no está versionada ni es obvia de reproducir en otra máquina).
+
+Con las tres capas, un fallo real de autenticación sale como error inmediato (`git push` retorna
+≠0 en segundos) en vez de colgarse — lo que activa el patrón de "fin del éxito silencioso"
+(ver `git_commit_y_push()` en cualquier `export_*.py`: `timeout=180` por comando + `return False`
+en fallo + `estado=error` + `sys.exit(1)` en `main()`). Probar con
+`git push --dry-run origin main` desde una terminal sin sesión de credenciales activa — debe
+salir sin prompt.
+
 ## SSL corporativo
 
 Esta red tiene un proxy/firewall corporativo que intercepta HTTPS (MITM). Aplica a **todos** los procesos que hagan llamadas HTTP desde Python o n8n.
@@ -169,6 +192,32 @@ Patrón establecido en q10-consolidacion, reutilizable en otros procesos:
 - Borrar desde fila 2 antes de subir — nunca tocar fila 1 (headers).
 - Todo a string antes de subir (`df.astype(str)`).
 - Columna faltante → advertir en consola, no crashear.
+
+## Gotcha: un script que auto-crea pestañas necesita la SA como Editor, no solo Viewer
+
+Un patrón cada vez más común en el proyecto es que un sync escriba a un Sheet "dedicado" que
+él mismo crea/puebla (`add_worksheet` si la pestaña no existe) en vez de exigir que un humano
+la prepare a mano de antemano. Ese patrón **falla en silencio de forma engañosa** si la Service
+Account (`q10-automatizacion@n8n-automatizacion-q10.iam.gserviceaccount.com`) solo tiene
+permiso **Viewer** en el Sheet destino: puede leer, la ejecución no truena en el login, pero el
+`add_worksheet`/la escritura revienta con `APIError 403`. Caso real cerrado 2026-07-24:
+`sync_supabase_to_sheets.py` apuntaba al Sheet AUTO dedicado
+`1eO73hL9Bq_X8T11g3aPAEkq6QkKfMRNykru7to8GDdo` con la SA solo como Viewer — la reescritura de
+código del 2026-07-23 (single-tab `AUTO_Emoflow_Uso` autocreada) se dio por resuelta sin
+verificar el permiso real, y siguió fallando un día más hasta que se compartió el Sheet como
+**Editor**.
+
+**Regla:** cualquier Sheet que un script vaya a crear/escribir pestañas en él (no solo
+actualizar celdas de una pestaña ya existente) necesita la SA compartida como **Editor**
+explícitamente — Viewer no alcanza, y el error (403 al crear la pestaña) no siempre es obvio
+en los logs si el script no lo propaga con detalle. Verificar el permiso ANTES de dar por
+cerrada cualquier deuda de "ya está resuelto" que dependa de un Sheet nuevo.
+
+⚠️ Excepción importante en sentido contrario: la BD Seguimiento
+(`1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8`, el Sheet gigante de Avance/Emoflow/H1-H3
+viejos) es **destino de escritura PROHIBIDO** para scripts nuevos — es la fuente humana
+canónica de varios procesos, no un scratchpad de sync. El fix de 2026-07-24 fue mover el
+destino a un Sheet AUTO **dedicado y separado**, no dar más permisos sobre la BD Seguimiento.
 
 ## Lectura de Sheets en pipelines (tolerante a fórmulas sueltas)
 
@@ -516,3 +565,42 @@ adelante (0 pendientes). Solución: un `ID` de campaña distinto por día (`even
 `evento_dia2`, ...), cada uno con su propia copia de `lista_<ID>.csv`. Detalle y caso real en
 `scripts/mujeres-rofe-correos/README.md` (sección Gotcha) — campaña `encuentro_bogota_2026_*`
 (2026-07-22).
+
+## Auto-sanación: reiniciar n8n al reanudar de suspensión (schtasks ONEVENT)
+
+**Causa raíz de un apagón real (2026-07-24):** el portátil de Samuel se suspendió durante la
+ventana de crons nocturnos (17:00–07:30) y n8n dejó de correr sin que nadie se enterara hasta
+la mañana siguiente. Forense: el evento `Microsoft-Windows-Power-Troubleshooter` EventID=1
+(resume) en el log `System` coincidió con el corte (~03:14 COT).
+
+**Mitigación aplicada:** tarea programada de Windows que dispara `iniciar_n8n.bat` (ruta
+absoluta del repo) cada vez que el sistema se reanuda de suspensión. El `.bat` ya mata la
+instancia vieja de `n8n.cmd` antes de arrancar una nueva (líneas 67-69), así que el trigger es
+idempotente aunque n8n ya estuviera corriendo.
+
+```
+schtasks /Create /TN "n8n-auto-heal-resume" ^
+  /TR "C:\Users\EstudiantesJC\downloads\admin-usable\iniciar_n8n.bat" ^
+  /SC ONEVENT /EC System ^
+  /MO "*[System[Provider[@Name='Microsoft-Windows-Power-Troubleshooter'] and EventID=1]]" /F
+```
+
+**Gotcha — `/RL HIGHEST` da "Acceso denegado":** requiere una sesión elevada (token de
+Administrador sin filtrar por UAC); en una sesión normal `schtasks /Create` con `/SC ONEVENT`
+sí funciona SIN `/RL HIGHEST` — solo omitirlo si da acceso denegado, no forzar elevación.
+
+**Gotcha — la tarea no corre en batería por defecto:** `schtasks /Create` deja
+"Detener en modo Batería / No iniciar en Batería" activado, justo el escenario que se busca
+cubrir (portátil sin cargador). Corregir después de crear la tarea con el módulo
+`ScheduledTasks` de PowerShell (no hay flag equivalente en `schtasks.exe`):
+
+```powershell
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+  -MultipleInstances IgnoreNew -ExecutionTimeLimit ([TimeSpan]::Zero)
+Set-ScheduledTask -TaskName "n8n-auto-heal-resume" -Settings $settings
+```
+
+Verificar con `schtasks /Query /TN "n8n-auto-heal-resume" /V /FO LIST`. Ver también
+[[migracion-n8n-digitalocean]] — este gotcha es el argumento más fuerte para migrar del portátil
+a un servidor: "un portátil a batería no es un servidor", la ventana de crons coincide
+exactamente con cuándo un portátil suele suspenderse.
