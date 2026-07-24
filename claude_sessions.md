@@ -4008,3 +4008,68 @@ API de n8n, escribirlo con Python (`urllib`+UTF-8), nunca tipeado directo en un 
   (salvaguardas, 4 tracks paralelos, gate de verificación, GUI 8 tabs con v_persona_360,
   panel Netlify con v_retiros_stats), prompts listos para subagentes Sonnet, criterios
   Go/No-Go y rollback. Pendiente de ejecución.
+
+## 2026-07-24 — [MR website rediseño] Hero v3 "portal orgánico" (feedback: no gustó el v2)
+
+**Estado:** Completado (pendiente aprobación de la dueña)
+**Proceso relacionado:** [[wordpress-tocaunavida]]
+
+- El hero "full-bleed duotono" de la ronda anterior no gustó — llegó feedback como un prompt de
+  generación de imagen IA (mancha de tinta orgánica tipo portal, mosaico caleidoscópico de fondo,
+  aura pearlescente). Se aclaró que esta sesión no genera imágenes; se ofreció y aprobó una
+  interpretación SVG/CSS con fotos reales del sitio (no escenas inventadas de coding/pitching).
+- Construido: `clipPath` SVG con mancha orgánica generada por script (Catmull-Rom→Bézier, 3
+  variantes) que muta lentamente vía `<animate>`; foto nítida del grupo dentro con rim glow por
+  `drop-shadow()` encadenados; aura de 3 `radial-gradient` (oro/morado/rojo) detrás; mosaico de 8
+  fotos reales (grupo + galería de encuentros + miniaturas de testimonios) con tinte/deriva
+  independientes de fondo. Texto queda en el 31% izquierdo, sin foto — estructuralmente imposible
+  que tape caras (misma lección de la ronda pasada).
+- Bug real encontrado de paso: `.mr-hero-inner` pisaba el padding horizontal de `.mr-wrap` por
+  colisión de shorthand `padding` (misma especificidad, orden de cascada) — preexistente desde el
+  hero original, invisible en desktop por el auto-margin del wrap centrado. Corregido con
+  `padding-top`/`padding-bottom` en vez del shorthand.
+- Gotcha de tooling: gran parte del tiempo se fue diagnosticando un falso "texto cortado" en móvil
+  que resultó ser Chrome headless `--screenshot` ignorando `--window-size` por debajo de ~500px de
+  viewport (renderiza a 500px y recorta la salida al tamaño pedido) — confirmado inyectando un
+  badge de diagnóstico con `getBoundingClientRect`/`scrollWidth` en una copia temporal del HTML.
+  Ver [[wordpress-tocaunavida]] para el detalle completo.
+- `wordpress-embed.html` regenerado, sin rutas relativas pendientes. Pendiente: mostrarle este hero
+  v3 a la dueña y confirmar si es el definitivo.
+
+## 2026-07-24 — [panel-datos] Ejecución del plan de producción: P0 + Ola 0 + Ola 1
+
+**Estado:** Olas 0-1 completadas; DB apta para producción (Go/No-Go de datos cumplido). Pendientes acotados.
+**Proceso relacionado:** [[panel-datos-etl]] · [[supabase-estructura]] · [[q10-consolidacion]] · [[migracion-n8n-digitalocean]]
+
+- **Forense del apagón n8n (raíz encontrada):** todos los `executeCommand` fallaban desde ~03:14
+  COT con "The server closed the connection unexpectedly". NO era script ni Supabase (suite REST
+  44/44 verde) ni la SQLite de n8n. Visor de eventos: Power-Troubleshooter Id=1 a las **03:14:01
+  COT** (reanudación de suspensión) = 56 s antes del primer fallo (n8n usa timestamps UTC:
+  08:14:57Z). **El portátil se suspendió de madrugada con batería crítica y al reanudar dejó a
+  n8n vivo pero con las conexiones muertas** — healthz seguía 200, por eso el watchdog del .bat no
+  lo vio (vigila el proceso, no el runner). Reinicio manual lo curó. Mitigaciones aplicadas:
+  `powercfg standby/hibernate-timeout-ac=0` (no suspender enchufado), tarea Windows
+  `n8n-auto-heal-resume` (reinicia n8n en Power-Troubleshooter Id=1), y requisito operativo #1:
+  cargador conectado de noche. Sube prioridad de [[migracion-n8n-digitalocean]] (un portátil a
+  batería no es un servidor; la ventana de crons 17:00-07:30 coincide con cuándo se suspende).
+- **P0 (código) verificado** (hecho en otra sesión): Q10/Emoflow fuera del código, loader fail-fast,
+  `_obsoletos/`, 0 secretos residuales. Pendiente de Samuel: rotar contraseñas Q10/Emoflow + `.env`,
+  y `git filter-repo` de historia.
+- **Ola 0:** verificación n8n en vivo (emoflow-ingresos-diario SÍ estaba ON, el export mentía),
+  línea base 44/44, `respaldo_supabase.py` nuevo (25 tablas → tools/backups, retención 14d),
+  snapshot git.
+- **Fix sheets (bug preexistente del reescrito 07-23):** `sync_supabase_to_sheets` daba 403 al
+  auto-crear pestaña en la BD Seguimiento (SA solo-lectura) → envenenaba toda la cadena `panel`
+  (exit -1). Redirigido a hoja AUTO dedicada (`1eO73hL9...`, SA Editor); BD Seguimiento ahora es
+  destino de escritura PROHIBIDO como h2test.
+- **Ola 1 (4 subagentes Sonnet en paralelo, git/workflows serializados por sesión principal):**
+  A) push desatendido en 5 exporters + git no-interactivo (hallazgo: 2 cuentas GitHub cacheadas →
+  fijada `soportejunior-codeJR`); B) `sync_retiros.py` → tabla `retiros` (403 filas, cuadre JC2026
+  Δ=2), suite 44→**47/47**; C) higiene ETL (export_supabase_json 23→16, huérfano purgado,
+  migraciones, docs); D) 3 workflows (verificación/respaldo/error) + auto-sanación + errorWorkflow.
+- **Workflows editados (serializado, backup+verify+re-export):** IF fix `$json.stdout` en
+  q10-sync-supabase + `errorWorkflow` en los 4 críticos. **Diferido** (para no sobrecargar la noche
+  de validación): nodo `sync_retiros` (modo canario 2 noches, ver `tools/_handoff_ola1/`) y rama
+  Sched: de Bot Q10.
+- **⚠️ Filtración de secretos por subagente A** (en su transcripción, no commiteados): un PAT de
+  GitHub y el `N8N_API_KEY`. Rotar ambos como P0 adicional.
