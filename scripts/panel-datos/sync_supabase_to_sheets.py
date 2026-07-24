@@ -63,9 +63,11 @@ RUTA_ENV = os.path.join(PROYECTO_ROOT, ".env.local")
 RUTA_CREDENCIALES = os.path.join(PROYECTO_ROOT, "scripts", "q10-consolidacion",
                                  "credenciales_service_account.json")
 
-# Sheet destino: BD Seguimiento de Monitorias (donde trabaja el equipo).
-# NO es el Sheet de h2test — ver la advertencia del docstring.
-SHEET_ID_DEFAULT = "1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8"
+# Sheet destino: hoja DEDICADA de espejos automáticos ("AUTO"), compartida con la SA
+# como Editor. NO es la BD Seguimiento (1ggz…, fuente humana canónica, la SA es
+# solo-lectura ahí a propósito) ni el export de h2test — ambos son destinos de
+# ESCRITURA PROHIBIDOS (ver guardarraíl en main). Decisión 2026-07-24.
+SHEET_ID_DEFAULT = "1eO73hL9Bq_X8T11g3aPAEkq6QkKfMRNykru7to8GDdo"
 TAB_EMOFLOW      = "AUTO_Emoflow_Uso"
 
 USER_AGENT = "panel-datos-etl/1.0"
@@ -298,11 +300,18 @@ def main() -> int:
     )
     sh = gspread.authorize(creds).open_by_key(args.sheet_id)
 
-    # Guardarraíl: si alguien apunta el script al Sheet de h2test, abortar antes de
-    # tocar nada — un clear() ahí destruiría la entrada del pipeline (ver docstring).
-    SHEET_H2TEST_PROHIBIDO = "1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs"
-    if args.sheet_id == SHEET_H2TEST_PROHIBIDO:
-        log("ERROR: ese Sheet es el export crudo de Q10 (entrada del pipeline). Abortando.")
+    # Guardarraíl: destinos de ESCRITURA prohibidos — abortar antes de tocar nada.
+    #  - h2test (1q4VNn…): un clear()/add ahí destruiría la entrada del pipeline.
+    #  - BD Seguimiento (1ggz…): fuente humana canónica; la SA es solo-lectura ahí a
+    #    propósito. Este script SOLO debe escribir en la hoja dedicada de espejos AUTO.
+    SHEETS_PROHIBIDOS = {
+        "1q4VNn4ltqVEMsOjo-c2ZbsbW3VIt-XomPgXeLSN_LTs":
+            "export crudo de Q10 / h2test (entrada del pipeline)",
+        "1ggzoJeZR3fS6AwRCLoGeYA5HEp_B7zvOwFGlGwny0l8":
+            "BD Seguimiento de Monitorias (fuente humana, solo-lectura)",
+    }
+    if args.sheet_id in SHEETS_PROHIBIDOS:
+        log(f"ERROR: destino de escritura prohibido — {SHEETS_PROHIBIDOS[args.sheet_id]}. Abortando.")
         print("RESUMEN: filas=0 estado=error")
         return 1
 
