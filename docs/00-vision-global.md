@@ -144,6 +144,7 @@ BD Seguimiento Monitorias (Grupo = ciudad)    ──┼──► exportar_sin_co
 | [CLAUDE.md](../CLAUDE.md) | Instrucciones para Claude Code |
 | [[convenciones]] | Estándares técnicos (SSL, Q10, n8n, Sheets) |
 | [[prioridades-automatizacion-ia]] | Priorización de las 7 áreas pedidas por dirección (2026-07-10) + argumento BD central |
+| [[plan-produccion-datos-2026-07-24]] | Plan ejecutable (Sonnet, agentes paralelos) para llevar DB + paneles + flujos a producción — incluye P0 de seguridad |
 | [[mapa-codigo]] | Índice esquemático de todos los scripts |
 | [[bd-seguimiento-monitorias]] | Arquitectura interna de la BD manual de 35 pestañas (hub `Seguimiento` + hojas-ciudad) |
 | [claude_sessions.md](../claude_sessions.md) | Bitácora cronológica de sesiones |
