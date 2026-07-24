@@ -44,6 +44,7 @@ CIUDADES = {"BAQ", "BOG", "CAL", "CTG", "MED", "GYL", "QTO", "PAN", "UY"}
 TOL_CUADRE_EMOFLOW_PCT = 2.0   # discrepancia conocida 0,7% por parámetros de descarga distintos
 TOL_ROSTER_VS_USUARIOS = 25    # roster semanal (scope=all) ≥ usuarios filtrados; margen absoluto
 TOL_OVERLAP_COHORTE    = 5     # personas que pueden estar en activos Y retirados (reingresos)
+TOL_CUADRE_RETIROS_JC  = 3     # 007:51 — retiros individual vs agregado cohorte_ingresos
 DIAS_FRESCURA          = 2     # un sync diario puede llevar hasta 2 días si el PC estuvo apagado
 
 resultados = []
@@ -159,6 +160,12 @@ def main() -> int:
     test("emoflow_ingresos email único", len(emails_emo) == len(set(emails_emo)),
          f"{len(emails_emo)} filas")
 
+    retiros = supa.get_todo("/retiros?select=cedula,cohorte,programa")
+    claves_retiros = [(r["cedula"], r["cohorte"], r["programa"]) for r in retiros]
+    dups_retiros = [k for k, n in Counter(claves_retiros).items() if n > 1]
+    test("retiros (cedula,cohorte,programa) único", len(dups_retiros) == 0,
+         f"{len(retiros)} filas, {len(dups_retiros)} claves duplicadas")
+
     # ---------- C. Dominios ----------
     print("\n== C. Dominios ==")
     malas = {e["grupo_ciudad"] for e in emo if e["grupo_ciudad"] and e["grupo_ciudad"] not in CIUDADES}
@@ -201,6 +208,21 @@ def main() -> int:
              0 <= overlap <= TOL_OVERLAP_COHORTE,
              f"{c['activos']}+{c['retirados']}−{c['ingresados']}={overlap} (overlap = retiros con reingreso; "
              f"definición en aprobacion/data.json: cohorte = habilitados ∪ retirados)")
+
+    # retiros individual (007) vs agregado cohorte_ingresos — misma cifra contada por
+    # dos caminos independientes (sync_retiros.py vs export_aprobacion.py→sync_aprobacion_supabase.py).
+    n_retiros_jc_2026 = sum(1 for c, p in ((r["cohorte"], r["programa"]) for r in retiros)
+                             if c == "2026" and p == "jc")
+    retirados_coh_jc_2026 = next((c["retirados"] for c in coh
+                                   if c["cohorte"] == "2026" and c["programa"] == "jc"), None)
+    if retirados_coh_jc_2026 is None:
+        test("retiros cuadra con cohorte_ingresos (JC 2026)", False,
+             "no hay fila cohorte_ingresos cohorte=2026/programa=jc")
+    else:
+        delta = abs(n_retiros_jc_2026 - retirados_coh_jc_2026)
+        test(f"retiros cuadra con cohorte_ingresos JC 2026 (tol {TOL_CUADRE_RETIROS_JC})",
+             delta <= TOL_CUADRE_RETIROS_JC,
+             f"retiros={n_retiros_jc_2026} vs cohorte_ingresos.retirados={retirados_coh_jc_2026} (Δ={delta})")
 
     apro = supa.get_todo("/aprobacion_cursos?select=cohorte,curso,cursaron,activos,retirados,pct_aprobados")
     malos_pct = [a for a in apro if a["pct_aprobados"] is not None and not (0 <= a["pct_aprobados"] <= 100)]
@@ -251,6 +273,8 @@ def main() -> int:
     hist = supa.get_todo("/historial_cursos?select=fecha&order=fecha.desc&limit=1")
     max_hist = hist[0]["fecha"] if hist else ""
     test(f"historial_cursos ≥ {limite_frescura}", max_hist >= limite_frescura, f"max={max_hist}")
+    test("retiros poblada (sync_retiros.py corrió al menos una vez)", len(retiros) > 0,
+         f"{len(retiros)} filas")
 
     # ---------- F. Seguridad (anon key) ----------
     print("\n== F. Seguridad (superficie anon) ==")
