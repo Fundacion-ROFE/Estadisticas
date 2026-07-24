@@ -224,10 +224,10 @@
     "cohorte": "2026",
     "matriculados": 172,
     "completados": 0,
-    "en_progreso": 11,
-    "sin_iniciar": 161,
+    "en_progreso": 12,
+    "sin_iniciar": 160,
     "pct_completados": 0.0,
-    "promedio_avance": 1.6,
+    "promedio_avance": 1.7,
     "programa": "mr"
   },
   {
@@ -322,11 +322,11 @@
     "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
     "cohorte": "2026",
     "matriculados": 760,
-    "completados": 748,
+    "completados": 749,
     "en_progreso": 8,
-    "sin_iniciar": 4,
-    "pct_completados": 98.4,
-    "promedio_avance": 98.7,
+    "sin_iniciar": 3,
+    "pct_completados": 98.6,
+    "promedio_avance": 98.8,
     "programa": "jc"
   },
   {
@@ -429,6 +429,17 @@
     "programa": "mr"
   },
   {
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "cohorte": "2026",
+    "matriculados": 760,
+    "completados": 534,
+    "en_progreso": 203,
+    "sin_iniciar": 23,
+    "pct_completados": 70.3,
+    "promedio_avance": 84.3,
+    "programa": "jc"
+  },
+  {
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
     "cohorte": "2026",
     "matriculados": 760,
@@ -436,7 +447,7 @@
     "en_progreso": 2,
     "sin_iniciar": 1,
     "pct_completados": 99.6,
-    "promedio_avance": 99.4,
+    "promedio_avance": 99.5,
     "programa": "jc"
   }
 ]

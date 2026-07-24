@@ -180,6 +180,96 @@
     "pct_completados": 82.3
   },
   {
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "cohorte": "2026",
+    "programa": "jc",
+    "grupo_ciudad": "BAQ",
+    "matriculados": 131,
+    "completados": 95,
+    "promedio_avance": 88.1,
+    "pct_completados": 72.5
+  },
+  {
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "cohorte": "2026",
+    "programa": "jc",
+    "grupo_ciudad": "BOG",
+    "matriculados": 129,
+    "completados": 89,
+    "promedio_avance": 85.0,
+    "pct_completados": 69.0
+  },
+  {
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "cohorte": "2026",
+    "programa": "jc",
+    "grupo_ciudad": "CAL",
+    "matriculados": 92,
+    "completados": 80,
+    "promedio_avance": 93.5,
+    "pct_completados": 87.0
+  },
+  {
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "cohorte": "2026",
+    "programa": "jc",
+    "grupo_ciudad": "CTG",
+    "matriculados": 99,
+    "completados": 64,
+    "promedio_avance": 79.9,
+    "pct_completados": 64.6
+  },
+  {
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "cohorte": "2026",
+    "programa": "jc",
+    "grupo_ciudad": "GYL",
+    "matriculados": 79,
+    "completados": 47,
+    "promedio_avance": 74.4,
+    "pct_completados": 59.5
+  },
+  {
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "cohorte": "2026",
+    "programa": "jc",
+    "grupo_ciudad": "MED",
+    "matriculados": 94,
+    "completados": 52,
+    "promedio_avance": 77.9,
+    "pct_completados": 55.3
+  },
+  {
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "cohorte": "2026",
+    "programa": "jc",
+    "grupo_ciudad": "PAN",
+    "matriculados": 35,
+    "completados": 24,
+    "promedio_avance": 87.1,
+    "pct_completados": 68.6
+  },
+  {
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "cohorte": "2026",
+    "programa": "jc",
+    "grupo_ciudad": "QTO",
+    "matriculados": 38,
+    "completados": 32,
+    "promedio_avance": 88.9,
+    "pct_completados": 84.2
+  },
+  {
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "cohorte": "2026",
+    "programa": "jc",
+    "grupo_ciudad": "UY",
+    "matriculados": 62,
+    "completados": 51,
+    "promedio_avance": 88.0,
+    "pct_completados": 82.3
+  },
+  {
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
     "cohorte": "2026",
     "programa": "jc",
@@ -246,7 +336,7 @@
     "grupo_ciudad": "PAN",
     "matriculados": 35,
     "completados": 35,
-    "promedio_avance": 99.9,
+    "promedio_avance": 100.0,
     "pct_completados": 100.0
   },
   {
@@ -316,7 +406,7 @@
     "grupo_ciudad": "GYL",
     "matriculados": 79,
     "completados": 76,
-    "promedio_avance": 97.2,
+    "promedio_avance": 97.3,
     "pct_completados": 96.2
   },
   {
@@ -335,9 +425,9 @@
     "programa": "jc",
     "grupo_ciudad": "PAN",
     "matriculados": 35,
-    "completados": 34,
-    "promedio_avance": 97.1,
-    "pct_completados": 97.1
+    "completados": 35,
+    "promedio_avance": 99.9,
+    "pct_completados": 100.0
   },
   {
     "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
@@ -586,7 +676,7 @@
     "grupo_ciudad": "GYL",
     "matriculados": 79,
     "completados": 77,
-    "promedio_avance": 98.3,
+    "promedio_avance": 98.4,
     "pct_completados": 97.5
   },
   {
@@ -628,5 +718,15 @@
     "completados": 61,
     "promedio_avance": 98.3,
     "pct_completados": 98.4
+  },
+  {
+    "curso": "Hackea tu cerebro: Aprende en menos tiempo y sin sufrir",
+    "cohorte": "2025",
+    "programa": "jc",
+    "grupo_ciudad": "BOG",
+    "matriculados": 1,
+    "completados": 0,
+    "promedio_avance": 0.0,
+    "pct_completados": 0.0
   }
 ]

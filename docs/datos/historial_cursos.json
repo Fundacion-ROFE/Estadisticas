@@ -1633,7 +1633,7 @@
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
     "programa": "jc",
     "matriculados": 760,
-    "promedio_avance": 99.4,
+    "promedio_avance": 99.5,
     "completados": 757,
     "fuente": "sync-diario",
     "created_at": "2026-07-24T15:49:00.662813"
@@ -1677,7 +1677,7 @@
     "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
     "programa": "mr",
     "matriculados": 172,
-    "promedio_avance": 1.6,
+    "promedio_avance": 1.7,
     "completados": 0,
     "fuente": "sync-diario",
     "created_at": "2026-07-24T15:49:00.662813"
@@ -1688,8 +1688,8 @@
     "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
     "programa": "jc",
     "matriculados": 760,
-    "promedio_avance": 98.7,
-    "completados": 748,
+    "promedio_avance": 98.8,
+    "completados": 749,
     "fuente": "sync-diario",
     "created_at": "2026-07-24T15:49:00.662813"
   },
@@ -1714,6 +1714,17 @@
     "completados": 756,
     "fuente": "sync-diario",
     "created_at": "2026-07-24T15:49:00.662813"
+  },
+  {
+    "id": 227,
+    "fecha": "2026-07-24",
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "programa": "jc",
+    "matriculados": 760,
+    "promedio_avance": 84.3,
+    "completados": 534,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-24T22:30:23.101169"
   },
   {
     "id": 207,
