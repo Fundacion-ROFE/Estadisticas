@@ -24,7 +24,7 @@
     "cursaron": 832
   },
   "Fundamentos Lógica de Programación - 2026": {
-    "aprobados": 753,
+    "aprobados": 754,
     "cursaron": 791
   },
   "Introducción a la IA Generativa - 2026": {
@@ -38,5 +38,9 @@
   "Finanzas Inteligentes, gestión para emprendedoras": {
     "aprobados": 0,
     "cursaron": 197
+  },
+  "Desarrollo Web Front-End - HTML y CSS - 2026": {
+    "aprobados": 541,
+    "cursaron": 767
   }
 }
