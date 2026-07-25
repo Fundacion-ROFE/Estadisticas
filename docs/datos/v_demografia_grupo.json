@@ -48,19 +48,19 @@
     "otros_genero": null
   },
   {
-    "grupo_ciudad": "UY",
-    "total": 62,
-    "edad_promedio": 21.6,
-    "mujeres": 25,
-    "hombres": 37,
-    "otros_genero": null
-  },
-  {
     "grupo_ciudad": "CAL",
     "total": 92,
     "edad_promedio": 17.2,
     "mujeres": 43,
     "hombres": 46,
+    "otros_genero": null
+  },
+  {
+    "grupo_ciudad": "UY",
+    "total": 62,
+    "edad_promedio": 21.6,
+    "mujeres": 25,
+    "hombres": 37,
     "otros_genero": null
   },
   {
