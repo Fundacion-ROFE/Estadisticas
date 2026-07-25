@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-24T17:01:41.173827-05:00",
+  "ultima_actualizacion": "2026-07-25T09:50:05.098564-05:00",
   "segmento": "Logica-Nivel 2-2026",
   "por_curso": [
     {
@@ -50,18 +50,18 @@
     {
       "nombre": "Lógica de Programación",
       "estudiantes": 760,
-      "aprobados": 733,
-      "pct_aprobados": 96.4,
-      "promedio": 98.69,
+      "aprobados": 734,
+      "pct_aprobados": 96.6,
+      "promedio": 98.83,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "HTML",
       "estudiantes": 760,
-      "aprobados": 472,
-      "pct_aprobados": 62.1,
-      "promedio": 83.67,
+      "aprobados": 490,
+      "pct_aprobados": 64.5,
+      "promedio": 84.67,
       "min": 0.0,
       "max": 100.0
     },
@@ -106,8 +106,8 @@
     "total_cursos": 11,
     "total_registros": 8453,
     "estudiantes_unicos_id": 780,
-    "promedio_general": 93.23,
-    "total_aprobados": 7336
+    "promedio_general": 93.33,
+    "total_aprobados": 7355
   },
   "anomalias": [
     {
@@ -116,7 +116,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 227
+      "cantidad": 226
     },
     {
       "categoria": "AVANCE IRREGULAR",
