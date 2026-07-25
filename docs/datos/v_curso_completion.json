@@ -220,6 +220,17 @@
     "programa": "jc"
   },
   {
+    "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
+    "cohorte": "2026",
+    "matriculados": 172,
+    "completados": 0,
+    "en_progreso": 14,
+    "sin_iniciar": 158,
+    "pct_completados": 0.0,
+    "promedio_avance": 2.3,
+    "programa": "mr"
+  },
+  {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
     "cohorte": "2026",
     "matriculados": 760,
@@ -229,17 +240,6 @@
     "pct_completados": 68.2,
     "promedio_avance": 83.2,
     "programa": "jc"
-  },
-  {
-    "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
-    "cohorte": "2026",
-    "matriculados": 172,
-    "completados": 0,
-    "en_progreso": 12,
-    "sin_iniciar": 160,
-    "pct_completados": 0.0,
-    "promedio_avance": 1.7,
-    "programa": "mr"
   },
   {
     "curso": "Desarrollo front end avanzado",
@@ -293,7 +293,7 @@
     "en_progreso": 0,
     "sin_iniciar": 1,
     "pct_completados": 99.9,
-    "promedio_avance": 99.7,
+    "promedio_avance": 99.8,
     "programa": "jc"
   },
   {
@@ -432,11 +432,11 @@
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
     "cohorte": "2026",
     "matriculados": 760,
-    "completados": 534,
-    "en_progreso": 203,
-    "sin_iniciar": 23,
-    "pct_completados": 70.3,
-    "promedio_avance": 84.3,
+    "completados": 575,
+    "en_progreso": 164,
+    "sin_iniciar": 21,
+    "pct_completados": 75.7,
+    "promedio_avance": 86.5,
     "programa": "jc"
   },
   {
