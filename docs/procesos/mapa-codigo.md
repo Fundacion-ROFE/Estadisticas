@@ -973,6 +973,25 @@ plataforma_mr=55, cursos=1, cursos_pct=137 — tras deduplicar por precedencia),
 
 ---
 
+## `scripts/panel-datos/ciudad_utils.py`
+
+**Propósito:** Módulo compartido (copiar/importar vía `sys.path.insert`, no reescribir) para
+normalizar ciudad al filtrar en Supabase. `normalizar_ciudad(valor)`: réplica exacta en Python
+de la función SQL `IMMUTABLE` `public.normalizar_ciudad()` (tildes/mayúsculas/puntuación fuera).
+`claves_para(ciudad, supa)`: dada una ciudad en lenguaje natural ("Bogotá"), devuelve la lista de
+`ciudad_norm` a usar en un filtro PostgREST `ciudad_norm=in.(...)`, ya expandida con
+`ciudad_alias` (fusiona "Bogotá D.C."/"BGT" → "Bogotá", "Cartagena de Indias" → "Cartagena", etc).
+Incluye su propia clase `Supa`/`get_todo` (con el fix de URL-encode de espacios que
+`ciudad_norm` puede traer, ej. "BOGOTA DC"). Ver `docs/migrations/013_normalizar_ciudad.sql` y
+`docs/convenciones.md` ("Normalización de ciudades"). Consumido por
+`scripts/mujeres-rofe-correos/extraer_lista_ciudad_mr.py`.
+
+**Gotcha:** las columnas `ciudad_norm` de `participants`/`postulantes_mr`/`postulantes_jc` son
+`GENERATED ALWAYS ... STORED` — se recalculan solas en cada insert/update de `ciudad`, no hay
+que tocarlas ni backfillear nada al escribir en esas tablas.
+
+---
+
 ## `scripts/panel-datos/sync_aprobacion_supabase.py`
 
 **Propósito:** `docs/aprobacion/data.json` (agregados canónicos de export_aprobacion, ya públicos,

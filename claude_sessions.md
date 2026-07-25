@@ -4073,3 +4073,194 @@ API de n8n, escribirlo con Python (`urllib`+UTF-8), nunca tipeado directo en un 
   Sched: de Bot Q10.
 - **⚠️ Filtración de secretos por subagente A** (en su transcripción, no commiteados): un PAT de
   GitHub y el `N8N_API_KEY`. Rotar ambos como P0 adicional.
+
+
+## 2026-07-24 (cierre) — [plan-produccion] Pausa de fin de semana — retomar LUNES
+
+- Ola 1 cerrada y pusheada (suite 47/47, retiros 403 filas, git desatendido validado
+  con push real). El sistema corre solo el fin de semana; errorWorkflow avisa por
+  Telegram si algo falla.
+- LUNES, primera hora (gate Ola 2): revisar corridas nocturnas del fin de semana +
+  panel-verificacion-diaria (08:00) + datos-respaldo-diario (08:15). Si todo verde ->
+  DB declarada EN PRODUCCION. Luego: canario sync_retiros (2 noches, despues
+  stopAndError), rama Sched: de Bot Q10, y Olas 3-5 (GUI, Netlify, docs).
+- Pendientes HUMANOS de Samuel (sin ellos P0 no cierra): rotar Q10 (o usuario nuevo
+  para el bot) y Emoflow + .env; rotar PAT soportejunior-codeJR (actualizar credential
+  de Windows al hacerlo) y regenerar N8N_API_KEY (filtrados en log de subagente
+  2026-07-24); git filter-repo con asistencia; OK al DROP migracion 012; 16
+  discordantes postulantes_mr (xlsx en Downloads).
+- Handoff tecnico para la sesion del lunes en tools/_handoff_ola1/ y en
+  [[plan-produccion-datos-2026-07-24]].
+
+## 2026-07-24 (cont.) — [Correos MR / panel-datos-etl] Falso "gap de migración" (504 vs 8) → resuelto: bug de tildes + tabla equivocada; normalización de ciudad resuelta a nivel DB
+
+**Estado:** Completado
+**Proceso relacionado:** correos Mujeres ROFÉ (`scripts/mujeres-rofe-correos/`), panel-datos-etl
+
+- Samuel iba a mandar la invitación al 7mo Encuentro a las mujeres de Bogotá; una sesión anterior
+  había concluido "gap masivo: Excel tiene 504, Supabase solo 8, la data nunca se migró" y dejó
+  memoria + `AUDITORIA_DATOS_FALTANTES.md` a medio llenar. Samuel pidió investigar qué pasó
+  realmente antes de confiar en esa conclusión.
+- **Investigación (consulta directa a Supabase, no solo a los archivos de auditoría):**
+  `postulantes_mr` SÍ tiene el universo completo — 512 filas con "bogot" en `ciudad` (431 como
+  "Bogotá D.C."). La migración del 2026-07-22 (`sync_postulantes_mr.py`) funcionó bien. **No había
+  gap real.**
+- **De dónde salían los números bajos:**
+  1. `extraer_lista_bogota.py` (usado por el skill) consultaba `participants`+`enrollments`
+     (`programa=mr`) — la tabla de matriculadas, no el universo completo. Por diseño da un número
+     chico (8-53 según la corrida), no es un bug de esa tabla, es la tabla equivocada para esta
+     pregunta.
+  2. `generar_lista_y_enviar.py` sí consultaba `postulantes_mr` pero filtraba con
+     `if 'BOGOTA' in ciudad.upper():` — `.upper()` de Python no quita tildes, así que
+     `'BOGOTA' in 'BOGOTÁ D.C.'.upper()` da `False`. Descartó 431/512 filas → salió "24".
+  3. Las campañas anteriores a Bogotá (468 el 15-jul, 460 el 22/23-jul) nunca habían sacado la
+     lista de Supabase — Samuel filtró a mano la BD-Mujeres ROFÉ y pegó la lista; Supabase solo se
+     usó para excluir rebotes/opt-out. Por eso nadie había detectado el bug antes: hoy fue el
+     primer intento de extracción 100% automática por ciudad desde Supabase.
+- **Corrección de la memoria:** `project_supabase_mr_sincronizacion_gap.md` tenía la conclusión
+  errónea documentada como si fuera definitiva — se corrigió en el mismo archivo (conservando el
+  hallazgo original como evidencia del proceso) y en `MEMORY.md`.
+- **Samuel pidió además una solución estructural** (no solo el parche puntual): que la skill
+  `/enviar-correo` sepa razonar qué fuente de datos usar, y que la normalización de ciudad (ya
+  documentada como deuda desde antes, ver abajo) deje de depender de que cada script la reinvente.
+- **Solución de datos (migración `013_normalizar_ciudad.sql`, aplicada vía Supabase MCP):**
+  - `normalizar_ciudad(text)` — función SQL `IMMUTABLE` (tildes/mayúsculas/puntuación).
+  - Columna generada `ciudad_norm` (`GENERATED ALWAYS AS ... STORED`, indexada) en `participants`,
+    `postulantes_mr`, `postulantes_jc` — se recalcula sola, cero mantenimiento.
+  - Tabla `ciudad_alias` (RLS bloqueado a service_role) para fusionar nombres administrativos
+    distintos del mismo municipio que la normalización sola no resuelve: `BOGOTA DC`/`BGT` ->
+    `BOGOTA`, `CARTAGENA DE INDIAS` -> `CARTAGENA`, `CIUDAD DE PANAMA` -> `PANAMA` (detectadas
+    agrupando los ~5.300+2.900+2.500 valores reales de `ciudad` en las 3 tablas). Verificado:
+    `postulantes_mr` con `ciudad_norm IN ('BOGOTA','BOGOTA DC')` = **508** ≈ 504 del Excel.
+  - `scripts/panel-datos/ciudad_utils.py` (nuevo, patrón copiar/importar): `normalizar_ciudad()`
+    en Python + `claves_para(ciudad, supa)` que expande una ciudad en lenguaje natural a la lista
+    de `ciudad_norm` para un filtro `in.(...)` — incluye la expansión de alias.
+  - `scripts/mujeres-rofe-correos/extraer_lista_ciudad_mr.py` (nuevo): reemplazo general de los
+    scripts ad-hoc por ciudad. Usa `postulantes_mr` + `ciudad_norm`/`ciudad_alias`, excluye
+    opt-out/hard bounces, e imprime un **cruce de sanidad automático** contra `participants`
+    (para que un número sospechosamente bajo salte a la vista antes de reportarlo). Probado en
+    vivo: Bogotá → 508 en tabla, 492 tras excluir 13 hard bounces — coincide exacto con el 492 que
+    ya se sabía del Excel.
+  - `extraer_lista_bogota.py` y `generar_lista_y_enviar.py` archivados en
+    `scripts/mujeres-rofe-correos/_obsoletos/` con nota explicando el bug de cada uno.
+- **`docs/convenciones.md`:** sección "Normalización de ciudades" pasó de "Identificado pero no
+  resuelto" a resuelto, documentando el patrón nuevo (deuda abierta desde antes, no nueva de hoy).
+- **`.claude/skills/enviar-correo/SKILL.md`:** nuevo "Paso a.1 — Elegir la(s) fuente(s) de datos
+  correcta(s)" — tabla de qué tabla usar según qué pregunta se está respondiendo
+  (`postulantes_mr` = universo completo vs `participants`/`enrollments` = solo matriculadas),
+  regla de usar siempre `ciudad_norm` (nunca `ciudad` cruda), y regla de chequeo de sanidad antes
+  de reportarle un número a Samuel. Paso b actualizado para usar `extraer_lista_ciudad_mr.py` en
+  vez de escribir consultas nuevas a mano.
+- **Pendiente (menor, no bloqueante):** `extraer_lista_cundinamarca.py` sigue sobre `participants`
+  (matriculadas) en vez de `postulantes_mr` — es un problema distinto (agrupación por
+  departamento/municipios, no normalización de nombre) y no se tocó en este cierre.
+
+## 2026-07-24 (cont.) — [panel-datos-etl] Auditoría de coherencia de toda la DB — grupo_ciudad rescataba 246 participantes invisibles en 3 vistas, más un caso de mayúsculas
+
+**Estado:** Completado
+**Proceso relacionado:** panel-datos-etl
+
+- Samuel pidió, tras el fix de `ciudad`, revisar toda la DB por el mismo tipo de problema
+  (mismo valor real, distinta grafía, dañando análisis) y arreglar lo que apareciera.
+- **Hallazgo grave:** `participants.grupo_ciudad` (código operativo JC por región —
+  BOG/BAQ/CTG/CAL/MED/GYL/QTO/PAN/UY, poblado a mano desde la columna "Grupo" de la Sheet
+  BD Seguimiento, distinto de `ciudad` — a veces agrupa varias ciudades en un código de
+  país, ej. "UY" cubre Montevideo+Paysandú+Colonia+... y "PAN" cubre
+  Panamá+Arraiján+San Miguelito+...) estaba sin asignar en el **74%** de `participants`
+  (2.152/2.919). Verifiqué las vistas que lo usan: `v_demografia_grupo`,
+  `v_curso_completion_por_ciudad` y `v_programa_stats_por_ciudad` filtran
+  `WHERE grupo_ciudad IS NOT NULL` — un participante sin ese campo **desaparece del
+  reporte por completo**, ni siquiera cae en un bucket "SIN_CIUDAD" visible.
+- De los 2.152 sin `grupo_ciudad`: 1.621 tampoco tienen `ciudad` (nada que rellenar), pero
+  531 SÍ tenían ciudad conocida sin código asignado. De esos, **246 correspondían a
+  ciudades con código ya establecido** (verifiqué primero que no hubiera ambigüedad —
+  ningún `ciudad_canonica` mapea a dos códigos distintos en los datos ya etiquetados por
+  humanos) — solo les faltaba la etiqueta por captura manual incompleta. Backfill aplicado
+  (`docs/migrations/014_backfill_grupo_ciudad.sql`, vía Supabase MCP): BOG 132→200,
+  CTG 99→189, BAQ 131→172, CAL 93→122, MED 94→111, PAN 35→36. Los 285 restantes (Santa
+  Marta, Quibdó, Soledad, Villavicencio...) quedan sin código — es una decisión de negocio
+  de Samuel (crear código nuevo o no), no algo para inventar.
+- **Segundo hallazgo (menor):** `postulantes_mr.estado` tenía `'retirada'` (3 filas) vs
+  `'Retirada'` (30) — mismo significado, fragmentaba conteos por estado. Unificado
+  (`015_fix_case_estado_postulantes_mr.sql`).
+- **Revisado y limpio, sin cambios necesarios:** `emoflow_ingresos` + todas sus tablas/vistas
+  derivadas (`emoflow_ingresos_diario`, `emoflow_actividad_semanal`,
+  `emoflow_participacion_semanal`, `historial_cursos_ciudad`, `historial_emoflow_ciudad`) —
+  0 nulos/variantes, porque Emoflow usa un dropdown cerrado de 9 áreas (no texto libre),
+  a diferencia de las Sheets que alimentan `participants`/`postulantes_mr`.
+  `participants.genero`, `postulantes_mr.genero`, `participants.source_system`,
+  `postulantes_jc.fuente`/`rol`, `postulantes_mr.fuente_pestana`: vocabularios controlados
+  por script de carga, sin fragmentación real.
+- Documentado en `docs/convenciones.md` (nueva sección "Auditoría de coherencia de toda la
+  DB") y en los dos archivos de migración.
+
+## 2026-07-24 (cont.) — [panel-datos-etl] Cierre grupo_ciudad: municipios satélite fusionados, resto unificado en "OTROS", basura de ciudad documentada
+
+- Con el detalle completo de los 285 municipios sin código (query sin LIMIT), resultó ser
+  una cola larga de ~130 municipios distintos, casi todos con 1-3 personas — no un puñado
+  de casos claros. Le presenté a Samuel el subconjunto con alta confianza (municipios
+  satélite de un hub ya existente) y le pregunté explícitamente antes de tocar nada, dado
+  que fusionar `grupo_ciudad` es una suposición sobre estructura operativa (¿el mismo
+  monitor cubre Soledad y Barranquilla?), no algo verificable solo con los datos.
+- **Confirmado por Samuel:** fusionar municipios satélite al hub más cercano. Aplicado
+  (`016_grupo_ciudad_municipios_satelite.sql`, +58): Soledad→BAQ,
+  Jamundí/Palmira/Yumbo/Candelaria/Dagua→CAL, Bello/Itagüí→MED,
+  Soacha/Funza/Madrid/Facatativá/Cajicá/Chía/Guaduas/Tocaima→BOG. `ciudad`/`ciudad_norm`
+  NO se tocan (Soledad sigue siendo Soledad) — solo se asigna el código operativo.
+- **Para el resto (~120 municipios, 222 filas):** Samuel pidió unificarlos como
+  `grupo_ciudad = 'OTROS'` en vez de dejarlos NULL, para que las tomas de datos grandes no
+  los pierdan — si hace falta analizar un municipio puntual, `ciudad` sigue teniendo el
+  dato real. Aplicado (`017_grupo_ciudad_otros.sql`). **`grupo_ciudad` ahora tiene 3
+  estados a distinguir en cualquier reporte nuevo:** código de hub real, `'OTROS'`
+  (municipio conocido sin hub) o `NULL` (sin ciudad registrada — 1.621 filas, no es lo
+  mismo que "otros").
+- **Documentado aparte (pedido explícito de Samuel):** 5 filas con basura real en `ciudad`
+  (`"hijos"` x2, `"Menor a 1 SMLV"`, `"Colombia"`, `"Galapa soy una mujer"` — esta última
+  con un municipio real, "Galapa", concatenado con texto de otra respuesta). Todas
+  `source_system='q10'` — el bug está en el pipeline Q10, no en la Sheet BD Seguimiento.
+  No se tocaron (adivinar la ciudad real sería inventar dato) — quedaron con
+  `grupo_ciudad = NULL` a propósito. Ver "Gotcha: basura en ciudad" en
+  `docs/convenciones.md` — deuda para quien toque `normalize_q10_data.py`/
+  `cargar_supabase.py` próximamente.
+- Estado final `participants.grupo_ciudad`: BOG 214, BAQ 197, CTG 189, CAL 137, MED 115,
+  GYL 79, UY 65, QTO 39, PAN 36, OTROS 222, NULL 1.626 (1.621 sin ciudad + 5 basura).
+
+## 2026-07-24 (cont.) — [panel-datos-etl] Auditoría "a fondo" de torpezas — advisors de Supabase + revisión manual
+
+**Estado:** Completado
+**Proceso relacionado:** panel-datos-etl / supabase-estructura
+
+- Samuel pidió analizar toda la DB en busca de "torpezas" (errores/descuidos, no solo el
+  problema de ciudad ya resuelto). Corrí `test_integridad_supabase.py` (sigue 47/47 PASS,
+  sin regresiones) + los advisors nativos de Supabase (`get_advisors` security/performance,
+  primera vez que se usan en este proyecto) + revisión manual de lo que los advisors no
+  cubren (datos de prueba, fechas imposibles).
+- **Hallazgo real y corregido:** `campanas_enviadas` tenía RLS activado sin política — el
+  mismo patrón de "200 con `[]` en vez de 401" que se corrigió en 5 tablas el 2026-07-21,
+  pero esta se quedó fuera de esa pasada. `REVOKE ALL FROM anon, authenticated`.
+- **Autocorrección:** mis propias funciones de hoy (`normalizar_ciudad`, `ciudad_canonica`,
+  migración 013) tenían `search_path` mutable (WARN del linter) — corregido con `SET
+  search_path`.
+- **Falsa alarma investigada a fondo (y un error propio revertido en caliente):** el
+  advisor marca 20 vistas como `SECURITY DEFINER` (nivel "ERROR"). Revisé la definición de
+  cada una — todas son agregados puros (conteos/promedios/group by), ninguna expone PII
+  individual; `SECURITY DEFINER` es necesario para que puedan calcular el agregado
+  saltándose el RLS de `anon` en las tablas base, sin exponer las filas individuales.
+  Además intenté revocarle a `anon` el `EXECUTE` directo de `participa_en()` (una función
+  que esas vistas usan, marcada por el advisor como "ejecutable por anon vía RPC") — y
+  **rompió en vivo** `v_demografia_grupo`/`v_emprendimiento_situacion` (401), verificado
+  con la anon key real antes y después. Lo revertí en el mismo turno. Lección para
+  `convenciones.md`: una vista da acceso "como el dueño" a las tablas que usa, pero NO
+  extiende ese acceso a las funciones que llama por dentro — el rol que consulta necesita
+  su propio `EXECUTE`. Nunca quedó roto en producción (verificación inmediata + revert).
+- **Descartado sin tocar:** "3 tablas sin primary key" (tienen UNIQUE index equivalente,
+  0 duplicados verificados) — el linter no distingue eso. `auth_rls_initplan` y
+  `multiple_permissive_policies` (perf, bajo impacto, tablas admin de bajo tráfico) —
+  reportados, no urgentes.
+- **Encontrado, no borrado (no es mi decisión):** 1 registro de prueba real en
+  `participants` — "Prueba Carlitos" / `prueba1@prueba.com`. Otros correos con
+  "test/prueba/xxx" que aparecieron en la búsqueda están atados a nombres reales
+  (personas con correos informales, no data de prueba) — no se tocan.
+- Documentado en `docs/convenciones.md` (nueva sección "Auditoría a fondo con advisors de
+  Supabase") y `docs/migrations/018_torpezas_seguridad_advisors.sql` (incluye el revert
+  documentado inline).

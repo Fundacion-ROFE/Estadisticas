@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadmap — Automatización + IA — Fundación ROFÉ</title>
+<style>
+  :root{
+    --azul:#406C9E; --azul-claro:#83B6DD; --amarillo:#EEC935; --naranja:#D1793F;
+    --rojo:#C12D4C; --verde:#6EA050; --bg:#F4F7FB; --card:#FFFFFF; --borde:#DDE4ED;
+    --texto:#1A2535; --texto-sec:#6B7A94;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--bg);color:var(--texto);}
+  .wrap{max-width:1360px;margin:0 auto;padding:48px 40px 90px;}
+
+  header{margin-bottom:34px;}
+  .kicker{font-size:12.5px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--azul);margin-bottom:8px;}
+  h1{font-size:36px;font-weight:800;margin:0 0 10px 0;}
+  .sub{font-size:16px;color:var(--texto-sec);max-width:760px;line-height:1.55;}
+  .meta-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+  .meta-pill{font-size:12px;font-weight:700;background:#fff;border:1px solid var(--borde);padding:6px 14px;border-radius:20px;color:var(--texto-sec);}
+
+  /* Leyenda */
+  .leyenda{display:flex;gap:18px;flex-wrap:wrap;margin:22px 0 8px;font-size:12.5px;color:var(--texto-sec);}
+  .leyenda span{display:inline-flex;align-items:center;gap:6px;}
+  .dotL{width:9px;height:9px;border-radius:50%;display:inline-block;}
+
+  /* Grid del roadmap */
+  .board{display:grid;grid-template-columns:190px repeat(4,1fr);gap:14px;margin-top:20px;}
+  .colhead{padding:14px 6px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;text-align:center;border-radius:10px;}
+  .colhead.hecho{background:#e7f2e2;color:var(--verde);}
+  .colhead.ahora{background:#fbe3e8;color:var(--rojo);}
+  .colhead.proximo{background:#fdf1d9;color:#8a6e00;}
+  .colhead.vision{background:#eef3f9;color:var(--azul);}
+  .colhead .rango{display:block;font-weight:600;font-size:10.5px;text-transform:none;letter-spacing:.2px;margin-top:3px;opacity:.85;}
+
+  .lane-label{display:flex;flex-direction:column;justify-content:center;padding:14px 12px;background:var(--card);border:1px solid var(--borde);border-radius:12px;}
+  .lane-label .ico{font-size:22px;margin-bottom:6px;}
+  .lane-label b{font-size:13.5px;line-height:1.3;}
+
+  .cell{background:transparent;display:flex;flex-direction:column;gap:10px;}
+  .item{background:var(--card);border:1px solid var(--borde);border-left:4px solid var(--azul-claro);border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.45;box-shadow:0 1px 6px rgba(26,37,53,.03);}
+  .item b{display:block;font-size:13.5px;margin-bottom:3px;color:var(--texto);}
+  .item .who{display:inline-block;margin-top:6px;font-size:10.5px;font-weight:700;color:var(--texto-sec);background:#eef1f6;padding:2px 9px;border-radius:10px;}
+  .item.done{border-left-color:var(--verde);}
+  .item.now{border-left-color:var(--rojo);}
+  .item.next{border-left-color:var(--amarillo);}
+  .item.later{border-left-color:var(--azul);}
+  .item.pending{opacity:.75;border-style:dashed;}
+
+  section.lane{display:contents;}
+
+  .callout{margin-top:38px;background:#fff8e8;border-left:5px solid var(--amarillo);border-radius:10px;padding:20px 24px;font-size:14.5px;line-height:1.6;}
+  .callout b{color:#8a6e00;}
+
+  footer{margin-top:36px;font-size:12px;color:var(--texto-sec);}
+
+  @media (max-width: 1050px){
+    .board{grid-template-columns:1fr;}
+    .lane-label{flex-direction:row;align-items:center;gap:10px;}
+    .lane-label .ico{margin-bottom:0;}
+    .colhead{display:none;}
+    .cell::before{content:attr(data-col);display:block;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--texto-sec);margin-bottom:2px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Visión general · Julio 2026</div>
+    <h1>Roadmap de automatización + IA</h1>
+    <p class="sub">Una sola vista de lo que ya está hecho, lo que se está haciendo ahora, lo que sigue y hacia dónde vamos — combinando la base de datos/infraestructura con las personas y sus herramientas. Es una visión viva: se ajusta con cada conversación P0 que se cierre.</p>
+    <div class="meta-row">
+      <span class="meta-pill">Preparado por Samuel David Rojas Monroy</span>
+      <span class="meta-pill">Última actualización: julio 2026</span>
+      <span class="meta-pill">Ver también: diagnóstico técnico · diagnóstico organizacional</span>
+    </div>
+  </header>
+
+  <div class="leyenda">
+    <span><i class="dotL" style="background:var(--verde)"></i> Hecho</span>
+    <span><i class="dotL" style="background:var(--rojo)"></i> Ahora (días/semanas)</span>
+    <span><i class="dotL" style="background:var(--amarillo)"></i> Próximo (1-2 meses)</span>
+    <span><i class="dotL" style="background:var(--azul)"></i> Visión (sin fecha fija)</span>
+    <span>┄ punteado = pendiente de decisión / aprobación</span>
+  </div>
+
+  <div class="board">
+    <div></div>
+    <div class="colhead hecho">Hecho<span class="rango">ya en marcha</span></div>
+    <div class="colhead ahora">Ahora<span class="rango">esta semana · próximas 2</span></div>
+    <div class="colhead proximo">Próximo<span class="rango">1-2 meses</span></div>
+    <div class="colhead vision">Visión<span class="rango">sin fecha fija</span></div>
+
+    <!-- LANE 1: DATOS E INFRAESTRUCTURA -->
+    <div class="lane-label"><span class="ico">🗄️</span><b>Datos e<br>infraestructura</b></div>
+    <div class="cell" data-col="Hecho">
+      <div class="item done"><b>Base de datos centralizada</b>24 tablas en Supabase, sincronizadas solas 8×/día</div>
+      <div class="item done"><b>Consolidación Q10 → Dashboard</b>público, se actualiza solo</div>
+      <div class="item done"><b>Blindaje de seguridad</b>credenciales fuera del código, publicación desatendida con alertas</div>
+      <div class="item done"><b>Suite de calidad + respaldo diario</b>47/47 verificaciones automáticas</div>
+    </div>
+    <div class="cell" data-col="Ahora">
+      <div class="item now"><b>Confirmar noche de validación</b>primeras corridas 100% automatizadas revisadas</div>
+      <div class="item now pending"><b>Cerrar hallazgos de seguridad pendientes</b>rotación de credenciales, limpieza de historial</div>
+    </div>
+    <div class="cell" data-col="Próximo">
+      <div class="item next"><b>Panel de datos con etiquetas claras</b>aclarar métricas (por matrícula vs. por estudiante)</div>
+      <div class="item next pending"><b>Sección pública de retiros</b>sin datos personales, agregada</div>
+    </div>
+    <div class="cell" data-col="Visión">
+      <div class="item later pending"><b>Migración a servidor en la nube</b>quita la dependencia de un solo equipo</div>
+      <div class="item later pending"><b>Predicción de riesgo con IA</b>sobre el historial ya consolidado</div>
+    </div>
+
+    <!-- LANE 2: PERSONAS Y ADOPCION -->
+    <div class="lane-label"><span class="ico">👥</span><b>Personas y<br>adopción</b></div>
+    <div class="cell" data-col="Hecho">
+      <div class="item done"><b>Entrevista P0 — Rocío</b><span class="who">necesita asistente simple</span></div>
+      <div class="item done"><b>Entrevista P0 — Astrid</b><span class="who">certificados, hoja JC</span></div>
+    </div>
+    <div class="cell" data-col="Ahora">
+      <div class="item now pending"><b>Entrevista P0 — Lina</b>preguntas dirigidas, poco contexto espontáneo</div>
+      <div class="item now pending"><b>Entrevista P0 — Ana</b>foco estratégico, riesgo/beneficio</div>
+      <div class="item now"><b>Piloto Astrid</b>instancia Workspace + skill de autodocumentación → repo GitHub</div>
+    </div>
+    <div class="cell" data-col="Próximo">
+      <div class="item next pending"><b>Asistente simple — Rocío</b>correos, organización, checklist contable</div>
+      <div class="item next pending"><b>Extender el piloto</b>según resultado de Astrid: Cristian y Lina</div>
+      <div class="item next pending"><b>Gobernanza formal de acceso por rol</b>documento de aprobación para Ana</div>
+    </div>
+    <div class="cell" data-col="Visión">
+      <div class="item later pending"><b>Instancia para Ana</b>vista estratégica / reportes ejecutivos</div>
+      <div class="item later pending"><b>Convocatorias y selección con IA</b>solo si el diagnóstico lo confirma</div>
+    </div>
+
+    <!-- LANE 3: AUTOMATIZACIONES PUNTUALES -->
+    <div class="lane-label"><span class="ico">🛠️</span><b>Automatizaciones<br>puntuales</b></div>
+    <div class="cell" data-col="Hecho">
+      <div class="item done"><b>Asistencia Zoom automática</b>% de participación calculado a diario</div>
+      <div class="item done"><b>Correos masivos MR</b>más de 2.600 enviados</div>
+    </div>
+    <div class="cell" data-col="Ahora">
+      <div class="item now pending"><b>Certificados</b>plantilla + lista → generación en lote (dentro del piloto de Astrid)</div>
+    </div>
+    <div class="cell" data-col="Próximo">
+      <div class="item next pending"><b>WhatsApp — enrutamiento simple</b>evaluar ManyChat antes de construir IA a medida</div>
+      <div class="item next pending"><b>Panel de Riesgo — botones de acción</b>seguimiento rápido sin cambiar de pestaña</div>
+      <div class="item next pending"><b>Panel de Riesgo — ficha ampliada</b>historial completo en un clic</div>
+      <div class="item next pending"><b>Herramienta de redacción rápida</b>correos y comunicados en un clic</div>
+    </div>
+    <div class="cell" data-col="Visión">
+      <div class="item later pending"><b>Reuniones Meet automáticas</b>hoy manual, 2 personas</div>
+      <div class="item later pending"><b>Reportes automáticos a financiadores</b>desde los agregados de Supabase</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <b>Cómo leer esta vista:</b> lo marcado con línea punteada todavía necesita una decisión, una entrevista o una aprobación antes de arrancar — no es una promesa de fecha, es la intención actual. Esta página se actualiza a medida que las conversaciones P0 se cierran y las prioridades se ajustan con Ana.
+  </div>
+
+  <footer>Fundación ROFÉ · Jóvenes creaTIvos · Mujeres ROFÉ — Roadmap vivo, julio 2026</footer>
+
+</div>
+</body>
+</html>

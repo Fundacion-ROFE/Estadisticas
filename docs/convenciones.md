@@ -228,6 +228,160 @@ Usar el patrón `leer_registros(ws)`: `get_all_values()` + conservar solo column
 no vacío y no duplicado (ver `organizador_headless.py`). Regla para humanos: fórmulas de análisis
 van en pestañas aparte, nunca en las pestañas que los scripts leen/escriben.
 
+## ✅ Normalización de ciudades (resuelto 2026-07-24, ver [[supabase_mr_sincronizacion_gap]])
+
+**Estado:** Resuelto a nivel de base de datos. Ya no es responsabilidad de cada script
+reinventar la detección de variantes.
+
+**Cómo se descubrió:** un script ad-hoc (`generar_lista_y_enviar.py`, ya archivado en
+`_obsoletos/`) filtraba con `if 'BOGOTA' in ciudad.upper():` — `.upper()` en Python NO
+quita tildes, así que `'BOGOTA' in 'BOGOTÁ D.C.'.upper()` da `False`. Resultado: de 512
+personas de Bogotá en `postulantes_mr`, el filtro solo encontró 24. Análisis completo en
+`claude_sessions.md` (2026-07-24).
+
+**Solución implementada:**
+
+1. **`normalizar_ciudad(text)`** — función SQL `IMMUTABLE` (quita tildes/mayúsculas/
+   puntuación: `translate` + `regexp_replace` + `upper`). Ver
+   `docs/migrations/013_normalizar_ciudad.sql`.
+2. **Columna generada `ciudad_norm`** en `participants`, `postulantes_mr` y
+   `postulantes_jc` — `GENERATED ALWAYS AS (normalizar_ciudad(ciudad)) STORED`,
+   indexada. Se recalcula sola en cada insert/update, **no requiere backfill ni
+   mantenimiento**. Filtrar SIEMPRE por esta columna, nunca por `ciudad` crudo.
+3. **Tabla `ciudad_alias`** (`clave_norm` PK -> `ciudad_canonica`) — fusiona nombres
+   administrativos distintos del MISMO municipio que `normalizar_ciudad()` no puede
+   resolver solo (son palabras distintas, no solo tildes): `BOGOTA DC`/`BGT` -> `BOGOTA`,
+   `CARTAGENA DE INDIAS` -> `CARTAGENA`, `CIUDAD DE PANAMA` -> `PANAMA`. Fuente única de
+   verdad — agregar filas ahí, no hardcodear el mapeo en cada script.
+4. **`scripts/panel-datos/ciudad_utils.py`** (copiar/importar vía `sys.path.insert`,
+   patrón ya usado en `importar_historico_q10.py`) — `normalizar_ciudad()` en Python
+   (réplica exacta de la función SQL) + `claves_para(ciudad, supa)`, que dada una ciudad
+   en lenguaje natural devuelve la lista de `ciudad_norm` a usar en un filtro PostgREST
+   `ciudad_norm=in.(...)` (ya incluye la expansión de alias). **Ojo con el REST:** los
+   valores de `ciudad_norm` pueden traer espacios (`"BOGOTA DC"`) — hay que
+   URL-encodearlos (`Supa.get_todo` en `ciudad_utils.py` ya lo hace).
+
+**Verificado tras aplicar:** `postulantes_mr` con `ciudad_norm IN ('BOGOTA','BOGOTA DC')`
+= 508 filas ≈ 504 del Excel "Base Mr Bogotá.xlsx" que se creía que faltaba migrar (no
+faltaba — el problema era el filtro, no los datos).
+
+**Ejemplo de uso en un script nuevo:**
+```python
+sys.path.insert(0, os.path.join(PROYECTO_ROOT, "scripts", "panel-datos"))
+from ciudad_utils import Supa, cargar_alias, claves_para
+
+supa = Supa(url, key)
+claves = claves_para("Bogotá", supa)          # -> ['BGT', 'BOGOTA', 'BOGOTA DC']
+filtro = ",".join(claves)
+filas = supa.get_todo(f"/postulantes_mr?ciudad_norm=in.({filtro})&select=*")
+```
+
+Referencia de uso real: `scripts/mujeres-rofe-correos/extraer_lista_ciudad_mr.py`
+(reemplaza los scripts archivados en `_obsoletos/`).
+
+**Pendiente (menor, no bloqueante):** `extraer_lista_cundinamarca.py` sigue consultando
+`participants` (matriculadas) en vez de `postulantes_mr` (universo completo) — su lógica
+de "¿qué municipios son Cundinamarca?" es un problema distinto (agrupación por
+departamento, no normalización de nombre) y no se tocó en este cierre.
+
+### Auditoría de coherencia de toda la DB (2026-07-24) — qué más se revisó y qué se arregló
+
+Tras el fix de `ciudad`, Samuel pidió revisar el resto de la DB por el mismo tipo de
+problema (mismo valor, distinta grafía, dañando análisis en silencio). Resultado:
+
+- **`participants.grupo_ciudad` (código operativo JC — BOG/BAQ/CTG/CAL/MED/GYL/QTO/PAN/UY,
+  NO es lo mismo que `ciudad_canonica`, a veces agrupa varias ciudades en un código de
+  país/región):** 74% de `participants` sin asignar. **Grave:** `v_demografia_grupo`,
+  `v_curso_completion_por_ciudad` y `v_programa_stats_por_ciudad` filtran
+  `WHERE grupo_ciudad IS NOT NULL` — sin este campo, el participante desaparece del
+  reporte (ni siquiera cae en "SIN_CIUDAD"). Backfill aplicado (`014_backfill_grupo_ciudad.sql`)
+  para los 246 casos donde la ciudad ya tenía un código establecido y sin ambigüedad
+  (verificado antes de tocar nada: ningún `ciudad_canonica` mapeaba a 2 códigos distintos).
+  De las 285 restantes, Samuel confirmó fusionar los municipios satélite/conurbación al
+  hub más cercano (`016_grupo_ciudad_municipios_satelite.sql`): Soledad→BAQ,
+  Jamundí/Palmira/Yumbo/Candelaria/Dagua→CAL, Bello/Itagüí→MED, Soacha/sabana de
+  Bogotá→BOG (+58). Los ~120 municipios restantes sin hub cercano (Santa Marta, Quibdó,
+  Villavicencio, Cúcuta, Carmen del Darién, mayoría con 1-3 personas) se unificaron bajo
+  `grupo_ciudad = 'OTROS'` (`017_grupo_ciudad_otros.sql`, +222) — decisión explícita para
+  que las tomas de datos grandes (dashboards por grupo) no pierdan a esas 222 personas sin
+  tener que inventar un código por municipio; `ciudad`/`ciudad_norm` (intactos) siguen
+  disponibles si algún día hace falta analizar un municipio puntual. **`grupo_ciudad`
+  ahora tiene 3 estados posibles a distinguir en cualquier reporte:** un código de hub real
+  (BOG/BAQ/CTG/CAL/MED/GYL/QTO/PAN/UY), `'OTROS'` (municipio conocido, sin hub asignado) o
+  `NULL` (sin ciudad registrada en absoluto — 1.621 filas, no es lo mismo que "otros").
+
+### Auditoría "a fondo" con advisors de Supabase (2026-07-24)
+
+Corrida de `mcp__Supabase__get_advisors` (security + performance) + `test_integridad_supabase.py`
+(47/47 PASS, sin cambios) + revisión manual. Resultado:
+
+**Corregido (real):**
+- `campanas_enviadas` tenía RLS activado pero SIN política — anon obtenía `200` con `[]`
+  en vez de `401` (mismo patrón del "incidente 2026-07-14"/2026-07-21, esta tabla se quedó
+  fuera de esa pasada). `REVOKE ALL ... FROM anon, authenticated` (`018_torpezas_seguridad_advisors.sql`).
+- `search_path` mutable en `normalizar_ciudad`/`ciudad_canonica` (funciones creadas hoy
+  mismo, migración 013) — corregido con `SET search_path`.
+
+**Investigado y descartado (falsa alarma, NO tocar):**
+- **20 vistas `SECURITY DEFINER` marcadas "ERROR" por el linter** (`v_demografia_grupo`,
+  `v_mr_demografia`, `v_curso_completion*`, etc.) — revisadas una por una: todas son
+  agregados puros (`COUNT`/`AVG`/`GROUP BY`), ninguna expone `nombre`/`email`/`cedula`/
+  `celular` de una persona individual. `SECURITY DEFINER` aquí es necesario (así pueden
+  calcular el agregado leyendo filas que RLS le bloquearía a `anon` directamente) y seguro
+  (solo el número agregado sale). Coincide con el patrón ya usado en `v_demografia_grupo`
+  de suprimir buckets con `< 5` personas. No cambiar a `SECURITY INVOKER` — rompería los
+  dashboards públicos.
+- **`participa_en(uuid, programa_type)` ejecutable por `anon` vía RPC** — se intentó
+  revocar (parecía exceso de permiso) y **rompió en vivo** `v_demografia_grupo`/
+  `v_emprendimiento_situacion` para `anon` (401). Revertido en el mismo turno. Lección:
+  una vista da acceso "como el dueño" a las TABLAS que usa, pero NO extiende ese acceso a
+  las FUNCIONES que llama — el rol que consulta necesita su propio `EXECUTE`, sin importar
+  si la función o la vista son `SECURITY DEFINER`. Ver detalle en
+  `018_torpezas_seguridad_advisors.sql`.
+- **3 tablas "sin primary key"** (`historial_emoflow`, `historial_emoflow_ciudad`,
+  `emoflow_participacion_semanal`) — las 3 tienen un índice `UNIQUE` que cumple la misma
+  función (el upsert de `sync_emoflow_api.py` depende de él y funciona bien, 0 duplicados
+  verificados). El linter solo distingue "primary key" de "unique index" a nivel de
+  catálogo; no es un bug real.
+- **1 registro de prueba real encontrado:** `participants` tiene "Prueba Carlitos" /
+  `prueba1@prueba.com` — parece dato de prueba de desarrollo, no una persona real. No se
+  borró (acción destructiva, no es mi decisión) — queda para que Samuel confirme y borre
+  si corresponde. Otros correos con "test/prueba/xxx/asdf" en el texto (`leimarxxx7@`,
+  `liyenpruebas@`, `yinaasdfd@`) están atados a nombres colombianos reales — son personas
+  reales con correos informales, no datos de prueba.
+
+**Reportado, sin tocar (bajo impacto, no urgente):**
+- `auth_rls_initplan` (WARN, performance): varias políticas RLS (`admin_full_access_*`)
+  re-evalúan `auth.<fn>()`/`current_setting()` por fila en vez de una vez por query
+  (patrón `(select auth.<fn>())`). Tablas de bajo volumen de consultas (admin-only) — no
+  urgente.
+- `multiple_permissive_policies` (WARN, performance): varias tablas tienen 2 políticas
+  permisivas para el mismo rol/acción (`admin_full_access_X` + `X_publico`) — funcionalmente
+  correcto (se OR-ean), solo evalúa de más. No urgente.
+- `unused_index` (INFO): 5 índices sin uso registrado — normal en un proyecto con poco
+  volumen de queries todavía, no ameritan borrarse ahora.
+
+### Gotcha: basura en `ciudad` (source_system='q10', sin resolver)
+
+Al backfillear `grupo_ciudad` se encontraron 5 filas donde `ciudad` claramente NO es una
+ciudad — parece una respuesta de OTRA pregunta del formulario que quedó mal mapeada a esta
+columna: `"hijos"` (x2), `"Menor a 1 SMLV"`, `"Colombia"`, `"Galapa soy una mujer"` (esta
+última sí contiene un municipio real, "Galapa" — área de Barranquilla — pero concatenado
+con texto de otra respuesta). Las 5 son `source_system='q10'` — el bug está en algún punto
+del pipeline Q10 (`normalize_q10_data.py`/`cargar_supabase.py` o el formulario/Sheet fuente
+antes de eso), no en la Sheet BD Seguimiento. **No se tocó** — adivinar la ciudad real
+(sobre todo en "Galapa soy una mujer") sería inventar dato; quedaron con
+`grupo_ciudad = NULL` a propósito (ni "OTROS" ni un código real). Quien toque el pipeline
+Q10 debería revisar si hay una columna corrida en el import de origen — candidato a
+próximo propietario de esta deuda.
+- **`postulantes_mr.estado`:** `'retirada'` (3) vs `'Retirada'` (30) — unificado
+  (`015_fix_case_estado_postulantes_mr.sql`).
+- **Revisado y limpio, sin cambios:** `emoflow_ingresos` y todas sus tablas/vistas
+  derivadas (Emoflow usa un dropdown cerrado de 9 áreas, no texto libre — 0 nulos/variantes);
+  `participants.genero`, `postulantes_mr.genero`, `participants.source_system`,
+  `postulantes_jc.fuente`/`rol`, `postulantes_mr.fuente_pestana` (vocabularios controlados
+  por script de carga, sin fragmentación).
+
 ## Timezone en Schedule Triggers de n8n
 
 Sin configuración, n8n interpreta las horas de los Schedule Triggers en **America/New_York**
