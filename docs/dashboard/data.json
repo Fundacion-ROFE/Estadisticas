@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-24T17:01:19.487188-05:00",
+  "ultima_actualizacion": "2026-07-25T09:49:41.990047-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -15,8 +15,8 @@
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
       "estudiantes": 760,
-      "finalizados": 482,
-      "promedio": 84.33,
+      "finalizados": 511,
+      "promedio": 85.98,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 760,
@@ -86,7 +86,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 30
+      "cantidad": 29
     },
     {
       "categoria": "AVANCE IRREGULAR",
