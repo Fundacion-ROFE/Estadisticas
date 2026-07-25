@@ -62,13 +62,52 @@ De la petición en lenguaje natural, extrae:
 Si algo del contenido es ambiguo o falta (ej. no dan fecha ni enlace del evento), **pregunta a
 Samuel antes de continuar** — no inventes datos del evento.
 
+### Paso a.1 — Elegir la(s) fuente(s) de datos correcta(s) ANTES de consultar nada
+
+**Este paso existe porque el 2026-07-24 se reportó "solo hay 8 personas en Bogotá" cuando en
+realidad había 508** — por consultar la tabla equivocada y por un bug de tildes en un filtro
+de ciudad hecho a mano. Ver `docs/convenciones.md` (sección "Normalización de ciudades") y
+`claude_sessions.md` (2026-07-24) para el post-mortem completo. No repetir ese patrón.
+
+Antes de escribir o correr cualquier consulta, decide explícitamente **qué pregunta estás
+respondiendo**, porque no todas las tablas responden lo mismo:
+
+| Si la petición pide... | Fuente correcta | Por qué |
+|---|---|---|
+| "todas las de Bogotá", "las mujeres de X ciudad", cualquier segmentación amplia por ciudad/perfil | `postulantes_mr` | Universo COMPLETO de postulantes/candidatas MR (no solo matriculadas). Ver `docs/procesos/postulantes-mr-supabase.md`. |
+| "las que están matriculadas en el curso", "las que no completaron el curso X" | `participants` + `enrollments` (`courses.programa='mr'`) | `participants` SOLO tiene matriculadas en Q10 — mucho más chico que el universo completo, a propósito (no es un bug, es su alcance). |
+| Cobertura histórica 2023-2024 | Excel local `BD-Mujeres ROFÉ` / `extraer_lista_mr_ultimos3anios.py` | Supabase (ambas tablas) solo tiene cohortes 2025/2026 completas — ver `docs/convenciones.md`. |
+
+**Si tienes duda de cuál aplica, PREGÚNTALE a Samuel qué universo quiere** (¿todas las
+registradas alguna vez, o solo las que están tomando/tomaron el curso ahora?) — no asumas.
+
+**Regla de ciudad — SIEMPRE usar `ciudad_norm`, nunca `ciudad` cruda:**
+`participants`, `postulantes_mr` y `postulantes_jc` tienen una columna generada
+`ciudad_norm` (tildes/mayúsculas/puntuación ya normalizadas) y existe
+`scripts/panel-datos/ciudad_utils.py` con `claves_para(ciudad, supa)` que expande una
+ciudad en lenguaje natural a la lista de `ciudad_norm` a filtrar (incluye alias tipo
+"Bogotá D.C." -> "Bogotá"). Nunca escribas tu propio `.upper()`/`.replace()` de ciudad —
+ya se intentó dos veces y las dos veces perdió datos silenciosamente.
+
+Para el caso más común (ciudad + universo completo MR), usa directo:
+```powershell
+python scripts/mujeres-rofe-correos/extraer_lista_ciudad_mr.py --ciudad "Bogotá" --id <ID>
+```
+en vez de escribir una consulta nueva — ver Paso b.
+
+**Chequeo de sanidad antes de reportar un número a Samuel:** si el resultado te sorprende
+(mucho más bajo de lo esperado, o de lo que dio un envío anterior a un público similar),
+**no lo reportes todavía** — cruza contra otra fuente (otra tabla, el Excel, o el conteo
+total de la tabla sin filtro) para confirmar que el número bajo es real y no un filtro roto.
+`extraer_lista_ciudad_mr.py` ya imprime un cruce automático contra `participants` para esto.
+
 ### Paso b — Generar/filtrar la lista → SIEMPRE a `tools/`
 
 La lista final debe quedar en:
 `tools/mujeres-rofe-correos/data/lista_<ID>.csv` con columnas `nombre,correo,cohorte`
 (donde `<ID>` es el `ID` de la campaña del Paso c). **Nunca en `docs/` ni `scripts/`.**
 
-Dos caminos, según la petición:
+Tres caminos, según la petición (ver Paso a.1 para elegir):
 
 1. **Lista completa MR (últimos 3 años), sin filtro de ciudad/estado:**
    ```powershell
@@ -78,12 +117,22 @@ Dos caminos, según la petición:
    Genera `tools/mujeres-rofe-correos/data/lista_mr_ultimos_3_anios.csv`. Copia/renombra ese CSV a
    `lista_<ID>.csv` si tu campaña usa otro `ID`.
 
-2. **Subconjunto filtrado (ciudad y/o estado del curso):** parte de un CSV existente o consulta
+2. **Filtro por ciudad, universo completo (el caso más común — "las de X ciudad"):**
+   ```powershell
+   cd scripts/mujeres-rofe-correos
+   python extraer_lista_ciudad_mr.py --ciudad "Bogotá" --id <ID>
+   ```
+   Ya usa `postulantes_mr` (universo completo, ver Paso a.1) + `ciudad_norm`/`ciudad_alias`
+   (normalización correcta) + excluye opt-out/hard bounces, y escribe directo a
+   `tools/mujeres-rofe-correos/data/lista_<ID>.csv`. **No escribas una consulta nueva a mano
+   para esto** — es exactamente el patrón que falló el 2026-07-24 (ver Paso a.1).
+
+3. **Filtro por estado del curso (matriculadas, avance):** parte de un CSV existente o consulta
    Supabase con la `SERVICE_ROLE_KEY` de `.env.local` (patrón de la clase `Supa` en
-   `extraer_lista_mr_ultimos3anios.py` — reutilízalo, no lo reescribas desde cero). Fuentes de los
-   filtros en Supabase: `participants.ciudad` / `participants.grupo_ciudad` (ciudad),
-   `enrollments.porcentaje_avance` vía `courses.programa='mr'` (estado del curso). Escribe el
-   resultado filtrado a `tools/mujeres-rofe-correos/data/lista_<ID>.csv` con las 3 columnas.
+   `extraer_lista_mr_ultimos3anios.py` — reutilízalo, no lo reescribas desde cero). Fuentes:
+   `enrollments.porcentaje_avance` vía `courses.programa='mr'`. Si además piden ciudad, filtra
+   `participants.ciudad_norm` (no `ciudad` cruda — ver Paso a.1). Escribe el resultado a
+   `tools/mujeres-rofe-correos/data/lista_<ID>.csv` con las 3 columnas.
 
    > NOTA de cobertura: Supabase solo tiene el histórico MR de 2025/2026
    > (ver [[project-supabase-mr-historico-gap]]). Para campañas que deban alcanzar 2024 hacia

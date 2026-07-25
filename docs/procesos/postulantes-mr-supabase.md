@@ -168,3 +168,8 @@ los cruces en Python).
 - [x] Fase 3: verificación de cuadre + privacidad.
 - [ ] Fase 4: encadenar a n8n `sociodemograficos-semanal` (por ahora corrida manual única).
 - [x] Fase 5: herramienta de búsqueda unificada — `v_persona_360` (vista SQL, no script).
+- [x] Fase 6 (2026-07-24): columna generada `ciudad_norm` + tabla `ciudad_alias` — ver
+  [[supabase_mr_sincronizacion_gap]] y `docs/convenciones.md` ("Normalización de ciudades").
+  Se agregó tras confirmar que la migración de esta tabla SÍ estaba completa (512 filas
+  Bogotá) pero un filtro de ciudad hecho a mano en un script (`.upper()` no quita tildes) lo
+  hacía parecer un gap de datos. Filtrar siempre por `ciudad_norm`, nunca por `ciudad`.

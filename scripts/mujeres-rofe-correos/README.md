@@ -14,11 +14,15 @@
 ```
 scripts/mujeres-rofe-correos/            ← CÓDIGO (git)
 ├── enviar_campana.py                    # Envío (preview / piloto / masivo)
-├── extraer_lista_mr_ultimos3anios.py    # Extracción Supabase + Excel → CSV
+├── extraer_lista_mr_ultimos3anios.py    # Extracción Supabase + Excel → CSV (histórico completo)
+├── extraer_lista_ciudad_mr.py           # Extracción por ciudad, universo completo (postulantes_mr
+│                                         #   + ciudad_norm/ciudad_alias — ver docs/convenciones.md)
 ├── templates/email_v2_template.html     # Plantilla parametrizada ($VAR)
 ├── img/{banner,firma}.png               # Header/footer marca ROFÉ
 ├── campanas/mr_ultimos_3_anios.json     # Config de la campaña activa
-└── run_piloto.py                        # Wrapper con getpass (no expone password)
+├── run_piloto.py                        # Wrapper con getpass (no expone password)
+└── _obsoletos/                          # Scripts con bugs conocidos de ciudad, no reutilizar
+                                          #   (ver _obsoletos/README.md)
 
 tools/mujeres-rofe-correos/data/         ← PII (gitignoreado, NUNCA a GitHub)
 ├── lista_mr_ultimos_3_anios.csv         # 2.693 mujeres (nombre,correo,cohorte,fuente)
