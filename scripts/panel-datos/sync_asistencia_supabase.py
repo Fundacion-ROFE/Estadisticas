@@ -87,6 +87,22 @@ def leer_asistencia_sheets():
 
     # Leer todas las filas
     todas_filas = []
+    def normalizar_fecha(txt):
+        # La dedup usa fecha como string, pero la columna es DATE y el Sheet trae
+        # timestamps ("2026-07-01 16:14"): dos sesiones del mismo dia colapsan en
+        # Postgres y el upsert da 500 ("ON CONFLICT cannot affect row a second time").
+        # Quedarse solo con la parte de fecha, en ISO, antes de la dedup.
+        if not txt:
+            return ""
+        from datetime import datetime
+        base = txt.split()[0]
+        for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
+            try:
+                return datetime.strptime(base, fmt).strftime("%Y-%m-%d")
+            except ValueError:
+                continue
+        return txt
+
     for fila in valores[1:]:
         if all(c.strip() == "" for c in fila):
             continue
@@ -98,7 +114,7 @@ def leer_asistencia_sheets():
         nombre = fila[idx_nombre].strip() if idx_nombre is not None and idx_nombre < len(fila) else ""
         apellido = fila[idx_apellido].strip() if idx_apellido is not None and idx_apellido < len(fila) else ""
         curso = fila[idx_curso].strip() if idx_curso is not None and idx_curso < len(fila) else ""
-        fecha = fila[idx_fecha].strip() if idx_fecha is not None and idx_fecha < len(fila) else ""
+        fecha = normalizar_fecha(fila[idx_fecha].strip()) if idx_fecha is not None and idx_fecha < len(fila) else ""
         instancias = fila[idx_instancias].strip() if idx_instancias is not None and idx_instancias < len(fila) else ""
         pct = fila[idx_pct].strip() if idx_pct is not None and idx_pct < len(fila) else ""
 
@@ -174,55 +190,36 @@ def upsert_supabase(filas, dry_run=False):
             batch_num = i // batch_size + 1
             total_batches = (len(datos_upsert) + batch_size - 1) // batch_size
 
+            # Upsert real contra la UNIQUE (email, curso, fecha) — sin on_conflict,
+            # PostgREST solo resuelve contra la PK (id) y el POST choca 409 con la UNIQUE
             req_upsert = urllib.request.Request(
-                f"{url}/rest/v1/asistencia_zoom",
+                f"{url}/rest/v1/asistencia_zoom?on_conflict=email,curso,fecha",
                 method="POST",
                 headers={
                     "apikey": key,
                     "Authorization": f"Bearer {key}",
                     "Content-Type": "application/json",
-                    "Prefer": "resolution=upsert",
+                    "Prefer": "resolution=merge-duplicates",
                 },
                 data=json.dumps(batch).encode("utf-8"),
             )
 
-            try:
-                with urllib.request.urlopen(req_upsert, timeout=60) as resp:
-                    if resp.status in (200, 201):
-                        print(f"  [{batch_num}/{total_batches}] {len(batch)} filas insertadas")
-                    else:
-                        print(f"  [{batch_num}/{total_batches}] HTTP {resp.status}")
-            except urllib.error.HTTPError as e:
-                if e.code == 409:
-                    # Intentar de nuevo con DELETE previo
-                    print(f"  [{batch_num}/{total_batches}] Conflicto detectado, limpiando...")
-                    # Delete registros del batch
-                    emails_batch = [f["email"] for f in batch]
-                    for email in set(emails_batch):
-                        req_del = urllib.request.Request(
-                            f"{url}/rest/v1/asistencia_zoom?email=eq.{email}",
-                            method="DELETE",
-                            headers={
-                                "apikey": key,
-                                "Authorization": f"Bearer {key}",
-                            },
-                        )
-                        try:
-                            with urllib.request.urlopen(req_del, timeout=30) as resp:
-                                pass
-                        except:
-                            pass
-                    # Reintentar insert
-                    with urllib.request.urlopen(req_upsert, timeout=60) as resp:
-                        print(f"  [{batch_num}/{total_batches}] {len(batch)} filas insertadas (reintentado)")
+            with urllib.request.urlopen(req_upsert, timeout=60) as resp:
+                if resp.status in (200, 201):
+                    print(f"  [{batch_num}/{total_batches}] {len(batch)} filas upserted")
                 else:
-                    raise
+                    raise RuntimeError(f"lote {batch_num}: HTTP {resp.status}")
 
         print(f"\n[OK] Sync exitoso: {len(datos_upsert)} filas en Supabase")
         return len(datos_upsert)
 
     except Exception as e:
         print(f"[ERROR] {e}")
+        if isinstance(e, urllib.error.HTTPError):
+            try:
+                print(f"[ERROR detalle] {e.read().decode('utf-8')[:500]}")
+            except Exception:
+                pass
         import traceback
         traceback.print_exc()
         raise
