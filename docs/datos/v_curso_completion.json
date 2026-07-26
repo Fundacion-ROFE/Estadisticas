@@ -220,6 +220,17 @@
     "programa": "jc"
   },
   {
+    "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
+    "cohorte": "2026",
+    "matriculados": 172,
+    "completados": 1,
+    "en_progreso": 14,
+    "sin_iniciar": 157,
+    "pct_completados": 0.6,
+    "promedio_avance": 3.3,
+    "programa": "mr"
+  },
+  {
     "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
     "cohorte": "2026",
     "matriculados": 760,
@@ -229,17 +240,6 @@
     "pct_completados": 68.2,
     "promedio_avance": 83.2,
     "programa": "jc"
-  },
-  {
-    "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
-    "cohorte": "2026",
-    "matriculados": 172,
-    "completados": 0,
-    "en_progreso": 14,
-    "sin_iniciar": 158,
-    "pct_completados": 0.0,
-    "promedio_avance": 2.4,
-    "programa": "mr"
   },
   {
     "curso": "Desarrollo front end avanzado",
@@ -308,17 +308,6 @@
     "programa": "jc"
   },
   {
-    "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
-    "cohorte": "2026",
-    "matriculados": 244,
-    "completados": 73,
-    "en_progreso": 24,
-    "sin_iniciar": 147,
-    "pct_completados": 29.9,
-    "promedio_avance": 32.1,
-    "programa": "mr"
-  },
-  {
     "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
     "cohorte": "2026",
     "matriculados": 760,
@@ -328,6 +317,17 @@
     "pct_completados": 98.6,
     "promedio_avance": 98.8,
     "programa": "jc"
+  },
+  {
+    "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
+    "cohorte": "2026",
+    "matriculados": 244,
+    "completados": 73,
+    "en_progreso": 24,
+    "sin_iniciar": 147,
+    "pct_completados": 29.9,
+    "promedio_avance": 32.1,
+    "programa": "mr"
   },
   {
     "curso": "Transforma tu negocio con estrategias digitales",
@@ -432,11 +432,11 @@
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
     "cohorte": "2026",
     "matriculados": 760,
-    "completados": 577,
-    "en_progreso": 162,
+    "completados": 583,
+    "en_progreso": 156,
     "sin_iniciar": 21,
-    "pct_completados": 75.9,
-    "promedio_avance": 86.7,
+    "pct_completados": 76.7,
+    "promedio_avance": 87.1,
     "programa": "jc"
   },
   {
