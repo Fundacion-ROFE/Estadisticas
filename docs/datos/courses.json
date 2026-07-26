@@ -1,5 +1,25 @@
 [
   {
+    "id": "da4fad7b-de7f-42fe-92aa-78cb3c536ec7",
+    "nombre": "DESARROLLO WEB FRONT-END - HTML - 2026",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc"
+  },
+  {
+    "id": "bceb577b-373f-4d69-bdce-bafcdd79d426",
+    "nombre": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "mr"
+  },
+  {
     "id": "4686d3e3-86ff-499c-8a51-95a5b247dc16",
     "nombre": "BIENVENIDOS A JÓVENES CREATIVOS",
     "cohorte": "2026",
@@ -20,16 +40,6 @@
     "programa": "jc"
   },
   {
-    "id": "da4fad7b-de7f-42fe-92aa-78cb3c536ec7",
-    "nombre": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "cohorte": "2026",
-    "fecha_inicio": null,
-    "fecha_fin": null,
-    "estado": "activo",
-    "created_at": "2026-07-10T01:30:06.620938",
-    "programa": "jc"
-  },
-  {
     "id": "3eb4d761-51de-4bcd-b2e2-8a7c8f143b2d",
     "nombre": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
     "cohorte": "2026",
@@ -38,16 +48,6 @@
     "estado": "activo",
     "created_at": "2026-07-10T01:30:06.620938",
     "programa": "jc"
-  },
-  {
-    "id": "bceb577b-373f-4d69-bdce-bafcdd79d426",
-    "nombre": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
-    "cohorte": "2026",
-    "fecha_inicio": null,
-    "fecha_fin": null,
-    "estado": "activo",
-    "created_at": "2026-07-10T01:30:06.620938",
-    "programa": "mr"
   },
   {
     "id": "bd7d3b0e-a28d-4266-82fb-a0947b2a2143",
