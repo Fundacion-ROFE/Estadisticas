@@ -1760,17 +1760,6 @@
     "created_at": "2026-07-25T14:48:24.802424"
   },
   {
-    "id": 232,
-    "fecha": "2026-07-25",
-    "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
-    "programa": "mr",
-    "matriculados": 136,
-    "promedio_avance": 41.9,
-    "completados": 47,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-25T14:48:24.802424"
-  },
-  {
     "id": 231,
     "fecha": "2026-07-25",
     "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
@@ -1778,6 +1767,17 @@
     "matriculados": 244,
     "promedio_avance": 32.1,
     "completados": 73,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-25T14:48:24.802424"
+  },
+  {
+    "id": 232,
+    "fecha": "2026-07-25",
+    "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
+    "programa": "mr",
+    "matriculados": 136,
+    "promedio_avance": 41.9,
+    "completados": 47,
     "fuente": "sync-diario",
     "created_at": "2026-07-25T14:48:24.802424"
   },
@@ -1842,8 +1842,8 @@
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
     "programa": "jc",
     "matriculados": 760,
-    "promedio_avance": 86.5,
-    "completados": 575,
+    "promedio_avance": 86.7,
+    "completados": 577,
     "fuente": "sync-diario",
     "created_at": "2026-07-25T14:48:24.802424"
   },

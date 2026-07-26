@@ -2,9 +2,9 @@
   {
     "grupo_ciudad": "BAQ",
     "participantes": 137,
-    "ingresos_promedio": 41.7,
+    "ingresos_promedio": 41.8,
     "ingresos_mediana": 30,
-    "activos_7d": 66,
+    "activos_7d": 69,
     "inactivos_30d": 29
   },
   {
@@ -42,7 +42,7 @@
   {
     "grupo_ciudad": "MED",
     "participantes": 99,
-    "ingresos_promedio": 26.4,
+    "ingresos_promedio": 26.5,
     "ingresos_mediana": 18,
     "activos_7d": 46,
     "inactivos_30d": 18
