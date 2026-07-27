@@ -503,6 +503,18 @@ credencial en memoria `reference-n8n-api-key`). Reglas aprendidas (2026-07-07 y 
   `main = ,@(@{ node='X'; type='main'; index=0 })` en vez de `main = @(@(@{...}))`. Con dos ramas
   (nodo `IF`) el `@(@(...), @(...))` normal sí funciona porque el array externo ya tiene 2
   elementos y no colapsa — el problema es específico de arrays de longitud 1.
+- **Gotcha inverso (2026-07-26) — un array de más NO falla al guardar, falla al ejecutar.**
+  El error opuesto al anterior: sobre-anidar `conditions` de un `IF`
+  (`conditions: [[{…}]]` en vez de `[{…}]`) o `rule.interval` de un Schedule. El PUT responde
+  **200 y el workflow queda `active: true`**, así que parece correcto; pero al ejecutarse el IF
+  revienta con `Cannot read properties of undefined (reading 'rightType')` — n8n lee el array
+  interno como si fuera un objeto condición. Encontrado en `sociodemograficos-semanal`: el IF
+  roto cortaba la cadena **antes** de `sync_sociodemograficos_mr.py`, que por eso nunca corrió
+  (era su único punto de ejecución) — 44 personas MR sin datos sociodemográficos durante
+  semanas, sin ninguna señal de alarma. **Fix:** aplanar con
+  `[c for grupo in conds for c in grupo]`. **Regla:** tras crear/editar un workflow por API,
+  no basta con verificar `active: true` — hay que mirar la **primera ejecución real**
+  (`GET /executions?workflowId=…`) antes de darlo por bueno.
 
 ## Exclusión de usuarios de prueba en exporters
 

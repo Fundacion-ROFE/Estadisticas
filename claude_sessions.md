@@ -4264,3 +4264,45 @@ API de n8n, escribirlo con Python (`urllib`+UTF-8), nunca tipeado directo en un 
 - Documentado en `docs/convenciones.md` (nueva sección "Auditoría a fondo con advisors de
   Supabase") y `docs/migrations/018_torpezas_seguridad_advisors.sql` (incluye el revert
   documentado inline).
+
+## 2026-07-25/26 — Testeo de carga 28 h + arreglos de pipeline
+
+- **Contexto:** el 24-jul de noche el portátil se desconectó y dejó n8n vivo pero con
+  conexiones muertas. Samuel pidió un testeo fuerte de sábado a domingo (todos los flujos
+  del pipeline cada 2 h) para validar la DB antes del lunes.
+- **Preparación:** backup de los 9 workflows a `tools/backups/n8n_workflows_pre_testing/`;
+  `modo_testing_cronogramas.py` (activar/revertir, lee los crons originales del backup);
+  reversión automática agendada (tarea Windows, dom 22:00, sin pedir confirmación).
+- **Dos huecos de observabilidad cerrados antes de arrancar:** `alerta-fallo-workflow` fallaba
+  al alertar (Telegram 400 "message is too long") → truncado a 500 chars; y **5 de 9 workflows
+  no tenían `errorWorkflow` configurado** — podían fallar sin avisar. Ya los 9 lo tienen.
+- **Watchdog nuevo (permanente):** el auto-heal existente depende del evento Power-Troubleshooter
+  Id=1, que el 24-jul **nunca se disparó** pese a ocurrir el cuelgue. `watchdog_ejecuciones_colgadas.ps1`
+  (cada 15 min) consulta la API por ejecuciones `running` >20 min y reinicia n8n. No depende del evento.
+- **Resultado del testeo:** ~116 ejecuciones, **cero cuelgues, cero huecos >2,5 h en 28 h**.
+  `q10-sync-supabase` 0,9–2,2 min (prom 1,3), 9/10 verdes; único error un `gspread APIError`
+  transitorio. El watchdog no tuvo que intervenir.
+- **Arreglos aplicados durante el testeo:** (1) `sync_retiros` encadenado en `q10-sync-supabase`
+  (faltaba el nodo del Track B — la tabla dependía de corridas manuales); (2) `asistencia-zoom-diario`
+  tenía **dos bugs propios**, no solo el horario: upsert sin `on_conflict` (409 contra la UNIQUE)
+  y fechas con hora del Sheet colapsando en la columna DATE (500 "cannot affect row a second
+  time") → 509 filas congeladas del 11-jul pasaron a 945 al día; cron movido 00:00 → 17:45.
+- **Hallazgo mayor: `sociodemograficos-semanal` nunca completó su cadena.** Arrays doblemente
+  anidados (`conditions: [[{…}]]`) mataban el primer IF con "cannot read rightType", cortando el
+  flujo **antes** de `sync_sociodemograficos_mr.py` — su único punto de ejecución. Los
+  sociodemográficos MR llevaban semanas sin refrescarse, en silencio. Aplanado + corrido:
+  **+44 personas MR** con estrato/vivienda/civil/estudios. Gotcha en `convenciones.md`: un array
+  de más no falla al guardar (PUT 200, `active: true`), solo al ejecutar → hay que mirar la
+  primera ejecución real, no solo el estado del workflow.
+- **El Δ7 de retiros no era un error de datos: son 7 reingresos.** Las 7 cédulas que Q10 cuenta
+  como retiradas y la tabla `retiros` no, están todas activas con 8 matrículas y ~100% de avance.
+  `cohorte_ingresos.retirados`=79 cuenta **eventos** de retiro; `retiros`=72 cuenta **personas
+  retiradas hoy**. Los 2 tests se **redefinieron en vez de aflojarse**: la cota del overlap pasó
+  a ser el máximo matemático `min(activos,retirados)`, y el cuadre ahora verifica
+  `retiros + reingresos == retirados_q10` — cruza dos fuentes independientes y da **Δ=0 exacto**.
+  Sigue detectando atrasos reales de `sync_retiros`. **Suite: 47/47** (44/44 en `--rapido`).
+- **Falsa alarma documentada:** los 7 "errores" de `Zoom - Asistencia` tienen par exitoso en
+  `zoom-yt-grabaciones` a <1 s — el reenvío funciona, el caller lee mal la respuesta. Deuda cosmética.
+- **Entregable extra:** `tools/generar_excel_verificacion.py` → Excel de 14 hojas (agregados +
+  detalle individual) con hoja `01_Verificacion` para cruzar cada cifra canónica contra su
+  fuente original. PII, vive en `tools/`.

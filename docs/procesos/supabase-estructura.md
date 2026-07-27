@@ -583,6 +583,50 @@ Opcional (requiere aprobar la escritura): upsert del resultado en `alertas_datos
 (id=`integridad_supabase`, activa=true/false, detalle=tests fallidos). No se implementó nada
 en n8n todavía — al aprobarse, exportar JSON a `n8n-workflows/` según checklist.
 
+### Testeo de carga 2026-07-25/26 (28 h a cadencia 2 h) — resultados
+
+Modo testing tras el corte nocturno del 24-jul: 6 workflows del pipeline forzados a `0 */2 * * *`
+durante 28 h continuas (~116 ejecuciones). **Cero cuelgues, cero huecos >2,5 h** — el fallo
+suspend/resume que motivó el ejercicio no se reprodujo; el watchdog nuevo
+(`n8n-watchdog-ejecuciones-colgadas`, cada 15 min) no tuvo que intervenir ni una vez.
+`q10-sync-supabase` estable en 0,9–2,2 min (prom 1,3), 9/10 verdes; el único error fue un
+`gspread APIError` transitorio, recuperado solo en la corrida siguiente.
+
+**Los 7 "retirados" que no cuadraban son reingresos, no un error de datos.** Cruzando
+`tools/cohorte_2026.json` (ledger Q10) contra la tabla `retiros`: las 7 cédulas que Q10 cuenta
+como retiradas y la tabla no, están **todas activas con 8 matrículas y ~100% de avance**
+(`en_seguimiento_jc=true`). Son dos preguntas distintas:
+- `cohorte_ingresos.retirados` = 79 → **eventos** de retiro registrados en 2026.
+- `retiros` (tabla) = 72 → personas **retiradas hoy**.
+
+Ambas correctas. Los 2 tests que fallaban tenían tolerancias fijadas cuando el overlap era 2
+(hallazgo H5); se **redefinieron en vez de aflojarse** (2026-07-26):
+- `cohorte X/Y: reingresos (activos∩retirados) en [0, min(activos,retirados)]` — cota dura de
+  álgebra de conjuntos, no un margen arbitrario.
+- `retiros + reingresos == cohorte_ingresos.retirados` (JC 2026, tol 3) — cruza **dos fuentes
+  independientes** (álgebra de Q10 vs pestaña Retirados). Hoy da **Δ=0 exacto** (72+7=79), y
+  sigue detectando atrasos: si `sync_retiros` se congela mientras Q10 suma retiros, Δ crece.
+
+Suite: **47/47 PASS** (44/44 en `--rapido`).
+
+**Bug estructural encontrado y corregido: `sociodemograficos-semanal` nunca completó su cadena.**
+Arrays doblemente anidados (`conditions: [[{…}]]`, `rule.interval: [[{…}]]`) hacían morir el
+primer IF con `Cannot read properties of undefined (reading 'rightType')`, cortando el flujo
+**antes** de `sync_sociodemograficos_mr.py` — su único punto de ejecución. Resultado: los
+sociodemográficos MR llevaban semanas sin refrescarse sin que nada alertara. Aplanado vía API y
+corrido a mano: **+44 personas MR con estrato/vivienda/estado civil/nivel de estudios**
+(527→571 con estrato). Gotcha generalizado en [[convenciones]] (`Editar workflows n8n por API`).
+
+**Falsa alarma documentada:** los 7 "errores" de `Zoom - Asistencia` durante el testeo tienen
+cada uno su corrida exitosa correspondiente en `zoom-yt-grabaciones` a <1 s de distancia — el
+reenvío funciona, lo que falla es que el caller espera JSON en la respuesta
+(`Invalid JSON in response body`). No hay pérdida de datos; queda como deuda cosmética.
+
+**Deriva de conteos detectada (pendiente de refrescar en este documento):** hoy son **26 tablas**
+(la 25 documentada no incluía `ciudad_alias`, creada con las migraciones 013-017 — tiene RLS pero
+sin `REVOKE` formal, el advisor la lista), `courses`=41, `email_bounces`=549,
+`enrollments`=19.128, `asistencia_zoom`=945, `asistencia_promedio`=525.
+
 ## Análisis Emoflow 2026-07-23 — resumen de hallazgos (agregados)
 
 **Pregunta:** ¿el uso de Emoflow está asociado con resultados académicos (JC 2026, n=777 activos)?

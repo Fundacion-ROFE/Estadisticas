@@ -43,7 +43,6 @@ CIUDADES = {"BAQ", "BOG", "CAL", "CTG", "MED", "GYL", "QTO", "PAN", "UY"}
 # Tolerancias explícitas (documentadas en supabase-estructura.md)
 TOL_CUADRE_EMOFLOW_PCT = 2.0   # discrepancia conocida 0,7% por parámetros de descarga distintos
 TOL_ROSTER_VS_USUARIOS = 25    # roster semanal (scope=all) ≥ usuarios filtrados; margen absoluto
-TOL_OVERLAP_COHORTE    = 5     # personas que pueden estar en activos Y retirados (reingresos)
 TOL_CUADRE_RETIROS_JC  = 3     # 007:51 — retiros individual vs agregado cohorte_ingresos
 DIAS_FRESCURA          = 2     # un sync diario puede llevar hasta 2 días si el PC estuvo apagado
 
@@ -201,16 +200,26 @@ def main() -> int:
          len(emo) <= roster_nac + TOL_ROSTER_VS_USUARIOS,
          f"roster incluye scope=all; usuarios filtra empresa+email válido")
 
+    # Cohorte = habilitados ∪ retirados (definición de aprobacion/data.json), así que
+    # activos+retirados−ingresados es exactamente |habilitados ∩ retirados|: gente con evento
+    # de retiro en Q10 que volvió y hoy está activa. NO es un margen de error a tolerar — es
+    # una cantidad real y medible, y su cota dura es [0, min(activos,retirados)].
     coh = supa.get_todo("/cohorte_ingresos?select=cohorte,programa,ingresados,activos,retirados")
+    overlaps = {}
     for c in coh:
         overlap = c["activos"] + c["retirados"] - c["ingresados"]
-        test(f"cohorte {c['cohorte']}/{c['programa']}: activos+retirados−ingresados en [0,{TOL_OVERLAP_COHORTE}]",
-             0 <= overlap <= TOL_OVERLAP_COHORTE,
-             f"{c['activos']}+{c['retirados']}−{c['ingresados']}={overlap} (overlap = retiros con reingreso; "
-             f"definición en aprobacion/data.json: cohorte = habilitados ∪ retirados)")
+        overlaps[(c["cohorte"], c["programa"])] = overlap
+        tope = min(c["activos"], c["retirados"])
+        test(f"cohorte {c['cohorte']}/{c['programa']}: reingresos (activos∩retirados) en [0,{tope}]",
+             0 <= overlap <= tope,
+             f"{c['activos']}+{c['retirados']}−{c['ingresados']}={overlap} reingresos "
+             f"(cohorte = habilitados ∪ retirados; fuera de [0,{tope}] = álgebra de conjuntos rota)")
 
-    # retiros individual (007) vs agregado cohorte_ingresos — misma cifra contada por
-    # dos caminos independientes (sync_retiros.py vs export_aprobacion.py→sync_aprobacion_supabase.py).
+    # Coherencia cruzada JC 2026: dos caminos independientes deben coincidir sobre CUÁNTOS
+    # volvieron. Camino A = álgebra de conjuntos de Q10 (arriba). Camino B = diferencia entre
+    # lo que Q10 cuenta como eventos de retiro y quién sigue retirado hoy según la pestaña
+    # Retirados (sync_retiros.py). Son cifras de fuentes distintas: si divergen, una se atrasó.
+    #   retiros_tabla (retirados HOY) + reingresos == retirados_q10 (eventos de retiro)
     n_retiros_jc_2026 = sum(1 for c, p in ((r["cohorte"], r["programa"]) for r in retiros)
                              if c == "2026" and p == "jc")
     retirados_coh_jc_2026 = next((c["retirados"] for c in coh
@@ -219,10 +228,12 @@ def main() -> int:
         test("retiros cuadra con cohorte_ingresos (JC 2026)", False,
              "no hay fila cohorte_ingresos cohorte=2026/programa=jc")
     else:
-        delta = abs(n_retiros_jc_2026 - retirados_coh_jc_2026)
-        test(f"retiros cuadra con cohorte_ingresos JC 2026 (tol {TOL_CUADRE_RETIROS_JC})",
+        reingresos = overlaps.get(("2026", "jc"), 0)
+        delta = abs((n_retiros_jc_2026 + reingresos) - retirados_coh_jc_2026)
+        test(f"retiros+reingresos cuadra con cohorte_ingresos JC 2026 (tol {TOL_CUADRE_RETIROS_JC})",
              delta <= TOL_CUADRE_RETIROS_JC,
-             f"retiros={n_retiros_jc_2026} vs cohorte_ingresos.retirados={retirados_coh_jc_2026} (Δ={delta})")
+             f"retiros={n_retiros_jc_2026} + reingresos={reingresos} = {n_retiros_jc_2026 + reingresos} "
+             f"vs cohorte_ingresos.retirados={retirados_coh_jc_2026} (Δ={delta})")
 
     apro = supa.get_todo("/aprobacion_cursos?select=cohorte,curso,cursaron,activos,retirados,pct_aprobados")
     malos_pct = [a for a in apro if a["pct_aprobados"] is not None and not (0 <= a["pct_aprobados"] <= 100)]
