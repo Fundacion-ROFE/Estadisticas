@@ -2,12 +2,12 @@
   {
     "dimension": "estado_civil",
     "categoria": "casado",
-    "total": 52
+    "total": 56
   },
   {
     "dimension": "estado_civil",
     "categoria": "soltero",
-    "total": 340
+    "total": 373
   },
   {
     "dimension": "estado_civil",
@@ -17,12 +17,12 @@
   {
     "dimension": "estado_civil",
     "categoria": "unión_libre",
-    "total": 96
+    "total": 101
   },
   {
     "dimension": "estado_civil",
     "categoria": "divorciado",
-    "total": 20
+    "total": 22
   },
   {
     "dimension": "nivel_estudio",
@@ -32,42 +32,42 @@
   {
     "dimension": "nivel_estudio",
     "categoria": "secundaria",
-    "total": 200
+    "total": 217
   },
   {
     "dimension": "nivel_estudio",
     "categoria": "primaria",
-    "total": 36
+    "total": 43
   },
   {
     "dimension": "nivel_estudio",
     "categoria": "técnico",
-    "total": 206
+    "total": 224
   },
   {
     "dimension": "nivel_estudio",
     "categoria": "profesional",
-    "total": 76
+    "total": 78
   },
   {
     "dimension": "tipo_vivienda",
     "categoria": "arrendado",
-    "total": 288
+    "total": 312
   },
   {
     "dimension": "tipo_vivienda",
     "categoria": "familiar",
-    "total": 179
+    "total": 190
   },
   {
     "dimension": "tipo_vivienda",
     "categoria": "propia",
-    "total": 58
+    "total": 67
   },
   {
     "dimension": "estrato",
     "categoria": "2",
-    "total": 147
+    "total": 163
   },
   {
     "dimension": "estrato",
@@ -92,41 +92,41 @@
   {
     "dimension": "estrato",
     "categoria": "1",
-    "total": 315
+    "total": 343
   },
   {
     "dimension": "edad_rango",
     "categoria": "18-25",
-    "total": 58
+    "total": 66
   },
   {
     "dimension": "edad_rango",
     "categoria": "60+",
-    "total": 11
+    "total": 12
   },
   {
     "dimension": "edad_rango",
     "categoria": "36-45",
-    "total": 183
+    "total": 197
   },
   {
     "dimension": "edad_rango",
     "categoria": "26-35",
-    "total": 174
+    "total": 190
   },
   {
     "dimension": "edad_rango",
     "categoria": "46-60",
-    "total": 99
+    "total": 104
   },
   {
     "dimension": "emprendimiento",
     "categoria": "sin_emprendimiento",
-    "total": 146
+    "total": 163
   },
   {
     "dimension": "emprendimiento",
     "categoria": "con_emprendimiento",
-    "total": 385
+    "total": 412
   }
 ]

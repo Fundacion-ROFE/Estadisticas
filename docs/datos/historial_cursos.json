@@ -1760,94 +1760,6 @@
     "created_at": "2026-07-25T14:48:24.802424"
   },
   {
-    "id": 285,
-    "fecha": "2026-07-26",
-    "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
-    "programa": "jc",
-    "matriculados": 760,
-    "promedio_avance": 99.5,
-    "completados": 757,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-26T06:30:34.809165"
-  },
-  {
-    "id": 287,
-    "fecha": "2026-07-26",
-    "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
-    "programa": "mr",
-    "matriculados": 136,
-    "promedio_avance": 41.9,
-    "completados": 47,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-26T06:30:34.809165"
-  },
-  {
-    "id": 286,
-    "fecha": "2026-07-26",
-    "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
-    "programa": "mr",
-    "matriculados": 244,
-    "promedio_avance": 32.1,
-    "completados": 73,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-26T06:30:34.809165"
-  },
-  {
-    "id": 288,
-    "fecha": "2026-07-26",
-    "curso": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
-    "programa": "jc",
-    "matriculados": 760,
-    "promedio_avance": 99.8,
-    "completados": 758,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-26T06:30:34.809165"
-  },
-  {
-    "id": 289,
-    "fecha": "2026-07-26",
-    "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
-    "programa": "mr",
-    "matriculados": 172,
-    "promedio_avance": 3.3,
-    "completados": 1,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-26T06:30:34.809165"
-  },
-  {
-    "id": 290,
-    "fecha": "2026-07-26",
-    "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
-    "programa": "jc",
-    "matriculados": 760,
-    "promedio_avance": 98.8,
-    "completados": 749,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-26T06:30:34.809165"
-  },
-  {
-    "id": 291,
-    "fecha": "2026-07-26",
-    "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
-    "programa": "jc",
-    "matriculados": 760,
-    "promedio_avance": 100.0,
-    "completados": 760,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-26T06:30:34.809165"
-  },
-  {
-    "id": 292,
-    "fecha": "2026-07-26",
-    "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
-    "programa": "jc",
-    "matriculados": 760,
-    "promedio_avance": 99.5,
-    "completados": 756,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-26T06:30:34.809165"
-  },
-  {
     "id": 231,
     "fecha": "2026-07-25",
     "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
@@ -1958,13 +1870,101 @@
     "created_at": "2026-07-25T14:48:24.802424"
   },
   {
+    "id": 285,
+    "fecha": "2026-07-26",
+    "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
+    "programa": "jc",
+    "matriculados": 760,
+    "promedio_avance": 99.5,
+    "completados": 757,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-26T06:30:34.809165"
+  },
+  {
+    "id": 287,
+    "fecha": "2026-07-26",
+    "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
+    "programa": "mr",
+    "matriculados": 136,
+    "promedio_avance": 41.9,
+    "completados": 47,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-26T06:30:34.809165"
+  },
+  {
+    "id": 286,
+    "fecha": "2026-07-26",
+    "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
+    "programa": "mr",
+    "matriculados": 244,
+    "promedio_avance": 32.1,
+    "completados": 73,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-26T06:30:34.809165"
+  },
+  {
+    "id": 288,
+    "fecha": "2026-07-26",
+    "curso": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
+    "programa": "jc",
+    "matriculados": 760,
+    "promedio_avance": 99.8,
+    "completados": 758,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-26T06:30:34.809165"
+  },
+  {
+    "id": 289,
+    "fecha": "2026-07-26",
+    "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
+    "programa": "mr",
+    "matriculados": 172,
+    "promedio_avance": 3.7,
+    "completados": 2,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-26T06:30:34.809165"
+  },
+  {
+    "id": 290,
+    "fecha": "2026-07-26",
+    "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
+    "programa": "jc",
+    "matriculados": 760,
+    "promedio_avance": 98.8,
+    "completados": 749,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-26T06:30:34.809165"
+  },
+  {
+    "id": 291,
+    "fecha": "2026-07-26",
+    "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
+    "programa": "jc",
+    "matriculados": 760,
+    "promedio_avance": 100.0,
+    "completados": 760,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-26T06:30:34.809165"
+  },
+  {
+    "id": 292,
+    "fecha": "2026-07-26",
+    "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
+    "programa": "jc",
+    "matriculados": 760,
+    "promedio_avance": 99.5,
+    "completados": 756,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-26T06:30:34.809165"
+  },
+  {
     "id": 293,
     "fecha": "2026-07-26",
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
     "programa": "jc",
     "matriculados": 760,
-    "promedio_avance": 87.1,
-    "completados": 583,
+    "promedio_avance": 87.2,
+    "completados": 585,
     "fuente": "sync-diario",
     "created_at": "2026-07-26T06:30:34.809165"
   },
