@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-27T14:50:32.823228-05:00",
+  "ultima_actualizacion": "2026-07-27T17:01:15.224947-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -15,8 +15,8 @@
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
       "estudiantes": 760,
-      "finalizados": 539,
-      "promedio": 87.58,
+      "finalizados": 541,
+      "promedio": 87.82,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 760,
@@ -27,7 +27,7 @@
       "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
       "estudiantes": 760,
       "finalizados": 718,
-      "promedio": 99.46,
+      "promedio": 99.48,
       "min": 0.0,
       "max": 101.0,
       "inscritos": 830,
@@ -105,7 +105,7 @@
         "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
         "estudiantes": 172,
         "finalizados": 0,
-        "promedio": 4.37,
+        "promedio": 4.42,
         "min": 0.0,
         "max": 97.0,
         "inscritos": 172,
