@@ -270,9 +270,9 @@
     "ingresos_promedio": 34.0,
     "ingresos_mediana": 28,
     "ingresos_max": 434,
-    "activos_7d": 477,
-    "activos_14d": 594,
-    "inactivos_30d": 166,
+    "activos_7d": 436,
+    "activos_14d": 588,
+    "inactivos_30d": 167,
     "fuente": "emoflow-api"
   }
 ]
