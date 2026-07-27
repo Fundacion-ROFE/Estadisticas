@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reporte de testing — Pipeline de datos ROFÉ</title>
+
+<style>
+  :root {
+    --ground:   #ffffff;
+    --surface:  #f4f7fb;
+    --raised:   #ffffff;
+    --ink:      #16212e;
+    --muted:    #5a6b7e;
+    --faint:    #8496a8;
+    --rule:     #dde4ed;
+    --rule-soft:#e8eef6;
+    --accent:   #2c5a8a;
+    --accent-soft:#e8eef6;
+
+    --pass:     #1f7a46;
+    --pass-bg:  #e7f2e2;
+    --warn:     #8a6e00;
+    --warn-bg:  #fff8e8;
+    --fail:     #c12d4c;
+    --fail-bg:  #fbe3e8;
+
+    --sans: 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
+    --mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Consolas, 'Liberation Mono', monospace;
+
+    --maxw: 68rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:   #0e1621;
+      --surface:  #131e2b;
+      --raised:   #172230;
+      --ink:      #e4ebf3;
+      --muted:    #93a5b8;
+      --faint:    #6d8199;
+      --rule:     #26374a;
+      --rule-soft:#1e2d3e;
+      --accent:   #83b6dd;
+      --accent-soft:#1a2a3c;
+
+      --pass:     #6cc48d;
+      --pass-bg:  #16301f;
+      --warn:     #e0b64a;
+      --warn-bg:  #33290a;
+      --fail:     #f28099;
+      --fail-bg:  #3a1420;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:#0e1621; --surface:#131e2b; --raised:#172230;
+    --ink:#e4ebf3; --muted:#93a5b8; --faint:#6d8199;
+    --rule:#26374a; --rule-soft:#1e2d3e;
+    --accent:#83b6dd; --accent-soft:#1a2a3c;
+    --pass:#6cc48d; --pass-bg:#16301f;
+    --warn:#e0b64a; --warn-bg:#33290a;
+    --fail:#f28099; --fail-bg:#3a1420;
+  }
+  :root[data-theme="light"] {
+    --ground:#ffffff; --surface:#f4f7fb; --raised:#ffffff;
+    --ink:#16212e; --muted:#5a6b7e; --faint:#8496a8;
+    --rule:#dde4ed; --rule-soft:#e8eef6;
+    --accent:#2c5a8a; --accent-soft:#e8eef6;
+    --pass:#1f7a46; --pass-bg:#e7f2e2;
+    --warn:#8a6e00; --warn-bg:#fff8e8;
+    --fail:#c12d4c; --fail-bg:#fbe3e8;
+  }
+
+  body {
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+    display: grid;
+    gap: 2.75rem;
+  }
+
+  /* ---------- encabezado ---------- */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .74rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--faint);
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem 1rem;
+  }
+  h1 {
+    font-size: clamp(1.75rem, 4vw, 2.6rem);
+    font-weight: 700;
+    letter-spacing: -.021em;
+    line-height: 1.12;
+    text-wrap: balance;
+    margin: .5rem 0 0;
+  }
+  .sub {
+    color: var(--muted);
+    max-width: 62ch;
+    margin-top: .7rem;
+  }
+
+  /* ---------- veredicto ---------- */
+  .verdict {
+    background: var(--raised);
+    border: 1px solid var(--rule);
+    border-left: 5px solid var(--pass);
+    border-radius: 3px;
+    padding: 1.4rem 1.6rem;
+    display: grid;
+    gap: .45rem;
+  }
+  .verdict-label {
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--pass);
+    font-weight: 700;
+  }
+  .verdict-head {
+    font-size: 1.3rem;
+    font-weight: 650;
+    letter-spacing: -.012em;
+  }
+  .verdict p { color: var(--muted); max-width: 68ch; }
+
+  /* ---------- métricas ---------- */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .metric {
+    background: var(--raised);
+    padding: 1.15rem 1.2rem;
+    display: grid;
+    gap: .2rem;
+  }
+  .metric .n {
+    font-family: var(--mono);
+    font-size: 1.8rem;
+    font-weight: 600;
+    letter-spacing: -.03em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .metric .k {
+    font-size: .78rem;
+    color: var(--muted);
+    line-height: 1.35;
+  }
+  .metric.good .n { color: var(--pass); }
+
+  /* ---------- secciones ---------- */
+  section { display: grid; gap: 1.1rem; }
+  h2 {
+    font-size: 1.16rem;
+    font-weight: 650;
+    letter-spacing: -.008em;
+    padding-bottom: .55rem;
+    border-bottom: 2px solid var(--rule);
+  }
+  h2 .h2-note {
+    font-weight: 400;
+    font-size: .84rem;
+    color: var(--faint);
+    margin-left: .5rem;
+    letter-spacing: 0;
+  }
+  section > p { color: var(--muted); max-width: 68ch; }
+
+  /* ---------- rejilla de latidos ---------- */
+  .beats {
+    background: var(--raised);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 1.3rem 1.4rem;
+    overflow-x: auto;
+  }
+  .beat-row {
+    display: grid;
+    grid-template-columns: 11rem 1fr;
+    align-items: center;
+    gap: 1rem;
+    padding: .42rem 0;
+    min-width: 34rem;
+  }
+  .beat-row + .beat-row { border-top: 1px solid var(--rule-soft); }
+  .beat-name {
+    font-size: .85rem;
+    font-weight: 550;
+    white-space: nowrap;
+  }
+  .beat-name span {
+    display: block;
+    font-family: var(--mono);
+    font-size: .68rem;
+    color: var(--faint);
+    font-weight: 400;
+    letter-spacing: .02em;
+  }
+  .beat-cells { display: flex; gap: 3px; flex-wrap: nowrap; }
+  .cell {
+    flex: 1 1 auto;
+    min-width: 9px;
+    height: 24px;
+    border-radius: 2px;
+    background: var(--pass);
+  }
+  .cell.err { background: var(--fail); }
+  .cell.byd { background: var(--warn); }
+
+  .beat-axis {
+    display: grid;
+    grid-template-columns: 11rem 1fr;
+    gap: 1rem;
+    margin-top: .7rem;
+    min-width: 34rem;
+  }
+  .axis-marks {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: .68rem;
+    color: var(--faint);
+    letter-spacing: .02em;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem 1.3rem;
+    margin-top: 1.1rem;
+    padding-top: .9rem;
+    border-top: 1px solid var(--rule-soft);
+    font-size: .79rem;
+    color: var(--muted);
+  }
+  .legend i {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    margin-right: .42rem;
+    vertical-align: baseline;
+  }
+
+  /* ---------- tablas ---------- */
+  .tw {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: var(--raised);
+  }
+  table { border-collapse: collapse; width: 100%; font-size: .87rem; }
+  th, td {
+    text-align: left;
+    padding: .68rem .95rem;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+  }
+  thead th {
+    font-family: var(--mono);
+    font-size: .68rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--faint);
+    font-weight: 600;
+    background: var(--surface);
+    white-space: nowrap;
+    border-bottom: 1px solid var(--rule);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  tfoot td {
+    font-weight: 650;
+    border-top: 2px solid var(--rule);
+    background: var(--surface);
+  }
+  code {
+    font-family: var(--mono);
+    font-size: .87em;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: .08em .34em;
+    border-radius: 2px;
+  }
+
+  .pill {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: .68rem;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    font-weight: 600;
+    padding: .16rem .48rem;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .pill.ok   { background: var(--pass-bg); color: var(--pass); }
+  .pill.warn { background: var(--warn-bg); color: var(--warn); }
+  .pill.bad  { background: var(--fail-bg); color: var(--fail); }
+
+  /* ---------- hallazgos ---------- */
+  .findings { display: grid; gap: 1rem; }
+  .finding {
+    background: var(--raised);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--accent);
+    border-radius: 3px;
+    padding: 1.15rem 1.35rem;
+    display: grid;
+    gap: .45rem;
+  }
+  .finding.sev-alta { border-left-color: var(--fail); }
+  .finding.sev-med  { border-left-color: var(--warn); }
+  .finding.sev-ok   { border-left-color: var(--pass); }
+  .finding h3 {
+    font-size: 1rem;
+    font-weight: 650;
+    letter-spacing: -.005em;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .6rem;
+  }
+  .finding p { color: var(--muted); max-width: 72ch; }
+  .finding .impact {
+    font-size: .84rem;
+    color: var(--ink);
+    background: var(--surface);
+    border-radius: 2px;
+    padding: .55rem .75rem;
+    border-left: 2px solid var(--rule);
+  }
+
+  ul.clean { list-style: none; display: grid; gap: .6rem; }
+  ul.clean li {
+    padding-left: 1.3rem;
+    position: relative;
+    color: var(--muted);
+    max-width: 72ch;
+  }
+  ul.clean li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: .62em;
+    width: 6px; height: 6px;
+    border-radius: 1px;
+    background: var(--accent);
+  }
+  ul.clean li b { color: var(--ink); font-weight: 600; }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.2rem;
+    font-size: .8rem;
+    color: var(--faint);
+    display: grid;
+    gap: .3rem;
+  }
+  footer code { background: none; color: var(--faint); padding: 0; }
+
+  @media (max-width: 34rem) {
+    .beat-row, .beat-axis { grid-template-columns: 7.5rem 1fr; }
+    .wrap { padding: 2rem 1rem 3.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">
+      <span>Fundación ROFÉ · Jóvenes creaTIvos</span>
+      <span>25–26 julio 2026</span>
+      <span>Supabase panel-datos-rofe</span>
+    </div>
+    <h1>Testeo de carga del pipeline de datos</h1>
+    <p class="sub">
+      Prueba de resistencia de 28 horas continuas a cadencia acelerada, corrida tras la
+      desconexión nocturna del 24 de julio. Objetivo: confirmar que la base de datos puede
+      sostenerse sin supervisión antes de entrar en operación el lunes.
+    </p>
+  </header>
+
+  <div class="verdict">
+    <div class="verdict-label">Veredicto</div>
+    <div class="verdict-head">La base queda lista para producción.</div>
+    <p>
+      El fallo que motivó la prueba —n8n vivo pero con las conexiones muertas tras suspenderse
+      el portátil— <b>no se reprodujo ni una sola vez</b> en 28 horas. La suite de integridad
+      cierra en 47 de 47, y los tres arreglos aplicados durante la ventana quedaron verificados
+      con datos reales. Queda un solo paso, y es automático: la reversión de horarios a su
+      cadencia normal, agendada para hoy a las 22:00.
+    </p>
+  </div>
+
+  <div class="metrics">
+    <div class="metric good">
+      <div class="n">0</div>
+      <div class="k">cuelgues en toda la ventana</div>
+    </div>
+    <div class="metric">
+      <div class="n">130</div>
+      <div class="k">ejecuciones disparadas</div>
+    </div>
+    <div class="metric">
+      <div class="n">28 h</div>
+      <div class="k">de cobertura continua</div>
+    </div>
+    <div class="metric">
+      <div class="n">2,0 h</div>
+      <div class="k">intervalo real, sin deriva</div>
+    </div>
+    <div class="metric good">
+      <div class="n">47/47</div>
+      <div class="k">tests de integridad</div>
+    </div>
+    <div class="metric">
+      <div class="n">1,3 min</div>
+      <div class="k">duración media del pipeline</div>
+    </div>
+  </div>
+
+  <section>
+    <h2>Continuidad de las corridas <span class="h2-note">cada celda es un disparo programado</span></h2>
+    <p>
+      Esta es la prueba de fondo: si el equipo se hubiera vuelto a colgar, aparecerían huecos.
+      No hay ninguno. El intervalo medido entre disparos fue de exactamente 2,0 horas de punta
+      a punta, sin deriva acumulada.
+    </p>
+    <div class="beats">
+      <div class="beat-row">
+        <div class="beat-name">Respaldo diario<span>datos-respaldo</span></div>
+        <div class="beat-cells">
+          <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+          <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+          <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        </div>
+      </div>
+      <div class="beat-row">
+        <div class="beat-name">Emoflow diario<span>emoflow-ingresos</span></div>
+        <div class="beat-cells">
+          <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+          <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+          <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        </div>
+      </div>
+      <div class="beat-row">
+        <div class="beat-name">Datos Mujeres ROFÉ<span>mr-actualizacion</span></div>
+        <div class="beat-cells">
+          <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+          <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+          <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        </div>
+      </div>
+      <div class="beat-row">
+        <div class="beat-name">Captura de rebotes<span>correos-rebotes</span></div>
+        <div class="beat-cells">
+          <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+          <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+          <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        </div>
+      </div>
+      <div class="beat-row">
+        <div class="beat-name">Pipeline Q10→Supabase<span>q10-sync · cada 2 h</span></div>
+        <div class="beat-cells">
+          <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell err"></div><div class="cell"></div>
+          <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        </div>
+      </div>
+      <div class="beat-row">
+        <div class="beat-name">Verificación de datos<span>panel-verificacion</span></div>
+        <div class="beat-cells">
+          <div class="cell byd"></div><div class="cell byd"></div><div class="cell byd"></div><div class="cell byd"></div><div class="cell byd"></div>
+          <div class="cell byd"></div><div class="cell byd"></div><div class="cell byd"></div><div class="cell byd"></div><div class="cell byd"></div>
+          <div class="cell byd"></div><div class="cell byd"></div><div class="cell byd"></div><div class="cell byd"></div><div class="cell byd"></div>
+        </div>
+      </div>
+      <div class="beat-axis">
+        <div></div>
+        <div class="axis-marks">
+          <span>sáb 16:00</span><span>dom 04:00</span><span>dom 20:00</span>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--pass)"></i>corrida exitosa</span>
+        <span><i style="background:var(--fail)"></i>error real (API de Google intermitente)</span>
+        <span><i style="background:var(--warn)"></i>alerta funcionando según diseño</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Qué significan los 25 errores <span class="h2-note">el número bruto engaña</span></h2>
+    <p>
+      A primera vista la tasa de éxito fue del 80,8%. Al clasificar cada error por causa, el
+      panorama cambia por completo: solo dos ejecuciones representan trabajo que realmente no
+      se hizo, y ambas ya están resueltas.
+    </p>
+    <div class="tw">
+      <table>
+        <thead>
+          <tr>
+            <th>Causa</th>
+            <th class="num">Ejec.</th>
+            <th>Qué era en realidad</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Verificación de datos</td>
+            <td class="num">15</td>
+            <td>La alerta haciendo su trabajo: avisaba de los 2 tests en rojo. No es una falla del sistema, es el sistema avisando.</td>
+            <td><span class="pill ok">Resuelto</span></td>
+          </tr>
+          <tr>
+            <td>Reenvío de grabaciones Zoom</td>
+            <td class="num">7</td>
+            <td>Falsa alarma. Cada uno tiene su corrida exitosa correspondiente a menos de un segundo: el trabajo sí se hace, solo se lee mal la respuesta.</td>
+            <td><span class="pill warn">Cosmético</span></td>
+          </tr>
+          <tr>
+            <td>Sociodemográficos MR</td>
+            <td class="num">1</td>
+            <td>Falla real y grave — un flujo que llevaba semanas cortado sin que nada lo notara. Detalle abajo.</td>
+            <td><span class="pill ok">Corregido</span></td>
+          </tr>
+          <tr>
+            <td>API de Google Sheets</td>
+            <td class="num">1</td>
+            <td>Caída momentánea del servicio de Google. La corrida siguiente lo recuperó sola, sin intervención.</td>
+            <td><span class="pill ok">Auto-recuperado</span></td>
+          </tr>
+          <tr>
+            <td>Aviso por Telegram</td>
+            <td class="num">1</td>
+            <td>El mensaje de alerta excedía el largo máximo. Ocurrió antes de arrancar la prueba y se corrigió ahí mismo.</td>
+            <td><span class="pill ok">Corregido</span></td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td>Fallas reales sin resolver</td>
+            <td class="num">0</td>
+            <td>Tasa de éxito efectiva: 98,5%</td>
+            <td><span class="pill ok">—</span></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Hallazgos</h2>
+    <div class="findings">
+
+      <div class="finding sev-alta">
+        <h3>Un flujo llevaba semanas cortado en silencio <span class="pill bad">Era grave</span></h3>
+        <p>
+          El flujo semanal de datos sociodemográficos tenía sus estructuras internas mal
+          formadas: un arreglo anidado de más. El problema es que ese error no aparece al
+          guardar —el sistema responde correctamente y el flujo queda marcado como activo—
+          sino solo al ejecutarse. La condición moría y cortaba la cadena justo antes del paso
+          que carga los datos de Mujeres ROFÉ, que era su único punto de ejecución.
+        </p>
+        <div class="impact">
+          <b>Impacto:</b> al corregirlo y correrlo, 44 mujeres recuperaron sus datos de estrato,
+          vivienda, estado civil y nivel de estudios (de 527 a 571 registros completos). Nadie
+          se había dado cuenta porque el flujo fallaba antes de llegar a avisar.
+        </div>
+      </div>
+
+      <div class="finding sev-ok">
+        <h3>La diferencia de 7 retiros no era un error de datos <span class="pill ok">Aclarado</span></h3>
+        <p>
+          Durante días hubo un descuadre de 7 personas entre las dos fuentes de retiros. Al
+          cruzarlas una por una: las siete están activas, con las ocho materias matriculadas y
+          cerca del 100% de avance. Son personas que se retiraron y volvieron. Las dos cifras
+          eran correctas, medían cosas distintas: Q10 cuenta <i>eventos de retiro</i> (79), la
+          tabla cuenta <i>quién está retirado hoy</i> (72).
+        </p>
+        <div class="impact">
+          <b>Qué se hizo:</b> en vez de ampliar el margen de tolerancia —que habría tapado
+          problemas futuros— se redefinió la prueba para que verifique
+          <code>retiros + reingresos = retiros de Q10</code>. Hoy cuadra exacto, y sigue
+          detectando si alguna de las dos fuentes se atrasa.
+        </div>
+      </div>
+
+      <div class="finding sev-med">
+        <h3>Dos huecos de aviso que dejaban fallar en silencio <span class="pill ok">Cerrados</span></h3>
+        <p>
+          Antes de arrancar se encontró que cinco de los nueve flujos no tenían configurado a
+          dónde reportar sus errores: podían fallar sin que llegara ningún aviso. Además, el
+          propio mecanismo de alertas fallaba al enviar mensajes largos por Telegram.
+        </p>
+        <div class="impact">
+          <b>Estado:</b> los nueve flujos reportan ahora al mismo canal de alertas, y el mensaje
+          se recorta antes de enviarse. Durante la prueba las alertas llegaron correctamente.
+        </div>
+      </div>
+
+      <div class="finding sev-ok">
+        <h3>La asistencia de Zoom tenía dos fallas propias, no solo el horario <span class="pill ok">Reparado</span></h3>
+        <p>
+          Se sospechaba que solo fallaba por correr a medianoche, dentro de la ventana en que el
+          portátil se suspende. Al ejecutarlo a mano aparecieron dos errores de fondo: la carga
+          chocaba contra una restricción de la base, y las fechas venían con hora incluida, lo
+          que hacía colapsar dos sesiones del mismo día.
+        </p>
+        <div class="impact">
+          <b>Impacto:</b> los registros pasaron de 509 congelados desde el 11 de julio a 1.003
+          al día. La asistencia promedio subió de 490 a 547 estudiantes con datos. El horario se
+          movió además a las 17:45, fuera de la franja de suspensión.
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>Estado de los datos al cierre</h2>
+    <div class="tw">
+      <table>
+        <thead>
+          <tr>
+            <th>Tabla</th>
+            <th class="num">Registros</th>
+            <th>Observación</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Participantes matriculados</td><td class="num">2.919</td><td>Sin cambios; base estable</td></tr>
+          <tr><td>Matrículas en cursos</td><td class="num">19.128</td><td>Sin huérfanas ni duplicados</td></tr>
+          <tr><td>Retiros individuales</td><td class="num">403</td><td>Ahora se refresca solo: se encadenó al pipeline</td></tr>
+          <tr><td>Uso de Emoflow</td><td class="num">826</td><td>Serie diaria al día</td></tr>
+          <tr><td>Asistencia a Zoom</td><td class="num">1.003</td><td>Recuperada; venía congelada desde el 11 de julio</td></tr>
+          <tr><td>Promedio de asistencia</td><td class="num">547</td><td>Antes 490</td></tr>
+          <tr><td>Postulantes Mujeres ROFÉ</td><td class="num">5.310</td><td>+44 con datos sociodemográficos recuperados</td></tr>
+          <tr><td>Postulantes Jóvenes creaTIvos</td><td class="num">2.556</td><td>Fuente casi estática</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Qué queda pendiente</h2>
+    <ul class="clean">
+      <li>
+        <b>Reversión de horarios — automática, hoy 22:00.</b> Los flujos vuelven solos a su
+        cadencia normal y avisan por Telegram al terminar. No requiere que nadie intervenga.
+      </li>
+      <li>
+        <b>Falsa alarma del reenvío de Zoom.</b> Siete avisos de error por corrida que en
+        realidad funcionan. No hay pérdida de datos; conviene silenciarlo para que el registro
+        de errores no pierda credibilidad.
+      </li>
+      <li>
+        <b>Respaldos acumulados.</b> Dieciocho carpetas y 557 MB en disco. La política de
+        conservación es de 14 días; al volver a la cadencia diaria debería estabilizarse solo,
+        pero vale confirmarlo esta semana.
+      </li>
+      <li>
+        <b>Vigilancia permanente activa.</b> El nuevo guardián revisa cada 15 minutos si hay
+        ejecuciones colgadas y reinicia el sistema si las encuentra. No dependía del evento de
+        Windows que falló el 24 de julio. Durante la prueba no tuvo que intervenir ni una vez.
+      </li>
+    </ul>
+  </section>
+
+  <footer>
+    <div>Ventana medida: sábado 25 de julio 16:00 — domingo 26 de julio 20:00 (hora Colombia).</div>
+    <div>Fuentes: API de ejecuciones de n8n en vivo · <code>test_integridad_supabase.py</code> · consultas directas a Supabase.</div>
+    <div>Cifras agregadas. Sin datos personales.</div>
+  </footer>
+
+</div>
+</body>
+</html>
