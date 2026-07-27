@@ -4306,3 +4306,25 @@ API de n8n, escribirlo con Python (`urllib`+UTF-8), nunca tipeado directo en un 
 - **Entregable extra:** `tools/generar_excel_verificacion.py` → Excel de 14 hojas (agregados +
   detalle individual) con hoja `01_Verificacion` para cruzar cada cifra canónica contra su
   fuente original. PII, vive en `tools/`.
+
+### Cierre — reversión de cronogramas (2026-07-26 20:41)
+
+- **Revertido a mano, 1 h 20 min antes de lo agendado.** El testeo ya había cumplido sus 28 h y
+  el reporte estaba cerrado; esperar a las 22:00 solo agregaba el riesgo de que el portátil se
+  suspendiera antes de que la tarea disparara (justo el fallo que originó todo el ejercicio).
+- **Verificado contra el backup pre-testing, no contra la salida del script:** los 5 workflows
+  quedaron con `rule` idéntica byte a byte a su original — emoflow 21:30, respaldo 8:15,
+  MR datos 9:30, rebotes 6:30, verificación 8:00. `q10-sync-supabase` nunca se tocó (ya venía
+  a 2 h por diseño) y también coincide. Los 5 siguen `active: true`.
+- **Dos diferencias esperadas frente al backup, ambas cambios deliberados de este fin de semana**
+  (fuera del alcance del script de reversión, que solo toca los 5 de arriba):
+  `asistencia-zoom-diario` 00:00 → **17:45** (sacarlo de la franja de suspensión) y
+  `sociodemograficos-semanal` con el mismo cron `0 6 * * 1` pero sin el anidamiento doble que
+  rompía el IF.
+- **Tarea `n8n-testing-revertir-cronogramas` eliminada** tras ejecutarse a mano, para que no
+  disparara a las 22:00 un aviso duplicado por Telegram. El watchdog
+  (`n8n-watchdog-ejecuciones-colgadas`, cada 15 min) **se queda permanente**.
+- **Los 15 JSON de `n8n-workflows/` verificados contra la instancia viva** (por `id`, y por
+  nombre los 6 que no lo traen): todos alineados. La reversión no generó desalineación porque
+  los crons de testeo nunca se exportaron al repo.
+- Suite de integridad al cierre: **47/47**. Sistema en configuración normal de producción.
