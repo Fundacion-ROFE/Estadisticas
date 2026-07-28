@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-27T21:03:13.997636-05:00",
+  "ultima_actualizacion": "2026-07-28T01:02:37.810709-05:00",
   "anio": "2026",
   "nota_metodo": "Cohorte = matriculados del periodo (habilitados + inhabilitados). Aprobado = avance > 80 (desde 2026-07-09; antes >= 100). Un inhabilitado que ya había superado el 80 cuenta como 'aprobó y se retiró' (no pierde su logro); solo los retirados sin superar 80 cuentan como no aprobados. Cada curso trae bandas de progreso de los activos: banda_0_25 / banda_26_80 / banda_81_100 (suman a 'activos').",
   "por_curso": [
@@ -143,19 +143,19 @@
         "Desarrollo-Avanzado-2026"
       ],
       "activos": 760,
-      "aprobados": 602,
+      "aprobados": 603,
       "aprobados_retirados": 7,
       "retirados": 0,
       "cursaron": 767,
       "banda_0_25": 42,
-      "banda_26_80": 116,
-      "banda_81_100": 602,
-      "aprobados_total": 609,
-      "no_aprobados": 158,
-      "sin_finalizar": 158,
-      "promedio": 88.31,
-      "pct_aprobados": 79.4,
-      "pct_no_aprobados": 20.6,
+      "banda_26_80": 115,
+      "banda_81_100": 603,
+      "aprobados_total": 610,
+      "no_aprobados": 157,
+      "sin_finalizar": 157,
+      "promedio": 88.36,
+      "pct_aprobados": 79.5,
+      "pct_no_aprobados": 20.5,
       "finalizado": false
     },
     {
@@ -197,7 +197,7 @@
       "aprobados_total": 2,
       "no_aprobados": 195,
       "sin_finalizar": 170,
-      "promedio": 4.84,
+      "promedio": 4.85,
       "pct_aprobados": 1.0,
       "pct_no_aprobados": 99.0,
       "finalizado": false
@@ -208,10 +208,10 @@
       "programa": "Jóvenes creaTIvos",
       "cursos": 7,
       "cursaron": 5677,
-      "aprobados": 5376,
+      "aprobados": 5377,
       "aprobados_retirados": 235,
       "retirados": 122,
-      "sin_finalizar": 179,
+      "sin_finalizar": 178,
       "matriculas_activas": 5320,
       "pct_aprobados": 94.7,
       "estudiantes_cohorte": 832,
@@ -236,7 +236,7 @@
   "totales": {
     "total_cursos": 9,
     "total_matriculas": 6157,
-    "total_aprobados": 5451,
+    "total_aprobados": 5452,
     "total_aprobados_retirados": 235,
     "total_retirados_2026": 104,
     "estudiantes_cohorte_2026": 1174
