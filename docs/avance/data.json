@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-28T11:43:56.606676-05:00",
+  "ultima_actualizacion": "2026-07-28T17:01:35.515798-05:00",
   "segmento": "Logica-Nivel 2-2026",
   "por_curso": [
     {
@@ -86,9 +86,9 @@
     {
       "nombre": "Lógica de Programación . AUT",
       "estudiantes": 777,
-      "aprobados": 736,
-      "pct_aprobados": 94.7,
-      "promedio": 96.68,
+      "aprobados": 737,
+      "pct_aprobados": 94.9,
+      "promedio": 96.69,
       "min": 0.0,
       "max": 100.0
     },
@@ -107,7 +107,7 @@
     "total_registros": 8453,
     "estudiantes_unicos_id": 780,
     "promedio_general": 93.69,
-    "total_aprobados": 7445
+    "total_aprobados": 7446
   },
   "anomalias": [
     {
