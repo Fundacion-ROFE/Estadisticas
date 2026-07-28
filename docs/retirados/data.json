@@ -1,12 +1,12 @@
 {
-  "ultima_actualizacion": "2026-07-28T11:45:48.617622-05:00",
+  "ultima_actualizacion": "2026-07-28T17:02:35.297374-05:00",
   "anio": "2026",
   "totales": {
-    "total_retirados": 104,
+    "total_retirados": 103,
     "cancelados": 72,
     "desertores": 0,
     "aplazados": 0,
-    "sin_registro_hoja": 32
+    "sin_registro_hoja": 31
   },
   "por_tipo": [
     {
@@ -15,7 +15,7 @@
     },
     {
       "tipo": "Sin registro de retiro",
-      "cantidad": 32
+      "cantidad": 31
     }
   ],
   "por_causa": [
@@ -25,7 +25,7 @@
     },
     {
       "causa": "Sin registro de retiro",
-      "cantidad": 32
+      "cantidad": 31
     }
   ],
   "por_programa": [
@@ -35,7 +35,7 @@
     },
     {
       "programa": "Mujeres ROFÉ",
-      "cantidad": 25
+      "cantidad": 24
     }
   ],
   "por_mes": [
@@ -60,7 +60,7 @@
     {
       "orden": 0,
       "etapa": "No completó ningún curso",
-      "cantidad": 25
+      "cantidad": 24
     },
     {
       "orden": 1,
