@@ -70,16 +70,6 @@
     "programa": "jc"
   },
   {
-    "id": "c2b84241-8c73-4b84-a09d-2df274a81fbe",
-    "nombre": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
-    "cohorte": "2026",
-    "fecha_inicio": null,
-    "fecha_fin": null,
-    "estado": "activo",
-    "created_at": "2026-07-10T01:30:06.620938",
-    "programa": "jc"
-  },
-  {
     "id": "5c453871-3543-40d1-b630-69c4791a8a5a",
     "nombre": "Bienvenidos a Jóvenes creaTIvos",
     "cohorte": "2024",
@@ -347,6 +337,16 @@
     "fecha_fin": null,
     "estado": "completado",
     "created_at": "2026-07-10T14:42:08.052523",
+    "programa": "jc"
+  },
+  {
+    "id": "c2b84241-8c73-4b84-a09d-2df274a81fbe",
+    "nombre": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
     "programa": "jc"
   },
   {
