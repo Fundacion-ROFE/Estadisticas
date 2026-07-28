@@ -17,8 +17,8 @@
     "inscritos": 830,
     "inscritos_fecha": "2026-06-26",
     "promedio_en_pico": 94.43,
-    "finalizados": 718,
-    "finalizados_fecha": "2026-07-22"
+    "finalizados": 721,
+    "finalizados_fecha": "2026-07-27"
   },
   "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026": {
     "inscritos": 806,
@@ -66,14 +66,14 @@
     "inscritos": 172,
     "inscritos_fecha": "2026-07-22",
     "promedio_en_pico": 0.48,
-    "finalizados": 0,
-    "finalizados_fecha": ""
+    "finalizados": 1,
+    "finalizados_fecha": "2026-07-27"
   },
   "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026": {
     "inscritos": 760,
     "inscritos_fecha": "2026-07-24",
     "promedio_en_pico": 84.33,
-    "finalizados": 541,
+    "finalizados": 550,
     "finalizados_fecha": "2026-07-27"
   }
 }
