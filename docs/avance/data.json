@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-27T17:01:32.315519-05:00",
+  "ultima_actualizacion": "2026-07-27T21:01:49.202526-05:00",
   "segmento": "Logica-Nivel 2-2026",
   "por_curso": [
     {
@@ -14,17 +14,17 @@
     {
       "nombre": "Hackea Tu Cerebro",
       "estudiantes": 762,
-      "aprobados": 757,
-      "pct_aprobados": 99.3,
-      "promedio": 99.57,
+      "aprobados": 758,
+      "pct_aprobados": 99.5,
+      "promedio": 99.58,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "Habilidades Esenciales",
       "estudiantes": 762,
-      "aprobados": 734,
-      "pct_aprobados": 96.3,
+      "aprobados": 737,
+      "pct_aprobados": 96.7,
       "promedio": 99.49,
       "min": 0.0,
       "max": 100.0
@@ -32,45 +32,45 @@
     {
       "nombre": "Emprendimiento",
       "estudiantes": 761,
-      "aprobados": 709,
-      "pct_aprobados": 93.2,
-      "promedio": 99.35,
+      "aprobados": 716,
+      "pct_aprobados": 94.1,
+      "promedio": 99.39,
       "min": 0.0,
       "max": 101.0
     },
     {
       "nombre": "IA",
       "estudiantes": 760,
-      "aprobados": 743,
-      "pct_aprobados": 97.8,
-      "promedio": 99.48,
+      "aprobados": 744,
+      "pct_aprobados": 97.9,
+      "promedio": 99.49,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "Lógica de Programación",
       "estudiantes": 760,
-      "aprobados": 734,
-      "pct_aprobados": 96.6,
-      "promedio": 98.83,
+      "aprobados": 736,
+      "pct_aprobados": 96.8,
+      "promedio": 98.85,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "HTML",
       "estudiantes": 760,
-      "aprobados": 536,
-      "pct_aprobados": 70.5,
-      "promedio": 87.44,
+      "aprobados": 541,
+      "pct_aprobados": 71.2,
+      "promedio": 87.84,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "HTML - AUT",
       "estudiantes": 777,
-      "aprobados": 716,
-      "pct_aprobados": 92.1,
-      "promedio": 97.31,
+      "aprobados": 721,
+      "pct_aprobados": 92.8,
+      "promedio": 97.32,
       "min": 0.0,
       "max": 101.0
     },
@@ -106,8 +106,8 @@
     "total_cursos": 11,
     "total_registros": 8453,
     "estudiantes_unicos_id": 780,
-    "promedio_general": 93.59,
-    "total_aprobados": 7407
+    "promedio_general": 93.63,
+    "total_aprobados": 7431
   },
   "anomalias": [
     {
