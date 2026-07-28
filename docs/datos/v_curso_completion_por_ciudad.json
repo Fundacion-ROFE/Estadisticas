@@ -185,9 +185,9 @@
     "programa": "jc",
     "grupo_ciudad": "BAQ",
     "matriculados": 131,
-    "completados": 105,
-    "promedio_avance": 90.8,
-    "pct_completados": 80.2
+    "completados": 108,
+    "promedio_avance": 91.6,
+    "pct_completados": 82.4
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -195,9 +195,9 @@
     "programa": "jc",
     "grupo_ciudad": "BOG",
     "matriculados": 129,
-    "completados": 95,
-    "promedio_avance": 86.8,
-    "pct_completados": 73.6
+    "completados": 97,
+    "promedio_avance": 87.6,
+    "pct_completados": 75.2
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -215,9 +215,9 @@
     "programa": "jc",
     "grupo_ciudad": "CTG",
     "matriculados": 99,
-    "completados": 71,
-    "promedio_avance": 83.0,
-    "pct_completados": 71.7
+    "completados": 79,
+    "promedio_avance": 86.4,
+    "pct_completados": 79.8
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -225,9 +225,9 @@
     "programa": "jc",
     "grupo_ciudad": "GYL",
     "matriculados": 79,
-    "completados": 53,
-    "promedio_avance": 77.9,
-    "pct_completados": 67.1
+    "completados": 54,
+    "promedio_avance": 78.4,
+    "pct_completados": 68.4
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -235,9 +235,9 @@
     "programa": "jc",
     "grupo_ciudad": "MED",
     "matriculados": 94,
-    "completados": 65,
-    "promedio_avance": 84.1,
-    "pct_completados": 69.1
+    "completados": 67,
+    "promedio_avance": 85.3,
+    "pct_completados": 71.3
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -245,9 +245,9 @@
     "programa": "jc",
     "grupo_ciudad": "PAN",
     "matriculados": 35,
-    "completados": 28,
-    "promedio_avance": 91.0,
-    "pct_completados": 80.0
+    "completados": 29,
+    "promedio_avance": 92.7,
+    "pct_completados": 82.9
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -266,7 +266,7 @@
     "grupo_ciudad": "UY",
     "matriculados": 62,
     "completados": 54,
-    "promedio_avance": 89.4,
+    "promedio_avance": 90.0,
     "pct_completados": 87.1
   },
   {
@@ -276,7 +276,7 @@
     "grupo_ciudad": "BAQ",
     "matriculados": 131,
     "completados": 130,
-    "promedio_avance": 99.4,
+    "promedio_avance": 99.6,
     "pct_completados": 99.2
   },
   {
@@ -316,7 +316,7 @@
     "grupo_ciudad": "GYL",
     "matriculados": 79,
     "completados": 79,
-    "promedio_avance": 99.2,
+    "promedio_avance": 99.3,
     "pct_completados": 100.0
   },
   {
@@ -426,7 +426,7 @@
     "grupo_ciudad": "PAN",
     "matriculados": 35,
     "completados": 35,
-    "promedio_avance": 99.9,
+    "promedio_avance": 100.0,
     "pct_completados": 100.0
   },
   {
