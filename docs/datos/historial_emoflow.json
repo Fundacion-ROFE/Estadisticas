@@ -286,5 +286,17 @@
     "activos_14d": 589,
     "inactivos_30d": 169,
     "fuente": "emoflow-api"
+  },
+  {
+    "fecha": "2026-07-28",
+    "participantes": 826,
+    "con_match_supabase": 759,
+    "ingresos_promedio": 34.5,
+    "ingresos_mediana": 28,
+    "ingresos_max": 465,
+    "activos_7d": 457,
+    "activos_14d": 593,
+    "inactivos_30d": 167,
+    "fuente": "emoflow-api"
   }
 ]

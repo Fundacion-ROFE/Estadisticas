@@ -5,16 +5,16 @@
     "ingresados": 832,
     "activos": 760,
     "retirados": 79,
-    "updated_at": "2026-07-27T23:30:35",
+    "updated_at": "2026-07-28T17:30:32",
     "pct_aprobados": 88.3
   },
   {
     "cohorte": "2026",
     "programa": "mr",
-    "ingresados": 342,
-    "activos": 317,
-    "retirados": 25,
-    "updated_at": "2026-07-27T23:30:35",
+    "ingresados": 346,
+    "activos": 322,
+    "retirados": 24,
+    "updated_at": "2026-07-28T17:30:32",
     "pct_aprobados": 31.6
   }
 ]

@@ -2,23 +2,23 @@
   {
     "grupo_ciudad": "BAQ",
     "participantes": 137,
-    "ingresos_promedio": 42.1,
+    "ingresos_promedio": 42.5,
     "ingresos_mediana": 30,
-    "activos_7d": 70,
+    "activos_7d": 72,
     "inactivos_30d": 32
   },
   {
     "grupo_ciudad": "BOG",
     "participantes": 142,
-    "ingresos_promedio": 32.1,
-    "ingresos_mediana": 25,
-    "activos_7d": 61,
-    "inactivos_30d": 36
+    "ingresos_promedio": 32.4,
+    "ingresos_mediana": 26,
+    "activos_7d": 67,
+    "inactivos_30d": 34
   },
   {
     "grupo_ciudad": "CAL",
     "participantes": 107,
-    "ingresos_promedio": 35.4,
+    "ingresos_promedio": 35.5,
     "ingresos_mediana": 31,
     "activos_7d": 75,
     "inactivos_30d": 19
@@ -26,7 +26,7 @@
   {
     "grupo_ciudad": "CTG",
     "participantes": 106,
-    "ingresos_promedio": 29.5,
+    "ingresos_promedio": 29.6,
     "ingresos_mediana": 24,
     "activos_7d": 50,
     "inactivos_30d": 21
@@ -34,23 +34,23 @@
   {
     "grupo_ciudad": "GYL",
     "participantes": 80,
-    "ingresos_promedio": 33.9,
+    "ingresos_promedio": 34.0,
     "ingresos_mediana": 26,
-    "activos_7d": 41,
+    "activos_7d": 42,
     "inactivos_30d": 20
   },
   {
     "grupo_ciudad": "MED",
     "participantes": 99,
-    "ingresos_promedio": 26.7,
+    "ingresos_promedio": 27.0,
     "ingresos_mediana": 19,
-    "activos_7d": 39,
+    "activos_7d": 44,
     "inactivos_30d": 18
   },
   {
     "grupo_ciudad": "PAN",
     "participantes": 39,
-    "ingresos_promedio": 39.8,
+    "ingresos_promedio": 40.1,
     "ingresos_mediana": 33,
     "activos_7d": 36,
     "inactivos_30d": 3
@@ -58,15 +58,15 @@
   {
     "grupo_ciudad": "QTO",
     "participantes": 39,
-    "ingresos_promedio": 44.6,
+    "ingresos_promedio": 44.8,
     "ingresos_mediana": 40,
-    "activos_7d": 28,
+    "activos_7d": 29,
     "inactivos_30d": 3
   },
   {
     "grupo_ciudad": "UY",
     "participantes": 77,
-    "ingresos_promedio": 32.1,
+    "ingresos_promedio": 32.2,
     "ingresos_mediana": 29,
     "activos_7d": 42,
     "inactivos_30d": 17

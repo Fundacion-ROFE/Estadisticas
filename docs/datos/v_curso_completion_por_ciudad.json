@@ -185,9 +185,9 @@
     "programa": "jc",
     "grupo_ciudad": "BAQ",
     "matriculados": 131,
-    "completados": 108,
-    "promedio_avance": 91.6,
-    "pct_completados": 82.4
+    "completados": 110,
+    "promedio_avance": 92.3,
+    "pct_completados": 84.0
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -196,7 +196,7 @@
     "grupo_ciudad": "BOG",
     "matriculados": 129,
     "completados": 97,
-    "promedio_avance": 87.6,
+    "promedio_avance": 87.8,
     "pct_completados": 75.2
   },
   {
@@ -215,9 +215,9 @@
     "programa": "jc",
     "grupo_ciudad": "CTG",
     "matriculados": 99,
-    "completados": 79,
-    "promedio_avance": 86.4,
-    "pct_completados": 79.8
+    "completados": 81,
+    "promedio_avance": 87.4,
+    "pct_completados": 81.8
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -236,7 +236,7 @@
     "grupo_ciudad": "MED",
     "matriculados": 94,
     "completados": 67,
-    "promedio_avance": 85.3,
+    "promedio_avance": 85.6,
     "pct_completados": 71.3
   },
   {
@@ -256,7 +256,7 @@
     "grupo_ciudad": "QTO",
     "matriculados": 38,
     "completados": 33,
-    "promedio_avance": 92.4,
+    "promedio_avance": 92.5,
     "pct_completados": 86.8
   },
   {
@@ -265,9 +265,9 @@
     "programa": "jc",
     "grupo_ciudad": "UY",
     "matriculados": 62,
-    "completados": 54,
-    "promedio_avance": 90.0,
-    "pct_completados": 87.1
+    "completados": 55,
+    "promedio_avance": 91.6,
+    "pct_completados": 88.7
   },
   {
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
@@ -396,7 +396,7 @@
     "grupo_ciudad": "CTG",
     "matriculados": 99,
     "completados": 96,
-    "promedio_avance": 97.9,
+    "promedio_avance": 98.0,
     "pct_completados": 97.0
   },
   {
