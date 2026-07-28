@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-28T11:43:38.644936-05:00",
+  "ultima_actualizacion": "2026-07-28T17:01:11.685143-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -15,8 +15,8 @@
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
       "estudiantes": 760,
-      "finalizados": 559,
-      "promedio": 88.64,
+      "finalizados": 561,
+      "promedio": 88.77,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 760,
@@ -37,8 +37,8 @@
     {
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
       "estudiantes": 760,
-      "finalizados": 736,
-      "promedio": 98.85,
+      "finalizados": 737,
+      "promedio": 98.86,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 806,
@@ -97,19 +97,19 @@
     "total_cursos": 7,
     "total_estudiantes_unicos": 760,
     "total_habilitados": 760,
-    "total_db": 1077
+    "total_db": 1082
   },
   "mr": {
     "por_curso": [
       {
         "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
-        "estudiantes": 172,
+        "estudiantes": 179,
         "finalizados": 1,
-        "promedio": 4.85,
+        "promedio": 5.63,
         "min": 0.0,
         "max": 100.0,
-        "inscritos": 172,
-        "promedio_pico": 0.48,
+        "inscritos": 179,
+        "promedio_pico": 5.63,
         "finalizado": false
       },
       {
@@ -127,7 +127,7 @@
     "anomalias": [
       {
         "categoria": "AVANCE 0%",
-        "cantidad": 298
+        "cantidad": 303
       },
       {
         "categoria": "AVANCE IRREGULAR",
@@ -136,8 +136,8 @@
     ],
     "totales": {
       "total_cursos": 2,
-      "total_estudiantes_unicos": 317,
-      "total_habilitados": 317
+      "total_estudiantes_unicos": 322,
+      "total_habilitados": 322
     }
   },
   "stand": {
