@@ -1,0 +1,366 @@
+{
+    "updatedAt": "2026-07-29T22:04:12.819Z",
+    "createdAt": "2026-07-29T17:43:32.784Z",
+    "id": "0qqlzbuchFWh3PTb",
+    "name": "alerta-choques-cursos",
+    "description": null,
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "cronExpression",
+                            "expression": "0 13 * * *"
+                        }
+                    ]
+                }
+            },
+            "id": "acc-0001-4000-8000-000000000001",
+            "name": "Diario 13:00",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                260,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python check_choques_cursos.py"
+            },
+            "id": "acc-0002-4000-8000-000000000002",
+            "name": "Ejecutar check_choques_cursos",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+                480,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "loose",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "cond-alerta",
+                            "leftValue": "={{ $json.stdout }}",
+                            "rightValue": "estado=alerta",
+                            "operator": {
+                                "type": "string",
+                                "operation": "contains"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "id": "acc-0003-4000-8000-000000000003",
+            "name": "¿Hay alerta alta?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                700,
+                300
+            ]
+        },
+        {
+            "parameters": {},
+            "id": "acc-0004-4000-8000-000000000004",
+            "name": "OK",
+            "type": "n8n-nodes-base.noOp",
+            "typeVersion": 1,
+            "position": [
+                940,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "8141703221",
+                "text": "={{ $('Ejecutar check_choques_cursos').item.json.stdout }}",
+                "additionalFields": {
+                    "appendAttribution": false
+                }
+            },
+            "id": "acc-0005-4000-8000-000000000005",
+            "name": "Notificar choques",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                940,
+                400
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "kGTAfWTTp4FATF66",
+                    "name": "Telegram Q10 Bot"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Ejecutar check_choques_cursos": {
+            "main": [
+                [
+                    {
+                        "node": "¿Hay alerta alta?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "¿Hay alerta alta?": {
+            "main": [
+                [
+                    {
+                        "node": "Notificar choques",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "OK",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Diario 13:00": {
+            "main": [
+                [
+                    {
+                        "node": "Ejecutar check_choques_cursos",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "callerPolicy": "workflowsFromSameOwner",
+        "timezone": "America/Bogota",
+        "errorWorkflow": "8BL0kqnJDbyWMzpg",
+        "availableInMCP": false
+    },
+    "staticData": {
+        "node:TEST cada 2 min": {
+            "recurrenceRules": []
+        },
+        "node:Diario 13:00": {
+            "recurrenceRules": []
+        }
+    },
+    "meta": null,
+    "pinData": null,
+    "versionId": "542111c5-4f1f-4984-90ac-58044b5dbd24",
+    "activeVersionId": "542111c5-4f1f-4984-90ac-58044b5dbd24",
+    "versionCounter": 29,
+    "triggerCount": 1,
+    "shared": [
+        {
+            "updatedAt": "2026-07-29T17:43:32.802Z",
+            "createdAt": "2026-07-29T17:43:32.802Z",
+            "role": "workflow:owner",
+            "workflowId": "0qqlzbuchFWh3PTb",
+            "projectId": "sCDSlnWeaXfVGSdx",
+            "project": {
+                "updatedAt": "2026-06-18T19:33:43.567Z",
+                "createdAt": "2026-06-18T17:26:43.451Z",
+                "id": "sCDSlnWeaXfVGSdx",
+                "name": "Samuel Rojas <soportejunior@tocaunavida.org>",
+                "type": "personal",
+                "icon": null,
+                "description": null,
+                "creatorId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+            }
+        }
+    ],
+    "tags": [],
+    "activeVersion": {
+        "updatedAt": "2026-07-29T22:04:12.820Z",
+        "createdAt": "2026-07-29T22:04:12.820Z",
+        "versionId": "542111c5-4f1f-4984-90ac-58044b5dbd24",
+        "workflowId": "0qqlzbuchFWh3PTb",
+        "nodes": [
+            {
+                "parameters": {
+                    "rule": {
+                        "interval": [
+                            {
+                                "field": "cronExpression",
+                                "expression": "0 13 * * *"
+                            }
+                        ]
+                    }
+                },
+                "id": "acc-0001-4000-8000-000000000001",
+                "name": "Diario 13:00",
+                "type": "n8n-nodes-base.scheduleTrigger",
+                "typeVersion": 1.2,
+                "position": [
+                    260,
+                    300
+                ]
+            },
+            {
+                "parameters": {
+                    "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python check_choques_cursos.py"
+                },
+                "id": "acc-0002-4000-8000-000000000002",
+                "name": "Ejecutar check_choques_cursos",
+                "type": "n8n-nodes-base.executeCommand",
+                "typeVersion": 1,
+                "position": [
+                    480,
+                    300
+                ]
+            },
+            {
+                "parameters": {
+                    "conditions": {
+                        "options": {
+                            "caseSensitive": true,
+                            "leftValue": "",
+                            "typeValidation": "loose",
+                            "version": 2
+                        },
+                        "conditions": [
+                            {
+                                "id": "cond-alerta",
+                                "leftValue": "={{ $json.stdout }}",
+                                "rightValue": "estado=alerta",
+                                "operator": {
+                                    "type": "string",
+                                    "operation": "contains"
+                                }
+                            }
+                        ],
+                        "combinator": "and"
+                    },
+                    "options": {}
+                },
+                "id": "acc-0003-4000-8000-000000000003",
+                "name": "¿Hay alerta alta?",
+                "type": "n8n-nodes-base.if",
+                "typeVersion": 2.2,
+                "position": [
+                    700,
+                    300
+                ]
+            },
+            {
+                "parameters": {},
+                "id": "acc-0004-4000-8000-000000000004",
+                "name": "OK",
+                "type": "n8n-nodes-base.noOp",
+                "typeVersion": 1,
+                "position": [
+                    940,
+                    200
+                ]
+            },
+            {
+                "parameters": {
+                    "chatId": "8141703221",
+                    "text": "={{ $('Ejecutar check_choques_cursos').item.json.stdout }}",
+                    "additionalFields": {
+                        "appendAttribution": false
+                    }
+                },
+                "id": "acc-0005-4000-8000-000000000005",
+                "name": "Notificar choques",
+                "type": "n8n-nodes-base.telegram",
+                "typeVersion": 1.2,
+                "position": [
+                    940,
+                    400
+                ],
+                "credentials": {
+                    "telegramApi": {
+                        "id": "kGTAfWTTp4FATF66",
+                        "name": "Telegram Q10 Bot"
+                    }
+                }
+            }
+        ],
+        "connections": {
+            "Ejecutar check_choques_cursos": {
+                "main": [
+                    [
+                        {
+                            "node": "¿Hay alerta alta?",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "¿Hay alerta alta?": {
+                "main": [
+                    [
+                        {
+                            "node": "Notificar choques",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "OK",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Diario 13:00": {
+                "main": [
+                    [
+                        {
+                            "node": "Ejecutar check_choques_cursos",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            }
+        },
+        "authors": "Samuel Rojas",
+        "name": null,
+        "description": null,
+        "autosaved": false,
+        "workflowPublishHistory": [
+            {
+                "createdAt": "2026-07-29T22:04:12.879Z",
+                "id": 2653,
+                "workflowId": "0qqlzbuchFWh3PTb",
+                "versionId": "542111c5-4f1f-4984-90ac-58044b5dbd24",
+                "event": "activated",
+                "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+            },
+            {
+                "createdAt": "2026-07-29T22:04:12.855Z",
+                "id": 2652,
+                "workflowId": "0qqlzbuchFWh3PTb",
+                "versionId": "542111c5-4f1f-4984-90ac-58044b5dbd24",
+                "event": "deactivated",
+                "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+            }
+        ]
+    }
+}

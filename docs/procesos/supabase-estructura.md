@@ -4,7 +4,8 @@
 datos corregido en pipeline, limpieza en migración propuesta). Higiene ETL + `retiros` poblada
 en la Ola 1 (2026-07-24, ver secciones fechadas abajo). Suite corrida al cierre de la Ola 1
 (2026-07-24, tras Track B+C): **`RESUMEN: total=47 pass=47 fail=0 estado=exito`**.
-**Última actualización:** 2026-07-24 (Ola 1 — Tracks B/C)
+**Última actualización:** 2026-07-29 (loop de coherencia — gotcha de rename de curso; suite
+completa re-corrida el mismo día: 47/47 PASS)
 **Procesos relacionados:** [[panel-datos-etl]] · [[postulantes-mr-supabase]] · [[mapa-codigo]]
 
 > Proyecto `kbxptoowtnteflhrfwid` (us-east-1). **25 tablas** en `public` (24 + `retiros`,
@@ -48,6 +49,7 @@ PK `id` uuid · UNIQUE `q10_id` (cédula) · RLS + REVOKE anon (endurecido 2026-
 | `genero`, `edad`, `ciudad`, `grupo_ciudad`, `fecha_nacimiento` | — | BD monitorias (JC) / BD-Mujeres ROFÉ (MR); cobertura JC-2026 activos: 98.7% |
 | `estrato`, `estado_civil`, `nivel_estudio`, `tipo_vivienda` | — | **solo MR** (JC sin fuente — 0% cobertura, no usar como control en análisis JC) |
 | `tiene_emprendimiento`, `nombre_emprendimiento`, `situacion_emprendimiento` | — | encuesta diagnóstico (JC) / BD MR |
+| `empresa_patrocinadora` | enum (`PriceSmart`/`Empower`/`Visa`/`Otros`) | **solo JC** (2026-07-28) — Seguimiento columna Q "Pertenecen"; blanco en el Sheet = `Otros` explícito, no NULL. Cohorte 2026: Otros 427 · PriceSmart 229 · Empower 74 · Visa 29 · sin dato 18. **Para MR queda `NULL` a propósito — la pregunta aún no aplica** (confirmado con Samuel, no es un hueco pendiente). |
 | `is_public` | bool | **siempre false hoy (0/2.919)** — las policies públicas de `enrollments`/`participant_metrics` dependen de él vía `es_publico()` |
 
 ### `courses` 🟢 — 39 filas · `enrollments` 🟢 — 18.196 filas
@@ -59,9 +61,93 @@ confiable** — 5.131/5.439 "completado" en JC-2026 no refleja aprobación real;
 retirados de la cohorte NO están como filas individuales (solo el agregado en
 `cohorte_ingresos`); el retiro individual vive fuera de Supabase (Sheet Retirados).
 
-### `participant_metrics` 🟢 · `cohorte_stats` 🟢 · `cohorte_ingresos` 🟢 · `aprobacion_cursos` 🟢
+🟡 **Gotcha nuevo (loop de coherencia, 2026-07-29): rename de curso en Q10 crea fila
+duplicada.** `courses` tiene `UNIQUE(nombre,cohorte)` — si Q10/h2test renombra una asignatura
+(pasó con `Desarrollo Web Front-End - HTML - 2026` → `...HTML Y CSS - 2026` entre el 24 y el
+29-jul), el siguiente `cargar_supabase.py` crea una fila de curso **nueva** en vez de
+actualizar la existente. Las matrículas viejas quedan congeladas bajo el nombre obsoleto
+(777 filas en este caso, `updated_at` sin moverse desde el rename) — no se pierden ni se
+duplican en el conteo total (misma cédula, curso distinto), pero sí inflan el "universo de
+cursos" de la cohorte y quedan huérfanas de cualquier análisis que filtre por nombre vigente.
+Mismo mecanismo puede pasar si un curso/periodo se cierra sin rename (caso confirmado el mismo
+día: `De la idea a la acción, tu guía para emprender con éxito`, MR, 136 matrículas congeladas
+desde el 21-jul, sin evidencia de rename — posible cierre de periodo).
+Detalle: `tools/coherencia_2026-07-29/informe_coherencia.md`.
+
+✅ **RESUELTO el mismo 2026-07-29** (migraciones 026/027, sesión Cowork con Lina). Se
+confirmó con Lina que **sí era el mismo curso** (rename adrede, sin aviso previo) y que el
+curso MR **sí cerró clases de verdad** para abrir Finanzas Inteligentes. Son dos casos
+opuestos, no el mismo bug: el JC era duplicado (basura), el MR es historia legítima.
+
+- **El alcance real era mayor al detectado por el loop:** el fantasma estaba en 4 lugares, no
+  en 1. `courses`/`enrollments` (777), `aprobacion_cursos` (779 cursaron / **66.8%** — y ese
+  66.8% estaba documentado en `diccionario-metricas.md` como el piso real del rango JC, ver la
+  corrección allá; el piso verdadero es 81.1%), `historial_cursos` (6 fechas duplicadas) y
+  `historial_cursos_ciudad` (54 filas). `aprobacion_cursos` no tiene FK a `courses` (se llavea
+  por nombre en texto y en Title Case, no en MAYÚSCULAS), así que ningún fix sobre `courses`
+  la habría alcanzado.
+- **La corrección que el loop propuso era inviable:** "fusionar las 777 matrículas bajo el
+  `course_id` nuevo" habría violado `UNIQUE(participant_id, course_id)` en 760 de las 777
+  filas, porque esas personas ya tenían su matrícula en el curso nuevo. No había nada que
+  fusionar — la fila vieja era 760 duplicados congelados + los 17 dados de baja.
+- **Qué se hizo:** el fantasma se archivó íntegro en `datos_archivados` (839 filas,
+  reversible) y se retiró de las 4 tablas. La serie de tiempo se reunificó en una sola línea
+  continua (borrar el tramo duplicado, renombrar el tramo previo — en ese orden, o
+  `UNIQUE(fecha,curso)` rechaza el UPDATE).
+- **Las 15 vistas que dependen de `courses` se autocorrigieron sin tocar una sola
+  definición.** Verificado antes/después: solo cambiaron las 4 por-curso (−1 fila; −9 en la de
+  ciudad) y nada más se movió. `v_programa_stats` JC-2026 pasó de 6.080 a **5.320 matrículas**,
+  que es exactamente el conteo de la fuente viva — el fantasma explicaba el 100% de esa
+  discrepancia. El avance promedio JC subió de 96.2% a 98.1% (ya no lo arrastra el 81.5%
+  congelado). `cohorte_ingresos` (760/322) y la suma por ciudad (760) intactos.
+- **El MR no se tocó.** Su `visto_en_fuente_at` queda en 21-jul y eso es la señal correcta.
+  ⚠ **Consecuencia esperada y deseada: Supabase conserva MÁS matrículas que la fuente viva**
+  (559 MR vs 423 en h2test), porque h2test solo muestra cursos abiertos. Eso **no** es una
+  discrepancia — cualquier chequeo fuente↔Supabase debe comparar solo los cursos con
+  `visto_en_fuente_at` de la última corrida, no la tabla completa.
+
+⚠ **`courses.estado` NO sirve para saber si un curso está vigente.** Existe (enum, 30
+`completado` / 10 `activo`) pero `normalize_q10_data.py` lo escribe hardcodeado como `"activo"`
+para todo lo que trae el payload: el curso MR que cerró clases sigue marcado `activo`. En la
+práctica `estado` distingue cohorte vieja de cohorte viva, nada más. **Usar
+`visto_en_fuente_at`.** Ver el patrón completo en [[convenciones]] ("Fuente desordenada:
+sellar última vez visto, no modelar estados").
+
+### `cursos_alias` 🟢 — 1 fila · `datos_archivados` 🟢 — 839 filas · `v_choques_cursos` 🟢
+Migraciones 026/027 (2026-07-29). Los tres son **service_role solamente** (verificado: `anon`
+y `authenticated` sin ningún GRANT).
+
+- **`cursos_alias`** — el único punto donde una persona confirma que dos nombres de curso son
+  el mismo curso. Los ETLs (`cargar_supabase.py`, `sync_aprobacion_supabase.py`) la consultan y
+  absorben el renombre **antes** de escribir, en vez de crear una entidad nueva. Comparar
+  siempre con `upper(btrim(...))`: sirve para `courses` (MAYÚSCULAS) y `aprobacion_cursos`
+  (Title Case) con la misma fila.
+- **`datos_archivados`** — respaldo genérico (`tabla_origen`, `fila` jsonb, `motivo`).
+  Contiene PII. Reversible con `jsonb_populate_record`. Materializa la regla nueva: **nada se
+  borra**.
+- **`v_choques_cursos`** — vigilancia de choques de información. 5 señales:
+  `avance_retrocede` (alta — el avance no puede bajar, es la alarma más confiable que existe en
+  este dominio), `renombre_probable` (alta — `pg_trgm`, umbral 0.60 calibrado con datos reales:
+  el caso HTML daba 0.854 y un par de cursos distintos daba 0.471), `salto_matriculas` (media),
+  `no_visto_en_fuente` e `curso_revive` (informativas). Solo mira la cohorte vigente — la
+  primera versión miraba todas y devolvía 32 informativos falsos de cohortes 2023-2025.
+  **Estado al aplicar: 1 sola fila informativa** (el curso MR que cerró), cero alertas altas.
+  Consumir después de cada corrida del sync y mandar a Telegram **solo severidad alta**.
+  **Conectado 2026-07-29** — workflow n8n `alerta-choques-cursos` (diario 13:00 COT, tras la
+  primera corrida del día de `q10-sync-supabase`), script `check_choques_cursos.py`. Ver
+  gotchas de n8n/Telegram descubiertos al construirlo en [[convenciones]].
+
+### `participant_metrics` 🟢 · `cohorte_stats` 🟡 · `cohorte_ingresos` 🟡 · `aprobacion_cursos` 🟢
 Agregados recomputados a diario (`recompute_aggregates()`); frescura verificada (<1 día).
-`cohorte_ingresos` = cifras canónicas (JC 2026: 832 ingresados / 765 activos / 69 retirados).
+`cohorte_ingresos` = cifras canónicas (JC 2026: 832 ingresados / 760 activos / 79 retirados,
+cifras vigentes desde 2026-07-28 — la línea previa de esta nota citaba 765/69, ya desactualizada).
+
+**Hallazgo auditoría 2026-07-28 (`tools/auditoria_2026-07-28/`, sin resolver):**
+`cohorte_ingresos` JC no cuadra internamente — `retirados=79` guardado ≠ `ingresados−activos
+= 832−760 = 72` (gap de 7). MR sí cuadra exacto (342−25=317). Ver
+`docs/procesos/plan-accion-auditoria-2026-07-28.md` (P1.2). Además, `cohorte_stats.total_participantes`
+usa criterio distinto por programa: JC=activos (760), MR=universo sin filtrar (343, no los 317
+activos) — riesgo de comparación errónea entre programas si se lee ese campo sin saber esto.
 
 ### `participants_snapshots` 🟢 — 8 filas
 Respaldo diario pre-upsert (rollback). RLS + REVOKE anon (endurecido 2026-07-23).

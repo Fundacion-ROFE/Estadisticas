@@ -4328,3 +4328,642 @@ API de n8n, escribirlo con Python (`urllib`+UTF-8), nunca tipeado directo en un 
   nombre los 6 que no lo traen): todos alineados. La reversión no generó desalineación porque
   los crons de testeo nunca se exportaron al repo.
 - Suite de integridad al cierre: **47/47**. Sistema en configuración normal de producción.
+
+## 2026-07-27 — [Claude Code] Skills de consejo multi-personaje (ligero/medio/profundo)
+
+**Estado:** Completado
+**Proceso relacionado:** [[convenciones]]
+
+- Samuel preguntó por una skill tipo "4 instancias con personajes" (optimista, escéptico,
+  economista, juez) para evaluar ideas antes de comprometerse. Se validó la viabilidad (encaja con
+  el patrón de spawns paralelos de la herramienta Agent) y se construyeron 3 skills, no 1, para
+  dar 3 niveles de profundidad/costo.
+- `/consejo-ligero` (0 subagentes, simulado en un turno) · `/consejo-medio` (1 subagente aislando
+  solo al escéptico) · `/consejo-profundo` (3 subagentes en paralelo, aislamiento total, el juez
+  solo sintetiza). Mismo formato de salida en los 3 (informes + veredicto: adelante / con ajustes /
+  no adelante).
+- Documentadas en la tabla de skills de `CLAUDE.md` y el patrón (por qué el escéptico es el primero
+  en aislarse) en `docs/convenciones.md`.
+- Pendiente: no se ha invocado ninguna de las 3 todavía en un caso real — falta validar en uso.
+
+## 2026-07-27 — Gobernanza de contexto IA por usuario (scaffolding inicial)
+
+**Estado:** En progreso
+**Proceso relacionado:** [[gobernanza-contexto-ia]] · [[pseudonimizador]]
+
+- Lina planteó querer control centralizado del contexto (CLAUDE.md + skills) y del uso real
+  (logs) de cada persona de la organización que usa Claude, con push automático a un repo
+  para poder auditar filtraciones o errores de uso.
+- Antes de armar nada se marcó una tensión con una convención ya existente del proyecto
+  ("PII nunca a GitHub"): si el push incluye logs de conversación, ahí es donde vive el
+  riesgo real, no en la config estática. Se separaron ambas cosas explícitamente en el
+  diseño.
+- Decisiones tomadas con Lina: **repo central con carpetas por persona** (no un repo por
+  persona — menos overhead de permisos) y **sí incluir logs de uso** (no solo config),
+  con la condición de que todo log pase por un scan de PII antes de subir.
+- Construido: `usuarios-ia/` (README + `_plantilla/` con CLAUDE.md/skills/logs) +
+  `scripts/gobernanza-ia/scan_pii.py` (reutiliza los patrones de detección del
+  pseudonimizador, nunca imprime el valor real encontrado, solo enmascarado) +
+  `commit_y_push.py` (bloquea el push completo de un usuario si el scan encuentra algo,
+  pensado para colgar de un Schedule n8n más adelante). Documentado en
+  `docs/procesos/gobernanza-contexto-ia.md`.
+- Verificado con un archivo de prueba: cédula/email/celular sin pseudonimizar →
+  bloqueado; mismo archivo pseudonimizado → pasa limpio.
+- **Pendiente, fuera del alcance de esta sesión:** crear el repo privado real en GitHub
+  (requiere decisión de cuenta/organización y credenciales que no están disponibles acá),
+  dar de alta un usuario piloto, conectar el script a un Schedule n8n con alerta Telegram
+  en caso de bloqueo, y decidir quién revisa el historial del repo como auditoría.
+
+## 2026-07-28 — Diagnóstico de debilidades + entrevistas P0 (Cowork)
+
+**Estado:** Completado
+**Proceso relacionado:** [[prioridades-automatizacion-ia]] · [[gobernanza-contexto-ia]]
+
+- Lina subió la guía original de dirección ("Necesidades de Fundación ROFÉ en IA y
+  Automatización") y pidió un diagnóstico de debilidades para el equipo. Se cruzó esa
+  guía contra `prioridades-automatizacion-ia.md` (10 jul, ya desactualizado) y el reporte
+  semanal del 13–16 jul, con foco en lo que sigue en cero: convocatorias/selección (área 3),
+  asistentes virtuales/WhatsApp (área 4), marketing real (área 5) y documental (área 6).
+  Se nombró explícitamente que **P0 (entrevistas de diagnóstico por rol) nunca se
+  ejecutó** — la debilidad de fondo detrás de varias otras. Entregado como
+  `Diagnostico-debilidades-automatizacion-IA-2026-07-28.docx` (tabla plana, sin colores,
+  a pedido de Lina).
+- Ese mismo día Lina sí hizo las entrevistas P0 con Astrid (Coordinadora de facto; función
+  real: crecimiento y búsquedas estratégicas), Rocío (Contabilidad) y Cristian (seguimiento
+  de asistencia/monitoría). Resultado documentado en
+  `Entrevistas-diagnostico-P0-2026-07-28.docx`:
+  - **Astrid:** no quiere una herramienta puntual — un agente generalista adaptado a
+    todas sus funciones, con reportes verídicos y análisis rápido. Acuerdo explícito con
+    Lina: delegar sin estructura de datos es más riesgoso que el margen de error humano
+    → la DB de Supabase sigue siendo el prerrequisito antes de repartir instancias.
+  - **Rocío:** necesidad urgente y puntual — clasificador de WhatsApp (JC/MR/proveedores)
+    — más apoyo de IA para redactar correos (ya cubierto por la skill de redacción
+    existente).
+  - **Cristian:** asistencia con margen de error y visualización limitada al momento de
+    la toma; pide registro por clase/estudiante con %, trazabilidad fácil, alertas de
+    riesgo para monitores y herramientas de comunicación para ellos. Ya existe la hoja
+    SinCompletar como base.
+  - **Transversal:** Power BI limitado por su refresco cada 6 meses (no describir como
+    "inútil" — decisión explícita de Lina sobre el tono del documento); redes sociales
+    débiles, sin estrategia definida; YouTube automático incompleto; prioridad nueva:
+    permisos de administrador en Zoom y Gmail para poder implementar IA correctamente
+    ahí; PC actual con fallas de wifi bajo carga → refuerza la necesidad de migrar a
+    nube/otro equipo.
+  - **Gobernanza confirmada:** sobre el scaffolding ya existente de `usuarios-ia/`, se
+    suma revisión semanal del repo + alerta antes de cualquier acción dudosa dentro de
+    una instancia individual. Documentado en `gobernanza-contexto-ia.md` y en la tabla
+    de `00-vision-global.md`.
+- Ambos docx entregados en la raíz del proyecto. `gobernanza-contexto-ia.md` y
+  `00-vision-global.md` actualizados con lo confirmado en las entrevistas.
+- **Pendiente:** verificar que la DB de Supabase soporte los tres casos de uso levantados
+  (reportes de Astrid, clasificación WhatsApp de Rocío, trazabilidad de Cristian) antes de
+  construir instancias o automatizaciones sobre ella; gestionar permisos Zoom/Gmail;
+  crear el repo de gobernanza y dar de alta el primer usuario piloto.
+
+## 2026-07-28 — Corrección de roles + marco de priorización P0-P7 (Cowork)
+
+**Estado:** Completado
+**Proceso relacionado:** [[gobernanza-contexto-ia]] · [[prioridades-automatizacion-ia]]
+
+- **Corrección sobre la entrada anterior** (misma fecha, bitácora solo-append: no se
+  edita, se aclara aquí): la función de Coordinación (crecimiento y búsquedas
+  estratégicas asumidas por falta de personal) es de **Lina**, no de Astrid. **Astrid es
+  Coordinadora Junior**, rol distinto y sin necesidades propias todavía levantadas.
+  Se suma **Sandra**, Jefe de Operaciones de Mujeres ROFÉ (MR) — función de supervisión,
+  no de ejecución directa.
+- **Hallazgo nuevo:** las tareas que Sandra asigna al equipo de soporte (envío de correos,
+  remodelación completa del sitio web de MR con piezas de Canva hechas a mano,
+  verificación de novedades web) compiten directamente por el tiempo técnico de
+  Lina/Cristian, que debería ir a pruebas de la DB central. Con los plazos ya ajustados
+  para entregar las herramientas de IA, este conflicto de carga quedó documentado como
+  punto a resolver con dirección antes de sumar más automatización encima.
+- **Argumento reforzado:** automatizar el flujo de Zoom no es solo ahorro operativo — 
+  alimenta la DB de forma permanente, habilita decisiones de riesgo con datos frescos, y
+  a fin de año serviría de insumo para planear las entrevistas de selección de inicio de
+  año (conecta con el área de convocatorias/selección de la guía original).
+- **Marco de priorización pedido por el equipo:** tabla P0→P7 con tres criterios —
+  tiempo estimado, urgencia y escalabilidad (cuánto dura en el tiempo lo construido).
+  Contraste explícito: la arquitectura de DB está pensada para sostener ~10 años,
+  mientras que una remodelación visual de sitio web tiene escalabilidad baja porque
+  cambia con el criterio estético de dirección, no con una necesidad estructural — por
+  eso quedó en P7, aunque consuma bastante tiempo hoy.
+- Entregado `Entrevistas-diagnostico-P0-2026-07-28-v2.docx` (mismo estilo sin colores).
+  `gobernanza-contexto-ia.md` y `00-vision-global.md` actualizados con los nombres
+  correctos y referencia cruzada a este hallazgo.
+- **Pendiente:** agendar la entrevista específica con Astrid; llevar a dirección la
+  decisión de cómo aliviar la carga operativa de Sandra sobre Lina/Cristian (P6).
+
+## 2026-07-28 (cont.) — [panel-datos-etl] Bloque 1 del plan de testing: frescura observable
+
+**Estado:** Completado (con un hallazgo nuevo pendiente)
+**Proceso relacionado:** [[panel-datos-etl]] · plan-testing-produccion-2026-07-29
+
+- Samuel pidió actuar el Bloque 1 del plan de testing (corte miércoles 29-jul). Antes de
+  tocar nada se auditó n8n en vivo (no el JSON exportado) y se encontró que el bug de
+  suspend/resume había vuelto a pasar esa misma madrugada: `watchdog_n8n.log` registra
+  "n8n no responde" 3 veces (08:46/08:52/09:52 COT) y `q10-sync-supabase` llevaba ~17 h sin
+  correr con éxito. El watchdog de ejecuciones colgadas SÍ existe (el plan decía que no) y
+  corre cada 15 min, pero solo detecta `running` colgado, no un scheduler que no dispara.
+- **`v_frescura`** creada en Supabase (migraciones 019-021): vista agregada con antigüedad
+  en horas por proceso + `umbral_horas`/`vencido`, reutilizando columnas ya existentes en
+  vez de una tabla `sync_estado` nueva. `GRANT SELECT TO anon` verificado con la key real.
+- **`panel-verificacion-diaria` reparado:** el OOM del `executeCommand` no era de la DB
+  (script corre 18s/4KB a mano) — se redirige stdout a archivo y n8n solo lee el tail de
+  25 líneas. Probado simulando el nodo real vía `cmd.exe`. Duplicado `o2qTFjKxKBLKgUjI`
+  borrado.
+- **Alerta activa nueva:** workflow `alerta-frescura-vencida` (cada 30 min) +
+  `scripts/panel-datos/check_frescura.py` (reutiliza `Supa`/`cargar_env_local`, no
+  reescribe el helper de paginación) → Telegram si algo supera su umbral. Cierra el
+  criterio de aceptación real del bloque (aviso solo, sin que alguien pregunte).
+- **Pipeline disparado a mano** (no hay endpoint "run now" en la API de n8n):
+  `normalize_q10_data → cargar_supabase → sync_aprobacion_supabase → sync_emoflow_api →
+  sync_retiros`, los 5 en verde. `v_frescura` pasó de 8/8 vencidos a 1/8.
+- **Gotcha propio corregido en caliente:** `emoflow_ingresos_diario` no corre dentro de
+  `q10-sync-supabase` (es un workflow diario aparte, 21:30 COT) — el umbral de 6h que le
+  puse al inicio disparaba falsa alarma toda la tarde; subido a 30h.
+- **Hallazgo nuevo, sin resolver:** `asistencia_promedio` (Zoom) lleva 66 h sin refrescar
+  — la corrida de 27-jul 17:45 COT no aparece ni como error, no corrió. Único proceso que
+  sigue `vencido=true` ahora mismo. No investigado a fondo (workflow distinto, fuera del
+  alcance de este bloque).
+- Documentado en `docs/procesos/plan-testing-produccion-2026-07-29.md` (sección "Bloque 1
+  — CERRADO"). Workflows exportados a `n8n-workflows/panel-verificacion-diaria.json` y
+  `n8n-workflows/alerta-frescura-vencida.json`.
+- **Pendiente:** diagnosticar por qué `asistencia-zoom-diario` no corrió anoche; Bloque 2
+  (diccionario de métricas + CLAUDE.md de las instancias) sigue sin empezar.
+
+## 2026-07-28 (cont. 2) — [panel-datos-etl] Bloque 2: capa semántica + hallazgo Zoom documentado
+
+**Estado:** Completado (salvo conversación con Lina)
+**Proceso relacionado:** [[panel-datos-etl]] · plan-testing-produccion-2026-07-29
+
+- Samuel pidió seguir con el Bloque 2, aclarando que Zoom es herramienta beta (solo 1 de
+  las cuentas/correos está capturada automáticamente) así que su frescura rota (66h,
+  hallazgo del Bloque 1) no es prioritaria — pidió documentarla y seguir.
+- **Hallazgo Zoom documentado** en `docs/procesos/zoom-asistencia.md` (sección Gotchas):
+  `asistencia_promedio` sin refrescar desde 26-jul 22:45 COT, la corrida de 27-jul 17:45
+  no aparece ni como error. Marcado explícitamente como prioridad baja (cobertura ya
+  parcial por diseño — cuenta soporte bloqueada, ver "Cobertura multi-cuenta" del mismo
+  doc) — se deja `v_frescura` marcándolo vencido a propósito, para no enmascarar el
+  problema si Zoom pasa a ser crítico más adelante.
+- **`docs/procesos/diccionario-metricas.md` creado** con números verificados en vivo
+  (no copiados del plan original, que ya había quedado desactualizado tras el resync del
+  Bloque 1): activos 760 JC/317 MR, retirados 72/8 personas (vs 79/25 eventos), aprobación
+  88.3%/31.6% por estudiante (MR mucho más bajo porque recién arrancó cursos este año, no
+  es error de datos), Emoflow 742 vigentes/826 histórico. Cada métrica con SQL canónico +
+  cuándo usar la alternativa.
+- **`v_kpi_oficial`** (migración 020, GRANT anon verificado): una fila con los 12 números
+  oficiales del día ya resueltos, para que ninguna instancia recalcule a mano.
+- **Reglas duras agregadas a `usuarios-ia/_plantilla/CLAUDE.md`** (no a un usuario
+  específico — todavía no hay piloto dado de alta): verificar frescura antes de responder,
+  usar la definición default de cada métrica, decir "no tengo ese dato" en vez de inventar
+  0% para MR+Emoflow o JC+estrato/vivienda/civil/estudios.
+- **Pendiente, bloquea el Bloque 3:** conversación con Lina sobre sus 5 informes reales.
+  Sin eso, las preguntas doradas serían adivinar en vez de verificar contra uso real.
+
+## 2026-07-28 (cont. 3) — [panel-datos-etl] Verificado: no existe cruce estudiante↔empresa patrocinadora
+
+**Estado:** Investigación cerrada (gap confirmado, no resuelto)
+**Proceso relacionado:** [[panel-datos-etl]] · [[supabase-estructura]]
+
+- Samuel aclaró que los informes reales de Lina son decenas, el panel de datos es solo
+  una parte, y necesita examen segmentado por ciudad — con el matiz de que hay estudiantes
+  patrocinados por empresas específicas y él mismo no sabe qué estudiante corresponde a
+  qué empresa. Pidió revisar si esa relación existe en las DBs antes de pedirla aparte.
+  Aclaró también que armar los reportes reales queda para cuando Lina tenga su propia
+  instancia — no hay que construirlos ahora.
+- **Búsqueda exhaustiva:** las 26 tablas de Supabase (esquema completo ya revisado hoy),
+  los scripts de ETL (`normalize_q10_data.py`, `sync_sociodemograficos*.py`) y toda la
+  documentación de hojas fuente (`supabase-estructura.md`, `mapa-codigo.md`,
+  `convenciones.md`) — **no existe ninguna columna ni tabla de empresa patrocinadora**.
+  La única coincidencia de "empresa" es el filtro `empresa=Fundación ROFÉ` de la API de
+  Emoflow (multi-tenant de ese SaaS externo, sin relación con patrocinio).
+- **La segmentación por ciudad sí es sólida** (`grupo_ciudad`, 98.7%+ cobertura JC
+  activos) — lo único ausente es el cruce estudiante↔empresa dentro de cada ciudad.
+- Documentado en `docs/procesos/diccionario-metricas.md` (nueva sección bajo la tabla de
+  cobertura). Mismo vacío estructural que "no existe tabla de proveedores" del caso
+  Rocío/WhatsApp — dos relaciones distintas que comparten la misma causa: viven fuera de
+  cualquier sistema digitalizado hoy.
+- **Pendiente:** Samuel evaluará si solicita esta información aparte (Q10, Sheet no
+  digitalizado, o acuerdo verbal con las empresas). No construir nada sobre esta relación
+  hasta que exista una fuente real.
+
+## 2026-07-28 (cont. 4) — [panel-datos-etl] Segunda pasada Q10/Sheets + Bloque 4 (WhatsApp)
+
+**Estado:** Completado (salvo "proveedores", sin fuente)
+**Proceso relacionado:** [[panel-datos-etl]] · [[postulantes-mr-supabase]] · plan-testing-produccion-2026-07-29
+
+- Samuel pidió revisar si Q10 o las hojas fuente (no solo Supabase) tenían algo similar a
+  "empresa patrocinadora". Se escanearon fila 1 y 2 de las 57 pestañas de los 3 Sheets
+  (Q10, BD Seguimiento Monitorias, BD-Mujeres ROFÉ) vía `values_batch_get` (se pegó una
+  vez contra la cuota de lectura de Sheets con `row_values()` por pestaña — corregido a
+  1 request por Sheet). Encontró `Icredit | Microcredito` (64 filas: 26 "ICREDIT"/38
+  "MICROCREDITO", cédula/correo/fecha desembolso) y notó que `HerpowerED` (6.677 filas)
+  podría no ser copia exacta de `General` como concluyó la Fase 0 de
+  `postulantes-mr-supabase.md` (tiene una columna que `General` no trae). **Samuel
+  confirmó que ICREDIT no es la relación buscada** pero pidió conservar el hallazgo por
+  ser útil para MR — documentado como pendiente al final del plan, sin tabla ni script
+  todavía (decisión de Samuel si se ingesta).
+- **Bloque 4 (identificación WhatsApp) ejecutado:**
+  1. Verificada la distribución real de longitudes de celular (no asumida): confirma CO
+     10 / EC-UY 9 / PAN 8 dígitos.
+  2. Cobertura real en cohorte 2026 medida por `q10_id=cedula` directo: **776/777 JC
+     (99.9%) y 342/343 MR (99.7%)** — mejor que el 86.6% MR que citaba el plan original
+     (ese número venía de depender del `participant_id` precalculado, que solo cubre 557
+     de 5.310 postulantes MR).
+  3. Colisiones medidas: 26 números compartidos por 2+ cédulas de 7.758 filas con
+     teléfono (0.34%), la mayoría típos de cédula a 1 dígito, no personas reales
+     compartiendo número.
+  4. **Tasa de match estimada >95%**, por encima del umbral ~85% del criterio de
+     aceptación — no hace falta camino de respaldo obligatorio para el bot.
+  5. **`identificar_contacto(telefono)` construida** (`docs/migrations/021_identificar_contacto.sql`):
+     normaliza local/E.164 (CO/EC/UY/PAN), devuelve `{programa,cohorte,estado}` sin PII.
+     SECURITY DEFINER pero **REVOKE de anon/authenticated** (verificado 401 con la anon
+     key real) — expone menos que la ficha completa pero sigue confirmando membresía a
+     un programa, se deja en service_role hasta decidir qué rol usa el bot.
+  6. **"Proveedores" sigue sin fuente** — mismo vacío estructural que "empresa
+     patrocinadora", no derivable de nada existente.
+- Documentado en `plan-testing-produccion-2026-07-29.md` (Bloque 4 cerrado),
+  `postulantes-mr-supabase.md` (hallazgo ICREDIT/HerpowerED) y `diccionario-metricas.md`.
+- **Con esto: Bloques 1, 2 y 4 del plan de testing cerrados.** Bloque 3 (preguntas
+  doradas) sigue bloqueado por la conversación pendiente con Lina sobre sus informes
+  reales — según Samuel, esos reportes se construirán cuando ella tenga su propia
+  instancia, no antes.
+
+## 2026-07-28 (cont. 5) — [whatsapp-identificacion-manychat] Proveedores por captura conversacional
+
+**Estado:** Backend completado, ManyChat sin conectar (no existe la cuenta)
+**Proceso relacionado:** [[whatsapp-identificacion-manychat]] · [[panel-datos-etl]] · plan-testing-produccion-2026-07-29
+
+- Samuel pidió documentar el hueco de "empresa patrocinadora" y "proveedores" con
+  claridad de que son problemas distintos, y dio la visión de resolver proveedores
+  capturando la info directamente del chat de WhatsApp (en vez de esperar una lista
+  blanca manual) — además pidió que el diseño quedara listo para conectar con ManyChat
+  fácilmente.
+- **Distinción documentada explícitamente** (`whatsapp-identificacion-manychat.md`):
+  empresa patrocinadora describe a un estudiante (para informes de Lina, sin solución —
+  no tiene sentido preguntárselo a quien no escribe al bot); proveedor describe a quien
+  sí escribe al bot de WhatsApp, y por eso sí se puede resolver por chat.
+- **Construido en Supabase:** tabla `whatsapp_contactos_declarados` (teléfono
+  normalizado PK, tipo `proveedor`/`patrocinador`/`otro`, empresa texto libre, PII →
+  solo service_role) + función `declarar_contacto_whatsapp()` (upsert, valida tipo) +
+  `identificar_contacto()` extendida (migración de la del Bloque 4) para devolver
+  `origen=declarado` cuando el teléfono no es estudiante pero ya fue clasificado antes.
+  Un solo endpoint de lectura con 3 resultados posibles (estudiante/declarado/0 filas)
+  para que ManyChat solo necesite 1 External Request por mensaje entrante.
+- **Gotcha real:** la primera versión de `declarar_contacto_whatsapp` usó `RAISE
+  EXCEPTION '...: %%'` (doble %, sintaxis equivocada) → error de compilación que hizo
+  que Supabase revirtiera la migración COMPLETA, incluida la `CREATE TABLE` de la
+  sentencia anterior en el mismo script. Hubo que recrear la tabla aparte. Documentado
+  como gotcha para cualquier migración con varias sentencias DDL.
+- **Probado end-to-end:** estudiante conocido (2 matrículas), contacto nuevo (0 filas),
+  declarar como proveedor, y volver a consultar en formato local Y en E.164 completo
+  (`+57 300...`) — los 4 casos correctos. `anon` key verificada en 401 en ambas
+  funciones.
+- **Contrato para ManyChat documentado, no implementado todavía:** 2 webhooks n8n
+  (`whatsapp-identificar`/`whatsapp-declarar`) como proxy — decisión explícita de NO
+  conectar ManyChat directo a Supabase porque eso obligaría a pegar la `service_role
+  key` en la config de un SaaS externo, rompiendo la convención del proyecto de que las
+  claves privilegiadas viven solo en `.env.local`/n8n. Mismo patrón que ya usa
+  `zoom-asistencia`.
+- Agregado a `00-vision-global.md` (Procesos en progreso) y referenciado desde
+  `diccionario-metricas.md` y `plan-testing-produccion-2026-07-29.md` (Bloque 4).
+- **Pendiente:** crear la cuenta ManyChat (no existe), construir los 2 workflows n8n,
+  definir con Rocío el texto exacto de la pregunta de clasificación.
+
+## 2026-07-28 (cont. 6) — [panel-datos-etl] Empresa patrocinadora JC — fuente encontrada e ingestada
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-datos-etl]] · [[supabase-estructura]] · plan-testing-produccion-2026-07-29
+
+- Samuel encontró (a mano, no la búsqueda automática) dónde vivía "empresa
+  patrocinadora": pestaña `Seguimiento` (BD Seguimiento de Monitorias), **columna Q,
+  encabezado real "Pertenecen"** — 4 valores: PriceSmart, Empower, Visa, y blanco.
+  Explica por qué el barrido por keyword del hallazgo anterior (empresa/patrocinador/
+  sponsor/convenio) no la encontró: el encabezado real no usa ninguna de esas palabras.
+- Verificado en vivo, **solo lectura** (`col_values`/`get`, sin tocar la Sheet a pedido
+  explícito de Samuel): la columna Q solo tenía dato en las primeras 352 de 760 filas —
+  parecía un vacío de captura (54% sin llenar). **Samuel confirmó que blanco SÍ es
+  "Otros"** (el valor por defecto), no un dato faltante — decisión explícita que cambia
+  el tratamiento: escribir 'Otros' siempre, nunca NULL.
+- **Ingestado a `participants.empresa_patrocinadora`** (enum `PriceSmart`/`Empower`/
+  `Visa`/`Otros`, migración `docs/migrations/023_empresa_patrocinadora_jc.sql`) vía
+  `sync_sociodemograficos.py` extendido (única excepción a la regla general del script
+  de "blanco = no tocar" — aquí blanco se escribe activamente como 'Otros').
+- **Distribución real verificada (cohorte JC 2026, n=777):** Otros 427 · PriceSmart 229
+  · Empower 74 · Visa 29 · sin dato 18 (mismo grupo que la alerta `en_seguimiento_jc` —
+  estudiantes ausentes de toda la pestaña Seguimiento).
+- **Alcance SOLO JC** — MR sigue sin fuente conocida (ICREDIT/HerpowerED encontrados
+  antes no son esta relación, ver `postulantes-mr-supabase.md`).
+- Documentado en `diccionario-metricas.md` (con la lección: barrido automático por
+  keyword tiene techo, encabezados con otra redacción no lo disparan — preguntarle a
+  quien conoce el Sheet de memoria antes de dar algo por inexistente), corregido en
+  `whatsapp-identificacion-manychat.md` (ya no es "sin solución", aunque sigue siendo un
+  canal distinto al del bot) y `supabase-estructura.md` (columna nueva documentada).
+  `plan-testing-produccion-2026-07-29.md` actualizado con nota de que este hueco ya no
+  aplica para JC.
+- **Con esto, de los huecos de datos identificados hoy:** empresa patrocinadora JC
+  resuelto, proveedores resuelto por diseño (captura conversacional), empresa
+  patrocinadora MR sigue abierto sin pista.
+
+## 2026-07-28 (cont. 7) — [postulantes-mr-supabase] Microcréditos ICREDIT ingestados + cierre MR/ManyChat
+
+**Estado:** Completado
+**Proceso relacionado:** [[postulantes-mr-supabase]] · [[panel-datos-etl]]
+
+- Samuel dio 3 instrucciones de cierre: (1) para MR, `empresa_patrocinadora` queda `NULL`
+  a propósito — la pregunta aún no aplica, no es un hueco pendiente; (2) los
+  microcréditos ICREDIT sí son útiles, traerlos a Supabase; (3) ManyChat se queda solo
+  documentado, sin construir nada más.
+- **(1) Verificado y documentado:** solo 1 de 589 postulantes MR tiene
+  `empresa_patrocinadora` no nulo, y es alguien que también está en `postulantes_jc` (el
+  valor le llegó legítimamente por su lado JC, no es un bug). El diseño ya cumplía la
+  regla por construcción — se ajustó la redacción en `diccionario-metricas.md` y
+  `supabase-estructura.md` de "hueco pendiente" a "NULL por diseño, no aplica".
+- **(2) `mr_microcreditos` creada e ingestada** (`docs/migrations/024_mr_microcreditos.sql`
+  + `scripts/panel-datos/sync_microcreditos_mr.py`, reutiliza `Supa`/`cargar_env_local`/
+  `norm_id` de `sync_postulantes_mr.py` por import). Releído el Sheet completo (solo
+  lectura) para diseñar bien el esquema: la columna `CREDITO` tiene 2 valores distintos
+  (`ICREDIT`/`MICROCREDITO`, no una sola empresa), y **una persona puede tener más de un
+  desembolso** (cédula `1002189955` aparece 2 veces con fechas distintas) — la tabla NO es
+  1 fila = 1 persona, `UNIQUE(cedula, tipo_credito, fecha_desembolso)`. `fecha_desembolso`
+  queda texto crudo (formatos incompatibles y ambiguos en año entre las dos secciones del
+  Sheet). Cargado: 64 filas (26 ICREDIT, 38 MICROCREDITO), 61 cédulas distintas, 64/64 con
+  match en `postulantes_mr`. PII → verificado 401 con anon key real.
+- **(3) ManyChat:** sin cambios, se confirma que queda solo como diseño/documentación en
+  `whatsapp-identificacion-manychat.md` — no se construyeron los webhooks n8n.
+- Agregado a `CLAUDE.md` (árbol + tabla de componentes). Actualizado
+  `postulantes-mr-supabase.md`, `diccionario-metricas.md`, `supabase-estructura.md`.
+
+## 2026-07-28 (cont. 8) — [panel-datos-etl] Auditoría estadística mayor: 2 agentes + bug real corregido
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-datos-etl]] · [[supabase-estructura]] · [[postulantes-mr-supabase]]
+
+- Samuel pidió la auditoría más grande posible: 2 agentes que invocaran más agentes,
+  cada uno buscando en todas las fuentes de datos disponibles, para contrastar
+  Supabase tabla por tabla contra su fuente real y verificar coherencia de "cantidad
+  de mujeres por programa". Se lanzaron 2 agentes en background (general-purpose,
+  con acceso a Agent para spawnear sub-agentes propios):
+  - **Inventario de fuentes** (5 sub-agentes en paralelo: Q10, BD Seguimiento
+    Monitorias JC, BD-Mujeres ROFÉ, Emoflow, Zoom) → `tools/auditoria_2026-07-28/informe_fuentes.md`.
+  - **Auditoría Supabase vs fuentes** (5 sub-agentes por clúster de tablas) →
+    `tools/auditoria_2026-07-28/informe_supabase_vs_fuentes.md`.
+- **Bug real encontrado y corregido:** `v_programa_stats_por_ciudad` tenía un JOIN
+  muerto (filtro `c.programa='jc'` en el `ON` de un LEFT JOIN nunca referenciado en
+  WHERE/SELECT) combinado con `en_seguimiento_jc IS DISTINCT FROM false` (NULL para
+  MR, que sí pasa ese filtro) — mezclaba JC y MR, inflando Bogotá +125 matrículas y
+  contaminando la población con ~525 personas MR-only (fila espuria "OTROS").
+  Corregido con el mismo patrón ya probado en `v_demografia_grupo`/
+  `v_emprendimiento_por_ciudad` (`participa_en()` + filtrar enrollments a JC-only)
+  — `docs/migrations/025_fix_v_programa_stats_por_ciudad.sql`. Verificado: suma de
+  participantes por ciudad = 760 exacto, promedio de avance pasó de un rango
+  incoherente (31.0%-97.2%) a uno coherente (93.0%-98.4%), 44/44 tests en verde,
+  `anon` sigue con acceso correcto (200).
+- **El hallazgo más buscado (Δ26 MR) quedó explicado:** no es corrupción — hueco de
+  diseño estructural, `enrollments`/`participants` nunca marcan baja académica a
+  nivel de fila para MR (los inhabilitados solo existen en el pipeline paralelo de
+  Q10, invisible a cualquier query directa). Mismo mecanismo que el Δ17 de JC.
+- **Hallazgo nuevo — `retiros` MR estructuralmente roto para 2026:** 0 de 343
+  matriculados cruzan por cédula; las 8 filas "2026" en realidad son de matrícula
+  2025; su cuadre aparente con `cohorte_ingresos.retirados=25` es coincidencia entre
+  2 metodologías de conteo incompatibles (año de registro de baja vs. cohorte real).
+- **Hallazgo nuevo — `cohorte_ingresos` JC no cuadra internamente:** `retirados=79`
+  guardado ≠ `ingresados−activos=72` (gap de 7, sin investigar a fondo).
+- **Corrección a mi propio hallazgo de hoy:** `HerpowerED` SÍ es copia de `General`
+  (99.98% solape) — mi nota anterior ("~1.500 filas más, columna exclusiva") medía
+  `row_count` de metadata en vez de filas reales. Corregido en
+  `postulantes-mr-supabase.md`. Lección transversal: nunca usar `row_count`/grid
+  metadata de Sheets como proxy de volumen de datos en este proyecto.
+- **`postulantes_mr` desactualizada:** recalculado con la función real
+  `extraer_bd()` (no estimado) → **37 cédulas nuevas** tras aplicar exclusiones,
+  listadas fila por fila en el Excel. No se re-cargó (queda en el plan de acción,
+  P1 — de bajo riesgo, listo para la próxima sesión).
+- **Entregables:** `docs/procesos/plan-accion-auditoria-2026-07-28.md` (hallazgos
+  priorizados P0-P3 + qué se resolvió hoy) y
+  `tools/auditoria_2026-07-28/auditoria_fuentes_vs_supabase.xlsx` (9 hojas: resumen,
+  núcleo JC, núcleo MR, género JC en Sheet vs Supabase, las 37 postulantes MR
+  nuevas fila por fila, el detalle completo de los 33 retiros MR rotos, vistas y
+  seguridad, hallazgos priorizados).
+- **Sin hallazgos críticos de seguridad** en las 28 tablas + 26 vistas — RLS/GRANT
+  correctos, incluidas las 3 tablas más nuevas del día.
+- **Pendiente (documentado en el plan de acción, ninguno aplicado a propósito):**
+  decisión de Samuel sobre `retiros` MR (P0); re-correr `sync_postulantes_mr.py`,
+  investigar el gap de 7 en `cohorte_ingresos` JC, correr `capturar_rebotes.py`
+  (P1); criterio inconsistente en `cohorte_stats`, contradicción Q10
+  Observaciones/Estadisticas, estancamiento de Emoflow (P2); higiene de Sheets
+  fuente (P3).
+
+## 2026-07-28 (cont.) — Cronograma de implementación P0-P7 con fecha pactada (Cowork)
+
+**Estado:** Completado
+**Proceso relacionado:** [[prioridades-automatizacion-ia]] · [[gobernanza-contexto-ia]]
+
+- Lina pactó con dirección una fecha fija: **11 de agosto de 2026**, entrega de la DB
+  funcional ante cualquier consulta por Claude. Se aclaró que esa fecha entrega JC/MR
+  funcional, **sin asistencia ni datos de Zoom en tiempo real todavía** (eso llega en P1).
+- Se puso fecha a toda la ruta P0-P7 acordada antes: P0 (testing profundo, 2 semanas,
+  28 jul→11 ago) → **hito 11 ago** → P1 (automatización Zoom, 2 semanas) en paralelo con
+  P2 (permisos admin Zoom/Gmail, sin plazo propio — depende de administración, marcado
+  como el mayor riesgo de atraso en cadena) → P3 (alertas de riesgo + trazabilidad de
+  asistencia, 3 días — se adelantó frente al orden anterior porque sale rápido una vez
+  P1 alimenta la DB) → P4 (clasificador de WhatsApp sobre **ManyChat**, 2 semanas — se
+  atrasó frente al orden anterior porque integrar la herramienta toma más tiempo; ManyChat
+  ya estaba documentado como diseño en `whatsapp-identificacion-manychat.md`, sin
+  webhooks construidos aún, según el bloque de testing de esta misma fecha) → P5 (entrega
+  de instancia completa de Claude — repo de gobernanza + instancias individuales, 2
+  semanas). Estimado de cierre de implementación completa en tiempo real: **25 de
+  septiembre**. P6 (delegar tareas de Astrid/Cristian/Lina a skills y agentes) y P7 en
+  adelante quedan sin fecha, iterativos.
+- Nota operativa: cada instancia individual de Claude en un entorno distinto toma ~3 días
+  extra de ajuste por contexto/equipo/herramientas — a tener en cuenta al planear P5.
+- Entregado `Cronograma-implementacion-2026-07-28.docx` (mismo estilo, sin colores).
+- **Pendiente:** confirmar con administración el plazo real de P2 (permisos Zoom/Gmail),
+  ya que es la dependencia con mayor riesgo de correr toda la cadena P1→P5.
+
+## 2026-07-29 — Unificación de planes de manejo de DB (Fable + Sonnet)
+
+**Estado:** Completado
+**Proceso relacionado:** [[plan-maestro-2026-07-29]] · [[plan-consolidacion-datos-2026-07-27]]
+
+- Había 6 documentos de planeación de DB superpuestos y parcialmente redundantes:
+  `plan-maestro-2026-07-28.md` (ya era una fusión previa), `plan-produccion-datos-2026-07-24.md`,
+  `plan-testing-produccion-2026-07-29.md`, `plan-accion-auditoria-2026-07-28.md`, y dos prompts
+  de arranque para Fable ya ejecutados (`prompt-analisis-emoflow.md`, `prompt-testing-supabase.md`
+  en la raíz del repo, fuera de convención).
+- Leídos los 6 completos + `plan-consolidacion-datos-2026-07-27.md` para no perder contenido
+  vigente. Se creó `docs/procesos/plan-maestro-2026-07-29.md`: absorbe lo ya cumplido como
+  evidencia resumida (sin reproducir instrucciones muertas) y consolida todo lo pendiente sin
+  duplicar — incluyendo 2 piezas que el plan-maestro del 28-jul había dejado fuera: la lista
+  concreta de "preguntas doradas" del Bloque 3 y la decisión de credencial (anon vs rol
+  intermedio) para las instancias de Lina/Astrid.
+- `plan-consolidacion-datos-2026-07-27.md` (histórico 2019-2026, ~95% pendiente) se mantiene
+  intacto y aparte a propósito — demasiado detalle técnico irremplazable para fusionar; solo se
+  actualizaron sus 4 referencias cruzadas a `[[plan-testing-produccion-2026-07-29]]` (archivado)
+  → `[[plan-maestro-2026-07-29]]`.
+- Los 6 documentos superados se movieron a `docs/archivo/` (mismo patrón que archivados previos,
+  ver `docs/archivo/README.md`) en vez de borrarse, por trazabilidad de decisiones.
+- Actualizada la tabla "Archivos clave" de `00-vision-global.md` para apuntar al plan unificado.
+
+## 2026-07-29 (cont.) — Fusión de la decisión JC/MR al plan maestro
+
+**Estado:** Completado
+**Proceso relacionado:** [[plan-maestro-2026-07-29]]
+
+- Apareció `docs/procesos/decision-separacion-db-jc-mr.md` (decisión tomada hoy con
+  `/consejo-medio`: NO separar la DB física por programa, reforzar RLS/policies en su lugar) tras
+  la unificación de planes de la entrada anterior. Se fusionó íntegra como §7 de
+  `plan-maestro-2026-07-29.md` en vez de dejarla como documento aparte, para que quedara un solo
+  documento vivo de manejo de DB.
+- Su condición #1 pendiente ("auditar las RLS/policies actuales para confirmar que aíslan de
+  verdad JC de MR") se agregó como punto P1#6 en el plan maestro — no se pierde como tarea suelta.
+- El archivo original se movió a `docs/archivo/` (mismo patrón que los 6 documentos archivados en
+  la entrada anterior) y se indexó en `docs/archivo/README.md`.
+
+## 2026-07-29 (cont.) — Loop de coherencia de datos (6 fuentes + vuelta conjunta)
+
+**Estado:** Completado (auditoría) — sin escrituras a Supabase, todas pendientes de OK
+**Proceso relacionado:** [[panel-datos-etl]] · [[supabase-estructura]] · [[plan-maestro-2026-07-29]]
+
+- Vuelta fuente por fuente (Q10, BD Seguimiento JC, BD-Mujeres ROFÉ, retiros, Emoflow,
+  aprobacion/data.json) usando siempre la función de extracción real de cada `sync_*` en
+  `--dry-run` (nunca metadata de Sheets), + vuelta conjunta con `test_integridad_supabase.py`
+  completo: **47/47 PASS**.
+- **Hallazgo nuevo — rename de curso en Q10 crea fila duplicada en `courses`.**
+  `Desarrollo Web Front-End - HTML - 2026` → `...HTML Y CSS - 2026` (JC, 777 matrículas
+  huérfanas desde el 24-jul) y un curso MR que dejó de aparecer en la fuente sin evidencia de
+  rename (`De la idea a la acción...`, 136 matrículas huérfanas desde el 21-jul). Mismo
+  mecanismo en `enrollments` y `aprobacion_cursos`. Documentado como gotcha reutilizable en
+  `convenciones.md` (cualquier tabla con `UNIQUE` por nombre puede sufrirlo) y en
+  `supabase-estructura.md`. Pendiente decisión de Samuel: fusionar bajo el `course_id` vigente
+  o dejar como residuo histórico — agregado como P0#3 en el plan maestro.
+- **Confirmado en vivo: las 17 personas de `en_seguimiento_jc=false` son exactamente las 17
+  que hoy desaparecieron de h2test** (cruce 17/17 exacto, sin PII en el chat) — la alerta
+  operativa funcionó, Q10 ya confirmó esas bajas. `cohorte_ingresos.activos` (el KPI oficial)
+  ya está en 760/322 JC/MR y fresco; solo la tabla `enrollments` cruda sigue en 777/347 a la
+  espera de que `cargar_supabase.py` vuelva a correr (payload ya generado).
+- **P1#2 "gap de 7" JC resultó ya resuelto desde el 2026-07-26** (reingresos, Δ=0 exacto
+  re-confirmado hoy) — `plan-maestro-2026-07-29.md` lo tenía desactualizado como pendiente;
+  corregido (solo documentación).
+- **P2 "Emoflow con el mismo conteo 8+ días" queda resuelto:** re-derivado desde la API en
+  vivo (no el CSV cacheado) y sigue en 826 — es una base de usuarios genuinamente estable, no
+  un pipeline estancado.
+- Resto de las fuentes (BD Seguimiento JC, retiros, empresa_patrocinadora, cobertura
+  sociodemográfica, `postulantes_mr` salvo el Δ36 ya documentado como P1#1) sin discrepancias
+  nuevas frente a `diccionario-metricas.md`.
+- **Nada se escribió en Supabase.** Se presentó tabla de arbitraje con 5 decisiones pendientes
+  (re-correr `cargar_supabase.py`, fusionar o no los 2 cursos huérfanos, re-correr
+  `sync_postulantes_mr.py`) — la sesión cerró antes de que Lina respondiera. Payload y reportes
+  quedan listos en `tools/` para la próxima sesión.
+- Entregable: `tools/coherencia_2026-07-29/informe_coherencia.md` (informe completo, PII
+  excluida — solo agregados y cédulas enmascaradas en las muestras impresas en consola).
+
+## 2026-07-29 (cont.) — Renombre de curso en Q10: causa raíz, migraciones 026/027 y vigilancia (Cowork)
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-datos-etl]] · [[supabase-estructura]] · [[diccionario-metricas]]
+
+- Partió de una pregunta de Lina sobre el hallazgo del loop de coherencia ("no entiendo si en
+  Q10 le cambiaron el nombre o qué pasó"). Verificado en vivo contra Supabase: el 24-jul
+  alguien renombró adrede y sin aviso el curso JC `DESARROLLO WEB FRONT-END - HTML - 2026` a
+  `... - HTML Y CSS - 2026`. Confirmado por Lina que es el mismo curso. El ETL hizo lo correcto
+  según sus reglas: el export h2test no trae código de curso (solo el nombre en fila 1 de
+  celdas fusionadas) y `courses` tiene `UNIQUE(nombre,cohorte)`, así que el nombre ES la
+  identidad y un nombre nuevo = curso nuevo.
+- **El loop había subestimado el alcance y propuesto un fix inviable.** El fantasma estaba en
+  4 tablas, no en 1 (`courses`/`enrollments` 777, `aprobacion_cursos` 779/66.8%,
+  `historial_cursos` 6 fechas, `historial_cursos_ciudad` 54 filas). Y "fusionar las 777
+  matrículas bajo el course_id nuevo" habría violado `UNIQUE(participant_id,course_id)` en 760
+  de 777 filas — esas personas ya estaban en el curso nuevo. No había nada que fusionar: la
+  fila vieja era 760 duplicados congelados + los 17 dados de baja.
+- **El 66.8% de `aprobacion_cursos` estaba documentado en `diccionario-metricas.md` como el
+  piso real del rango de aprobación JC.** Era el fantasma. Piso verdadero: 81.1%. Corregido con
+  nota de la lección (un extremo de rango 15 puntos fuera del resto merece verificarse contra
+  la fuente antes de documentarse).
+- **Causa raíz general, más valiosa que el caso puntual:** los ETL solo hacen upsert y **nunca
+  reconcilian lo que desaparece de la fuente**. Los 4 síntomas del fantasma + los 17
+  "fantasmas" de matrículas en otros 6 cursos JC son el mismo mecanismo. Documentado en
+  `convenciones.md` con la regla derivada: al auditar, revisar por exceso antes que por defecto.
+- **Decisión de diseño de Lina (clave):** la administración de cursos en Q10 es impredecible
+  (sin fechas de cierre, con actividad permitida en cursos pasados, con renombres sin aviso), así
+  que hay que ser flexible y estar pendiente de choques. Eso **invalidó** la propuesta inicial de
+  `estado activo/cerrado` + `fecha_cierre`: un curso "cerrado" puede revivir. Evidencia de que
+  ese camino ya estaba mal recorrido: `courses.estado` ya existía, el ETL lo escribe hardcodeado
+  como `"activo"` para todo, y el curso MR que sí cerró sigue marcado activo.
+- **Migración 026 (aplicada):** `courses.visto_en_fuente_at` (hecho verificable en vez de estado
+  interpretado; si un curso revive, revive solo), `cursos_alias` (punto único de confirmación
+  humana de un renombre, que los ETLs consultan y sirve para MAYÚSCULAS y Title Case a la vez),
+  `datos_archivados` (regla nueva: nada se borra — 839 filas archivadas, reversibles), y limpieza
+  del fantasma en las 4 tablas + reunificación de la serie de tiempo en una línea continua.
+- **Migración 027 (aplicada):** `v_choques_cursos`, 5 señales. La mejor es `avance_retrocede`:
+  el avance no puede bajar por naturaleza, así que no admite falsos positivos. `renombre_probable`
+  usa `pg_trgm` con umbral **calibrado con datos reales** (caso HTML 0.854, par de cursos
+  distintos 0.471 → umbral 0.60; el 0.45 inicial habría dado una alerta alta falsa). Requirió
+  2 correcciones en sesión: limitar a la cohorte vigente (la v1 daba 32 informativos falsos de
+  cohortes 2023-2025) y subir el umbral. Estado final: 1 fila informativa, 0 alertas altas.
+- **Las 15 vistas que dependen de `courses` se autocorrigieron sin tocar una definición.**
+  Verificado antes/después: solo cambiaron las 4 por-curso, el resto idéntico.
+  `v_programa_stats` JC-2026 pasó de 6.080 a 5.320 matrículas = exactamente el conteo de la
+  fuente viva (el fantasma explicaba el 100% de esa discrepancia); avance JC 96.2% → 98.1%;
+  `cohorte_ingresos` 760/322 y suma por ciudad 760 intactos. Integridad: 0 huérfanas, 0
+  duplicados. Seguridad: los 3 objetos nuevos solo `service_role`.
+- **ETL parcheado (no corrido — sin credenciales de Supabase en esta sesión):**
+  `cargar_supabase.py` absorbe renombres desde `cursos_alias` con dedup keepMax antes del upsert
+  y sella `visto_en_fuente_at`; `sync_aprobacion_supabase.py` descarta la fila del nombre viejo
+  cuando el nuevo ya viene en el payload (y la renombra si solo llegó el viejo). Sintaxis
+  verificada con `py_compile`. **Samuel debe correrlos y luego
+  `test_integridad_supabase.py --rapido`.**
+- **Regla nueva para el loop de coherencia:** Supabase conserva MÁS filas que la fuente viva a
+  propósito (MR: 559 vs 423, por el curso que cerró). Comparar solo lo que la fuente confirmó en
+  la última corrida, nunca `count(*)` completo — si no, es una falsa alarma en cada vuelta.
+  Agregado a `prompt-loop-coherencia-fuentes.md`.
+- **Pendiente:** conectar `v_choques_cursos` a un workflow n8n con aviso a Telegram (solo
+  severidad alta); decidir el criterio de "matrícula vigente" para los 17 fantasmas; correr los
+  2 scripts parcheados.
+
+## 2026-07-29 (cont.) — Cierre de 2 de los 3 pendientes: ETL corridos + workflow alerta-choques-cursos
+
+**Estado:** Punto 1 y 2 completados. Punto 3 (criterio de "matrícula vigente") sin implementar,
+requiere decisión de Lina — no se tocó.
+**Proceso relacionado:** [[panel-datos-etl]] · [[supabase-estructura]] · [[convenciones]]
+
+- **Punto 1 — ETL parcheados ayer, corridos hoy por primera vez.** Baseline verificado exacto
+  contra lo esperado antes de tocar nada (760/322 activos, 5.320 vigentes, 839 archivados, 1
+  alias). `normalize_q10_data.py` → `cargar_supabase.py` → `sync_aprobacion_supabase.py` →
+  `test_integridad_supabase.py --rapido`: **44/44 PASS**. "Renombres absorbidos: 0" en ambos
+  ETL — correcto, la fuente ya solo trae el nombre nuevo. Verificado post-corrida:
+  `visto_en_fuente_at` refrescó a hoy para los 9 cursos vivos y **se quedó congelado en 21-jul**
+  para el curso MR que sí cerró clases — el patrón de la migración 026 funcionó sin
+  intervención humana, exactamente como se diseñó.
+- **Punto 2 — workflow n8n `alerta-choques-cursos` creado y activo** (diario 13:00 COT, tras la
+  primera corrida del día de `q10-sync-supabase`; `errorWorkflow` apuntando a
+  `alerta-fallo-workflow` como el resto de workflows del proyecto). Script nuevo
+  `scripts/panel-datos/check_choques_cursos.py` (service_role — la vista es service_role-only).
+  Clonar el patrón de `alerta-frescura-vencida` sin probarlo de punta a punta escondía **3 bugs
+  independientes**, todos descubiertos forzando una alerta de prueba real hacia el Telegram de
+  Samuel antes de activar en serio:
+  1. El patrón de `> log.txt 2>&1 & powershell Get-Content -Tail` para capturar stdout no era
+     la causa (se probó quitarlo, no cambió nada) — el mojibake real (`ACCIÃ"N` en vez de
+     `ACCIÓN`) resultó ser un glitch transitorio de las primeras 1-2 ejecuciones tras activar un
+     workflow recién creado; ejecuciones posteriores del mismo comando salieron limpias. No se
+     encontró causa raíz determinística — documentado como sospecha, no como hecho.
+  2. **El nodo `IF` rutea la rama verdadera al índice 0 de `connections.main`, no al índice que
+     "parece" correcto por el orden en que se copió la plantilla.** Clonar el orden
+     `[[OK],[Notificar]]` de `alerta-frescura-vencida` tal cual dejaba la condición "hay alerta"
+     enrutando a `OK` y el caso "todo bien" enrutando a `Notificar` — exactamente al revés.
+     Verificado empíricamente forzando el `IF` a verdadero. Corregido para este workflow nuevo.
+     **Sin verificar si `alerta-frescura-vencida` (la plantilla original) tiene el mismo
+     defecto — no se tocó, queda como sospecha para que Samuel decida si audita ese workflow.**
+  3. Telegram con `parse_mode` Markdown (aplicado por default, `additionalFields.parseMode:
+     "none"` no tuvo efecto) se comía los `_`/`[` del texto crudo de la vista
+     (`no_visto_en_fuente` llegaba como `novistoenfuente`, sin error). Fix real: escapar en el
+     script (`_md_seguro()`), no en la expresión de n8n.
+  4. Bug aparte, ya documentado en convenciones: `\n` embebido en la expresión de n8n del nodo
+     Telegram llegó como salto de línea real en vez de escape JS, `invalid syntax`. Fix:
+     el script imprime el mensaje completo por stdout: la expresión de Telegram solo referencia
+     `$('Nodo').item.json.stdout`, sin concatenar — mismo patrón ya usado (correctamente) por
+     `alerta-desercion-semanal`.
+  Los 4 hallazgos quedaron documentados en `convenciones.md` para no repetirlos al clonar el
+  próximo workflow de alerta.
+- **Punto 3 — no se implementó, según instrucción explícita.** Queda pendiente de que Lina
+  decida el criterio de "matrícula vigente" para los 17 fantasmas de baja (`en_seguimiento_jc`
+  vs. un `visto_en_fuente_at` por matrícula vs. usar el `updated_at` que ya existe).

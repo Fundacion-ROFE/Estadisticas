@@ -515,6 +515,40 @@ credencial en memoria `reference-n8n-api-key`). Reglas aprendidas (2026-07-07 y 
   `[c for grupo in conds for c in grupo]`. **Regla:** tras crear/editar un workflow por API,
   no basta con verificar `active: true` — hay que mirar la **primera ejecución real**
   (`GET /executions?workflowId=…`) antes de darlo por bueno.
+- **Gotcha (2026-07-29) — el nodo `IF` (typeVersion 2.2) rutea la rama `true` al índice 0 de
+  `connections.main`, no al índice que "suena" correcto por el orden en que se escriben las
+  ramas.** Al clonar `alerta-frescura-vencida` para construir `alerta-choques-cursos`, se copió
+  el orden `main: [[OK], [Notificar]]` tal cual estaba en la plantilla, asumiendo que la primera
+  rama del array era la que correspondía al caso "todo bien" solo porque se había puesto ahí.
+  Prueba empírica (forzar el `IF` a verdadero con datos de test): con ese orden, la condición
+  verdadera ("hay alerta") enrutaba a `OK` y la falsa a `Notificar` — **exactamente al revés**
+  de la intención. Fix: `main: [[Notificar], [OK]]`. **Regla: el índice 0 SIEMPRE es la rama
+  verdadera; no asumir el orden por cómo quedó en un workflow que se está clonando — probarlo
+  forzando ambos casos antes de confiar en la plantilla copiada.** Pendiente de verificar si
+  `alerta-frescura-vencida` (la plantilla original) tiene el mismo defecto — no se tocó ese
+  workflow en esta sesión, solo se documenta la sospecha.
+- **Gotcha (2026-07-29) — Telegram (parse_mode Markdown, aplicado por default aunque no se
+  fije `additionalFields.parseMode` explícito) se come `_`/`[`/`*` del texto sin avisar ni
+  fallar.** Un mensaje con `no_visto_en_fuente` llegó como `novistoenfuente` (guiones bajos
+  desaparecidos) y con `[tipo]` sin corchetes — sin error, `ok: true`, nada que indicara el
+  problema salvo comparar visualmente el texto enviado. Intentar `additionalFields.parseMode:
+  "none"` no tuvo efecto (el valor se guarda pero Telegram sigue aplicando Markdown). **Fix
+  real:** escapar en el script que arma el mensaje (no en la expresión de n8n) los caracteres
+  `_ * \` [` con `\` antes de enviarlos — ver `_md_seguro()` en `check_choques_cursos.py`.
+  Cualquier mensaje a Telegram que incluya texto crudo de una fuente (nombre de curso, tipo de
+  señal, identificador con guion bajo) necesita este escape.
+- **Gotcha (2026-07-29) — construir el JSON de un workflow con un script (Python/PowerShell)
+  en vez de escribirlo a mano hace fácil perder la cuenta de capas de escape y violar la regla
+  ya documentada de "`\\n` en el JSON, nunca `\n` real" (ver tabla de expresiones n8n arriba).**
+  Un `\\n` escrito en el código fuente de un heredoc terminó llegando a n8n como un salto de
+  línea real (cada capa — parámetro de herramienta, heredoc, parser de Python, `json.dumps` —
+  reduce sin avisar), y el nodo Telegram falló con `invalid syntax` al evaluar la expresión JS.
+  **Patrón robusto que evita el problema de raíz (no solo lo parcha): que el script que corre
+  en `executeCommand` imprima el mensaje COMPLETO y final por stdout (con sus propios saltos de
+  línea reales de Python), y que la expresión de n8n solo referencie
+  `$('Nodo').item.json.stdout` sin concatenar ni construir strings con `\n` embebido.** Es el
+  mismo patrón que ya usaba `alerta-desercion-semanal` — evitarlo (concatenar en la expresión,
+  como se hizo primero en `alerta-choques-cursos`) fue lo que introdujo el bug.
 
 ## Exclusión de usuarios de prueba en exporters
 
@@ -770,3 +804,113 @@ Verificar con `schtasks /Query /TN "n8n-auto-heal-resume" /V /FO LIST`. Ver tamb
 [[migracion-n8n-digitalocean]] — este gotcha es el argumento más fuerte para migrar del portátil
 a un servidor: "un portátil a batería no es un servidor", la ventana de crons coincide
 exactamente con cuándo un portátil suele suspenderse.
+
+## Consejo de 4 personajes para decisiones (ligero / medio / profundo)
+
+Para evaluar una idea o decisión (no un bug, sino "¿deberíamos hacer esto?") antes de comprometer
+tiempo, tres skills en `.claude/skills/` simulan un consejo con 4 roles fijos: 🟢 optimista
+(fortalezas), 🔴 escéptico (ataca sin diplomacia — errores, sesgos, supuestos sin validar), 💰
+economista (costo/beneficio con números) y ⚖️ juez (sintetiza y decide: adelante / con ajustes /
+no adelante). El patrón se repite en 3 niveles según cuánta independencia real necesitan las
+voces:
+
+| Nivel | Skill | Aislamiento | Costo | Cuándo |
+|---|---|---|---|---|
+| Ligero | `/consejo-ligero` | 0 subagentes — todo simulado en un turno | Bajo | Decisiones de bajo riesgo, sanity-check rápido |
+| Medio | `/consejo-medio` | 1 subagente real (solo el escéptico, aislado) | Medio | Cuando importa que el ataque no se suavice por haber "sentido" el resto |
+| Profundo | `/consejo-profundo` | 3 subagentes en paralelo, aislamiento total | Alto | Decisiones de alto riesgo o difíciles de revertir |
+
+**Por qué el escéptico es el primero en aislarse:** en una simulación de un solo turno, todas las
+voces comparten el mismo contexto — el escéptico "ve" el tono optimista recién escrito y tiende a
+suavizarse (anclaje). Aislarlo en un subagente sin memoria de la conversación es la forma más
+barata de recuperar una crítica genuinamente adversarial antes de pagar el costo de aislar también
+al optimista y al economista (nivel profundo, 3 spawns).
+
+Reutilizable para cualquier decisión futura del proyecto (arquitectura, migraciones, alcance de un
+proceso nuevo) — no está atado a ningún dominio de datos específico.
+
+## Nunca usar `row_count`/`gridProperties` de Google Sheets como proxy de volumen de datos
+
+`worksheet.row_count` (o el `row_count`/`col_count` que trae la metadata del grid) cuenta el
+tamaño **formateado** de la hoja, no las filas con datos reales — puede inflar por cientos o
+miles de filas vacías. Gotcha real (2026-07-28): se comparó `HerpowerED` (6.677 `row_count`)
+contra `General` (5.127 filas reales) y se concluyó que `HerpowerED` tenía "~1.500 filas más" y
+una columna exclusiva — ambas conclusiones eran falsas. Al recontar valores reales de la columna
+llave (`values_batch_get` + filtrar filas con celda de cédula no vacía), `HerpowerED` resultó
+tener 5.109 filas reales, 99.98% solapadas con `General` (la limpieza de la Fase 0 original,
+"HerpowerED es copia, se descarta", era correcta desde el principio). **Regla:** para saber
+cuántos datos reales tiene una pestaña, siempre contar valores no vacíos en la columna
+identificadora (cédula/ID), nunca `row_count`/`gridProperties`.
+
+## Un ETL que solo hace upsert nunca reconcilia lo que desaparece de la fuente
+
+**La causa raíz más productiva encontrada hasta ahora** (2026-07-29). Todos los `sync_*` y
+`cargar_supabase.py` del proyecto insertan y actualizan, pero **ninguno detecta que una fila
+dejó de existir en la fuente**. Eso produce cuatro síntomas que parecen problemas distintos y
+son el mismo:
+
+| Síntoma observado | Qué era en realidad |
+|---|---|
+| 17 matrículas "fantasma" en 6 cursos JC, congeladas desde el 23-jul | 17 personas dadas de baja que salieron de h2test; sus filas quedaron |
+| Curso duplicado tras un rename (777 matrículas congeladas) | El nombre viejo salió de la fuente; su fila quedó |
+| Fila espuria en `aprobacion_cursos` con 66.8% | El nombre viejo salió de `data.json` en un sync anterior; la fila quedó |
+| Serie de tiempo bifurcada en `historial_cursos` | Dos nombres del mismo curso conviviendo 6 días |
+
+**Regla:** al auditar coherencia fuente↔Supabase, un conteo que no cuadra casi nunca significa
+"falta cargar algo" — con un ETL upsert-only lo más probable es que **sobre** algo que la fuente
+ya no tiene. Revisar primero por exceso, no por defecto.
+
+**Regla de comparación:** nunca comparar `count(*)` de una tabla contra el conteo de la fuente
+viva. Comparar solo las filas que la fuente confirmó en la última corrida (ver
+`visto_en_fuente_at` abajo). Supabase conserva historia a propósito y va a tener más filas que
+la fuente — eso no es una discrepancia, y tratarlo como tal genera una falsa alarma en cada
+corrida, para siempre.
+
+## Fuente desordenada: sellar "última vez visto", no modelar estados
+
+Cuando la fuente es administrada de forma impredecible, **no modelar su ciclo de vida** — el
+modelo va a mentir. Caso real: se propuso agregar `estado activo/cerrado` + `fecha_cierre` a
+`courses`, y Lina confirmó que Q10 **no tiene fechas de cierre** y que a veces se permite
+seguir actividades en cursos ya terminados. Una columna de estado binario habría sido falsa en
+los dos sentidos: un curso "cerrado" puede revivir, y uno "activo" puede llevar semanas muerto.
+Evidencia de que ese camino ya se había recorrido mal: `courses.estado` **ya existía**, el ETL
+lo escribe hardcodeado como `"activo"` para todo, y el curso MR que sí cerró clases sigue
+marcado `activo`. **No usar `courses.estado` para saber si un curso está vigente.**
+
+Patrón que sí funciona (migraciones 026/027):
+
+1. **`visto_en_fuente_at`** en la tabla — la fuente lo refresca en cada corrida para todo lo
+   que trae. Es un hecho verificable ("hace 8 días no lo vemos") en vez de una interpretación
+   ("cerró"). Si algo revive, revive solo, sin intervención humana ni migración.
+2. **Tabla de alias** (`cursos_alias`) — el único punto donde **una persona** confirma que dos
+   nombres son la misma cosa. Los ETLs la consultan y absorben el renombre antes de escribir,
+   en vez de crear una entidad nueva. Sirve para varias tablas a la vez si se compara
+   normalizado (`upper(btrim(...))`): `courses` guarda MAYÚSCULAS y `aprobacion_cursos` guarda
+   Title Case, y el mismo alias resuelve las dos.
+3. **Vista de vigilancia** (`v_choques_cursos`) — no impide el desorden, avisa cuándo ocurre.
+   La señal más barata y confiable de todas: **una métrica monótona que retrocede**. El avance
+   de un curso no puede bajar; si baja, hay choque de información, sin falsos positivos
+   posibles. Buscar invariantes así en cada dominio nuevo antes de escribir alertas de umbral.
+4. **Nada se borra** — lo que sale de una tabla viva va a `datos_archivados` (jsonb + motivo),
+   reversible con `jsonb_populate_record`.
+
+**Calibrar los detectores con datos reales, no a ojo.** El umbral de similitud de nombres se
+midió antes de fijarlo: el rename real daba 0.854, dos cursos genuinamente distintos daban
+0.471, y el umbral inicial de 0.45 habría generado una alerta de severidad alta falsa. Quedó en
+0.60. Un detector sin calibrar medida es un generador de ruido que la gente aprende a ignorar.
+
+## Rename o cierre de curso en Q10 = fila duplicada, no un update
+
+Cuando una tabla tiene `UNIQUE(nombre, cohorte)` (o cualquier UNIQUE que dependa de un nombre
+que viene de la fuente, no de un ID estable), un rename en la fuente **crea una fila nueva** en
+vez de actualizar la existente — el upsert por nombre no tiene forma de saber que
+"Desarrollo Web Front-End - HTML - 2026" y "...HTML Y CSS - 2026" son el mismo curso. Gotcha
+real (loop de coherencia, 2026-07-29): 777 matrículas JC quedaron congeladas bajo el nombre
+viejo del curso cuando Q10 lo renombró entre el 24 y el 29 de julio; mismo síntoma en un curso
+MR que dejó de aparecer en la fuente (136 matrículas congeladas), sin evidencia de rename —
+posible cierre de periodo. **Cómo detectarlo:** comparar el `updated_at` más reciente de cada
+fila contra la corrida de hoy — una fila con `nombre` similar (mismo prefijo, distinto sufijo)
+pero `updated_at` de días atrás es la señal. **Regla:** al auditar coherencia de una tabla con
+UNIQUE por nombre, siempre revisar `max(updated_at)` agrupado por esa clave, no solo el conteo
+total — el conteo total puede cuadrar por casualidad mientras dos filas están fragmentando el
+mismo curso real.
