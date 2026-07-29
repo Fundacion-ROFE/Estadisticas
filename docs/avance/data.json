@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-28T17:01:35.515798-05:00",
+  "ultima_actualizacion": "2026-07-28T19:11:51.593285-05:00",
   "segmento": "Logica-Nivel 2-2026",
   "por_curso": [
     {
@@ -23,18 +23,18 @@
     {
       "nombre": "Habilidades Esenciales",
       "estudiantes": 762,
-      "aprobados": 737,
-      "pct_aprobados": 96.7,
-      "promedio": 99.49,
+      "aprobados": 740,
+      "pct_aprobados": 97.1,
+      "promedio": 99.5,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "Emprendimiento",
       "estudiantes": 761,
-      "aprobados": 716,
-      "pct_aprobados": 94.1,
-      "promedio": 99.39,
+      "aprobados": 721,
+      "pct_aprobados": 94.7,
+      "promedio": 99.42,
       "min": 0.0,
       "max": 101.0
     },
@@ -50,18 +50,18 @@
     {
       "nombre": "Lógica de Programación",
       "estudiantes": 760,
-      "aprobados": 736,
-      "pct_aprobados": 96.8,
-      "promedio": 98.85,
+      "aprobados": 737,
+      "pct_aprobados": 97.0,
+      "promedio": 98.86,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "HTML",
       "estudiantes": 760,
-      "aprobados": 555,
-      "pct_aprobados": 73.0,
-      "promedio": 88.45,
+      "aprobados": 563,
+      "pct_aprobados": 74.1,
+      "promedio": 88.9,
       "min": 0.0,
       "max": 100.0
     },
@@ -106,8 +106,8 @@
     "total_cursos": 11,
     "total_registros": 8453,
     "estudiantes_unicos_id": 780,
-    "promedio_general": 93.69,
-    "total_aprobados": 7446
+    "promedio_general": 93.73,
+    "total_aprobados": 7463
   },
   "anomalias": [
     {
