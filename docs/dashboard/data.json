@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-29T01:01:10.158202-05:00",
+  "ultima_actualizacion": "2026-07-29T17:01:59.596773-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -15,8 +15,8 @@
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
       "estudiantes": 760,
-      "finalizados": 570,
-      "promedio": 89.23,
+      "finalizados": 577,
+      "promedio": 89.59,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 760,
@@ -26,7 +26,7 @@
     {
       "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
       "estudiantes": 760,
-      "finalizados": 721,
+      "finalizados": 723,
       "promedio": 99.51,
       "min": 0.0,
       "max": 101.0,
@@ -97,7 +97,7 @@
     "total_cursos": 7,
     "total_estudiantes_unicos": 760,
     "total_habilitados": 760,
-    "total_db": 1082
+    "total_db": 939
   },
   "mr": {
     "por_curso": [
@@ -105,29 +105,18 @@
         "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
         "estudiantes": 179,
         "finalizados": 2,
-        "promedio": 6.9,
+        "promedio": 7.54,
         "min": 0.0,
         "max": 100.0,
         "inscritos": 179,
         "promedio_pico": 5.63,
-        "finalizado": false
-      },
-      {
-        "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
-        "estudiantes": 244,
-        "finalizados": 73,
-        "promedio": 32.07,
-        "min": 0.0,
-        "max": 100.0,
-        "inscritos": 244,
-        "promedio_pico": 30.55,
         "finalizado": false
       }
     ],
     "anomalias": [
       {
         "categoria": "AVANCE 0%",
-        "cantidad": 299
+        "cantidad": 149
       },
       {
         "categoria": "AVANCE IRREGULAR",
@@ -135,9 +124,9 @@
       }
     ],
     "totales": {
-      "total_cursos": 2,
-      "total_estudiantes_unicos": 322,
-      "total_habilitados": 322
+      "total_cursos": 1,
+      "total_estudiantes_unicos": 179,
+      "total_habilitados": 179
     }
   },
   "stand": {
