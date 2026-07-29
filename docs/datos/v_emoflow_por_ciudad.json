@@ -20,7 +20,7 @@
     "participantes": 107,
     "ingresos_promedio": 35.6,
     "ingresos_mediana": 31,
-    "activos_7d": 72,
+    "activos_7d": 73,
     "inactivos_30d": 19
   },
   {
@@ -28,7 +28,7 @@
     "participantes": 106,
     "ingresos_promedio": 29.6,
     "ingresos_mediana": 24,
-    "activos_7d": 48,
+    "activos_7d": 49,
     "inactivos_30d": 21
   },
   {
@@ -42,15 +42,15 @@
   {
     "grupo_ciudad": "MED",
     "participantes": 99,
-    "ingresos_promedio": 27.1,
+    "ingresos_promedio": 27.2,
     "ingresos_mediana": 19,
-    "activos_7d": 42,
+    "activos_7d": 43,
     "inactivos_30d": 18
   },
   {
     "grupo_ciudad": "PAN",
     "participantes": 39,
-    "ingresos_promedio": 40.1,
+    "ingresos_promedio": 40.2,
     "ingresos_mediana": 33,
     "activos_7d": 36,
     "inactivos_30d": 3
@@ -58,9 +58,9 @@
   {
     "grupo_ciudad": "QTO",
     "participantes": 39,
-    "ingresos_promedio": 44.9,
+    "ingresos_promedio": 45.1,
     "ingresos_mediana": 40,
-    "activos_7d": 28,
+    "activos_7d": 29,
     "inactivos_30d": 3
   },
   {

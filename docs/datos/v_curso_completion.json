@@ -224,10 +224,10 @@
     "cohorte": "2026",
     "matriculados": 179,
     "completados": 2,
-    "en_progreso": 24,
-    "sin_iniciar": 153,
+    "en_progreso": 25,
+    "sin_iniciar": 152,
     "pct_completados": 1.1,
-    "promedio_avance": 6.2,
+    "promedio_avance": 6.4,
     "programa": "mr"
   },
   {
@@ -432,11 +432,11 @@
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
     "cohorte": "2026",
     "matriculados": 760,
-    "completados": 610,
-    "en_progreso": 130,
+    "completados": 613,
+    "en_progreso": 127,
     "sin_iniciar": 20,
-    "pct_completados": 80.3,
-    "promedio_avance": 88.9,
+    "pct_completados": 80.7,
+    "promedio_avance": 89.1,
     "programa": "jc"
   },
   {
