@@ -223,11 +223,11 @@
     "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
     "cohorte": "2026",
     "matriculados": 179,
-    "completados": 2,
-    "en_progreso": 25,
+    "completados": 3,
+    "en_progreso": 24,
     "sin_iniciar": 152,
-    "pct_completados": 1.1,
-    "promedio_avance": 6.4,
+    "pct_completados": 1.7,
+    "promedio_avance": 6.9,
     "programa": "mr"
   },
   {
@@ -432,11 +432,11 @@
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
     "cohorte": "2026",
     "matriculados": 760,
-    "completados": 613,
-    "en_progreso": 127,
+    "completados": 615,
+    "en_progreso": 125,
     "sin_iniciar": 20,
-    "pct_completados": 80.7,
-    "promedio_avance": 89.1,
+    "pct_completados": 80.9,
+    "promedio_avance": 89.2,
     "programa": "jc"
   },
   {
