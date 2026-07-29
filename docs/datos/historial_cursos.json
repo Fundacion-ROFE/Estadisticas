@@ -539,17 +539,6 @@
     "created_at": "2026-07-10T13:56:01.194376"
   },
   {
-    "id": 50,
-    "fecha": "2026-07-05",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "programa": "jc",
-    "matriculados": 777,
-    "promedio_avance": 52.35,
-    "completados": null,
-    "fuente": "backfill-history.json",
-    "created_at": "2026-07-10T13:56:01.194376"
-  },
-  {
     "id": 51,
     "fecha": "2026-07-05",
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
@@ -638,17 +627,6 @@
     "created_at": "2026-07-10T13:56:01.194376"
   },
   {
-    "id": 59,
-    "fecha": "2026-07-06",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "programa": "jc",
-    "matriculados": 777,
-    "promedio_avance": 56.33,
-    "completados": null,
-    "fuente": "backfill-history.json",
-    "created_at": "2026-07-10T13:56:01.194376"
-  },
-  {
     "id": 60,
     "fecha": "2026-07-06",
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
@@ -732,17 +710,6 @@
     "programa": "jc",
     "matriculados": 780,
     "promedio_avance": 99.65,
-    "completados": null,
-    "fuente": "backfill-history.json",
-    "created_at": "2026-07-10T13:56:01.194376"
-  },
-  {
-    "id": 68,
-    "fecha": "2026-07-07",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "programa": "jc",
-    "matriculados": 777,
-    "promedio_avance": 56.6,
     "completados": null,
     "fuente": "backfill-history.json",
     "created_at": "2026-07-10T13:56:01.194376"
@@ -880,17 +847,6 @@
     "created_at": "2026-07-10T13:56:18.618071"
   },
   {
-    "id": 81,
-    "fecha": "2026-07-10",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "programa": "jc",
-    "matriculados": 777,
-    "promedio_avance": 60.3,
-    "completados": 277,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-10T13:56:18.618071"
-  },
-  {
     "id": 82,
     "fecha": "2026-07-10",
     "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
@@ -975,17 +931,6 @@
     "matriculados": 777,
     "promedio_avance": 99.7,
     "completados": 776,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-14T19:37:46.181339"
-  },
-  {
-    "id": 122,
-    "fecha": "2026-07-14",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "programa": "jc",
-    "matriculados": 777,
-    "promedio_avance": 55.4,
-    "completados": 95,
     "fuente": "sync-diario",
     "created_at": "2026-07-14T19:37:46.181339"
   },
@@ -1078,17 +1023,6 @@
     "created_at": "2026-07-15T14:46:13.332345"
   },
   {
-    "id": 131,
-    "fecha": "2026-07-15",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "programa": "jc",
-    "matriculados": 777,
-    "promedio_avance": 59.2,
-    "completados": 147,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-15T14:46:13.332345"
-  },
-  {
     "id": 132,
     "fecha": "2026-07-15",
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
@@ -1173,17 +1107,6 @@
     "matriculados": 777,
     "promedio_avance": 99.7,
     "completados": 776,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-16T14:45:31.831413"
-  },
-  {
-    "id": 140,
-    "fecha": "2026-07-16",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "programa": "jc",
-    "matriculados": 777,
-    "promedio_avance": 61.5,
-    "completados": 188,
     "fuente": "sync-diario",
     "created_at": "2026-07-16T14:45:31.831413"
   },
@@ -1276,17 +1199,6 @@
     "created_at": "2026-07-20T19:10:25.031681"
   },
   {
-    "id": 149,
-    "fecha": "2026-07-20",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "programa": "jc",
-    "matriculados": 777,
-    "promedio_avance": 66.3,
-    "completados": 257,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-20T19:10:25.031681"
-  },
-  {
     "id": 150,
     "fecha": "2026-07-20",
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
@@ -1375,17 +1287,6 @@
     "created_at": "2026-07-21T14:45:23.214144"
   },
   {
-    "id": 176,
-    "fecha": "2026-07-21",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "programa": "jc",
-    "matriculados": 777,
-    "promedio_avance": 66.3,
-    "completados": 257,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-21T14:45:23.214144"
-  },
-  {
     "id": 177,
     "fecha": "2026-07-21",
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
@@ -1470,17 +1371,6 @@
     "matriculados": 777,
     "promedio_avance": 99.7,
     "completados": 776,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-22T14:45:16.731665"
-  },
-  {
-    "id": 185,
-    "fecha": "2026-07-22",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "programa": "jc",
-    "matriculados": 777,
-    "promedio_avance": 78.9,
-    "completados": 471,
     "fuente": "sync-diario",
     "created_at": "2026-07-22T14:45:16.731665"
   },
@@ -1617,17 +1507,6 @@
     "created_at": "2026-07-23T14:45:20.704648"
   },
   {
-    "id": 198,
-    "fecha": "2026-07-23",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "programa": "jc",
-    "matriculados": 777,
-    "promedio_avance": 81.2,
-    "completados": 513,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-23T14:45:20.704648"
-  },
-  {
     "id": 199,
     "fecha": "2026-07-24",
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
@@ -1738,17 +1617,6 @@
     "created_at": "2026-07-24T15:49:00.662813"
   },
   {
-    "id": 208,
-    "fecha": "2026-07-24",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "programa": "jc",
-    "matriculados": 760,
-    "promedio_avance": 83.2,
-    "completados": 518,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-24T15:49:00.662813"
-  },
-  {
     "id": 230,
     "fecha": "2026-07-25",
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
@@ -1758,6 +1626,50 @@
     "completados": 757,
     "fuente": "sync-diario",
     "created_at": "2026-07-25T14:48:24.802424"
+  },
+  {
+    "id": 149,
+    "fecha": "2026-07-20",
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "programa": "jc",
+    "matriculados": 777,
+    "promedio_avance": 66.3,
+    "completados": 257,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-20T19:10:25.031681"
+  },
+  {
+    "id": 176,
+    "fecha": "2026-07-21",
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "programa": "jc",
+    "matriculados": 777,
+    "promedio_avance": 66.3,
+    "completados": 257,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-21T14:45:23.214144"
+  },
+  {
+    "id": 185,
+    "fecha": "2026-07-22",
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "programa": "jc",
+    "matriculados": 777,
+    "promedio_avance": 78.9,
+    "completados": 471,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-22T14:45:16.731665"
+  },
+  {
+    "id": 198,
+    "fecha": "2026-07-23",
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "programa": "jc",
+    "matriculados": 777,
+    "promedio_avance": 81.2,
+    "completados": 513,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-23T14:45:20.704648"
   },
   {
     "id": 362,
@@ -1947,17 +1859,6 @@
     "created_at": "2026-07-25T14:48:24.802424"
   },
   {
-    "id": 240,
-    "fecha": "2026-07-25",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "programa": "jc",
-    "matriculados": 760,
-    "promedio_avance": 83.2,
-    "completados": 518,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-25T14:48:24.802424"
-  },
-  {
     "id": 285,
     "fecha": "2026-07-26",
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
@@ -2068,17 +1969,6 @@
     "created_at": "2026-07-26T06:30:34.809165"
   },
   {
-    "id": 295,
-    "fecha": "2026-07-26",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "programa": "jc",
-    "matriculados": 760,
-    "promedio_avance": 83.2,
-    "completados": 518,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-26T06:30:34.809165"
-  },
-  {
     "id": 370,
     "fecha": "2026-07-27",
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -2101,15 +1991,15 @@
     "created_at": "2026-07-28T02:30:39.652857"
   },
   {
-    "id": 372,
-    "fecha": "2026-07-27",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
+    "id": 442,
+    "fecha": "2026-07-29",
+    "curso": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
     "programa": "jc",
     "matriculados": 760,
-    "promedio_avance": 83.2,
-    "completados": 518,
+    "promedio_avance": 99.8,
+    "completados": 758,
     "fuente": "sync-diario",
-    "created_at": "2026-07-28T02:30:39.652857"
+    "created_at": "2026-07-29T06:30:28.884612"
   },
   {
     "id": 391,
@@ -2145,70 +2035,92 @@
     "created_at": "2026-07-28T16:48:34.918248"
   },
   {
-    "id": 394,
-    "fecha": "2026-07-28",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "programa": "jc",
-    "matriculados": 760,
-    "promedio_avance": 83.2,
-    "completados": 518,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-28T16:48:34.918248"
-  },
-  {
-    "id": 439,
-    "fecha": "2026-07-29",
-    "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
-    "programa": "jc",
-    "matriculados": 760,
-    "promedio_avance": 99.5,
-    "completados": 757,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-29T06:30:28.884612"
-  },
-  {
-    "id": 440,
-    "fecha": "2026-07-29",
-    "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
-    "programa": "mr",
-    "matriculados": 136,
-    "promedio_avance": 41.9,
-    "completados": 47,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-29T06:30:28.884612"
-  },
-  {
-    "id": 441,
-    "fecha": "2026-07-29",
-    "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
-    "programa": "mr",
-    "matriculados": 244,
-    "promedio_avance": 32.1,
-    "completados": 73,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-29T06:30:28.884612"
-  },
-  {
-    "id": 442,
-    "fecha": "2026-07-29",
-    "curso": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
-    "programa": "jc",
-    "matriculados": 760,
-    "promedio_avance": 99.8,
-    "completados": 758,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-29T06:30:28.884612"
-  },
-  {
     "id": 443,
     "fecha": "2026-07-29",
     "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
     "programa": "mr",
     "matriculados": 179,
-    "promedio_avance": 6.9,
+    "promedio_avance": 7.5,
     "completados": 3,
     "fuente": "sync-diario",
     "created_at": "2026-07-29T06:30:28.884612"
+  },
+  {
+    "id": 50,
+    "fecha": "2026-07-05",
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "programa": "jc",
+    "matriculados": 777,
+    "promedio_avance": 52.35,
+    "completados": null,
+    "fuente": "backfill-history.json",
+    "created_at": "2026-07-10T13:56:01.194376"
+  },
+  {
+    "id": 59,
+    "fecha": "2026-07-06",
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "programa": "jc",
+    "matriculados": 777,
+    "promedio_avance": 56.33,
+    "completados": null,
+    "fuente": "backfill-history.json",
+    "created_at": "2026-07-10T13:56:01.194376"
+  },
+  {
+    "id": 68,
+    "fecha": "2026-07-07",
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "programa": "jc",
+    "matriculados": 777,
+    "promedio_avance": 56.6,
+    "completados": null,
+    "fuente": "backfill-history.json",
+    "created_at": "2026-07-10T13:56:01.194376"
+  },
+  {
+    "id": 81,
+    "fecha": "2026-07-10",
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "programa": "jc",
+    "matriculados": 777,
+    "promedio_avance": 60.3,
+    "completados": 277,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-10T13:56:18.618071"
+  },
+  {
+    "id": 122,
+    "fecha": "2026-07-14",
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "programa": "jc",
+    "matriculados": 777,
+    "promedio_avance": 55.4,
+    "completados": 95,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-14T19:37:46.181339"
+  },
+  {
+    "id": 131,
+    "fecha": "2026-07-15",
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "programa": "jc",
+    "matriculados": 777,
+    "promedio_avance": 59.2,
+    "completados": 147,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-15T14:46:13.332345"
+  },
+  {
+    "id": 140,
+    "fecha": "2026-07-16",
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "programa": "jc",
+    "matriculados": 777,
+    "promedio_avance": 61.5,
+    "completados": 188,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-16T14:45:31.831413"
   },
   {
     "id": 444,
@@ -2249,8 +2161,8 @@
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
     "programa": "jc",
     "matriculados": 760,
-    "promedio_avance": 89.2,
-    "completados": 615,
+    "promedio_avance": 89.6,
+    "completados": 622,
     "fuente": "sync-diario",
     "created_at": "2026-07-29T06:30:28.884612"
   },
@@ -2262,17 +2174,6 @@
     "matriculados": 760,
     "promedio_avance": 99.8,
     "completados": 759,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-29T06:30:28.884612"
-  },
-  {
-    "id": 449,
-    "fecha": "2026-07-29",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "programa": "jc",
-    "matriculados": 760,
-    "promedio_avance": 83.2,
-    "completados": 518,
     "fuente": "sync-diario",
     "created_at": "2026-07-29T06:30:28.884612"
   },
@@ -2352,5 +2253,38 @@
     "completados": 760,
     "fuente": "sync-diario",
     "created_at": "2026-07-28T16:48:34.918248"
+  },
+  {
+    "id": 439,
+    "fecha": "2026-07-29",
+    "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
+    "programa": "jc",
+    "matriculados": 760,
+    "promedio_avance": 99.5,
+    "completados": 757,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-29T06:30:28.884612"
+  },
+  {
+    "id": 440,
+    "fecha": "2026-07-29",
+    "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
+    "programa": "mr",
+    "matriculados": 136,
+    "promedio_avance": 41.9,
+    "completados": 47,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-29T06:30:28.884612"
+  },
+  {
+    "id": 441,
+    "fecha": "2026-07-29",
+    "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
+    "programa": "mr",
+    "matriculados": 244,
+    "promedio_avance": 32.1,
+    "completados": 73,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-29T06:30:28.884612"
   }
 ]

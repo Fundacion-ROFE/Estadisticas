@@ -90,104 +90,14 @@
     "pct_completados": 100.0
   },
   {
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "cohorte": "2026",
-    "programa": "jc",
-    "grupo_ciudad": "BAQ",
-    "matriculados": 131,
-    "completados": 93,
-    "promedio_avance": 87.6,
-    "pct_completados": 71.0
-  },
-  {
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "cohorte": "2026",
-    "programa": "jc",
-    "grupo_ciudad": "BOG",
-    "matriculados": 129,
-    "completados": 87,
-    "promedio_avance": 84.3,
-    "pct_completados": 67.4
-  },
-  {
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "cohorte": "2026",
-    "programa": "jc",
-    "grupo_ciudad": "CAL",
-    "matriculados": 92,
-    "completados": 80,
-    "promedio_avance": 93.4,
-    "pct_completados": 87.0
-  },
-  {
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "cohorte": "2026",
-    "programa": "jc",
-    "grupo_ciudad": "CTG",
-    "matriculados": 99,
-    "completados": 60,
-    "promedio_avance": 77.6,
-    "pct_completados": 60.6
-  },
-  {
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "cohorte": "2026",
-    "programa": "jc",
-    "grupo_ciudad": "GYL",
-    "matriculados": 79,
-    "completados": 42,
-    "promedio_avance": 71.1,
-    "pct_completados": 53.2
-  },
-  {
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "cohorte": "2026",
-    "programa": "jc",
-    "grupo_ciudad": "MED",
-    "matriculados": 94,
-    "completados": 50,
-    "promedio_avance": 76.4,
-    "pct_completados": 53.2
-  },
-  {
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "cohorte": "2026",
-    "programa": "jc",
-    "grupo_ciudad": "PAN",
-    "matriculados": 35,
-    "completados": 23,
-    "promedio_avance": 86.0,
-    "pct_completados": 65.7
-  },
-  {
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "cohorte": "2026",
-    "programa": "jc",
-    "grupo_ciudad": "QTO",
-    "matriculados": 38,
-    "completados": 32,
-    "promedio_avance": 88.9,
-    "pct_completados": 84.2
-  },
-  {
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "cohorte": "2026",
-    "programa": "jc",
-    "grupo_ciudad": "UY",
-    "matriculados": 62,
-    "completados": 51,
-    "promedio_avance": 87.8,
-    "pct_completados": 82.3
-  },
-  {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "BAQ",
     "matriculados": 131,
-    "completados": 111,
-    "promedio_avance": 92.6,
-    "pct_completados": 84.7
+    "completados": 115,
+    "promedio_avance": 93.8,
+    "pct_completados": 87.8
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -216,7 +126,7 @@
     "grupo_ciudad": "CTG",
     "matriculados": 99,
     "completados": 86,
-    "promedio_avance": 89.6,
+    "promedio_avance": 89.8,
     "pct_completados": 86.9
   },
   {
@@ -225,9 +135,9 @@
     "programa": "jc",
     "grupo_ciudad": "GYL",
     "matriculados": 79,
-    "completados": 54,
-    "promedio_avance": 78.7,
-    "pct_completados": 68.4
+    "completados": 55,
+    "promedio_avance": 79.2,
+    "pct_completados": 69.6
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -235,9 +145,9 @@
     "programa": "jc",
     "grupo_ciudad": "MED",
     "matriculados": 94,
-    "completados": 69,
-    "promedio_avance": 86.4,
-    "pct_completados": 73.4
+    "completados": 70,
+    "promedio_avance": 86.8,
+    "pct_completados": 74.5
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -246,7 +156,7 @@
     "grupo_ciudad": "PAN",
     "matriculados": 35,
     "completados": 29,
-    "promedio_avance": 92.7,
+    "promedio_avance": 92.8,
     "pct_completados": 82.9
   },
   {
@@ -265,9 +175,9 @@
     "programa": "jc",
     "grupo_ciudad": "UY",
     "matriculados": 62,
-    "completados": 55,
-    "promedio_avance": 91.6,
-    "pct_completados": 88.7
+    "completados": 56,
+    "promedio_avance": 91.7,
+    "pct_completados": 90.3
   },
   {
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
@@ -286,7 +196,7 @@
     "grupo_ciudad": "BOG",
     "matriculados": 129,
     "completados": 129,
-    "promedio_avance": 99.7,
+    "promedio_avance": 99.8,
     "pct_completados": 100.0
   },
   {
