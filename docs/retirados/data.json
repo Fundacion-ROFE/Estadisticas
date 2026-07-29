@@ -1,41 +1,41 @@
 {
-  "ultima_actualizacion": "2026-07-29T01:02:24.696797-05:00",
+  "ultima_actualizacion": "2026-07-29T17:03:30.954248-05:00",
   "anio": "2026",
   "totales": {
-    "total_retirados": 103,
+    "total_retirados": 246,
     "cancelados": 72,
     "desertores": 0,
     "aplazados": 0,
-    "sin_registro_hoja": 31
+    "sin_registro_hoja": 174
   },
   "por_tipo": [
     {
-      "tipo": "Cancelado",
-      "cantidad": 72
+      "tipo": "Sin registro de retiro",
+      "cantidad": 174
     },
     {
-      "tipo": "Sin registro de retiro",
-      "cantidad": 31
+      "tipo": "Cancelado",
+      "cantidad": 72
     }
   ],
   "por_causa": [
     {
-      "causa": "Voluntario",
-      "cantidad": 72
+      "causa": "Sin registro de retiro",
+      "cantidad": 174
     },
     {
-      "causa": "Sin registro de retiro",
-      "cantidad": 31
+      "causa": "Voluntario",
+      "cantidad": 72
     }
   ],
   "por_programa": [
     {
-      "programa": "Jóvenes creaTIvos",
-      "cantidad": 79
+      "programa": "Mujeres ROFÉ",
+      "cantidad": 167
     },
     {
-      "programa": "Mujeres ROFÉ",
-      "cantidad": 24
+      "programa": "Jóvenes creaTIvos",
+      "cantidad": 79
     }
   ],
   "por_mes": [
@@ -60,7 +60,7 @@
     {
       "orden": 0,
       "etapa": "No completó ningún curso",
-      "cantidad": 24
+      "cantidad": 167
     },
     {
       "orden": 1,
