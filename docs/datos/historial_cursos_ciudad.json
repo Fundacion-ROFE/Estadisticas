@@ -9757,8 +9757,8 @@
     "programa": "jc",
     "cohorte": "2026",
     "matriculados": 99,
-    "completados": 81,
-    "promedio_avance": 87.4,
+    "completados": 83,
+    "promedio_avance": 87.9,
     "fuente": "sync-diario",
     "created_at": "2026-07-28T16:48:35.674543"
   },
@@ -9771,7 +9771,7 @@
     "cohorte": "2026",
     "matriculados": 79,
     "completados": 54,
-    "promedio_avance": 78.4,
+    "promedio_avance": 78.6,
     "fuente": "sync-diario",
     "created_at": "2026-07-28T16:48:35.674543"
   },
@@ -9783,8 +9783,8 @@
     "programa": "jc",
     "cohorte": "2026",
     "matriculados": 94,
-    "completados": 67,
-    "promedio_avance": 85.6,
+    "completados": 68,
+    "promedio_avance": 86.0,
     "fuente": "sync-diario",
     "created_at": "2026-07-28T16:48:35.674543"
   },
