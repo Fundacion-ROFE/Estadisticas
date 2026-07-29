@@ -2112,6 +2112,50 @@
     "created_at": "2026-07-28T02:30:39.652857"
   },
   {
+    "id": 391,
+    "fecha": "2026-07-28",
+    "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
+    "programa": "jc",
+    "matriculados": 760,
+    "promedio_avance": 99.5,
+    "completados": 756,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-28T16:48:34.918248"
+  },
+  {
+    "id": 392,
+    "fecha": "2026-07-28",
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
+    "programa": "jc",
+    "matriculados": 760,
+    "promedio_avance": 89.1,
+    "completados": 613,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-28T16:48:34.918248"
+  },
+  {
+    "id": 393,
+    "fecha": "2026-07-28",
+    "curso": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
+    "programa": "jc",
+    "matriculados": 760,
+    "promedio_avance": 99.8,
+    "completados": 759,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-28T16:48:34.918248"
+  },
+  {
+    "id": 394,
+    "fecha": "2026-07-28",
+    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
+    "programa": "jc",
+    "matriculados": 760,
+    "promedio_avance": 83.2,
+    "completados": 518,
+    "fuente": "sync-diario",
+    "created_at": "2026-07-28T16:48:34.918248"
+  },
+  {
     "id": 384,
     "fecha": "2026-07-28",
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
@@ -2185,50 +2229,6 @@
     "matriculados": 760,
     "promedio_avance": 100.0,
     "completados": 760,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-28T16:48:34.918248"
-  },
-  {
-    "id": 391,
-    "fecha": "2026-07-28",
-    "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
-    "programa": "jc",
-    "matriculados": 760,
-    "promedio_avance": 99.5,
-    "completados": 756,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-28T16:48:34.918248"
-  },
-  {
-    "id": 392,
-    "fecha": "2026-07-28",
-    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
-    "programa": "jc",
-    "matriculados": 760,
-    "promedio_avance": 89.1,
-    "completados": 613,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-28T16:48:34.918248"
-  },
-  {
-    "id": 393,
-    "fecha": "2026-07-28",
-    "curso": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
-    "programa": "jc",
-    "matriculados": 760,
-    "promedio_avance": 99.8,
-    "completados": 759,
-    "fuente": "sync-diario",
-    "created_at": "2026-07-28T16:48:34.918248"
-  },
-  {
-    "id": 394,
-    "fecha": "2026-07-28",
-    "curso": "DESARROLLO WEB FRONT-END - HTML - 2026",
-    "programa": "jc",
-    "matriculados": 760,
-    "promedio_avance": 83.2,
-    "completados": 518,
     "fuente": "sync-diario",
     "created_at": "2026-07-28T16:48:34.918248"
   }

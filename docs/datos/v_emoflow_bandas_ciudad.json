@@ -39,19 +39,19 @@
     "grupo_ciudad": "BAQ",
     "banda": "31-60",
     "orden": 4,
-    "participantes": 46,
-    "ingresos_promedio": 44.7,
+    "participantes": 47,
+    "ingresos_promedio": 44.4,
     "avance_promedio": 98.6,
-    "pct_aprobacion": 97.0
+    "pct_aprobacion": 97.1
   },
   {
     "grupo_ciudad": "BAQ",
     "banda": "16-30",
     "orden": 3,
-    "participantes": 38,
-    "ingresos_promedio": 23.8,
-    "avance_promedio": 96.4,
-    "pct_aprobacion": 92.7
+    "participantes": 37,
+    "ingresos_promedio": 23.6,
+    "avance_promedio": 96.3,
+    "pct_aprobacion": 92.5
   },
   {
     "grupo_ciudad": "QTO",
@@ -103,7 +103,7 @@
     "banda": "61+",
     "orden": 5,
     "participantes": 15,
-    "ingresos_promedio": 92.7,
+    "ingresos_promedio": 92.8,
     "avance_promedio": 99.2,
     "pct_aprobacion": 98.2
   },
@@ -121,7 +121,7 @@
     "banda": "16-30",
     "orden": 3,
     "participantes": 9,
-    "ingresos_promedio": 24.1,
+    "ingresos_promedio": 24.2,
     "avance_promedio": 94.3,
     "pct_aprobacion": 90.3
   },
@@ -175,7 +175,7 @@
     "banda": "61+",
     "orden": 5,
     "participantes": 7,
-    "ingresos_promedio": 106.4,
+    "ingresos_promedio": 106.6,
     "avance_promedio": 99.4,
     "pct_aprobacion": 98.2
   },
@@ -319,7 +319,7 @@
     "banda": "31-60",
     "orden": 4,
     "participantes": 40,
-    "ingresos_promedio": 42.9,
+    "ingresos_promedio": 43.0,
     "avance_promedio": 98.9,
     "pct_aprobacion": 98.1
   },
@@ -334,21 +334,21 @@
   },
   {
     "grupo_ciudad": "GYL",
-    "banda": "31-60",
-    "orden": 4,
-    "participantes": 28,
-    "ingresos_promedio": 43.9,
-    "avance_promedio": 96.3,
-    "pct_aprobacion": 94.0
-  },
-  {
-    "grupo_ciudad": "GYL",
     "banda": "61+",
     "orden": 5,
     "participantes": 9,
     "ingresos_promedio": 77.0,
     "avance_promedio": 97.0,
     "pct_aprobacion": 93.1
+  },
+  {
+    "grupo_ciudad": "GYL",
+    "banda": "31-60",
+    "orden": 4,
+    "participantes": 28,
+    "ingresos_promedio": 43.9,
+    "avance_promedio": 96.3,
+    "pct_aprobacion": 94.0
   },
   {
     "grupo_ciudad": "GYL",
