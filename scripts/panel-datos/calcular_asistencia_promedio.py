@@ -134,7 +134,7 @@ def sincronizar_supabase(estudiantes):
         try:
             # Intenta UPSERT: si existe, actualiza; si no, inserta
             req = urllib.request.Request(
-                f"{url}/rest/v1/asistencia_promedio",
+                f"{url}/rest/v1/asistencia_promedio?on_conflict=email",
                 method="POST",
                 headers={
                     "apikey": service_key,

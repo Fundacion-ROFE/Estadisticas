@@ -4967,3 +4967,66 @@ requiere decisión de Lina — no se tocó.
 - **Punto 3 — no se implementó, según instrucción explícita.** Queda pendiente de que Lina
   decida el criterio de "matrícula vigente" para los 17 fantasmas de baja (`en_seguimiento_jc`
   vs. un `visto_en_fuente_at` por matrícula vs. usar el `updated_at` que ya existe).
+
+## 2026-07-29 (cont.) — Auditoría de alerta-frescura-vencida: mismo bug de ramas + ETL fantasma de 4 días
+
+**Estado:** Completado — 2 bugs de producción reales corregidos y verificados de punta a punta.
+**Proceso relacionado:** [[panel-datos-etl]] · [[convenciones]]
+
+- **Auditoría solicitada tras el hallazgo del bug de ramas invertidas en `alerta-choques-cursos`
+  (ver entrada anterior).** Se revisaron las 45 ejecuciones de `alerta-frescura-vencida` desde
+  que se activó (2026-07-28 17:00): **las 45 tuvieron `estado=alerta` y las 45 enrutaron a
+  `OK`** — mismo defecto (`main: [[OK],[Notificar]]` en vez de `[[Notificar],[OK]]`). Corregido
+  con el mismo fix. Ningún aviso real había llegado a Telegram en más de un día.
+- **Al corregir el `IF`, la primera ejecución real salió con `status: error`** — apareció un
+  segundo bug ya conocido (mismo `\n` embebido en la expresión del nodo Telegram que
+  `invalid syntax` en `alerta-choques-cursos`), dormido hasta ahora porque el mensaje nunca
+  llegaba a intentar enviarse. Fix: mismo patrón — `check_frescura.py` ahora imprime el mensaje
+  completo por stdout (con `_md_seguro()` para escapar guiones bajos de `proceso`, y sin
+  corchetes `[VENCIDO]`/`[ok]` que Telegram interpreta como sintaxis de link), la expresión de
+  n8n solo referencia `stdout` directo. Probado de punta a punta con un script señuelo
+  (`q10_sync`, `emoflow_ingresos_diario`) antes de devolver el comando/cron a producción.
+- **Causa raíz real detrás de la alerta silenciada:** `asistencia_promedio` (zoom) llevaba
+  **~4 días sin actualizar** (`actualizado_en` congelado en 2026-07-25 22:47). El workflow
+  `asistencia-zoom-diario` corría diario y "tenía éxito", pero `calcular_asistencia_promedio.py`
+  hacía POST a PostgREST **sin `?on_conflict=email`** — cada fila (ya existente) respondía
+  `409 Conflict`, y el código capturaba ese 409 y lo contaba como `actualizados += 1`. Cuatro
+  días de "547 registros actualizados" en consola que en realidad eran cero escrituras. Fix:
+  agregar `?on_conflict=email` (columna con `UNIQUE` confirmado). Corrida en vivo tras el fix:
+  `actualizado_en` saltó de 07-25 a HOY, 2 registros nuevos + 547 actualizados de verdad;
+  `v_frescura` pasó de `[VENCIDO] asistencia_promedio 95.2h` a `0.0h`.
+  `retiros` (20.5h vs umbral 6h) sigue vencido — no investigado, queda para otra sesión.
+- Los 3 hallazgos (ramas invertidas confirmado en 2 workflows, Markdown/Telegram, upsert sin
+  `on_conflict`) documentados en `convenciones.md` con regla derivada para no repetirlos.
+
+## 2026-07-29 (cont.) — Bug del cron `correos-rebotes-diario` corregido + unificado con JC + colores
+
+Samuel reportó que la pestaña `Rebotes` de la BD-Mujeres ROFÉ llevaba desde el 24-jul sin
+actualizarse pese al cron diario. Verificado en vivo (nunca solo confiar en el JSON exportado,
+[[feedback-verificar-n8n-en-vivo]]): `GET /workflows/N7ouRIdgbomCGNxa` mostraba
+`connections` con la clave `"Cron semanal (Lun 6:30)"`, pero el nodo real se llama
+`"Cron diario (6:30)"` (renombrado el 2026-07-15 al subir de semanal a diario, sin actualizar
+`connections`). Resultado: el trigger disparaba (ejecuciones "success" reales cada 2h en el
+historial, probablemente de las pruebas del fin de semana 25-26 jul) pero **nunca llamaba a
+ningún nodo siguiente** — `lastNodeExecuted` era siempre el propio Cron, confirmado en 5+
+ejecuciones distintas desde el 2026-07-21. `capturar_rebotes.py` nunca se había corrido en
+automático; solo se actualizaba cuando alguien lo lanzaba a mano.
+
+- **Corregido** vía `PUT /api/v1/workflows/N7ouRIdgbomCGNxa` en vivo + reexportado a
+  `n8n-workflows/correos-rebotes-diario.json`. Verificado post-fix: las 5 claves de
+  `connections` ahora calzan 1:1 con los nombres reales de los nodos.
+- **Unificado con Jóvenes creaTIvos**: el mismo workflow ahora corre también
+  `scripts/jovenes-creativos-correos/capturar_rebotes.py` en una rama paralela independiente
+  (propio IF de éxito/error + Telegram) — ese script existía desde el 2026-07-22 pero nunca
+  había estado enganchado a ningún cron.
+- **Coloreado automático agregado** en `escribir_sheet()` de ambos scripts (MR y JC):
+  hard=rojo claro, soft=amarillo claro, vía `gspread ws.format()`; como la pestaña se
+  reescribe completa cada corrida (`ws.clear()` no borra formato previo), primero resetea a
+  blanco el rango usado y luego pinta los 2 bloques contiguos (la lista ya viene ordenada
+  hard→soft).
+- **Corridas manuales de verificación** (backlog acumulado desde que el cron estaba roto):
+  MR — 809+530 DSN en las 2 cuentas, 427 direcciones (172 hard, 255 soft), tardó ~22 min por
+  fetch secuencial de IMAP (`M.fetch` uno por uno, sin batching — límite conocido, no se tocó).
+  JC — primera corrida real: 43 DSN, 15 rebotadas (4 hard, 11 soft), pestaña `RebotesJC`
+  quedó con 149 filas totales acumuladas.
+- READMEs de ambos scripts actualizados con el bug, el fix y el nuevo comportamiento.

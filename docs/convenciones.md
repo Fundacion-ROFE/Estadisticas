@@ -524,9 +524,15 @@ credencial en memoria `reference-n8n-api-key`). Reglas aprendidas (2026-07-07 y 
   verdadera ("hay alerta") enrutaba a `OK` y la falsa a `Notificar` — **exactamente al revés**
   de la intención. Fix: `main: [[Notificar], [OK]]`. **Regla: el índice 0 SIEMPRE es la rama
   verdadera; no asumir el orden por cómo quedó en un workflow que se está clonando — probarlo
-  forzando ambos casos antes de confiar en la plantilla copiada.** Pendiente de verificar si
-  `alerta-frescura-vencida` (la plantilla original) tiene el mismo defecto — no se tocó ese
-  workflow en esta sesión, solo se documenta la sospecha.
+  forzando ambos casos antes de confiar en la plantilla copiada.**
+  **Confirmado el mismo día: `alerta-frescura-vencida` (la plantilla original) tenía el mismo
+  defecto — 45/45 ejecuciones desde que se activó (2026-07-28) tuvieron `estado=alerta` y las
+  45 enrutaron a `OK` en silencio. Nunca llegó una sola alerta real, incluyendo un proceso
+  (`asistencia_promedio`, zoom) que llevaba ~4 días vencido. Corregido. Al corregir el `IF`
+  aparecieron los otros 2 gotchas de esta misma lista (Markdown/Telegram y `\n` embebido) que
+  habían estado dormidos porque el mensaje nunca llegaba a intentarse enviar — moraleja: un bug
+  que "cancela" a otro puede esconderlo indefinidamente; al arreglar uno, probar de punta a
+  punta antes de dar el conjunto por resuelto.**
 - **Gotcha (2026-07-29) — Telegram (parse_mode Markdown, aplicado por default aunque no se
   fije `additionalFields.parseMode` explícito) se come `_`/`[`/`*` del texto sin avisar ni
   fallar.** Un mensaje con `no_visto_en_fuente` llegó como `novistoenfuente` (guiones bajos
@@ -841,6 +847,23 @@ tener 5.109 filas reales, 99.98% solapadas con `General` (la limpieza de la Fase
 "HerpowerED es copia, se descarta", era correcta desde el principio). **Regla:** para saber
 cuántos datos reales tiene una pestaña, siempre contar valores no vacíos en la columna
 identificadora (cédula/ID), nunca `row_count`/`gridProperties`.
+
+## Un POST a PostgREST sin `?on_conflict=` no es un upsert — es un insert que falla en silencio
+
+`Prefer: resolution=merge-duplicates` **no alcanza por sí solo**: PostgREST necesita
+`?on_conflict=<columna_unique>` en la URL para saber contra qué constraint resolver el
+choque. Sin ese parámetro, cada fila que ya existe responde `409 Conflict` — y si el código
+captura ese `409` y lo cuenta como "actualizado" (un patrón tentador: "ya existía, entonces
+ya está bien"), el resultado es un ETL que **reporta éxito todos los días sin escribir un solo
+dato nuevo**. Caso real (`calcular_asistencia_promedio.py`, descubierto 2026-07-29 al auditar
+por qué `v_frescura` marcaba `asistencia_promedio` vencido): el script llevaba desde el
+**2026-07-25** corriendo diario, imprimiendo "547 registros actualizados", con `except
+HTTPError as e: if e.code == 409: actualizados += 1` — cuatro días de "éxito" que en realidad
+eran 409 silenciosos. Fix: agregar `?on_conflict=email` (la columna con el `UNIQUE` real,
+verificado con `pg_get_constraintdef`) a la URL del POST. **Regla: cualquier upsert nuevo a
+PostgREST vía POST se prueba verificando que una columna `actualizado_en`/`updated_at` de una
+fila YA EXISTENTE avance de verdad tras correrlo — "el script no truena" no es lo mismo que
+"escribió algo".**
 
 ## Un ETL que solo hace upsert nunca reconcilia lo que desaparece de la fuente
 
