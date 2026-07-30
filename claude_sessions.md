@@ -5286,3 +5286,18 @@ hallazgo documentado (no ejecutado). Fase 3 sigue bloqueada (repo `panel-datos-r
   operabilidad"), `docs/migrations/README.md` (nota de la divergencia de numeración,
   033=máx(repo,log real)+1) y los 3 archivos de migración (033/034/035) con el detalle completo
   de cada gotcha encontrado y corregido en vivo.
+
+## 2026-07-30 (cont.) — [panel-datos-etl] Corrección: Fase 3 NO estaba bloqueada
+
+**Estado:** Corrección de un error de la entrada anterior (mismo día).
+**Proceso relacionado:** [[plan-visualizacion-2026-07-30]]
+
+- Samuel preguntó directo por la ruta `C:\Users\EstudiantesJC\Downloads\panel-datos-rofe` — el
+  repo **sí existe local ahí**: `.git` con remote `comunicaciones` → `comunicaciones-ai/Panel-De-
+  Datos` (el correcto, ver `reference_panel_datos_rofe_remote.md`), rama `main`, working tree
+  limpio, `lib/api.ts` de 369 líneas.
+- **La causa del error: nunca se verificó el filesystem.** `plan-visualizacion-2026-07-30.md`
+  decía "repo no montado" (escrito por la sesión de Lina el 29-jul) y esa afirmación se repitió
+  sin comprobarla — exactamente el tipo de error que `[[feedback_verificar_n8n_en_vivo]]`
+  advierte para n8n, aplicado aquí a un repo. Corregido en el plan (§3 y el encabezado de
+  estado). Fase 3 queda **pendiente de ejecutar, no bloqueada**.

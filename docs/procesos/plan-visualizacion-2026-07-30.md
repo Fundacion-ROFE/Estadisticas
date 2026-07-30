@@ -1,8 +1,13 @@
 > **Estado (2026-07-30, tarde):** Fase 1 completa (vistas + guardas, migraciones 033-035).
 > Fase 2 paso 5 hecho (extracción de `panel_riesgo_datos.py`); paso 1 evaluado y NO ejecutado
 > por conflicto de grano real con 3 piezas de la UI existente (ver detalle en §2 abajo y en
-> `claude_sessions.md`, entrada "Fase 1 de plan-visualizacion-2026-07-30.md"). Fase 3 sigue
-> **bloqueada** — el repo `panel-datos-rofe` no está montado en ninguna sesión todavía.
+> `claude_sessions.md`, entrada "Fase 1 de plan-visualizacion-2026-07-30.md").
+> ⚠ **Corrección (2026-07-30, misma tarde): Fase 3 NO está bloqueada.** El repo SÍ existe local
+> en `C:\Users\EstudiantesJC\Downloads\panel-datos-rofe` — remote `comunicaciones` apunta a
+> `comunicaciones-ai/Panel-De-Datos` (el correcto, ver `reference_panel_datos_rofe_remote.md`),
+> rama `main`, working tree limpio. La afirmación "repo no montado" de este documento y de la
+> sesión de la tarde nunca se verificó contra el filesystem — se heredó de una sesión anterior
+> sin comprobarlo. Pendiente de ejecutar, no de desbloquear.
 
 # Plan de visualización y operabilidad de la DB (2026-07-30)
 
@@ -119,10 +124,11 @@ Cambios, en orden:
 
 ## 3. Fase 3 — Panel de datos (Netlify, Next.js)
 
-⚠ **Bloqueado:** el repo `panel-datos-rofe` no está montado en la sesión. Hay que conectarlo
-antes de poder trabajarlo.
-
-Una vez conectado:
+✅ **NO bloqueado (corregido 2026-07-30 tarde) — el repo existe local en
+`C:\Users\EstudiantesJC\Downloads\panel-datos-rofe`**, remote `comunicaciones` →
+`comunicaciones-ai/Panel-De-Datos`, rama `main`, working tree limpio. `lib/api.ts` (369
+líneas) es el punto central que consumiría `v_pub_cohorte`/`v_pub_geografia`/`v_pub_avance`/
+`v_aprobacion_cursos_vigencia`.
 
 1. **Selector de cohorte y programa** global, que afecte todos los paneles de la página.
 2. **Estadísticas de cabecera que recalculan** según los filtros, leyendo `v_pub_cohorte`.
