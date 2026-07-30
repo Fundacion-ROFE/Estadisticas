@@ -7,6 +7,9 @@
 > [[plan-visualizacion-2026-07-30]] §"Bogotá/Medellín"). Decisiones confirmadas por ronda de
 > preguntas la misma tarde (ver `claude_sessions.md`). **Documento previo a ejecutar** — a
 > pedido explícito de Samuel, esto se escribe ANTES de tocar código.
+>
+> **Estado (2026-07-30, noche): Fase 1 ✅ HECHA y verificada** (ver §5) — Samuel autorizó
+> empezar a construir. Fases 2-5 sin empezar.
 
 ---
 
@@ -126,16 +129,39 @@ muestran. Ventajas:
 
 ## 5. Plan de fases
 
-### Fase 1 — Capa de datos Python (sin SQL nuevo)
-Módulo nuevo (o extensión de `panel_riesgo_datos.py`) con dos funciones:
-1. Trae `v_gui_personas` para **todas** las cohortes de un programa de una sola vez (no solo
-   la cohorte actual, a diferencia de `leer_h2test()` hoy).
-2. Trae `v_persona_360` filtrada por las cédulas del resultado anterior (una sola llamada por
-   lote, no una por persona) y la mergea en memoria por cédula.
+### Fase 1 — Capa de datos Python (sin SQL nuevo) — ✅ HECHO 2026-07-30
 
-Reusar `Supa`/`get_todo` de `panel_riesgo_datos.py` — no reescribir el paginador. **No hay
-migración de Supabase en esta fase** (ver §4) — si en el camino aparece la necesidad real de
-una columna que ninguna de las dos vistas tiene, aplica la regla del §7 antes de escribirla.
+`tools/panel_control_datos.py` (nuevo, gitignoreado): `leer_personas_todas_cohortes(supa,
+programa)` (todas las cohortes de `v_gui_personas` de una sola serie de llamadas paginadas) +
+`leer_persona_360_por_cedulas(supa, cedulas)` (lotes de 400 cédulas, nunca una llamada por
+persona) + `leer_panel_control(programa)` que las mergea en memoria por cédula. Reusa
+`Supa`/`get_todo`/`conectar_supabase` de `panel_riesgo_datos.py` — no se reescribió el
+paginador. **Cero migraciones de Supabase**, como decía §4.
+
+**Verificado con datos reales** (`tools/verificar_panel_control_datos.py`, sin imprimir PII —
+solo conteos agregados):
+
+| | JC | MR |
+|---|---|---|
+| Filas totales (persona×cohorte) | 2.316 | 1.363 |
+| Cohortes | 2023 (336) · 2024 (470) · 2025 (733) · 2026 (777) | 2025 (1.254) · 2026 (109) |
+| Asistencia Zoom con dato | 456/2.316 (19,7%) | 1/1.363 (0,1%) |
+| Postulantes históricos con dato | 2.094/2.316 (90,4%, `postulantes_jc`) | 465/1.363 (34,1%, `postulantes_mr`) |
+
+JC 2026 = 777 coincide exacto con el universo ya conocido. Confirmado contra una llamada REST
+sin paginar que el total de filas y la distribución por cohorte de `v_gui_personas` se leen
+completos (get_todo pagina correctamente más allá del límite de 1.000 filas de PostgREST).
+
+**Observación, no un bug de esta fase:** la distribución MR 2025/2026 (1.254/109) es distinta
+a la medida esta mañana al construir `v_gui_personas` (1.016/347) — el total (1.363) es
+idéntico en ambas medidas, así que no se perdieron ni se agregaron filas, solo cambió la
+etiqueta de cohorte de ~238 filas entre una medición y otra. Encaja con el patrón ya
+documentado de "rename o cierre de curso = fila duplicada, no un update" (`convenciones.md`) —
+`courses.cohorte` para MR ya tenía duplicados Title-Case/MAYÚSCULAS con cohorte `2025` vs
+`2026` para el mismo curso real (visto al auditar `v_aprobacion_cursos_vigencia`). No se
+investigó a fondo porque está fuera de alcance de la Fase 1 (leer las vistas tal cual, no
+depurar la fuente) — si se quiere cerrar, es trabajo de `courses`/`cursos_alias`, no de este
+módulo.
 
 ### Fase 2 — Interfaz: selector + toggles + tabla base (estado 1 del toggle, ver §6)
 Selector de programa/cohorte + panel de checkboxes de fuentes + tabla con columnas dinámicas +

@@ -5499,7 +5499,7 @@ hallazgo (vista duplicada, corregida); paso 5 sin tocar. Cambios committeados lo
   17:45 — el script se corrió manualmente, no toca Supabase, solo el Sheet H3Test).
   Documentado en `docs/procesos/zoom-asistencia.md` y `docs/procesos/mapa-codigo.md`.
 
-## 2026-07-31 — [Zoom asistencia] Exclusión de mentores Sofka: 18 casos mal clasificados
+## 2026-07-30 — [Zoom asistencia] Exclusión de mentores Sofka: 18 casos mal clasificados
 
 - **Lina compartió la hoja "Programación monitores e instructores 2026"** (pestañas `info
   mentores Sofka` — registro maestro, 59 correos — y `Programación` — correo del mentor por
@@ -5526,7 +5526,7 @@ hallazgo (vista duplicada, corregida); paso 5 sin tocar. Cambios committeados lo
   `Correo`, no tocar esa otra columna. No se guardó en ningún doc ni memoria.
 - Documentado en `docs/procesos/zoom-asistencia.md` y `docs/procesos/mapa-codigo.md`.
 
-## 2026-07-31 (cont.) — [Zoom asistencia] Filas de sesión colapsables en ASISTENCIA-VALIDADA
+## 2026-07-30 (cont.) — [Zoom asistencia] Filas de sesión colapsables en ASISTENCIA-VALIDADA
 
 - **Pedido:** visibilizar más fácil los días/sesiones en `ASISTENCIA-VALIDADA`, con un
   "compactable" por clase (un click cierra/abre los registros de esa sesión).
@@ -5551,7 +5551,7 @@ hallazgo (vista duplicada, corregida); paso 5 sin tocar. Cambios committeados lo
   dato incorrecto en el log de cada ejecución.
 - Documentado en `docs/procesos/zoom-asistencia.md`.
 
-## 2026-07-31 (cont.) — [Zoom asistencia] Sin gris, sin filas EXCLUIR en el reporte
+## 2026-07-30 (cont.) — [Zoom asistencia] Sin gris, sin filas EXCLUIR en el reporte
 
 - **Sin gris:** Lina pidió quitar el color gris de `ASISTENCIA-VALIDADA`. Estaba en 2
   lugares: fondo del encabezado (fila 1) y la regla condicional de `EXCLUIR`. Encabezado
@@ -5629,7 +5629,7 @@ sin ejecutar (a pedido explícito de Samuel: documentar antes de tocar código).
   la Fase 1 (ampliar `v_gui_personas` con asistencia + postulantes históricos).
 - Documentado en `docs/procesos/zoom-asistencia.md`.
 
-## 2026-07-31 (cont.) — [Zoom asistencia] Fix real: grupos colapsables nacían colapsados
+## 2026-07-30 (cont.) — [Zoom asistencia] Fix real: grupos colapsables nacían colapsados
 
 - Lina reportó que solo el primer grupo mostraba el botón `+`/`-`, el resto no. Verificado
   con la API que los 24 grupos SÍ existían, bien separados (sin fusión) — el problema era
@@ -5650,7 +5650,7 @@ sin ejecutar (a pedido explícito de Samuel: documentar antes de tocar código).
   sección "Grupos de filas/columnas colapsables por API de Sheets") y en
   `docs/procesos/zoom-asistencia.md`.
 
-## 2026-07-31 (cont.) — [Zoom asistencia] Orden cronológico real (con bug de horas sin cero)
+## 2026-07-30 (cont.) — [Zoom asistencia] Orden cronológico real (con bug de horas sin cero)
 
 - Lina preguntó por qué el Host no está en todas las clases: **no es un bug** — la columna
   Host se agregó al workflow n8n recién el 2026-07-29, así que las clases anteriores nunca
@@ -5729,3 +5729,84 @@ espera antes de construir").
   (advertencia de pendientes vivos), `bd-seguimiento-monitorias.md` (hallazgo completo),
   `00-vision-global.md` y `CLAUDE.md` (enlaces).
 - **Pendiente:** Samuel revisa el plan actualizado antes de autorizar la Fase 1.
+
+## 2026-07-30 (cierre) — [Zoom asistencia] Validación de identidad: funcional, documentación consolidada
+
+Cierre de la sesión de hoy sobre `validar_asistencia.py`. Estado final: **automatizado en
+producción**, encadenado en `asistencia-zoom-diario` (n8n, 17:45 COT diario) antes del sync
+a Supabase. Resumen de todo lo que cambió hoy (detalle completo en cada entrada anterior de
+esta bitácora y en `docs/procesos/zoom-asistencia.md`):
+
+1. Corrida real inicial + verificación end-to-end en n8n (adelantando el cron, sin esperar
+   el tick) — cadena completa OK, `v_frescura` al día.
+2. Match por nombre ampliado (nombre + primer apellido, toda la cohorte activa): `sin_match`
+   102→32 tras esto y la exclusión de mentores.
+3. Exclusión de mentores/instructores Sofka (hoja externa leída en vivo cada corrida) —
+   corre ANTES del match por nombre para no robarle asistencia a un estudiante homónimo.
+4. Sin colores grises en la hoja; filas `EXCLUIR` (staff/mentores/no-clase) ya no se
+   escriben en `ASISTENCIA-VALIDADA` (1249 leídas → 979 relevantes).
+5. Sesiones agrupadas visualmente (fila divisoria + detalle colapsable) — 2 gotchas reales
+   de la API de Sheets encontrados y corregidos (grupos adyacentes se funden sin fila
+   suelta entre ellos; grupos nuevos nacen colapsados si se crean varios en el mismo
+   `batchUpdate`), documentados como patrón reutilizable en `convenciones.md`.
+6. Orden cronológico real (antes ordenaba por curso, no por fecha) — bug propio de horas
+   sin cero a la izquierda encontrado y corregido (`clave_fecha()` con `datetime.strptime`).
+
+**Documentación consolidada:** `docs/00-vision-global.md` — el proceso se movió de "en
+progreso" a "Procesos completados". `docs/procesos/zoom-asistencia.md` — nuevo bloque
+"Resumen funcional" al inicio de la sección para no tener que leer todo el historial
+cronológico para entender el estado actual. `docs/procesos/mapa-codigo.md` — firma del
+script actualizada con el comportamiento final completo.
+
+**Sigue abierto, no bloqueante:** columna `Identificacion` del formulario de Zoom viene 0%
+llena — Lina ya está coordinando con su superior para empezar a captarla (ver memoria
+`project-zoom-identificacion-hallazgo`). No requiere más cambios de código hasta que se
+defina el mecanismo de captura.
+
+## 2026-07-30 (cont.) — [panel-datos-etl] Fase 1 de panel-control-jc-mr.md: capa de datos
+
+**Estado:** Hecho y verificado con datos reales. Samuel autorizó empezar tras revisar el plan
+corregido.
+**Proceso relacionado:** [[panel-control-jc-mr]]
+
+- **`tools/panel_control_datos.py` (nuevo, gitignoreado).** Exactamente lo que decía la Fase 1
+  del plan: `leer_personas_todas_cohortes()` (todas las cohortes de `v_gui_personas` de una
+  sola serie paginada) + `leer_persona_360_por_cedulas()` (lotes de 400, nunca una llamada por
+  persona) + `leer_panel_control()` que las mergea en memoria por cédula. Reusa
+  `Supa`/`get_todo`/`conectar_supabase` de `panel_riesgo_datos.py` sin reescribir el
+  paginador. **Cero migraciones de Supabase**, tal como se decidió ayer al resolver el punto
+  (f) de la corrección.
+- **Verificado con `tools/verificar_panel_control_datos.py`** (conteos agregados solamente,
+  nunca imprime PII individual): JC 2.316 filas (2023:336 · 2024:470 · 2025:733 · 2026:777 —
+  el 777 coincide exacto con el universo ya conocido); MR 1.363 filas (2025:1.254 ·
+  2026:109). Cruzado contra una llamada REST sin paginar para confirmar que `get_todo` sigue
+  paginando bien más allá del límite de 1.000 filas de PostgREST (mismo gotcha ya documentado
+  de "un offset que no avanza es un loop infinito silencioso" — no ocurrió, los conteos son
+  proporcionales y coherentes).
+- **Observación reportada, no una causa raíz nueva a perseguir:** la distribución MR
+  2025/2026 (1.254/109) salió distinta a la medida ayer construyendo `v_gui_personas`
+  (1.016/347) — el total (1.363) es idéntico en ambas medidas, así que ninguna fila se perdió
+  ni se agregó, solo le cambió la etiqueta de cohorte a ~238 filas entre una medición y otra.
+  Encaja con el patrón ya documentado ("rename o cierre de curso = fila duplicada, no un
+  update", `convenciones.md`) — hay duplicados Title-Case/MAYÚSCULAS de cursos MR con
+  `cohorte` `2025` vs `2026` para el mismo curso real. Documentado en `panel-control-jc-mr.md`
+  §5 como observación, no se investigó a fondo — es trabajo de depurar `courses`/
+  `cursos_alias`, fuera de alcance de "leer las vistas tal cual" que pedía la Fase 1.
+- Próximo paso: Fase 2 (interfaz — selector, toggles, tabla base), sin empezar todavía.
+
+## 2026-07-30 (cierre real) — Corrección de fecha: todo el trabajo de hoy es 2026-07-30, no 07-31
+
+- Al documentar el cierre de `validar_asistencia.py` usé "2026-07-31" por error en varias
+  partes (`zoom-asistencia.md`, `mapa-codigo.md`, `00-vision-global.md`, `convenciones.md`,
+  entradas de esta bitácora, memoria) — el reloj real seguía en **30 de julio** durante toda
+  la sesión (confirmado con `date` a las 16:02). Corregido con reemplazo en los 5 archivos
+  de doc/bitácora (verificado que no tocó ninguna fecha preexistente correcta, solo texto
+  agregado hoy) y en la memoria `project-zoom-identificacion-hallazgo`.
+- Lina confirmó que ya habló con coordinación (no solo "coordinando con el superior") para
+  empezar a captar la `Identificacion` — actualizado en memoria y en `00-vision-global.md`.
+  Sigue pendiente que coordinación defina el mecanismo concreto.
+- Pregunta operativa respondida: una clase a las 16:00 con toma a los 10 min (~16:10) escribe
+  en `ASISTENCIA-10MIN` en tiempo real (vía webhook), pero **no aparece en
+  `ASISTENCIA-VALIDADA` hasta la corrida diaria de `validar_asistencia.py`** dentro de
+  `asistencia-zoom-diario` (17:45 COT) — no hay actualización en vivo de esa pestaña salvo
+  que se corra el script a mano.
