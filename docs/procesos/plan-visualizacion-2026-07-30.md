@@ -13,6 +13,14 @@
 > con mejoras incrementales sobre `panel_riesgo_gui.py`. Ver [[panel-control-jc-mr]] — ese
 > documento absorbe el paso 1 (apuntar a `v_gui_personas`, con el mismo hallazgo de grano ya
 > documentado abajo) y los pasos 2-4 de esta Fase 2. No seguir trabajando la Fase 2 aquí.
+> ⚠ **Este documento NO se archiva completo — solo la Fase 2 queda pausada.** La Fase 3
+> (panel Netlify) sigue con **2 pendientes vivos sin resolver**, documentados en su propia
+> sección abajo: (1) verificación visual en navegador — nunca se hizo, la extensión de Chrome
+> no conectó en la sesión que hizo los cambios; (2) el commit de `app/page.tsx`/`lib/api.ts` en
+> `panel-datos-rofe` sigue **local, sin `git push`** a `comunicaciones/main` (push = deploy en
+> Netlify, se dejó pendiente de confirmación explícita). Ninguno de los dos se mueve a
+> `panel-control-jc-mr.md` — son del panel público (Next.js), no de la GUI interna nueva; este
+> documento sigue siendo su dueño y su fuente de verdad hasta que se resuelvan.
 
 # Plan de visualización y operabilidad de la DB (2026-07-30)
 

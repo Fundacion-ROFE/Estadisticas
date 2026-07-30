@@ -3,10 +3,38 @@
 > ⚠ **ARCHIVADO / FUSIONADO (2026-07-30).** Samuel pidió una herramienta nueva desde cero en
 > vez de seguir evolucionando `panel_riesgo_gui.py` — ver [[panel-control-jc-mr]]. La Fase 1 de
 > este documento (migración a Supabase, completada 2026-07-21) se hereda tal cual en la
-> herramienta nueva. Las Fases 2-3 de abajo (tab "Decisiones", ficha ampliada, semáforo) quedan
-> **absorbidas** en `panel-control-jc-mr.md` §5 — no implementarlas aquí, implementarlas allá.
-> Se conserva este archivo por su historia (decisiones de diseño ya tomadas y sus motivos, aún
-> vigentes: Tkinter/no-web, `service_role`).
+> herramienta nueva. Se conserva este archivo por su historia (decisiones de diseño ya tomadas
+> y sus motivos, aún vigentes: Tkinter/no-web, `service_role`).
+>
+> **Desglose punto por punto de qué sobrevive de las Fases 2-3 de abajo y qué se descarta**
+> (pedido explícito de Samuel — no dejar que nada "desaparezca" sin decir qué pasó con ello):
+>
+> | Ítem original (Fase 2, 6 botones) | ¿Sobrevive? | Dónde / por qué |
+> |---|---|---|
+> | Estudiantes en riesgo (puntaje bajo, `v_puntaje_estudiante`) | ✅ Sobrevive, reencuadrado | Filtro de rango de avance/puntaje en `panel-control-jc-mr.md` §2 — no es una "fuente" nueva, ya usa datos disponibles |
+> | Sin registro Emoflow | ✅ Sobrevive | Filtro combinable una vez activo el toggle Emoflow (`emoflow_ingresos IS NULL`) |
+> | Asistencia Zoom < 70% | ✅ Sobrevive | Filtro combinable una vez activo el toggle Asistencia Zoom |
+> | En banda de riesgo (0-25% avance) | ✅ Sobrevive | Ya es el filtro "rango de avance" de `panel-control-jc-mr.md` §2 |
+> | Retirados recientes | ✅ Sobrevive | Toggle Retiros + filtro de estado (activo/retirado) |
+> | Filtro por ciudad | ✅ Sobrevive | Ya es un filtro combinable de `panel-control-jc-mr.md` §2 |
+>
+> **❌ Se descarta explícitamente: el patrón de "6 botones curados fijos".** La consulta detrás
+> de cada botón sobrevive (tabla arriba), pero la UX de "un botón = una combinación fija" se
+> reemplaza por **filtros libremente combinables** en la herramienta nueva — estrictamente más
+> potente (cualquiera de las 6 combinaciones originales se reproduce con 1-2 filtros, y
+> permite combinaciones que antes habrían necesitado un 7º/8º botón, ej. "en riesgo Y en
+> Barranquilla Y sin Emoflow"). Si en el futuro se extraña la conveniencia de "un clic" para
+> una combinación frecuente, la vía correcta es agregar **presets guardados** sobre el sistema
+> de filtros combinables — no volver a botones fijos independientes del filtro.
+>
+> | Ítem original (Fase 3) | ¿Sobrevive? | Dónde / por qué |
+> |---|---|---|
+> | Doble clic → ficha completa (avance, Emoflow, asistencia, puntaje) | ✅ Sobrevive, con un hueco menor | `panel-control-jc-mr.md` Fase 4, vía `v_persona_360` — **no incluye puntaje** (`v_puntaje_estudiante` no está en esa vista); queda como mejora futura de baja prioridad si se necesita, no bloquea la ficha |
+> | Exportar CSV de cualquier vista | ✅ Sobrevive tal cual | `panel-control-jc-mr.md` Fase 5, mismo patrón de `TablaFiltrable` |
+> | Semáforo visual (verde/ámbar/rojo) | ✅ Sobrevive tal cual | `panel-control-jc-mr.md` Fase 5, mismos umbrales ya definidos en el proyecto |
+>
+> **Nada de las Fases 2-3 se pierde sin explicación** — todo sobrevive en algún punto de
+> `panel-control-jc-mr.md`, excepto el patrón de botón-fijo (descartado y justificado arriba).
 
 **Estado:** Fase 1 completada (2026-07-21) — fuente de datos migrada a Supabase, misma UI.
 Fases 2-3 pendientes. Decisión de arquitectura

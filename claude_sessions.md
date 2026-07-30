@@ -5628,3 +5628,104 @@ sin ejecutar (a pedido explícito de Samuel: documentar antes de tocar código).
   pedido explícito. Próximo paso: confirmar la decisión de §6 del documento nuevo y empezar por
   la Fase 1 (ampliar `v_gui_personas` con asistencia + postulantes históricos).
 - Documentado en `docs/procesos/zoom-asistencia.md`.
+
+## 2026-07-31 (cont.) — [Zoom asistencia] Fix real: grupos colapsables nacían colapsados
+
+- Lina reportó que solo el primer grupo mostraba el botón `+`/`-`, el resto no. Verificado
+  con la API que los 24 grupos SÍ existían, bien separados (sin fusión) — el problema era
+  otro: **todos nacían con `collapsed: true`**.
+- **Causa 1:** `addDimensionGroup` para varios grupos hermanos en el mismo `batchUpdate` los
+  crea colapsados por defecto. **Fix:** segunda tanda de `updateDimensionGroup`
+  (`collapsed: false`) en una llamada `batch_update` aparte, después de crearlos.
+- **Causa 2 (potencial, mitigada igual):** si alguien colapsa un grupo a mano, Sheets oculta
+  esas filas (`hiddenByUser`) y `deleteDimensionGroup` no las vuelve a mostrar al borrar el
+  grupo — quedarían ocultas "huérfanas" para la siguiente corrida. **Fix:**
+  `limpiar_grupos()` ahora manda `updateDimensionProperties(hiddenByUser=false)` sobre todo
+  el rango antes de recrear los grupos.
+- **Verificado:** 24/24 grupos con `collapsed: false` tras el fix.
+- Se pisó un límite de cuota de la API de Sheets (429, "Read requests per minute") por tantas
+  corridas seguidas en poco tiempo — se resolvió esperando ~65s y reintentando, sin tocar
+  código (no es un bug, es volumen de pruebas en la misma sesión).
+- Ambos gotchas documentados como patrón reutilizable en `docs/convenciones.md` (nueva
+  sección "Grupos de filas/columnas colapsables por API de Sheets") y en
+  `docs/procesos/zoom-asistencia.md`.
+
+## 2026-07-31 (cont.) — [Zoom asistencia] Orden cronológico real (con bug de horas sin cero)
+
+- Lina preguntó por qué el Host no está en todas las clases: **no es un bug** — la columna
+  Host se agregó al workflow n8n recién el 2026-07-29, así que las clases anteriores nunca
+  capturaron ese dato (documentado desde esa fecha, sin backfill posible: no hay Meeting
+  UUID guardado para recuperarlo).
+- **Pedido inmediato después:** ordenar las clases cronológicamente, automático de ahí en
+  adelante. Antes se ordenaba por `(Curso, Fecha)` por pestaña (agrupaba por curso primero,
+  y `ZOOM-ASISTANCE`/`ASISTENCIA-10MIN` quedaban como 2 bloques separados, no intercalados).
+  Ahora se leen ambas pestañas completas, se combinan y se ordenan globalmente por Fecha
+  antes de validar ninguna fila.
+- **Bug real encontrado al verificar:** el campo `Fecha` no tiene cero a la izquierda en la
+  hora (`"7:44"`, no `"07:44"`) — ordenar por el texto crudo rompe el orden dentro del mismo
+  día (`"13:45"` antes que `"7:44"` porque `'1' < '7'` como carácter). Detectado leyendo el
+  orden real de las 24 sesiones tras la primera corrida (04-jul salía 13:45→...→7:44→9:59,
+  claramente mal). Fix: `clave_fecha()` nueva, parsea con
+  `datetime.strptime("%Y-%m-%d %H:%M")` y ordena por el objeto real; fechas que no calzan el
+  formato se mandan al final en vez de romper. Verificado: orden final correcto y los 24
+  grupos colapsables siguen sanos (sin fusión, sin colapso) tras el cambio.
+- Documentado en `docs/procesos/zoom-asistencia.md`.
+
+## 2026-07-30 (cont.) — [panel-datos-etl] Correcciones de Samuel al plan panel-control-jc-mr
+
+**Estado:** 6 correcciones (a-f) aplicadas + modelo de toggle corregido a 3 estados. Solo
+documentación — sin ejecutar código, a pedido explícito ("muéstrame el plan actualizado y
+espera antes de construir").
+**Proceso relacionado:** [[panel-control-jc-mr]] · [[plan-visualizacion-2026-07-30]] ·
+[[panel-riesgo-mejora]] · [[bd-seguimiento-monitorias]]
+
+- **Toggle de "Postulantes históricos" corregido a 3 estados (no 2).** Samuel señaló que mi
+  propuesta binaria (a/b) estaba mal planteada: estado 1 (default) = solo columnas sobre
+  matriculados, cero filas nuevas; estado 2 = modo aparte explícito "postulantes que nunca
+  matricularon" con su propio contador, nunca mezclado; estado 3 = **prohibido**, ningún modo
+  intermedio que sume ambos universos en una cifra. Medí en vivo (REST directo, el MCP de
+  Supabase estaba desconectado en ese momento): 462 JC / 4.757 MR sin matrícula — Samuel había
+  medido 452/4.588 esa misma mañana. Documenté la diferencia explícitamente en vez de elegir
+  un número en silencio; la regla que dejé en el plan es "reverificar en vivo al construir la
+  Fase 3, no copiar el número del documento".
+- **Hallazgo de diseño real al resolver el punto (f):** revisando por qué no duplicar lógica
+  de `v_persona_360`, encontré que esa vista **ya tiene** `asistencia_promedio` y
+  `postulantes_jc`/`postulantes_mr` desde 2026-07-23 — exactamente las 2 fuentes que mi primera
+  versión del plan proponía agregar a `v_gui_personas`. Corregido: **cero SQL nuevo para la
+  Fase 1** del panel nuevo. `v_gui_personas` cubre BD Seguimiento/Retiros/Emoflow/Microcréditos
+  (ya están, migración 033 de hoy); `v_persona_360` cubre Asistencia Zoom/Postulantes
+  históricos (ya están, migración 008 de hace una semana) — se mergean en memoria por cédula
+  en la capa Python. Esto también simplificó el punto (e): no hay migración que reverificar
+  esta vez, solo quedó la regla general para el futuro (baseline de hoy: 53/53 PASS).
+- **(a) Enlaces bidireccionales cerrados:** `panel-control-jc-mr.md` agregado a
+  `00-vision-global.md` (tabla "Procesos en progreso", junto con una fila nueva para
+  `plan-visualizacion-2026-07-30.md` que tampoco estaba enlazada) y a la tabla de componentes
+  de `CLAUDE.md`. Cabecera `**Conexiones:**` agregada al documento nuevo (no la tenía).
+- **(b) Pendientes vivos de `plan-visualizacion-2026-07-30.md` Fase 3 migrados
+  explícitamente, no perdidos:** agregué una advertencia explícita en ese documento diciendo
+  que NO se archiva completo — solo la Fase 2 quedó pausada. La Fase 3 sigue con 2 pendientes
+  reales (verificación visual en navegador nunca hecha, commit local sin `git push` a
+  Netlify) y ese documento sigue siendo su dueño, no se movieron a `panel-control-jc-mr.md`
+  porque son del panel público (Next.js), no de la GUI interna nueva.
+- **(c) Desglose punto por punto de `panel-riesgo-mejora.md` Fases 2-3:** los 6 botones de la
+  Fase 2 y los 3 ítems de la Fase 3 sobreviven todos (tabla completa en el propio archivo) —
+  lo único que se descarta explícitamente es el patrón de "botón fijo curado", reemplazado por
+  filtros libremente combinables (estrictamente más potente). Único hueco real: la ficha 360
+  nueva no incluye `v_puntaje_estudiante` (no está en esa vista) — anotado como mejora futura
+  de baja prioridad, no bloqueante.
+- **(d) Hallazgo de Medellín documentado en `bd-seguimiento-monitorias.md`** (no solo en el
+  plan): sección nueva con el hallazgo completo, la aclaración explícita de que **no** es un
+  problema de `ciudad_alias`/`grupo_ciudad` (esas migraciones normalizan grafía de un dato que
+  ya existe; aquí el dato nunca existió para estas 43 personas), y la recomendación de
+  **gestión humana, no una vista `v_choques_*` nueva** — a diferencia de los choques existentes
+  (que detectan una fuente contradiciéndose a sí misma, un invariante matemático), esto es
+  ausencia total de dato, sin ninguna señal en Supabase que distinga "nunca se hizo seguimiento"
+  de "no aplica" sin que una persona decida agregarlos.
+- **(e) Regla de `test_integridad_supabase.py` codificada como §7** del plan — antes/después +
+  verificación con `SET ROLE anon`, no solo `information_schema`, para cualquier extensión
+  futura de vista con PII. No aplicó hoy porque (f) eliminó la necesidad de extender nada.
+- Documentos tocados: `panel-control-jc-mr.md` (reescrito §4/§6, nuevo §6.1/§7/§8),
+  `panel-riesgo-mejora.md` (desglose de supervivencia), `plan-visualizacion-2026-07-30.md`
+  (advertencia de pendientes vivos), `bd-seguimiento-monitorias.md` (hallazgo completo),
+  `00-vision-global.md` y `CLAUDE.md` (enlaces).
+- **Pendiente:** Samuel revisa el plan actualizado antes de autorizar la Fase 1.

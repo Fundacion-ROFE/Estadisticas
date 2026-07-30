@@ -51,6 +51,7 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 │   ├── sync_sociodemograficos.py ← BD monitorias (xlsx) → participants JC (género/edad/ciudad/emp)
 │   ├── sync_sociodemograficos_mr.py ← BD-Mujeres ROFÉ (xlsx) → participants MR (vivienda/estrato/civil/estudios/…)
 │   ├── sync_postulantes_mr.py  ← BD-Mujeres ROFÉ (5 pestañas) → postulantes_mr (universo completo, no solo matriculadas)
+│   ├── sync_microcreditos_mr.py ← BD-Mujeres ROFÉ (pestaña Icredit|Microcredito) → mr_microcreditos (PII, no es empresa patrocinadora)
 │   ├── sync_aprobacion_supabase.py ← docs/aprobacion/data.json → cohorte_ingresos + aprobacion_cursos (832)
 │   ├── sync_emoflow_api.py     ← Emoflow API (login + descarga CSV) → emoflow_ingresos + historial_emoflow(_ciudad); purga huérfanos
 │   ├── sync_retiros.py         ← Sheets (Retirados JC / Inactivas MR) → retiros (retiro individual)
@@ -84,7 +85,9 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 | `export_retirados.py` | [[q10-consolidacion]] · [[dashboard-web]] | — | `docs/retirados/data.json` |
 | `retirados_headless.py` | [[q10-consolidacion]] | — | — |
 | `panel_riesgo.py` | [[dashboard-web]] | — | Local solamente |
+| Panel de Control JC/MR (nuevo, sin ejecutar) | [[panel-control-jc-mr]] | — | Local solamente (Tkinter, PII, reemplaza a `panel_riesgo_gui.py`) |
 | `setup_headers.py` | [[q10-consolidacion]] | — | — |
+| `validar_asistencia.py` | [[zoom-asistencia]] | — | — (pestaña `ASISTENCIA-VALIDADA` en H3Test; valida correo/cédula del asistente vs Supabase) |
 | `actualizar_bd_mr.py` | [[mr-actualizacion-datos]] | — | — (escribe en BD-Mujeres ROFÉ) |
 | `exportar_sin_completar.py` | [[q10-consolidacion]] | — | — (escribe en Sheet privado SinCompletar) |
 | `normalize_q10_data.py` | [[panel-datos-etl]] | — | — (payload PII en tools/) |
@@ -92,6 +95,7 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 | `sync_sociodemograficos.py` | [[panel-datos-etl]] | — | — (BD monitorias → Supabase, JC) |
 | `sync_sociodemograficos_mr.py` | [[panel-datos-etl]] · [[mr-actualizacion-datos]] | — | — (BD-Mujeres ROFÉ → Supabase, MR) |
 | `sync_postulantes_mr.py` | [[panel-datos-etl]] · [[postulantes-mr-supabase]] | — | — (BD-Mujeres ROFÉ completa → Supabase `postulantes_mr`, PII) |
+| `sync_microcreditos_mr.py` | [[panel-datos-etl]] · [[postulantes-mr-supabase]] | — | — (pestaña Icredit\|Microcredito → Supabase `mr_microcreditos`, PII; NO es empresa patrocinadora) |
 | `sync_aprobacion_supabase.py` | [[panel-datos-etl]] · [[q10-consolidacion]] | — | — (aprobacion/data.json → Supabase, cohorte 832) |
 | `sync_emoflow_api.py` | [[panel-datos-etl]] | — | — (Emoflow API → Supabase, sin Sheet intermedio; detecta/purga huérfanos con `--purgar-huerfanos`) |
 | `sync_emoflow.py` | [[panel-datos-etl]] (DEPRECATED 2026-07-20, movido a `_obsoletos/` 2026-07-24) | — | — (Sheet manual +Ingresos-EmoFlow → Supabase) |
@@ -103,7 +107,7 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 | Frontend Next.js (repo `panel-datos-rofe`) | [[panel-datos-etl]] | — | https://classy-pasca-eecdd6.netlify.app |
 | `test_conexion_supabase.py` | [[panel-datos-etl]] | — | — (verifica RLS de Supabase con anon key) |
 | `test_integridad_supabase.py` | [[panel-datos-etl]] · [[supabase-estructura]] | — | — (suite QA completa; candidata a chequeo diario n8n) |
-| Vista `v_persona_360` (Supabase) | [[postulantes-mr-supabase]] · [[supabase-estructura]] | — | — (trazabilidad total por cédula, solo service_role) |
+| Vista `v_persona_360` (Supabase) | [[postulantes-mr-supabase]] · [[supabase-estructura]] · [[panel-control-jc-mr]] | — | — (trazabilidad total por cédula, solo service_role; primer consumidor real será la ficha del [[panel-control-jc-mr]]) |
 | `extraer_mongo_mr_historico.py` / `cargar_mongo_mr_historico.py` | [[panel-datos-etl]] · [[postulantes-mr-supabase]] | — | — (Mongo Atlas mujeres-rofe-db, solo lectura → postulantes_mr; investigación cerrada 2026-07-22, 99.9% redundante) |
 | `extraer_mongo_jc_historico.py` / `cargar_mongo_jc_historico.py` | [[panel-datos-etl]] | — | — (Mongo Atlas jovenes-creativos, solo lectura → `postulantes_jc`; 2.556 filas, 464 exclusivas, cargado 2026-07-22) |
 | n8n workflow | [[q10-consolidacion]] | [[q10-actualizar]] | — |
@@ -122,6 +126,9 @@ Ver [[mapa-codigo]] para firma completa de cada script.
 | proceso-nuevo | `/proceso-nuevo <nombre>` | Al iniciar cualquier proceso nuevo |
 | doc-sync | `/doc-sync` | Al cerrar cualquier sesión de trabajo |
 | n8n-standards | automático | Al trabajar con workflows de n8n |
+| consejo-ligero | `/consejo-ligero <idea>` | Evaluar una idea/decisión de bajo riesgo — 4 personajes (optimista/escéptico/economista/juez) simulados en un turno, sin subagentes |
+| consejo-medio | `/consejo-medio <idea>` | Igual, pero el escéptico corre aislado en 1 subagente real (ataca sin contaminarse del resto) |
+| consejo-profundo | `/consejo-profundo <idea>` | Decisiones de alto riesgo o difíciles de revertir — los 3 analistas corren como subagentes paralelos totalmente aislados |
 
 ---
 

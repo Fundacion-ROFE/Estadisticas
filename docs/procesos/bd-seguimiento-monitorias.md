@@ -161,6 +161,64 @@ Solo **lectura, local y manual** — ningún workflow n8n escribe aquí. Ver [[m
 
 ---
 
+## Hallazgo: el área metropolitana de Medellín tiene 0% de cobertura en Seguimiento (2026-07-30)
+
+Auditoría de geografía JC (pregunta de Samuel: "¿Bogotá es 100% Bogotá, sin área
+metropolitana?"). Se cruzó `participants.ciudad` (viene de la columna `Ciudad`, c13, de la
+pestaña `Seguimiento`) contra `postulantes_jc` (universo independiente, histórico de Mongo,
+2.556 filas) para las 6 ciudades hub de JC.
+
+**Bogotá: confirmado sin problema.** Cero señal de área metropolitana (Soacha, Chía, Funza…)
+en ninguna de las dos fuentes. Barranquilla, Cali, Cartagena y Guayaquil tampoco muestran
+señal de sus satélites conocidos (Soledad, Jamundí/Palmira/Yumbo, Turbaco, Daule/Samborondón).
+
+**Medellín: hueco real.** `postulantes_jc` tiene 152 personas de Envigado (143) / Sabaneta (7)
+/ Itagüí (2), de las cuales **43 sí matricularon** (tienen `participant_id` en `participants`).
+Verificado **en vivo contra el Sheet** (no asumido): las 43 cédulas **no están en la pestaña
+central `Seguimiento`** (754 cédulas únicas) **ni en la pestaña de fallback `Medellín`** (108
+cédulas únicas, mismo mecanismo que usa `exportar_sin_completar.py` para estudiantes que su
+monitor de ciudad aún no sincronizó al hub). Comparar: de los 300 matriculados de
+Medellín-propiamente-dicho, 94 sí tienen `ciudad`/`grupo_ciudad` en `participants` y 95 sí
+tienen algún valor (true/false) en `en_seguimiento_jc`. Los de Envigado/Sabaneta/Itagüí: **0 de
+43** en ambos casos.
+
+**⚠️ Esto NO es un problema de normalización de ciudad (`ciudad_alias`/`grupo_ciudad`/
+`normalizar_ciudad()`).** La normalización de ciudad (migraciones 013-017, ver
+`convenciones.md`) resuelve variantes de grafía de un dato **que ya existe** ("Bogotá D.C." vs
+"BOGOTA DC"). Este caso es distinto: el dato de ciudad **nunca existió** para estas 43 personas
+en `participants` — no hay nada que normalizar porque no hay fila con esa información que
+llegue a Supabase. Si alguien intenta "arreglar" esto agregando `ENVIGADO`/`SABANETA`/`ITAGUI`
+a `ciudad_alias` o a `grupo_ciudad_municipios_satelite` (migración 016), no va a hacer nada —
+esas migraciones operan sobre `participants.ciudad`, que para estas 43 personas está vacío.
+
+**Causa raíz: gestión humana, no un bug de pipeline.** Se descartó la hipótesis de "el sync
+lee la pestaña equivocada" con evidencia directa (arriba). Estas personas simplemente nunca
+fueron dadas de alta en el sistema de seguimiento que opera el equipo de monitorías — ni en el
+hub ni en la pestaña de su ciudad. Encaja con el patrón ya documentado (74% de `participants`
+sin `grupo_ciudad` en general, ver `convenciones.md`), pero aporta un dato nuevo: **el área
+metropolitana de Medellín tiene 0% de cobertura**, no un déficit parcial aleatorio como el resto.
+
+### ¿Señal automática o gestión humana?
+
+**Recomendación: gestión humana por ahora, no una vista `v_choques_*` nueva.** Diferencia clave
+con los `v_choques_cursos`/`v_choques_cohorte` ya existentes: esos detectan una **fuente que se
+contradice a sí misma en el tiempo** (un curso que retrocede, una cohorte que cambia de forma
+imposible) — son invariantes matemáticos verificables sin intervención humana. Este caso es
+**ausencia total de dato**, no una contradicción: no hay ninguna señal en Supabase que permita
+distinguir "nunca se les hizo seguimiento" de "genuinamente no aplica" sin que una persona
+mire la pestaña Seguimiento y decida agregarlos. Una vista de vigilancia aquí solo podría
+reportar "N personas de `postulantes_jc` con matrícula y sin `grupo_ciudad`" — que ya es
+exactamente lo que este hallazgo mide a mano, y que se puede recalcular cuando haga falta con
+la misma query usada hoy (ver `tools/investigar_envigado_seguimiento.py`, gitignoreado).
+
+**Si el equipo de monitorías decide onboardear a estas 43 personas** (agregarlas a la pestaña
+`Seguimiento` o a `Medellín`), el próximo `sync_sociodemograficos.py` las recoge solo —
+ningún cambio de código necesario. Ese es el arreglo real; cualquier mitigación técnica
+(ej. usar `postulantes_jc.ciudad` como fallback en `participants.ciudad` cuando Seguimiento
+no tiene nada) sería un parche que **no resuelve la causa** y que además reintroduce un origen
+de dato distinto para una columna que hoy tiene una sola fuente de verdad clara — no se
+recomienda sin que Samuel lo pida explícitamente.
+
 ## Método de introspección (reproducible, sin PII)
 
 Script `scratchpad/introspeccion_bd.py` (openpyxl): extrae nombres de pestaña, dimensiones,
