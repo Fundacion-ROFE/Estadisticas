@@ -14,8 +14,8 @@
     "orden": 5,
     "participantes": 22,
     "ingresos_promedio": 122.4,
-    "avance_promedio": 94.2,
-    "pct_aprobacion": 93.3
+    "avance_promedio": 94.7,
+    "pct_aprobacion": 93.9
   },
   {
     "grupo_ciudad": "CTG",
@@ -57,10 +57,10 @@
     "grupo_ciudad": "QTO",
     "banda": "31-60",
     "orden": 4,
-    "participantes": 21,
-    "ingresos_promedio": 43.3,
-    "avance_promedio": 96.8,
-    "pct_aprobacion": 96.7
+    "participantes": 22,
+    "ingresos_promedio": 42.8,
+    "avance_promedio": 97.0,
+    "pct_aprobacion": 96.9
   },
   {
     "grupo_ciudad": "BAQ",
@@ -77,8 +77,8 @@
     "orden": 3,
     "participantes": 36,
     "ingresos_promedio": 23.2,
-    "avance_promedio": 95.5,
-    "pct_aprobacion": 93.5
+    "avance_promedio": 95.9,
+    "pct_aprobacion": 93.9
   },
   {
     "grupo_ciudad": "BOG",
@@ -120,10 +120,10 @@
     "grupo_ciudad": "QTO",
     "banda": "16-30",
     "orden": 3,
-    "participantes": 9,
-    "ingresos_promedio": 24.3,
-    "avance_promedio": 91.7,
-    "pct_aprobacion": 89.4
+    "participantes": 8,
+    "ingresos_promedio": 23.6,
+    "avance_promedio": 91.2,
+    "pct_aprobacion": 89.8
   },
   {
     "grupo_ciudad": "CAL",
@@ -140,7 +140,7 @@
     "orden": 5,
     "participantes": 6,
     "ingresos_promedio": 103.0,
-    "avance_promedio": 93.8,
+    "avance_promedio": 94.3,
     "pct_aprobacion": 93.3
   },
   {
@@ -158,7 +158,7 @@
     "orden": 2,
     "participantes": 27,
     "ingresos_promedio": 11.7,
-    "avance_promedio": 93.9,
+    "avance_promedio": 94.0,
     "pct_aprobacion": 91.4
   },
   {
@@ -257,7 +257,7 @@
     "orden": 3,
     "participantes": 13,
     "ingresos_promedio": 23.4,
-    "avance_promedio": 92.0,
+    "avance_promedio": 92.1,
     "pct_aprobacion": 90.8
   },
   {
@@ -266,7 +266,7 @@
     "orden": 1,
     "participantes": 17,
     "ingresos_promedio": 3.1,
-    "avance_promedio": 88.8,
+    "avance_promedio": 88.9,
     "pct_aprobacion": 88.2
   },
   {
@@ -329,7 +329,7 @@
     "orden": 2,
     "participantes": 28,
     "ingresos_promedio": 10.4,
-    "avance_promedio": 92.3,
+    "avance_promedio": 92.4,
     "pct_aprobacion": 90.1
   },
   {
