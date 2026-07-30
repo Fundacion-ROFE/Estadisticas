@@ -5209,20 +5209,47 @@ correo se libere de `email_bounces` si estaba ahí.
   que se desplegó la columna `Host` (29-jul noche) solo habían terminado clases del host
   `jovenescreativos`; se confirmó en vivo un evento con host `comunicaciones` de la clase en
   curso (Jueves 10am), que aún no había cerrado. Sin cambios de código, solo diagnóstico.
-- **Fix real implementado:** la apertura de sala 20-30 min antes de hora oficial distorsionaba
-  el corte "presentes @10min" (`Esperar 10 min` contaba desde `meeting.started` = apertura
-  real). Se verificó que las 89 clases de `tools/cupos_clases.json` inician todas en punto
-  (`:00`) y que Zoom no guarda hora programada para estas reuniones (`GET /meetings/{id}` →
-  `type:8`, `start_time`/`duration` null) — se descartó pedirle la hora a Zoom. Nuevo nodo Code
-  `Calcular Espera Anclada` (redondea apertura real a la hora en punto más cercana, fallback si
-  desfase >90 min) + `Esperar 10 min` pasó a `resume: specificTime`. Desplegado vía API de n8n
-  (`PUT /workflows/jkNaE51PKQ4TQzNq`), workflow sigue activo, re-exportado a
-  `n8n-workflows/zoom-asistencia.json`. Copia de referencia:
-  `scripts/zoom-asistencia/nodo-calcular-espera-anclada.js`.
+- **Fix real implementado (v1, superada por v2 más abajo):** la apertura de sala 20-30 min
+  antes de hora oficial distorsionaba el corte "presentes @10min" (`Esperar 10 min` contaba
+  desde `meeting.started` = apertura real). Se verificó que las 89 clases de
+  `tools/cupos_clases.json` inician todas en punto (`:00`) y que Zoom no guarda hora
+  programada para estas reuniones (`GET /meetings/{id}` → `type:8`, `start_time`/`duration`
+  null) — se descartó pedirle la hora a Zoom. Nuevo nodo Code `Calcular Espera Anclada`
+  (redondea apertura real a la hora en punto más cercana) + `Esperar 10 min` pasó a
+  `resume: specificTime`. Desplegado vía API de n8n (`PUT /workflows/jkNaE51PKQ4TQzNq`).
 - **Pendiente:** validar con una clase real de inicio a fin que el corte de `ASISTENCIA-10MIN`
   cae cerca de hora oficial+10min y sube el conteo de presentes. Mismo problema raíz afecta el
   checkpoint `min10` de "Calcular Momentos Dorados" (rama completa) — no tocado, cambia el %
   ya en producción, evaluar con el equipo antes.
+
+## 2026-07-30 (cont.) — [Zoom asistencia] v2 del fix de espera anclada: lee el horario real en vez de redondear
+
+**Estado:** Completado
+**Proceso relacionado:** [[zoom-asistencia]]
+
+- Samuel señaló el límite del fix v1 (redondeo): si algún día hay una clase a la media hora
+  (ej. 6:30) y la sala abre exacto a las 6:00 (30 min antes, dentro del patrón normal), 6:00
+  cae justo en una marca de hora y el redondeo la confunde con la oficial — corte a las 6:10
+  en vez de 6:40. Motivo explícito: "aquí no avisan de cambios ni situaciones de DB/clases,
+  mejor mirar cómo está programada la clase que confiar en los usuarios".
+- **v2 implementada:** nuevos nodos `Leer CUPOS Clases` (rango `A1:F400`) y
+  `Leer CUPOS Keywords` (rango `H1:I40` — rangos separados porque `Área` se repite en
+  columna A e I y colisiona como header) + el Code `Calcular Espera Anclada` reescrito para
+  inferir área por palabra clave del topic y buscar en `CUPOS!A:F` la clase de esa área+día
+  con hora más cercana a la apertura (tolerancia ±45min) — mismo criterio que ya usa la
+  fórmula de cupo en `ZOOM-STATS`, sin duplicar lógica de negocio. Fallback de 2° nivel: si
+  no hay match (reunión de prueba/monitores), usa el redondeo de la v1.
+- **Validado con simulación en Python contra el `CUPOS` real** (no ejecución real todavía):
+  caso de hoy (HTML-Jueves, apertura 9:36am) → hora oficial 10:00 ✓. Caso hipotético inyectado
+  (clase 6:30pm, apertura exacta a las 6:00pm, sin clase real cercana) → resuelve a 18:30
+  correctamente, corte a las 6:40 ✓. Límite conocido que queda: si el futuro trae 2 clases
+  reales de la misma área+día separadas <45 min, la apertura podría matchear con la más
+  cercana en vez de la correcta — no existe ese caso hoy.
+  Desplegado vía API de n8n, workflow activo (25 nodos), re-exportado a
+  `n8n-workflows/zoom-asistencia.json`, copia de referencia
+  `scripts/zoom-asistencia/nodo-calcular-espera-anclada.js` actualizada a v2.
+- **Pendiente:** seguir sin validar con una clase real de punta a punta (solo simulación).
+  Mismo fix (leer `CUPOS`) pendiente de aplicar al checkpoint `min10` de la rama completa.
 
 ## 2026-07-30 (cont.) — [panel-datos-etl] Fase 1 de plan-visualizacion-2026-07-30.md: vistas de datos + guardas
 
@@ -5301,3 +5328,51 @@ hallazgo documentado (no ejecutado). Fase 3 sigue bloqueada (repo `panel-datos-r
   sin comprobarla — exactamente el tipo de error que `[[feedback_verificar_n8n_en_vivo]]`
   advierte para n8n, aplicado aquí a un repo. Corregido en el plan (§3 y el encabezado de
   estado). Fase 3 queda **pendiente de ejecutar, no bloqueada**.
+
+## 2026-07-30 (cont.) — [panel-datos-etl] Fase 3: conectar el panel Netlify a las vistas nuevas
+
+**Estado:** Pasos 3 y 6 hechos; pasos 1-2 ya existían (verificado, no escrito hoy); paso 4 con
+hallazgo (vista duplicada, corregida); paso 5 sin tocar. Cambios committeados localmente en
+`panel-datos-rofe`, **no pusheados**. No verificado visualmente (sin extensión de Chrome).
+**Proceso relacionado:** [[plan-visualizacion-2026-07-30]] · [[supabase-estructura]]
+
+- **Repo más maduro de lo que el plan asumía.** Antes de escribir una sola línea se leyó
+  `app/page.tsx` (1500+ líneas) y `lib/api.ts` completos: el selector de programa/cohorte y las
+  estadísticas de cabecera (pasos 1-2) **ya estaban implementados**, con `useMemo` reactivo
+  sobre `cohorte_ingresos`/`v_cohorte_estudiantes`. El filtro de ciudad (`ciudadElegida`)
+  también existía, pero **solo para JC** (`v_demografia_grupo` es JC-only) — el drill-down de
+  municipio que pedía el paso 3 no existía para ningún programa.
+- **Hallazgo real antes de tocar el frontend:** `v_pub_avance` (migración 034 de esta misma
+  tarde) resultó ser un duplicado exacto de `v_cohorte_estudiantes_distribucion` (existente
+  desde 2026-07-15, ya consumida por el frontend como `estudiantesDist`) — verificado fila por
+  fila, mismos números. Se había escrito la migración 034 sin revisar primero si algo
+  equivalente ya existía. **Migración 036** la redefinió como wrapper de la vista original en
+  vez de dejar dos definiciones que pudieran divergir. El frontend no se tocó para este punto —
+  ya usaba la fuente correcta.
+- **Paso 3 (drill-down de municipio) — implementado como pieza NUEVA e independiente**, no como
+  extensión del `ciudadElegida` existente: extender ese selector a MR se evaluó y se descartó
+  — varias otras vistas que ese selector alimenta (`v_programa_stats_por_ciudad`,
+  `v_emprendimiento_por_ciudad`, `historial_cursos_ciudad`) están **hardcodeadas a JC a nivel
+  SQL**, no solo en el frontend; habilitar el selector para MR sin arreglar esas vistas primero
+  habría dejado esas secciones vacías o rotas para MR. En cambio: nuevo estado local
+  `grupoGeografia` + nueva sección "Geografía" (tab Resumen) que lee `v_pub_geografia`
+  directamente — cubre **jc y mr** desde el día uno, sin tocar ni arriesgar el código existente.
+  La supresión de municipios `n<5` ("Área metropolitana") ya viene resuelta en la vista — el
+  frontend no filtra nada, solo muestra lo que la vista entrega.
+- **Paso 6 (fecha del dato):** badge "Datos actualizados hace Xh" cerca del selector, leyendo
+  `v_frescura`, con aviso visual si `cohorte_ingresos`/`aprobacion_cursos`/`retiros` está
+  vencido. Global, no desglosado por panel — suficiente para el corte del 11-ago.
+- **Paso 5 (asimetría JC/MR) sin tocar.** La app ya oculta tabs/campos no aplicables por
+  programa en vez de mostrar 0% (ej. tab Emoflow no aparece para MR), lo que cumple el
+  espíritu de la regla sin un texto "no aplica" explícito. No es urgente: hoy no hay ningún 0%
+  engañoso visible en la UI actual.
+- **Verificación:** `npx tsc --noEmit` limpio, `npm run build` exitoso (export estático sin
+  errores), `npm run dev` responde HTTP 200. **No se pudo verificar visualmente en navegador**
+  — la extensión de Chrome no conectó esta sesión (mismo patrón ya documentado en
+  `project_mr_website_rediseno_html`). Pendiente que Samuel confirme visualmente en
+  `localhost:3000` antes de darlo por bueno del todo.
+- **Deliberadamente NO se hizo `git push`.** Un push a `comunicaciones/main` dispara un deploy
+  de Netlify al panel público — se dejó como commit local, pendiente de confirmación explícita
+  antes de publicar.
+- `docs/procesos/plan-visualizacion-2026-07-30.md` actualizado marcando cada paso de la Fase 3
+  con su estado real.

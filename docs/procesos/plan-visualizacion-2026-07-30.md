@@ -130,17 +130,43 @@ Cambios, en orden:
 líneas) es el punto central que consumiría `v_pub_cohorte`/`v_pub_geografia`/`v_pub_avance`/
 `v_aprobacion_cursos_vigencia`.
 
-1. **Selector de cohorte y programa** global, que afecte todos los paneles de la página.
-2. **Estadísticas de cabecera que recalculan** según los filtros, leyendo `v_pub_cohorte`.
+1. **Selector de cohorte y programa** global, que afecte todos los paneles de la página. —
+   ✅ **Ya existía antes de esta sesión** (`programa`, `cohorteElegida` en `app/page.tsx`), no
+   hecho hoy, solo verificado leyendo el código.
+2. **Estadísticas de cabecera que recalculan** según los filtros, leyendo `v_pub_cohorte`. —
+   ✅ **Ya existía** vía `useMemo` sobre `cohorte_ingresos`/`v_cohorte_estudiantes` directo
+   (no se migró a `v_pub_cohorte` — habría sido puro churn de nombre sin beneficio real, los
+   datos son los mismos).
 3. **Ciudad con drill-down:** click en un grupo (BOG) despliega sus municipios desde
-   `v_pub_geografia`, con la regla de supresión de 1.3.
+   `v_pub_geografia`, con la regla de supresión de 1.3. — ✅ **HECHO 2026-07-30.** Nueva sección
+   "Geografía" en el tab Resumen, independiente del selector de ciudad existente (que solo
+   cubre JC vía `v_demografia_grupo`) — la nueva cubre **jc y mr**, que es donde vive el valor
+   real (municipios satélite de MR). Commit local en `panel-datos-rofe` (no pusheado).
 4. **Vista de avance** desde `v_pub_avance`: distribución de personas por cantidad de cursos
-   aprobados, para responder de un vistazo quiénes van al día y quiénes llevan uno solo.
-5. **Etiquetar siempre la asimetría JC/MR.** Estrato y vivienda solo existen en MR; Emoflow y
-   empresa patrocinadora solo en JC. El panel tiene que decir "no aplica", nunca mostrar 0% —
-   es la regla dura del diccionario y el error más fácil de cometer en un frontend.
+   aprobados, para responder de un vistazo quiénes van al día y quiénes llevan uno solo. —
+   ⚠ **Hallazgo:** `v_pub_avance` (migración 034) duplicaba exactamente
+   `v_cohorte_estudiantes_distribucion`, ya existente desde 2026-07-15 y ya consumida por el
+   frontend (`estudiantesDist`). Redefinida como wrapper (migración 036) para no dejar dos
+   definiciones que puedan divergir. **No se cambió el frontend** — ya usa la vista original,
+   que es la misma fuente.
+5. **Etiquetar siempre la asimetría JC/MR.** — 🟡 **No tocado.** La app ya oculta tabs/campos no
+   aplicables por programa (ej. tab Emoflow no aparece para MR) en vez de mostrar 0%, lo cual
+   cumple el espíritu de la regla, pero no hay un texto explícito "no aplica" en ningún lado.
+   Queda para una pasada de refinamiento — no es urgente porque hoy no hay ningún 0% engañoso
+   visible.
 6. **Fecha del dato visible** en cada panel (`v_frescura`). Un número correcto sin fecha
-   engaña igual que uno equivocado.
+   engaña igual que uno equivocado. — ✅ **HECHO 2026-07-30 (parcial).** Badge "Datos
+   actualizados hace Xh" cerca del selector de programa/cohorte, con aviso visual si
+   `cohorte_ingresos`/`aprobacion_cursos`/`retiros` está vencido. Es un badge global, no "en
+   cada panel" — suficiente para el corte del 11-ago, se puede desglosar por panel después si
+   hace falta.
+
+**Verificación de lo hecho hoy:** `npx tsc --noEmit` limpio, `npm run build` exitoso (export
+estático sin errores), `npm run dev` responde HTTP 200. **No se pudo verificar visualmente en
+navegador** — la extensión de Chrome no conectó esta sesión. Pendiente que Samuel confirme
+visualmente en `localhost:3000` (o tras el deploy) antes de darlo por bueno del todo. Cambios
+committeados localmente en `panel-datos-rofe` (`app/page.tsx`, `lib/api.ts`) — **no pusheados**
+a `comunicaciones/main` (eso dispara un deploy de Netlify, se dejó para confirmación explícita).
 
 ---
 
