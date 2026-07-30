@@ -5194,3 +5194,95 @@ correo se libere de `email_bounces` si estaba ahí.
 - **Pendiente:** el bug menor de guiones bajos en el texto estático de
   `panel-verificacion-diaria` (no crítico); seguir con `plan-visualizacion-2026-07-30.md` ahora
   que el canal de alertas es creíble de nuevo.
+
+## 2026-07-30 (cont.) — [Zoom asistencia] Auditoría cupos/host + fix de espera anclada a horario oficial
+
+**Estado:** Completado
+**Proceso relacionado:** [[zoom-asistencia]]
+
+- **Cupo desactualizado:** Cristian reportó 47 conectados vs cupo 51 en HTML-Jueves 10am;
+  se confirmó que el cupo NO incluye staff (viene de `Seguimiento`, 1 fila = 1 estudiante) y
+  que `tools/cupos_clases.json` es un snapshot manual de 2026-07-02 sin regenerar desde
+  entonces — gap probablemente por retiros no reflejados. Documentado como pendiente.
+- **"Solo aparece jovenescreativos, nada de comunicaciones" en `ZOOM-ASISTANCE`:** se auditó
+  con ejecuciones reales de n8n (API `/executions`) — no es filtro ni bug, coincidencia: desde
+  que se desplegó la columna `Host` (29-jul noche) solo habían terminado clases del host
+  `jovenescreativos`; se confirmó en vivo un evento con host `comunicaciones` de la clase en
+  curso (Jueves 10am), que aún no había cerrado. Sin cambios de código, solo diagnóstico.
+- **Fix real implementado:** la apertura de sala 20-30 min antes de hora oficial distorsionaba
+  el corte "presentes @10min" (`Esperar 10 min` contaba desde `meeting.started` = apertura
+  real). Se verificó que las 89 clases de `tools/cupos_clases.json` inician todas en punto
+  (`:00`) y que Zoom no guarda hora programada para estas reuniones (`GET /meetings/{id}` →
+  `type:8`, `start_time`/`duration` null) — se descartó pedirle la hora a Zoom. Nuevo nodo Code
+  `Calcular Espera Anclada` (redondea apertura real a la hora en punto más cercana, fallback si
+  desfase >90 min) + `Esperar 10 min` pasó a `resume: specificTime`. Desplegado vía API de n8n
+  (`PUT /workflows/jkNaE51PKQ4TQzNq`), workflow sigue activo, re-exportado a
+  `n8n-workflows/zoom-asistencia.json`. Copia de referencia:
+  `scripts/zoom-asistencia/nodo-calcular-espera-anclada.js`.
+- **Pendiente:** validar con una clase real de inicio a fin que el corte de `ASISTENCIA-10MIN`
+  cae cerca de hora oficial+10min y sube el conteo de presentes. Mismo problema raíz afecta el
+  checkpoint `min10` de "Calcular Momentos Dorados" (rama completa) — no tocado, cambia el %
+  ya en producción, evaluar con el equipo antes.
+
+## 2026-07-30 (cont.) — [panel-datos-etl] Fase 1 de plan-visualizacion-2026-07-30.md: vistas de datos + guardas
+
+**Estado:** Fase 1 completa (vistas + guardas). Fase 2 evaluada, paso 5 hecho, paso 1 con
+hallazgo documentado (no ejecutado). Fase 3 sigue bloqueada (repo `panel-datos-rofe` no montado).
+**Proceso relacionado:** [[plan-visualizacion-2026-07-30]] · [[supabase-estructura]] ·
+[[diccionario-metricas]] · [[convenciones]]
+
+- **Arrancó verificando el bloque "Estado verificado" del handoff contra Supabase real** antes
+  de tocar nada: los números coincidieron todos (jc 832/760/78, mr 346/338/8, courses 11=8+3,
+  v_programa_stats, suma por ciudad=760, 0 alertas altas), con una excepción esperada — el rango
+  de `aprobacion_cursos` JC ya no era 81,1%-100% sino 1,2%-100%, explicado exactamente por el
+  hecho #4 del handoff (curso JavaScript arrancó el 30-jul con 3/251 aprobados). No era un
+  número que no cuadraba, era la consecuencia documentada de un hecho ya conocido — se continuó.
+- **Migración 033 — `v_gui_personas`** (service_role, PII, `security_invoker=on`). Grano
+  participant×programa×cohorte. Gotcha real encontrado con datos: el primer join de retiros
+  (participant_id+programa+cohorte) daba 0 retiradas MR en vez de 8 — `retiros.cohorte` para MR
+  no es confiable (el propio `motivo` lo dice: "no cohorte confirmada") y 5/8 filas MR tienen
+  `participant_id` NULL. Fix: match por participante (id o cédula) + programa solamente,
+  `retiro_cohorte_registrado` expuesto aparte para transparencia. Verificado: jc/2026 777 filas
+  (17 retirados = los 17 "fantasmas" ya confirmados), mr/2025 1.016 filas (8 retirados, ahí vive
+  su matrícula real).
+- **Migración 034 — `v_pub_cohorte`/`v_pub_geografia`/`v_pub_avance`** (públicas). Bug real
+  cometido y corregido en la misma sesión: seguir la regla general del prompt
+  ("`security_invoker=on`" para vistas nuevas) rompió el acceso de `anon` con `permission denied
+  for table participants` — probado con `SET ROLE anon`, no asumido. Las tablas base tienen
+  REVOKE explícito de anon por PII; `security_invoker=on` exige que quien consulta tenga GRANT
+  directo ahí, cosa que `anon` nunca va a tener. Revertido al patrón owner-privilege ya usado por
+  `v_demografia_grupo` y hermanas — regla nueva en `convenciones.md`. `v_pub_geografia`
+  implementa la supresión de municipios `n<5` de Lina (constante `umbral_supresion_municipio()`,
+  agrupa como "Área metropolitana"), reusando `ciudad_alias` para colapsar variantes de grafía.
+  Cuadre verificado: los 3 vistas dan 760 exacto para jc/2026.
+- **Migración 035 — `v_aprobacion_cursos_vigencia`.** Complementa `UMBRAL_PROMEDIO_FIN=90` con
+  `no_visto_en_fuente` (>12h sin verse en la última corrida, mismo umbral que `v_choques_cursos`)
+  para el `finalizado_real` que el plan pedía. Verificado con datos reales: los 2 cursos MR que
+  de verdad cerraron (41,9% y 32,07%) quedan `finalizado_real=true`; los 2 cursos genuinamente
+  nuevos con avance bajo (Finanzas Inteligentes 7,8%, JavaScript 2,1%) quedan `false` — el
+  detector no confunde "recién empezó" con "cerró". No se tocó `export_aprobacion.py` (Q10
+  directo, fuera de alcance).
+- **Guardas en `test_integridad_supabase.py`:** cruce independiente JC 2026 activos
+  (participants×enrollments filtrado por `en_seguimiento_jc`) vs `cohorte_ingresos.activos` —
+  ambos caminos dan 760. `v_gui_personas` agregada a la lista de objetos que `anon` debe tener
+  bloqueados; las 4 vistas públicas nuevas agregadas a una lista espejo que confirma que `anon`
+  SÍ puede leerlas. Suite completa: **50/50 PASS**.
+- **Fase 2 paso 5 (extracción):** `tools/panel_riesgo_gui.py` (2.317 líneas) partido en
+  `tools/panel_riesgo_datos.py` (512 líneas, sin Tkinter, toda la lógica de Sheets/Supabase/
+  cruce/config de cursos) + `panel_riesgo_gui.py` (1.842 líneas, solo interfaz, importa del
+  módulo de datos). Verificado con `ast.parse` + import real de ambos módulos (sin lanzar la
+  GUI) — wiring correcto, `FONT`/paleta/`_etiqueta_*` accesibles desde `gui.py`.
+- **Fase 2 paso 1 — evaluado, NO ejecutado (hallazgo documentado, no un pendiente cualquiera):**
+  "apuntar la GUI a `v_gui_personas`" se probó y choca con el grano de la vista. 3 piezas de la
+  UI actual necesitan persona×**curso** (columnas por curso en "EN Q10 JC", lista de cursos
+  individuales para clasificar en el tab Admin, avance por curso en los popups de Atención/
+  Avance-0) y `v_gui_personas` agrega a nivel persona solamente. Forzar el swap las habría roto
+  — se dejó `leer_h2test()` sin cambios (sigue consultando `enrollments`/`courses` directo,
+  patrón ya migrado a Supabase desde antes de esta sesión). `v_gui_personas` sí es el grano
+  correcto para la Fase 2 paso 4 (ficha 360 al doble clic), que no se construyó hoy.
+- **Fase 3 sigue bloqueada** — el repo `panel-datos-rofe` no está montado en ninguna sesión
+  hasta ahora.
+- Documentado en `supabase-estructura.md` (sección nueva "Vistas de visualización y
+  operabilidad"), `docs/migrations/README.md` (nota de la divergencia de numeración,
+  033=máx(repo,log real)+1) y los 3 archivos de migración (033/034/035) con el detalle completo
+  de cada gotcha encontrado y corregido en vivo.

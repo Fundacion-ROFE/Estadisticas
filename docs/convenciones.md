@@ -978,3 +978,23 @@ powershell -NoProfile -Command "[Console]::OutputEncoding = [System.Text.Encodin
 Aplicado en `alerta-frescura-vencida` y `panel-verificacion-diaria` — los únicos 2 workflows del
 proyecto con este patrón. Cualquier workflow nuevo que capture stdout de un script Python vía
 archivo + `Get-Content` necesita las dos partes del fix, no solo `-Encoding UTF8`.
+
+## `security_invoker = on` en una vista pública rompe el acceso de `anon` si las tablas base tienen REVOKE de PII
+
+Encontrado construyendo `v_pub_geografia`/`v_pub_cohorte`/`v_pub_avance` (plan-visualizacion,
+2026-07-30). `security_invoker=on` hace que la vista corra con los privilegios de quien
+**consulta**, no del dueño — es la mitigación correcta para el gotcha ya documentado arriba
+("una vista con PII se expone a anon aunque nunca le des GRANT", porque por defecto una vista
+corre como su dueño e ignora el RLS/GRANT de las tablas que toca). Pero en este proyecto varias
+tablas base (`participants`, `ciudad_alias`, …) tienen **REVOKE ALL explícito de anon** a
+propósito, precisamente para proteger PII — y con `security_invoker=on` la vista deja de poder
+compensar eso: `anon` necesitaría GRANT directo en esas tablas, que nunca va a tener. Resultado
+real: `SET ROLE anon; select * from v_pub_geografia;` → `permission denied for table
+participants`. **Regla:** `security_invoker=on` es correcto para vistas de **nivel individuo
+consumidas solo por `service_role`** (bypasea RLS/GRANTs de todas formas, así que el flag no
+tiene costo y da defensa en profundidad) — nunca para vistas de **agregados públicos** que
+necesitan leer tablas con PII protegida por REVOKE. Las vistas públicas de este proyecto usan a
+propósito el patrón owner-privilege (sin `security_invoker`), ya aceptado y documentado para
+`v_demografia_grupo` y hermanas. **Probarlo siempre con `SET ROLE anon` antes de dar por buena
+una vista nueva** — `information_schema.role_table_grants` solo confirma el GRANT sobre la
+vista misma, no si la consulta real revienta más abajo.

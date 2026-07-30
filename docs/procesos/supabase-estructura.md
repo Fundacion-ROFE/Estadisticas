@@ -750,3 +750,72 @@ sin `REVOKE` formal, el advisor la lista), `courses`=41, `email_bounces`=549,
   (uso ANTES del resultado, hoy ambos son acumulados al mismo corte) o experimento.
 - Detalle completo (con IDs internos, sin nombres): `tools/analisis_emoflow_resultados.json`;
   dataset PII: `tools/analisis_emoflow_dataset.csv`; script: `tools/analisis_emoflow_resultados.py`.
+
+## Vistas de visualización y operabilidad (Fase 1 de plan-visualizacion-2026-07-30.md, 2026-07-30)
+
+Migraciones 033-035. Verificadas con `SET ROLE anon` (no solo `information_schema`) y con
+`test_integridad_supabase.py` (50/50 PASS, incluye 5 tests nuevos de esta fase).
+
+### `v_gui_personas` 🟢 — service_role únicamente (PII)
+Grano: `(participant_id, programa, cohorte)`, una fila por matrícula agregada. Consumidor:
+`tools/panel_riesgo_gui.py` vía `panel_riesgo_datos.py` (aún no conectado — ver nota abajo).
+Une `participants` + `enrollments`/`courses` (cursos_matriculados/cursos_aprobados/
+avance_promedio/al_dia) + `retiros` (fecha_retiro/motivo_retiro/retiro_cohorte_registrado,
+match por participante o cédula — **no** por cohorte, ver gotcha en el archivo de migración) +
+`empresa_patrocinadora` (JC) + `emoflow_ingresos` (JC) + sociodemográficos MR (ya en
+`participants`) + `mr_microcreditos`. `security_invoker=on` + `REVOKE ALL` de anon/authenticated
+(verificado 401). Ver `docs/migrations/033_v_gui_personas.sql` para el gotcha de matching de
+retiros MR (0→8 al corregir).
+
+**No conectada a la GUI todavía.** Se evaluó la Fase 2 paso 1 del plan ("apuntar la GUI a
+v_gui_personas en vez de cruzar fuentes a mano") y se encontró un conflicto de grano real: el
+tab "EN Q10 JC" muestra **una columna por curso** por estudiante, el tab Admin necesita la
+**lista de cursos individuales** (nombre + conteo) para clasificar JC/MR/Stand-by, y los popups
+de detalle de Atención/Avance-0 muestran **avance por curso**. `v_gui_personas` agrega a nivel
+persona (`cursos_matriculados`/`avance_promedio` ya sumados) — no tiene el grano
+persona×curso que esas 3 piezas de UI necesitan. Forzar el swap las habría roto. `leer_h2test()`
+sigue consultando `enrollments`/`courses` directo (sin cambios). `v_gui_personas` queda lista
+para la Fase 2 paso 4 (ficha 360 al doble clic), que sí necesita exactamente su grano
+(retiro/empresa patrocinadora/Emoflow/sociodemográficos/microcrédito en una sola fila).
+
+### `v_pub_cohorte` / `v_pub_geografia` / `v_pub_avance` 🟢 — públicas (`anon`: solo SELECT)
+Para el panel Netlify (Fase 3, bloqueada — repo no montado). Owner-privilege (**sin**
+`security_invoker`) — mismo patrón que `v_demografia_grupo` y hermanas: con
+`security_invoker=on` estas vistas le exigirían a `anon` un GRANT directo sobre `participants`/
+`ciudad_alias`, que está deliberadamente revocado por PII. Se probó y se rompió con `SET ROLE
+anon` antes de aplicar el fix — ver el gotcha completo en
+`docs/migrations/034_vistas_publicas_visualizacion.sql`.
+
+- **`v_pub_cohorte`** — wrapper de `cohorte_ingresos` con nombre estable de familia.
+- **`v_pub_geografia`** — programa×cohorte×`grupo_ciudad`×municipio, con supresión de
+  municipios `n < umbral_supresion_municipio()` (función SQL nombrada, valor 5, decisión de
+  Lina 2026-07-30) agrupados como `"Área metropolitana"`. `municipio` colapsa variantes de
+  grafía vía `ciudad_alias`/`ciudad_norm` (mismo mecanismo de `[[convenciones]]#Normalización de
+  ciudades`), mostrando el nombre más frecuente (`mode()`) del grupo. JC no tiene granularidad
+  real de municipio (toda la conurbación cae en "Bogotá D.C." u otras variantes) — el frontend
+  debe aclararlo.
+- **`v_pub_avance`** — programa×cohorte×cursos_aprobados → personas.
+
+Cuadre verificado: `v_pub_cohorte.activos` (jc/2026) = Σ`v_pub_geografia.personas` (jc/2026) =
+Σ`v_pub_avance.personas` (jc/2026) = **760**, exacto en los tres.
+
+### `v_aprobacion_cursos_vigencia` 🟢 — pública (`anon`: solo SELECT)
+Complementa `aprobacion_cursos.finalizado` (`UMBRAL_PROMEDIO_FIN=90`, calculado en
+`export_aprobacion.py`) con `no_visto_en_fuente` (`courses.visto_en_fuente_at` ausente >12h de
+la última corrida de su programa/cohorte — mismo umbral ya calibrado de `v_choques_cursos`) para
+producir `finalizado_real`. Cierra el punto ciego documentado en el plan §0: el curso MR "De la
+idea a la acción..." cerró con 41,9% de avance y nunca se habría marcado finalizado solo por
+promedio; con esta vista sí (`finalizado_real=true` vía `no_visto_en_fuente`). Verificado con los
+2 cursos MR realmente cerrados (41,9% y 32,07%) vs. los 2 cursos genuinamente nuevos y de avance
+bajo (7,8% y 2,1%, `no_visto_en_fuente=false` porque se vieron hoy) — el detector no confunde
+"recién empezó" con "cerró". **No se tocó `export_aprobacion.py`** (lee Q10 directo, fuera de
+alcance de Fase 1) — esta vista es la fuente para cualquier consumidor que prefiera leer
+Supabase directo.
+
+### Guardas nuevas en `test_integridad_supabase.py` (Fase 1.4)
+- Cruce independiente: activos JC 2026 recalculado vía `participants×enrollments` filtrado por
+  `en_seguimiento_jc≠false` debe coincidir exacto con `cohorte_ingresos.activos` (760). Protege
+  contra que alguien cambie el significado de la columna sin que los conteos por curso lo delaten.
+- `anon` bloqueado en `v_gui_personas` (nueva, PII) y `anon` puede leer las 4 vistas públicas
+  nuevas — chequeo espejo: un REVOKE de más rompería el panel tan silenciosamente como un GRANT
+  de más rompería la privacidad.

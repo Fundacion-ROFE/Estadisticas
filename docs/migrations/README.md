@@ -28,7 +28,25 @@ Si en el futuro se necesita una migración `004`, usar el siguiente número libr
 (`012` en adelante) en vez de reutilizar el hueco, para no confundir el orden histórico
 real de aplicación.
 
-## Estado por archivo (2026-07-24)
+## Divergencia de numeración repo ↔ Supabase (detectada 2026-07-30)
+
+El numerado de los archivos en este directorio y el log real de migraciones aplicadas en
+Supabase (`mcp__Supabase__list_migrations`) son **dos secuencias distintas que divergieron el
+2026-07-28**: varias migraciones quedaron aplicadas en Supabase con números (028-032) que en el
+repo corresponden a contenido distinto (022-025), y el 29-jul y 30-jul varias sesiones sin
+visibilidad entre sí reusaron los números 026-029 para migraciones nuevas — llegaron a existir
+dos archivos `028` distintos el mismo día. No rompe nada técnico (Supabase versiona por
+timestamp, el número de archivo es solo una etiqueta), pero deja el rastro de auditoría
+ambiguo — el mismo tipo de trampa que el hueco del `004` de abajo.
+
+**Regla:** antes de crear una migración nueva, el próximo número es el **máximo entre las dos
+secuencias + 1** — verificar con `ls docs/migrations/` **y** `list_migrations` del MCP de
+Supabase, nunca asumir que el repo solo basta. El 2026-07-30 esto dio **033** (repo llegaba a
+029, el log de Supabase a 032). **Nunca renombrar una migración ya aplicada** para "corregir" su
+número — el archivo miente sobre su número, pero renombrarlo mentiría sobre el orden real de
+aplicación, que es peor.
+
+## Estado por archivo (2026-07-24, desactualizada desde — ver migraciones 018 en adelante en [[supabase-estructura]])
 
 | Archivo | Estado real | Nota |
 |---|---|---|
