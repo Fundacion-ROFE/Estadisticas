@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-30T01:02:49.361646-05:00",
+  "ultima_actualizacion": "2026-07-30T05:03:24.751104-05:00",
   "anio": "2026",
   "nota_metodo": "Cohorte = matriculados del periodo (habilitados + inhabilitados). Aprobado = avance > 80 (desde 2026-07-09; antes >= 100). Un inhabilitado que ya había superado el 80 cuenta como 'aprobó y se retiró' (no pierde su logro); solo los retirados sin superar 80 cuentan como no aprobados. Cada curso trae bandas de progreso de los activos: banda_0_25 / banda_26_80 / banda_81_100 (suman a 'activos').",
   "por_curso": [
@@ -153,7 +153,7 @@
       "aprobados_total": 637,
       "no_aprobados": 130,
       "sin_finalizar": 129,
-      "promedio": 90.13,
+      "promedio": 90.16,
       "pct_aprobados": 83.1,
       "pct_no_aprobados": 16.9,
       "finalizado": true
