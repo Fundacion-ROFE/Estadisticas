@@ -1,31 +1,31 @@
 {
-  "ultima_actualizacion": "2026-07-30T05:03:30.515500-05:00",
+  "ultima_actualizacion": "2026-07-30T17:03:17.105789-05:00",
   "anio": "2026",
   "totales": {
-    "total_retirados": 245,
-    "cancelados": 72,
+    "total_retirados": 250,
+    "cancelados": 78,
     "desertores": 0,
     "aplazados": 0,
-    "sin_registro_hoja": 173
+    "sin_registro_hoja": 172
   },
   "por_tipo": [
     {
       "tipo": "Sin registro de retiro",
-      "cantidad": 173
+      "cantidad": 172
     },
     {
       "tipo": "Cancelado",
-      "cantidad": 72
+      "cantidad": 78
     }
   ],
   "por_causa": [
     {
       "causa": "Sin registro de retiro",
-      "cantidad": 173
+      "cantidad": 172
     },
     {
       "causa": "Voluntario",
-      "cantidad": 72
+      "cantidad": 78
     }
   ],
   "por_programa": [
@@ -35,7 +35,7 @@
     },
     {
       "programa": "Jóvenes creaTIvos",
-      "cantidad": 78
+      "cantidad": 83
     }
   ],
   "por_mes": [
@@ -53,7 +53,7 @@
     },
     {
       "mes": "2026-07",
-      "cantidad": 18
+      "cantidad": 24
     }
   ],
   "por_etapa": [
@@ -85,17 +85,17 @@
     {
       "orden": 5,
       "etapa": "Introducción a la IA Generativa - 2026",
-      "cantidad": 5
+      "cantidad": 8
     },
     {
       "orden": 6,
       "etapa": "Fundamentos Lógica de Programación - 2026",
-      "cantidad": 5
+      "cantidad": 8
     },
     {
       "orden": 7,
       "etapa": "Desarrollo Web Front-End - HTML - 2026",
-      "cantidad": 6
+      "cantidad": 5
     }
   ],
   "ruta": [
