@@ -5914,3 +5914,32 @@ patrón que `panel-control-jc-mr.md`.
 - Enlace agregado en `00-vision-global.md`. Cero código tocado en `panel-datos-rofe` en esta
   entrada — solo documentación, como se pidió.
 - Pendiente: que Samuel responda las 4 preguntas antes de escribir el plan de fases.
+
+## 2026-07-30 (cont.) — [panel-datos-etl] Plan de fases del rediseño del panel público
+
+**Estado:** Plan de 4 fases escrito, sin ejecutar — esperando confirmación explícita.
+**Proceso relacionado:** [[plan-rediseno-panel-datos-2026-07-30]]
+
+- Samuel respondió las 4 preguntas: mismo stack (reescritura completa de `app/page.tsx`), sí
+  agregar Asistencia Zoom, el filtro de Estado aplica a **todas** las secciones (no solo
+  Resumen/Cursos, como yo había recomendado por menor riesgo — implica vistas de Supabase
+  nuevas, no solo reordenar UI), y este rediseño va **antes** de las Fases 4-5 de
+  `panel-control-jc-mr.md`.
+- **Fase 1 (backend) diseñada:** 3 vistas públicas nuevas y paralelas (`v_pub_demografia`
+  unifica `v_demografia_grupo`+`v_mr_demografia`+`v_edad_distribucion` con columnas anchas
+  nullable por programa + dimensión `estado`; `v_pub_emprendimiento` unifica las 3 vistas de
+  emprendimiento; `v_pub_asistencia`, primera vez que esa fuente es pública). Decisión de
+  diseño clave: `estado` (activo/retirado) se calcula igual que `v_gui_personas.retirado`
+  (vía la tabla `retiros`), **no** con `en_seguimiento_jc` — esa columna es la alerta
+  operativa de retiro pendiente de confirmar, no el estado real, mezclar las dos habría sido
+  el mismo tipo de error que ya se documentó en `supabase-estructura.md`.
+  Resumen/Cursos no necesitan SQL nuevo — `v_pub_cohorte`/`aprobacion_cursos` ya tienen
+  ingresados/activos/retirados como columnas separadas. Emoflow reusa el par `_canonico`/
+  original ya existente (migración 011, 2026-07-23) en vez de duplicar ese trabajo.
+- Ninguna vista existente se modifica en el lugar — todo nuevo y paralelo, mismo patrón ya
+  usado con `v_pub_cohorte`/`v_pub_geografia`, para que el panel en producción no se rompa
+  hasta el cutover de la Fase 3.
+- Fases 2 (lib/api.ts), 3 (reescritura de page.tsx) y 4 (pulido/verificación) documentadas
+  con el mismo nivel de detalle en el propio archivo.
+- **Nada ejecutado todavía** — el plan queda para que Samuel lo revise antes de tocar
+  Supabase o el repo `panel-datos-rofe`.

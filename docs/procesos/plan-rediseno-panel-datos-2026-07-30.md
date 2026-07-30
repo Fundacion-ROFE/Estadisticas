@@ -4,9 +4,11 @@
 > [[diccionario-metricas]] · [[supabase-estructura]] · [[panel-datos-etl]]
 >
 > Pedido de Samuel, 2026-07-30 (noche). Igual que con `panel-control-jc-mr.md`: **primero se
-> escribe/afina la especificación, después se construye.** Este documento NO es el plan de
-> ejecución todavía — es el prompt mejorado que Samuel pidió, más el diagnóstico que lo
-> respalda. Falta resolver las preguntas de §4 antes de pasar a un plan de fases ejecutable.
+> escribe/afina la especificación, después se construye.**
+>
+> **Estado: especificación + plan de 4 fases listos (ver §3 decisiones, §4 plan). Sin
+> ejecutar todavía** — esperando confirmación explícita antes de tocar Supabase o
+> `panel-datos-rofe`.
 >
 > **No duplica trabajo existente:** revisado contra `plan-visualizacion-2026-07-30.md` (ya
 > cerrado, agregó geografía/frescura al panel actual sin tocar su estructura de navegación) y
@@ -107,8 +109,8 @@ Reescritura del pedido de Samuel en requisitos concretos, agrupados por lo que �
 - **Emprendimiento** — se mantiene, solo JC, pero con el mismo tratamiento de "no aplica" que
   Demografía cuando el programa es MR (en vez de ocultar el tab).
 - **Emoflow** — se mantiene, solo JC, mismo tratamiento de "no aplica" para MR.
-- **Asistencia — pendiente de decisión** (ver §4.2). Si se agrega, mismo patrón: agregado sin
-  PII vía una vista pública nueva análoga a `v_pub_geografia`.
+- **Asistencia — NUEVA (confirmado, ver §4).** Tab nuevo, agregado sin PII vía una vista
+  pública nueva análoga a `v_pub_geografia`, fuente `asistencia_promedio`.
 
 ### 2.3 Reglas duras que el rediseño NO puede romper (ya establecidas, no se renegocian)
 - Nunca mostrar 0%/vacío donde el dato no aplica — siempre "no aplica" o "sin dato" con razón.
@@ -122,31 +124,80 @@ Reescritura del pedido de Samuel en requisitos concretos, agrupados por lo que �
 
 ---
 
-## 3. Lo que esto NO resuelve todavía (a propósito)
+## 3. Decisiones confirmadas por Samuel (2026-07-30, noche)
 
-Este documento es la especificación, no el plan de fases ni el diseño visual pixel-a-pixel.
-Antes de construir falta: (a) decidir las preguntas de §4, (b) un plan de fases al estilo
-`panel-control-jc-mr.md` §5, (c) probablemente wireframes o al menos una descripción de layout
-más detallada una vez resueltas las preguntas — no tiene sentido diseñar el layout final antes
-de saber si Asistencia entra o no, por ejemplo.
+| Pregunta | Decisión |
+|---|---|
+| ¿Stack? | **Mismo repo/stack** (Next.js + Tailwind + Recharts) — reescritura completa de `app/page.tsx`, no un proyecto aparte. |
+| ¿Asistencia Zoom entra al panel público? | **Sí.** Vista pública nueva + tab nuevo. |
+| ¿El filtro "Estado" aplica a todas las secciones? | **Sí, a todas** — Resumen, Cursos, Demografía, Emprendimiento, Emoflow y Asistencia. Implica vistas de Supabase nuevas (ver §5 Fase 1) — no es solo reordenar la UI existente. |
+| ¿Prioridad frente a `panel-control-jc-mr.md` Fases 4-5? | **Este rediseño primero.** |
 
 ---
 
-## 4. Preguntas abiertas — necesito que Samuel elija antes de pasar al plan de fases
+## 4. Plan de fases
 
-1. **¿Reescribir `app/page.tsx` desde cero (mismo repo/stack: Next.js + Tailwind + Recharts) o
-   evaluar un stack distinto?** "Desde 0" en el pedido puede significar "una reestructuración
-   completa del archivo" (recomendado — el stack ya funciona, el problema es la organización
-   de la información, no la tecnología) o "un proyecto aparte". Asumo la primera lectura salvo
-   que se diga lo contrario.
-2. **¿Se agrega Asistencia Zoom al panel público (hueco real, §1.5) o queda fuera a
-   propósito?** Si entra, es una vista pública nueva (agregado sin PII) + un tab nuevo — trabajo
-   real, no solo reorganización. Si no entra, aclarar que fue una decisión, no un olvido.
-3. **El filtro "Estado" (§2.1.3) — ¿aplica también a Demografía/Emprendimiento/Emoflow, o solo
-   a Resumen/Cursos?** Demografía hoy no distingue activos de retirados en sus gráficos (son
-   agregados de toda la cohorte con dato sociodemográfico) — extenderle el filtro de estado
-   podría no tener sentido si esas vistas de Supabase no lo soportan sin una migración nueva.
-4. **Prioridad frente a otros pendientes:** ¿esto va antes o después de la Fase 4-5 de
-   `panel-control-jc-mr.md` (ficha 360, CSV, semáforo — la GUI interna)? Ambos son "reconfigurar
-   para mejor UX", pero son proyectos separados (uno público sin PII, otro interno con PII) y
-   compiten por el mismo tiempo.
+### Fase 1 — Backend: vistas públicas nuevas con dimensión "estado" (activo/retirado)
+
+**Regla de diseño:** ninguna vista existente se modifica en el lugar — todo se crea como
+vistas `v_pub_*` **nuevas y paralelas**, para que el panel en producción (con `app/page.tsx`
+viejo) siga funcionando sin cambios hasta que la Fase 3 esté lista para el cutover. Mismo
+patrón ya usado con `v_pub_cohorte`/`v_pub_geografia` (plan-visualizacion-2026-07-30.md).
+
+- **Resumen/Cursos: sin SQL nuevo.** `v_pub_cohorte` (ingresados/activos/retirados) y
+  `aprobacion_cursos`/`v_aprobacion_cursos_vigencia` (cursaron/activos/retirados por curso) ya
+  tienen las 3 cifras como columnas separadas — el filtro de Estado ahí es solo lógica de
+  frontend (elegir qué columna leer), no requiere una vista nueva.
+- **`v_pub_demografia` (nueva).** Unifica `v_demografia_grupo` + `v_mr_demografia` +
+  `v_edad_distribucion` en una sola vista ancha: `programa, cohorte, estado, grupo_ciudad,
+  genero, edad_rango, estrato, estado_civil, nivel_estudio, tipo_vivienda, total`. Las
+  columnas que no aplican a un programa (`estrato` para JC, por ejemplo) quedan `NULL` de
+  forma natural — el frontend ya sabe mostrar "no aplica" ahí (§2.3). `estado` se calcula con
+  la misma lógica de `retirado` que ya usa `v_gui_personas` (participante en `retiros` =
+  retirado; el resto = activo) — **no** con `en_seguimiento_jc` (esa es la alerta operativa,
+  no el estado de retiro real, ver `supabase-estructura.md`).
+- **`v_pub_emprendimiento` (nueva).** Unifica `v_emprendimiento_situacion` +
+  `_por_ciudad` + `_vs_cursos`, mismo patrón de `estado` que arriba. Solo JC tiene datos —
+  las filas de MR simplemente no existen (el frontend ya sabe mostrar "no aplica" cuando la
+  vista no trae filas para ese programa).
+- **`v_pub_asistencia` (nueva, primera vez que esta fuente es pública).** `programa, cohorte,
+  estado, grupo_ciudad, promedio, n_estudiantes` desde `asistencia_promedio` (join por email a
+  `participants`, mismo patrón que `v_persona_360`) — agregado, sin PII. Verificar con `SET
+  ROLE anon` como todas las vistas públicas de esta sesión.
+- **Emoflow: reusar el par `_canonico`/original ya existente (migración 011) como las 2
+  primeras posiciones del filtro de Estado** (Activos = `_canonico`, Todos = vista original) —
+  es exactamente el mismo concepto que ya se resolvió el 2026-07-23, no hace falta una vista
+  nueva para eso. Falta decidir en esta misma fase si el 3er estado ("Solo retirados") necesita
+  una vista adicional o si se calcula como `original − canonico` en el frontend.
+- **Guarda obligatoria (regla ya establecida en `panel-control-jc-mr.md` §7, aplica igual
+  aquí):** `test_integridad_supabase.py` completo antes y después, reportar ambos números.
+  Verificar con `SET ROLE anon` que cada vista nueva es legible por `anon` (son públicas, a
+  diferencia de `v_gui_personas`/`v_persona_360`) y que ninguna expone PII.
+
+### Fase 2 — `lib/api.ts`: tipos y llamadas para las vistas nuevas
+
+Agregar interfaces + llamadas para `v_pub_demografia`, `v_pub_emprendimiento`,
+`v_pub_asistencia`. Mantener temporalmente las llamadas viejas (`v_demografia_grupo`, etc.) sin
+usarlas desde `page.tsx` hasta confirmar que las nuevas cuadran exacto contra ellas — mismo
+principio de verificación cruzada que ya se usó para `v_pub_avance` (encontró una vista
+duplicada esta misma sesión, ver `034_vistas_publicas_visualizacion.sql`/`036_fix_v_pub_avance`).
+
+### Fase 3 — `app/page.tsx`: reescritura completa
+
+- **Filtro global "Estado"** (3 botones: Activos/Todos/Retirados) en la barra superior, junto
+  a Programa/Cohorte/Ciudad — se propaga a las 6 secciones.
+- **Elimina la duplicación de §1.2**: una sola función/hook decide qué vista de cursos mostrar
+  (cohorte completa vs. completación), no dos copias en Resumen y Cursos.
+- **Demografía unificada** JC/MR en un solo layout, con "no aplica" explícito por tarjeta.
+- **Selector de ciudad/municipio unificado** (uno solo, con drill-down integrado — no el
+  selector de arriba + la sección "Geografía" aparte como hoy).
+- **Tab nuevo "Asistencia"**, mismo patrón visual que Emoflow.
+- **Emprendimiento/Emoflow**: mismo tratamiento "no aplica" que Demografía en vez de ocultar
+  el tab completo cuando el programa no aplica.
+
+### Fase 4 — Pulido + verificación
+
+`npx tsc --noEmit` + `npm run build` limpios, `npm run dev` para revisión visual de Samuel
+(la extensión de Chrome sigue sin conectar en este entorno — mismo límite ya declarado en
+`panel-control-jc-mr.md`). Sin `git push` a `comunicaciones/main` hasta confirmación explícita
+(deploy Netlify).
