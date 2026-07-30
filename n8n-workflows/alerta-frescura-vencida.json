@@ -1,5 +1,5 @@
 {
-    "updatedAt": "2026-07-29T22:40:11.159Z",
+    "updatedAt": "2026-07-30T15:17:04.648Z",
     "createdAt": "2026-07-28T16:47:21.976Z",
     "id": "7hJ5f7tBP5vxTFJL",
     "name": "alerta-frescura-vencida",
@@ -29,7 +29,7 @@
         },
         {
             "parameters": {
-                "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python check_frescura.py > C:/Users/EstudiantesJC/downloads/admin-usable/tools/frescura_check.log 2>&1 & powershell -NoProfile -Command \"Get-Content 'C:/Users/EstudiantesJC/downloads/admin-usable/tools/frescura_check.log' -Tail 15\""
+                "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python check_frescura.py"
             },
             "id": "afv-0002-4000-8000-000000000002",
             "name": "Ejecutar check_frescura",
@@ -162,9 +162,9 @@
     },
     "meta": null,
     "pinData": null,
-    "versionId": "d77d74d0-9d9b-4bb9-9b6c-fe6a316bf930",
-    "activeVersionId": "d77d74d0-9d9b-4bb9-9b6c-fe6a316bf930",
-    "versionCounter": 17,
+    "versionId": "7057cfb2-8c1a-4cea-a9ba-8bf65c118be7",
+    "activeVersionId": "7057cfb2-8c1a-4cea-a9ba-8bf65c118be7",
+    "versionCounter": 47,
     "triggerCount": 1,
     "shared": [
         {
@@ -187,9 +187,9 @@
     ],
     "tags": [],
     "activeVersion": {
-        "updatedAt": "2026-07-29T22:40:11.181Z",
-        "createdAt": "2026-07-29T22:40:11.181Z",
-        "versionId": "d77d74d0-9d9b-4bb9-9b6c-fe6a316bf930",
+        "updatedAt": "2026-07-30T15:17:04.649Z",
+        "createdAt": "2026-07-30T15:17:04.649Z",
+        "versionId": "7057cfb2-8c1a-4cea-a9ba-8bf65c118be7",
         "workflowId": "7hJ5f7tBP5vxTFJL",
         "nodes": [
             {
@@ -214,7 +214,7 @@
             },
             {
                 "parameters": {
-                    "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python check_frescura.py > C:/Users/EstudiantesJC/downloads/admin-usable/tools/frescura_check.log 2>&1 & powershell -NoProfile -Command \"Get-Content 'C:/Users/EstudiantesJC/downloads/admin-usable/tools/frescura_check.log' -Tail 15\""
+                    "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python check_frescura.py"
                 },
                 "id": "afv-0002-4000-8000-000000000002",
                 "name": "Ejecutar check_frescura",
@@ -341,18 +341,34 @@
         "autosaved": false,
         "workflowPublishHistory": [
             {
-                "createdAt": "2026-07-29T22:40:11.326Z",
-                "id": 2663,
+                "createdAt": "2026-07-30T15:17:04.704Z",
+                "id": 2692,
                 "workflowId": "7hJ5f7tBP5vxTFJL",
-                "versionId": "d77d74d0-9d9b-4bb9-9b6c-fe6a316bf930",
+                "versionId": "7057cfb2-8c1a-4cea-a9ba-8bf65c118be7",
                 "event": "activated",
                 "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
             },
             {
-                "createdAt": "2026-07-29T22:40:11.286Z",
-                "id": 2662,
+                "createdAt": "2026-07-30T15:17:04.808Z",
+                "id": 2694,
                 "workflowId": "7hJ5f7tBP5vxTFJL",
-                "versionId": "d77d74d0-9d9b-4bb9-9b6c-fe6a316bf930",
+                "versionId": "7057cfb2-8c1a-4cea-a9ba-8bf65c118be7",
+                "event": "activated",
+                "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+            },
+            {
+                "createdAt": "2026-07-30T15:17:04.687Z",
+                "id": 2691,
+                "workflowId": "7hJ5f7tBP5vxTFJL",
+                "versionId": "7057cfb2-8c1a-4cea-a9ba-8bf65c118be7",
+                "event": "deactivated",
+                "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+            },
+            {
+                "createdAt": "2026-07-30T15:17:04.757Z",
+                "id": 2693,
+                "workflowId": "7hJ5f7tBP5vxTFJL",
+                "versionId": "7057cfb2-8c1a-4cea-a9ba-8bf65c118be7",
                 "event": "deactivated",
                 "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
             }
