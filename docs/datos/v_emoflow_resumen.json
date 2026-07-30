@@ -2,11 +2,11 @@
   {
     "participantes": 826,
     "con_match_supabase": 759,
-    "ingresos_promedio": 34.8,
+    "ingresos_promedio": 34.9,
     "ingresos_mediana": 28,
     "ingresos_max": 481,
-    "activos_7d": 455,
-    "activos_14d": 591,
+    "activos_7d": 435,
+    "activos_14d": 583,
     "inactivos_30d": 166,
     "fecha_corte": "2026-07-29"
   }
