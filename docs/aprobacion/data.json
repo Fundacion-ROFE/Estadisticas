@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-29T17:03:24.077715-05:00",
+  "ultima_actualizacion": "2026-07-29T21:05:01.829239-05:00",
   "anio": "2026",
   "nota_metodo": "Cohorte = matriculados del periodo (habilitados + inhabilitados). Aprobado = avance > 80 (desde 2026-07-09; antes >= 100). Un inhabilitado que ya había superado el 80 cuenta como 'aprobó y se retiró' (no pierde su logro); solo los retirados sin superar 80 cuentan como no aprobados. Cada curso trae bandas de progreso de los activos: banda_0_25 / banda_26_80 / banda_81_100 (suman a 'activos').",
   "por_curso": [
@@ -42,7 +42,7 @@
       "aprobados_total": 781,
       "no_aprobados": 51,
       "sin_finalizar": 3,
-      "promedio": 99.51,
+      "promedio": 99.53,
       "pct_aprobados": 93.9,
       "pct_no_aprobados": 6.1,
       "finalizado": true
@@ -64,7 +64,7 @@
       "aprobados_total": 811,
       "no_aprobados": 21,
       "sin_finalizar": 1,
-      "promedio": 99.77,
+      "promedio": 99.78,
       "pct_aprobados": 97.5,
       "pct_no_aprobados": 2.5,
       "finalizado": true
@@ -108,7 +108,7 @@
       "aprobados_total": 754,
       "no_aprobados": 37,
       "sin_finalizar": 11,
-      "promedio": 98.86,
+      "promedio": 98.87,
       "pct_aprobados": 95.3,
       "pct_no_aprobados": 4.7,
       "finalizado": true
@@ -143,19 +143,41 @@
         "Desarrollo-Avanzado-2026"
       ],
       "activos": 760,
-      "aprobados": 622,
-      "aprobados_retirados": 7,
-      "retirados": 0,
+      "aprobados": 630,
+      "aprobados_retirados": 6,
+      "retirados": 1,
       "cursaron": 767,
-      "banda_0_25": 38,
-      "banda_26_80": 100,
-      "banda_81_100": 622,
-      "aprobados_total": 629,
-      "no_aprobados": 138,
-      "sin_finalizar": 138,
-      "promedio": 89.59,
-      "pct_aprobados": 82.0,
-      "pct_no_aprobados": 18.0,
+      "banda_0_25": 37,
+      "banda_26_80": 93,
+      "banda_81_100": 630,
+      "aprobados_total": 636,
+      "no_aprobados": 131,
+      "sin_finalizar": 130,
+      "promedio": 90.06,
+      "pct_aprobados": 82.9,
+      "pct_no_aprobados": 17.1,
+      "finalizado": true
+    },
+    {
+      "curso": "Desarrollo Web Front-End - JavaScript - 2026",
+      "programa": "Jóvenes creaTIvos",
+      "periodos": [
+        "Desarrollo-Avanzado-2026"
+      ],
+      "activos": 249,
+      "aprobados": 1,
+      "aprobados_retirados": 0,
+      "retirados": 2,
+      "cursaron": 251,
+      "banda_0_25": 244,
+      "banda_26_80": 4,
+      "banda_81_100": 1,
+      "aprobados_total": 1,
+      "no_aprobados": 250,
+      "sin_finalizar": 248,
+      "promedio": 1.08,
+      "pct_aprobados": 0.4,
+      "pct_no_aprobados": 99.6,
       "finalizado": false
     },
     {
@@ -165,63 +187,63 @@
         "Unico MR-2026"
       ],
       "activos": 179,
-      "aprobados": 3,
+      "aprobados": 4,
       "aprobados_retirados": 0,
       "retirados": 167,
       "cursaron": 346,
       "banda_0_25": 156,
-      "banda_26_80": 20,
-      "banda_81_100": 3,
-      "aprobados_total": 3,
-      "no_aprobados": 343,
-      "sin_finalizar": 176,
-      "promedio": 7.54,
-      "pct_aprobados": 0.9,
-      "pct_no_aprobados": 99.1,
+      "banda_26_80": 19,
+      "banda_81_100": 4,
+      "aprobados_total": 4,
+      "no_aprobados": 342,
+      "sin_finalizar": 175,
+      "promedio": 7.75,
+      "pct_aprobados": 1.2,
+      "pct_no_aprobados": 98.8,
       "finalizado": false
     }
   ],
   "por_programa": [
     {
       "programa": "Jóvenes creaTIvos",
-      "cursos": 7,
-      "cursaron": 5677,
-      "aprobados": 5396,
-      "aprobados_retirados": 235,
-      "retirados": 122,
-      "sin_finalizar": 159,
-      "matriculas_activas": 5320,
-      "pct_aprobados": 95.1,
+      "cursos": 8,
+      "cursaron": 5928,
+      "aprobados": 5404,
+      "aprobados_retirados": 234,
+      "retirados": 125,
+      "sin_finalizar": 399,
+      "matriculas_activas": 5569,
+      "pct_aprobados": 91.2,
       "estudiantes_cohorte": 832,
-      "retirados_unicos": 79,
+      "retirados_unicos": 78,
       "habilitados_unicos": 760
     },
     {
       "programa": "Mujeres ROFÉ",
       "cursos": 1,
       "cursaron": 346,
-      "aprobados": 3,
+      "aprobados": 4,
       "aprobados_retirados": 0,
       "retirados": 167,
-      "sin_finalizar": 176,
+      "sin_finalizar": 175,
       "matriculas_activas": 179,
-      "pct_aprobados": 0.9,
+      "pct_aprobados": 1.2,
       "estudiantes_cohorte": 346,
       "retirados_unicos": 167,
       "habilitados_unicos": 179
     }
   ],
   "totales": {
-    "total_cursos": 8,
-    "total_matriculas": 6023,
-    "total_aprobados": 5399,
-    "total_aprobados_retirados": 235,
-    "total_retirados_2026": 246,
+    "total_cursos": 9,
+    "total_matriculas": 6274,
+    "total_aprobados": 5408,
+    "total_aprobados_retirados": 234,
+    "total_retirados_2026": 245,
     "estudiantes_cohorte_2026": 1178
   },
   "anomalias": {
-    "inhabilitados_sin_retiro": 174,
-    "retirados_unicos_2026": 246
+    "inhabilitados_sin_retiro": 173,
+    "retirados_unicos_2026": 245
   },
   "periodos": [
     {
@@ -242,7 +264,7 @@
     },
     {
       "periodo": "Desarrollo-Avanzado-2026",
-      "matriculados": 275
+      "matriculados": 276
     }
   ]
 }
