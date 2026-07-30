@@ -1,0 +1,363 @@
+{
+    "updatedAt": "2026-07-30T14:44:45.013Z",
+    "createdAt": "2026-07-30T14:34:11.832Z",
+    "id": "rVpVMAZzTgI3VdgA",
+    "name": "alerta-choques-cohorte",
+    "description": null,
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "cronExpression",
+                            "expression": "5 13 * * *"
+                        }
+                    ]
+                }
+            },
+            "id": "acch-0001-4000-8000-000000000001",
+            "name": "Diario 13:05",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                260,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python check_choques_cohorte.py"
+            },
+            "id": "acch-0002-4000-8000-000000000002",
+            "name": "Ejecutar check_choques_cohorte",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+                480,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "loose",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "cond-alerta",
+                            "leftValue": "={{ $json.stdout }}",
+                            "rightValue": "estado=alerta",
+                            "operator": {
+                                "type": "string",
+                                "operation": "contains"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "id": "acch-0003-4000-8000-000000000003",
+            "name": "¿Hay alerta alta?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                700,
+                300
+            ]
+        },
+        {
+            "parameters": {},
+            "id": "acch-0004-4000-8000-000000000004",
+            "name": "OK",
+            "type": "n8n-nodes-base.noOp",
+            "typeVersion": 1,
+            "position": [
+                940,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "8141703221",
+                "text": "={{ $('Ejecutar check_choques_cohorte').item.json.stdout }}",
+                "additionalFields": {
+                    "appendAttribution": false
+                }
+            },
+            "id": "acch-0005-4000-8000-000000000005",
+            "name": "Notificar choques cohorte",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                940,
+                400
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "kGTAfWTTp4FATF66",
+                    "name": "Telegram Q10 Bot"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Diario 13:05": {
+            "main": [
+                [
+                    {
+                        "node": "Ejecutar check_choques_cohorte",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Ejecutar check_choques_cohorte": {
+            "main": [
+                [
+                    {
+                        "node": "¿Hay alerta alta?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "¿Hay alerta alta?": {
+            "main": [
+                [
+                    {
+                        "node": "Notificar choques cohorte",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "OK",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "callerPolicy": "workflowsFromSameOwner",
+        "timezone": "America/Bogota",
+        "errorWorkflow": "8BL0kqnJDbyWMzpg",
+        "availableInMCP": false
+    },
+    "staticData": {
+        "node:Diario 13:05": {
+            "recurrenceRules": []
+        }
+    },
+    "meta": null,
+    "pinData": null,
+    "versionId": "c6ac742a-41b9-4dc5-a835-ab318680038c",
+    "activeVersionId": "c6ac742a-41b9-4dc5-a835-ab318680038c",
+    "versionCounter": 10,
+    "triggerCount": 1,
+    "shared": [
+        {
+            "updatedAt": "2026-07-30T14:34:11.872Z",
+            "createdAt": "2026-07-30T14:34:11.872Z",
+            "role": "workflow:owner",
+            "workflowId": "rVpVMAZzTgI3VdgA",
+            "projectId": "sCDSlnWeaXfVGSdx",
+            "project": {
+                "updatedAt": "2026-06-18T19:33:43.567Z",
+                "createdAt": "2026-06-18T17:26:43.451Z",
+                "id": "sCDSlnWeaXfVGSdx",
+                "name": "Samuel Rojas <soportejunior@tocaunavida.org>",
+                "type": "personal",
+                "icon": null,
+                "description": null,
+                "creatorId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+            }
+        }
+    ],
+    "tags": [],
+    "activeVersion": {
+        "updatedAt": "2026-07-30T14:44:45.014Z",
+        "createdAt": "2026-07-30T14:44:45.014Z",
+        "versionId": "c6ac742a-41b9-4dc5-a835-ab318680038c",
+        "workflowId": "rVpVMAZzTgI3VdgA",
+        "nodes": [
+            {
+                "parameters": {
+                    "rule": {
+                        "interval": [
+                            {
+                                "field": "cronExpression",
+                                "expression": "5 13 * * *"
+                            }
+                        ]
+                    }
+                },
+                "id": "acch-0001-4000-8000-000000000001",
+                "name": "Diario 13:05",
+                "type": "n8n-nodes-base.scheduleTrigger",
+                "typeVersion": 1.2,
+                "position": [
+                    260,
+                    300
+                ]
+            },
+            {
+                "parameters": {
+                    "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python check_choques_cohorte.py"
+                },
+                "id": "acch-0002-4000-8000-000000000002",
+                "name": "Ejecutar check_choques_cohorte",
+                "type": "n8n-nodes-base.executeCommand",
+                "typeVersion": 1,
+                "position": [
+                    480,
+                    300
+                ]
+            },
+            {
+                "parameters": {
+                    "conditions": {
+                        "options": {
+                            "caseSensitive": true,
+                            "leftValue": "",
+                            "typeValidation": "loose",
+                            "version": 2
+                        },
+                        "conditions": [
+                            {
+                                "id": "cond-alerta",
+                                "leftValue": "={{ $json.stdout }}",
+                                "rightValue": "estado=alerta",
+                                "operator": {
+                                    "type": "string",
+                                    "operation": "contains"
+                                }
+                            }
+                        ],
+                        "combinator": "and"
+                    },
+                    "options": {}
+                },
+                "id": "acch-0003-4000-8000-000000000003",
+                "name": "¿Hay alerta alta?",
+                "type": "n8n-nodes-base.if",
+                "typeVersion": 2.2,
+                "position": [
+                    700,
+                    300
+                ]
+            },
+            {
+                "parameters": {},
+                "id": "acch-0004-4000-8000-000000000004",
+                "name": "OK",
+                "type": "n8n-nodes-base.noOp",
+                "typeVersion": 1,
+                "position": [
+                    940,
+                    200
+                ]
+            },
+            {
+                "parameters": {
+                    "chatId": "8141703221",
+                    "text": "={{ $('Ejecutar check_choques_cohorte').item.json.stdout }}",
+                    "additionalFields": {
+                        "appendAttribution": false
+                    }
+                },
+                "id": "acch-0005-4000-8000-000000000005",
+                "name": "Notificar choques cohorte",
+                "type": "n8n-nodes-base.telegram",
+                "typeVersion": 1.2,
+                "position": [
+                    940,
+                    400
+                ],
+                "credentials": {
+                    "telegramApi": {
+                        "id": "kGTAfWTTp4FATF66",
+                        "name": "Telegram Q10 Bot"
+                    }
+                }
+            }
+        ],
+        "connections": {
+            "Diario 13:05": {
+                "main": [
+                    [
+                        {
+                            "node": "Ejecutar check_choques_cohorte",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Ejecutar check_choques_cohorte": {
+                "main": [
+                    [
+                        {
+                            "node": "¿Hay alerta alta?",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "¿Hay alerta alta?": {
+                "main": [
+                    [
+                        {
+                            "node": "Notificar choques cohorte",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "OK",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            }
+        },
+        "authors": "Samuel Rojas",
+        "name": null,
+        "description": null,
+        "autosaved": false,
+        "workflowPublishHistory": [
+            {
+                "createdAt": "2026-07-30T14:44:45.219Z",
+                "id": 2678,
+                "workflowId": "rVpVMAZzTgI3VdgA",
+                "versionId": "c6ac742a-41b9-4dc5-a835-ab318680038c",
+                "event": "activated",
+                "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+            },
+            {
+                "createdAt": "2026-07-30T14:44:45.095Z",
+                "id": 2677,
+                "workflowId": "rVpVMAZzTgI3VdgA",
+                "versionId": "c6ac742a-41b9-4dc5-a835-ab318680038c",
+                "event": "deactivated",
+                "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+            }
+        ]
+    }
+}
