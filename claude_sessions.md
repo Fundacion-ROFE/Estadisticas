@@ -5376,3 +5376,255 @@ hallazgo (vista duplicada, corregida); paso 5 sin tocar. Cambios committeados lo
   antes de publicar.
 - `docs/procesos/plan-visualizacion-2026-07-30.md` actualizado marcando cada paso de la Fase 3
   con su estado real.
+
+## 2026-07-30 (cont.) — [Zoom asistencia] Revisión de estado + validación de identidad del asistente (`ASISTENCIA-VALIDADA`)
+
+- **Revisión pedida por Lina (3 piezas):** (1) *visualización de salas* — columna `Host` +
+  color operando; confirmado con datos reales en `ASISTENCIA-10MIN` (29-jul `jovenescreativos`,
+  30-jul `comunicaciones`). Huecos: `LIVE-LOG` no tiene columna Host y `asistencia_zoom`
+  (Supabase) tampoco → la dimensión "sala" no llega al panel. (2) *Zoom → H3Test* — funcionando
+  a diario; `ZOOM-STATS` registra 30-jul 09:36 "Desarrollo Web" 40/51 (78% del cupo, 68,2% de
+  estancia, 14 alumnos <70%), 29-jul 45/51 y 25/42, 28-jul 42/52. La rama de 10 min de hoy
+  escribió **1 sola fila** (el host, 9:36): el fix de espera anclada se desplegó *después* de la
+  clase de la mañana, sigue sin validación end-to-end. (3) *Zoom → Supabase* — sano:
+  `asistencia-zoom-diario` activo (cron `45 17 * * *`), última carga 29-jul 17:45 COT, 1.077
+  filas / 549 estudiantes, `v_frescura` 18,3 h contra umbral de 30 → ya sin el atraso de 66 h
+  del 28-jul.
+- **Limitación de esta sesión (Cowork, no Claude Code):** el sandbox no alcanza n8n (localhost
+  del PC) ni las APIs de Google (proxy 403). El estado de los Sheets se leyó vía el conector de
+  Drive y el de Supabase vía MCP; **el script nuevo no se pudo ejecutar** — queda para el PC.
+- **Pedido nuevo de Lina:** automatizar la validación manual de credenciales ("si el correo está
+  mal pero el ID bien, la asistencia cuenta, y viceversa; si ninguno coincide, revisión manual"),
+  mostrando la corrección en una pestaña nueva y **tachando en rojo** el dato malo en el origen.
+- **Línea base medida antes de codificar** (549 correos distintos de `asistencia_zoom` vs
+  `v_gui_personas`): 453 exactos en cohorte 2026 (82,5%), 5 staff, 1 de otra cohorte y **90 sin
+  match que hoy se cuentan sin validar**. De esos 90, 17 tienen candidato con similitud ≥0,80 y
+  son typos evidentes (`gmail.ccom`, `hmail.com`, `gnail.com`, `hormail.com`, `@mail.com`, letras
+  dobles/faltantes). Los ~73 restantes solo se resuelven por cédula.
+- **`scripts/zoom-asistencia/validar_asistencia.py`** (nuevo): cascada de 10 tipos de match con
+  descripción en lenguaje natural, universo acotado a la cohorte 2026 + matriculados en el curso
+  (tema Zoom → curso por palabras clave, mismo criterio que `CUPOS!H:I`), pestaña
+  `ASISTENCIA-VALIDADA` con el dato corregido en verde y formato condicional por `Estado`, y
+  tachado rojo idempotente en `ZOOM-ASISTANCE`/`ASISTENCIA-10MIN`. El crudo nunca se sobreescribe.
+- **Hallazgo que corrige una suposición del diseño:** filtrar por curso casi no acota en 2026 —
+  toda la cohorte está matriculada en cada curso (760 de 777 en HTML y CSS). Lo que controla el
+  falso positivo es la cohorte; el filtro por curso se mantiene porque separa JC de MR y servirá
+  con electivas.
+- **Probado en seco:** 13/13 casos de la cascada (incluidos conflicto correo-vs-ID, typo ambiguo,
+  bot notetaker y egresado de otra cohorte) y 9 temas reales de Zoom mapeados correctamente.
+  Verificación de índices de columna por nombre de header en ambas pestañas.
+- **Pendientes que abre:** medir la tasa de llenado real de `Identificacion` (de ella depende el
+  camino ID→correo, el que resolvería la mayoría de los 73); decidir si el sync a Supabase debe
+  subir el correo corregido (hoy `asistencia_promedio` reparte la asistencia de una persona entre
+  2 correos); y encadenar el script en `asistencia-zoom-diario` antes del sync.
+
+## 2026-07-30 (cont.) — [Zoom asistencia] Encadenar la validación en `asistencia-zoom-diario` (JSON listo, PUT pendiente)
+
+- **`n8n-workflows/asistencia-zoom-diario.json` modificado** (workflow `qKBCgp1zFa3qeZAB`): 3
+  nodos nuevos al inicio de la cadena — `Ejecutar validar_asistencia` → `¿Validación OK?` →
+  (true) `Ejecutar sync_asistencia_supabase` … / (false) `Error Validacion` (Telegram). El
+  validador corre **antes** del sync a propósito: si falla, el panel no se actualiza con una
+  corrida sin validar y la asistencia cruda queda intacta.
+- **`validar_asistencia.py` ahora imprime la línea sentinela** `[OK] Validacion completa: N
+  registros, M para revision manual, K datos corregidos` (también en `--dry-run`), copiando el
+  patrón de `[OK] Sincronizacion completa` que ya usa el IF del sync.
+- **JSON auto-verificado antes de darlo por bueno:** 11 nodos, sin nombres ni ids duplicados,
+  sin nodos inalcanzables desde el trigger, `conditions` del IF **plano** (lista de dicts) y
+  rama true en el índice 0 — los 3 gotchas de `convenciones.md` que ya habían roto workflows
+  antes (sobre-anidado que guarda 200 y revienta al ejecutar, `ConvertTo-Json` colapsando
+  arrays de un elemento, e índice de rama invertido). Tildes y emoji escritos desde Python con
+  `ensure_ascii=False`, nunca por PowerShell.
+- **`docs/procesos/plan-encadenar-validacion-zoom-2026-07-30.md`**: plan de 4 pasos + prompt
+  listo para Claude Code (dry-run → PUT por API → verificación contra el workflow en vivo →
+  primera ejecución real). No se aplicó el PUT en esta sesión: el sandbox de Cowork no alcanza
+  `localhost:5678`.
+- **Dato que el plan exige medir en la primera corrida:** la tasa real de llenado de la columna
+  `Identificacion`. De ella depende el camino "ID correcto → corrige correo", el único que
+  resuelve los ~73 estudiantes que usan un correo distinto al de Q10. Si viene casi siempre
+  vacía, el problema es el formulario de Zoom, no el algoritmo.
+
+## 2026-07-30 (cont.) — [Zoom asistencia] Validación encadenada en producción + hallazgo de Identificacion
+
+- **Corrida real ejecutada:** `validar_asistencia.py` sin `--dry-run` sobre 1249 filas vivas
+  (`ZOOM-ASISTANCE` + `ASISTENCIA-10MIN`). Resultado: 842 correo exacto, 34 typos corregidos,
+  14 nombre exacto, 5 otra cohorte, 102 sin match (MANUAL), 194 reunión-no-clase y 58
+  staff/bot excluidas. % de correo exacto real (84,4% excl. no-clase/staff) consistente con la
+  línea base de ~82% medida sobre la muestra de 549 correos.
+- **PUT aplicado al workflow en vivo** (`qKBCgp1zFa3qeZAB`) vía script Python puntual (nunca
+  PowerShell, por los gotchas de encoding ya documentados). Verificado contra el `GET` en vivo:
+  11 nodos, tildes intactas, ramas del IF correctas, `conditions` plano.
+- **Primera ejecución real verificada SIN esperar el tick de las 17:45:** se adelantó el cron
+  del `Schedule Trigger` unos minutos para probar en caliente. Primer intento no disparó — el
+  `PUT` a un workflow ya `active: true` no recarga el trigger en memoria. **Gotcha nuevo,
+  documentado en `convenciones.md`:** hay que forzar `deactivate`→`activate` después de cambiar
+  un cron para que n8n lo re-registre. Con eso, la ejecución 1282 corrió la cadena completa
+  (`validar_asistencia` → `sync_asistencia_supabase`, 1166 filas → `calcular_asistencia_promedio`,
+  4 nuevos/549 actualizados → `OK`) sin tocar ningún nodo de error, y terminó 28s antes de que se
+  forzara el ciclo deactivate/activate — no se interrumpió nada. `v_frescura` confirmó
+  `asistencia_promedio (zoom)` a 0,1h del último dato. Cron revertido a `45 17 * * *` y JSON
+  re-exportado a `n8n-workflows/asistencia-zoom-diario.json` (diff limpio: solo el cron y
+  metadata de versión).
+- **🔴 Hallazgo del dato pendiente que exigía el plan: `Identificacion` viene 0% llena** (0 de
+  1249 filas, en ambas pestañas de origen) — no "casi siempre vacía", **sistemáticamente
+  vacía**. El camino `id_exacto_corrige_correo` salió en 0 ocurrencias. Esto significa que los
+  102 casos `sin_match` no tienen ningún dato de respaldo más allá del correo — hay que llevar
+  este hallazgo al equipo (formulario/instrucción de Zoom), no es un problema del algoritmo de
+  match. Documentado en `docs/procesos/zoom-asistencia.md`.
+- **Limpieza:** todos los scripts puntuales usados para el PUT y la prueba en caliente
+  (`_aplicar_workflow_puntual.py`, `_test_tick_temporal.py`, `_poll_exec.sh` y los JSON/txt de
+  verificación) se borraron al terminar — no quedaron en el repo.
+
+## 2026-07-30 (cont.) — [Zoom asistencia] Match por nombre ampliado: 70 casos rojos resueltos
+
+- **Pedido de Lina tras revisar `ASISTENCIA-VALIDADA` a mano:** encontró casos como "Rodrigo
+  Samudio" que ella identifica sin ambigüedad (única persona con ese nombre+apellido en
+  Seguimiento) pero el algoritmo los mandaba a `sin_match` (rojo) porque el match por nombre
+  exigía coincidencia exacta del set completo de tokens — un nombre corto nunca calzaba
+  contra el nombre completo (con segundo nombre/apellido) de la base.
+- **Cambio acordado con ella (confirmado antes de tocar la cascada calibrada):** el paso 5
+  ahora busca por **nombre + primer apellido** (campos `Nombre`/`Apellido` ya separados del
+  Sheet, no el texto libre completo) *contenidos* en el nombre completo de un candidato de
+  **toda la cohorte activa** (antes solo el curso), sin importar orden ni tokens intermedios
+  faltantes. Único candidato → sigue como `nombre_exacto`/REVISAR (igual que antes). 2+
+  candidatos → nuevo tipo `nombre_ambiguo` con estado **`EXAMINAR`** (naranja, nueva regla de
+  formato condicional), separado a propósito de los demás REVISAR.
+- **Resultado medido (misma corrida, re-ejecutada):** `sin_match` bajó de 102 a **32** (70
+  casos resueltos por nombre), `nombre_exacto` subió de 14 a **79**, `nombre_ambiguo` salió
+  en **5** casos reales (verificados a mano: colisiones genuinas, ej. "Juan Esteban Cardona
+  Nieto" con 4 homónimos parciales en la base, ninguno con ese apellido — correctamente no
+  se adivina). Casos con apellido de 1-2 letras (ej. "David JM", "Gabriel A") generan listas
+  largas de candidatos en `EXAMINAR` (truncadas a 6 + "y N más" en la descripción) — no es un
+  bug, es la ausencia del apellido real la que fuerza la ambigüedad.
+- **`ASISTENCIA-VALIDADA` re-escrita con el cambio ya aplicado** (no se esperó al tick de las
+  17:45 — el script se corrió manualmente, no toca Supabase, solo el Sheet H3Test).
+  Documentado en `docs/procesos/zoom-asistencia.md` y `docs/procesos/mapa-codigo.md`.
+
+## 2026-07-31 — [Zoom asistencia] Exclusión de mentores Sofka: 18 casos mal clasificados
+
+- **Lina compartió la hoja "Programación monitores e instructores 2026"** (pestañas `info
+  mentores Sofka` — registro maestro, 59 correos — y `Programación` — correo del mentor por
+  sesión) tras identificar a mano casos rojos que en realidad eran mentores/instructores de
+  Sofka evaluando, no estudiantes. Compartida con el Service Account
+  `q10-automatizacion@n8n-automatizacion-q10.iam.gserviceaccount.com`.
+- **`cargar_mentores_sofka()` nueva:** lee ambas pestañas **en vivo** en cada corrida (no
+  lista fija en el script, el roster rota) y arma un set de correos. La pestaña
+  `Programación` tiene una fila de título de plantilla antes del encabezado real, así que se
+  busca la fila que contiene "Correo" en vez de asumir fila 1.
+- **El chequeo corre ANTES del match por correo/id/nombre**, igual que `staff_o_bot` —
+  crítico porque un mentor cuyo nombre coincida por casualidad con un estudiante real puede
+  robarle la asistencia. **Caso real que lo confirmó:** "Johan Sebastian Cobos" resolvía por
+  `nombre_exacto` (el cambio de ayer) a un estudiante real, pero el correo de esa fila era de
+  un mentor Sofka — sin este orden, ese estudiante habría quedado con asistencia que no le
+  correspondía.
+- **Nuevo tipo `mentor_sofka`, estado `EXCLUIR`** (mismo gris que `staff_o_bot`).
+- **Resultado medido:** 18 filas eran mentores (de 1249 totales). De esas: 15 estaban mal en
+  `sin_match`/MANUAL (32→17), 2 en `nombre_ambiguo`/EXAMINAR (5→3), 1 era la falsa atribución
+  de `nombre_exacto`/REVISAR descrita arriba (84→83). `EXCLUIR` subió de 252 a 270.
+  `ASISTENCIA-VALIDADA` re-escrita con el resultado final.
+- **Nota de seguridad:** la pestaña `Programación` también tiene una columna `Usuario` con
+  credenciales de cuentas Zoom en texto plano (correo-contraseña) — el script solo lee
+  `Correo`, no tocar esa otra columna. No se guardó en ningún doc ni memoria.
+- Documentado en `docs/procesos/zoom-asistencia.md` y `docs/procesos/mapa-codigo.md`.
+
+## 2026-07-31 (cont.) — [Zoom asistencia] Filas de sesión colapsables en ASISTENCIA-VALIDADA
+
+- **Pedido:** visibilizar más fácil los días/sesiones en `ASISTENCIA-VALIDADA`, con un
+  "compactable" por clase (un click cierra/abre los registros de esa sesión).
+- **Primer intento (grupos de filas de la API de Sheets directos) falló silenciosamente:**
+  `addDimensionGroup` por sesión (mismo Curso+Fecha) produjo solo 8 grupos gigantes en vez
+  de ~46 — descubierto que **2 grupos adyacentes al mismo nivel, sin fila suelta entre
+  ellos, se fusionan en uno solo** (comportamiento real de la API, no documentado de forma
+  obvia). Verificado leyendo `rowGroups` vía `fetch_sheet_metadata` y contando cuántas
+  claves (Curso, Fecha) distintas caían dentro de un solo grupo reportado.
+- **Fix:** `insertar_encabezados_sesion()` — antes de escribir, ordena las filas por
+  (Curso, Fecha) y agrega una **fila divisoria azul** con resumen de la sesión (curso,
+  fecha, host, conteo por Estado) antes de cada bloque; el grupo colapsable cubre solo las
+  filas de detalle, nunca la divisoria. Esto rompe la adyacencia entre sesiones consecutivas
+  y de paso cumple el pedido original de visibilidad (el día/curso se ve aunque el detalle
+  esté cerrado). Resultado: 46 sesiones identificadas, 39 colapsables (2+ filas).
+  `limpiar_grupos()` nuevo (idempotencia, mismo patrón que `limpiar_reglas()`).
+- **Bug propio detectado y corregido en la misma sesión:** el conteo del sentinel
+  (`[OK] Validacion completa: N registros...`) se calculaba DESPUÉS de insertar las filas
+  divisorias, inflando el número real (1295 en vez de 1249). Corregido capturando
+  `n_registros` antes de `insertar_encabezados_sesion()`. No afectó al IF de n8n (solo
+  compara el substring "[OK] Validacion completa", no el número), pero sí habría dejado un
+  dato incorrecto en el log de cada ejecución.
+- Documentado en `docs/procesos/zoom-asistencia.md`.
+
+## 2026-07-31 (cont.) — [Zoom asistencia] Sin gris, sin filas EXCLUIR en el reporte
+
+- **Sin gris:** Lina pidió quitar el color gris de `ASISTENCIA-VALIDADA`. Estaba en 2
+  lugares: fondo del encabezado (fila 1) y la regla condicional de `EXCLUIR`. Encabezado
+  ahora con fondo blanco explícito (no solo omitido, para limpiar el gris de corridas
+  previas); la regla condicional de `EXCLUIR` se eliminó de la lista. Constante `GRIS`
+  borrada del script (quedó sin uso).
+- **Sin filas `EXCLUIR` en el reporte:** siguiente pedido, más de fondo — sacar del todo
+  las filas de staff/mentores Sofka/reuniones no-clase de `ASISTENCIA-VALIDADA` (no
+  aportan nada que revisar). Se filtran con un `continue` justo después de sumarlas al
+  resumen de consola (siguen contándose ahí para auditoría) y antes de construir la fila
+  de salida. Resultado: 1249 filas leídas → **979 escritas** en la hoja; sesiones
+  colapsables bajaron de 46 a **24** (las que eran 100% reuniones no-clase ya no generan
+  ni fila divisoria). El sentinel de n8n se dejó reportando el total **leído** (1249), no
+  el escrito, para no cambiar la semántica que ya interpreta el IF del workflow.
+
+## 2026-07-30 (cont.) — [panel-datos-etl] Auditoría de geografía JC + nuevo plan "Panel de Control JC/MR"
+
+**Estado:** Auditoría completa (hallazgo real confirmado). Documentación del plan nuevo lista,
+sin ejecutar (a pedido explícito de Samuel: documentar antes de tocar código).
+**Proceso relacionado:** [[plan-visualizacion-2026-07-30]] · [[panel-control-jc-mr]] ·
+[[panel-riesgo-mejora]] · [[supabase-estructura]]
+
+- **Pregunta de Samuel:** ¿Bogotá es 100% Bogotá, sin área metropolitana, en JC? Audité las 6
+  ciudades hub de JC cruzando `participants.ciudad` (fuente operativa, pestaña Seguimiento)
+  contra `postulantes_jc` (universo independiente, histórico de Mongo).
+- **Bogotá: confirmado, correcto.** Cero señal de área metropolitana en ninguna de las dos
+  fuentes — a diferencia de MR, donde el área metropolitana de Bogotá sí es real.
+- **Medellín: hallazgo real.** `postulantes_jc` tiene 152 personas de Envigado/Sabaneta/Itagüí
+  (143/7/2), 43 matriculadas. Verifiqué contra el Sheet **en vivo** (no until asumido) que esas
+  43 cédulas no están en la pestaña central `Seguimiento` NI en la pestaña de fallback
+  `Medellín` — descarté con evidencia directa la hipótesis de "se pierden en un fallback que el
+  sync no lee". **Gotcha propio detectado y corregido en el camino:** mi primer script de
+  diagnóstico usaba matching por substring para la columna "ID" y encontró "Apellidos" primero
+  (contiene "id") — mismo tipo de bug que ya evita `_leer_tab_ciudad()` en
+  `exportar_sin_completar.py` con match exacto (`h == "id"`, no `in`). Corregido antes de
+  reportar el hallazgo como cierto.
+- **Causa raíz real: estas 43 personas nunca entraron al sistema de seguimiento de monitores en
+  absoluto** (no es un bug de nuestro pipeline, es un hueco operativo — el equipo de monitorías
+  nunca las trackeó). Encaja con el patrón ya documentado (74% de `participants` sin
+  `grupo_ciudad`), pero aporta un dato nuevo: el área metropolitana de Medellín tiene **0% de
+  cobertura** vs. ~31% de Medellín-propiamente-dicho — no es un hueco aleatorio, es un segmento
+  completo sin onboardear. Script de diagnóstico en `tools/investigar_envigado_seguimiento.py`
+  (gitignoreado, PII, no imprime cédulas individuales).
+- **Pedido nuevo y mucho más grande, a raíz de la auditoría:** Samuel pegó un extracto real de
+  la pestaña Seguimiento (JC 2026) y pidió una **herramienta nueva desde cero** (no evolucionar
+  `panel_riesgo_gui.py`) con fuentes de datos togglables (prender/apagar BD Seguimiento,
+  Retiros+Emoflow+Asistencia Zoom, Postulantes históricos+Microcréditos MR — Q10 queda como
+  base siempre visible) e histórico completo (2023-2026 JC, 2025-2026 MR). Pidió explícitamente
+  documentar antes de ejecutar, y ofreció una ronda de preguntas — la hice antes de escribir
+  nada.
+- **Investigación previa (Explore) confirmó:** no hay ningún plan existente que cubra el toggle
+  de fuentes — es genuinamente nuevo. Encontré un antecedente relevante para tener en cuenta:
+  un botón "Fuentes de datos" (explicador, panel público Netlify) se probó y Samuel pidió
+  quitarlo el mismo día que se creó (2026-07-15, commit `db121cc`) — se lo mencioné a Samuel
+  antes de las preguntas porque, aunque el contexto es distinto (herramienta interna con PII,
+  no un explicador público), valía la pena que lo tuviera presente.
+- **`docs/procesos/panel-control-jc-mr.md` (nuevo):** documento de diseño completo — decisiones
+  ya tomadas, relación con planes existentes (supersede `panel-riesgo-mejora.md`, pausa la Fase
+  2 de `plan-visualizacion-2026-07-30.md`), arquitectura de datos (extender `v_gui_personas` en
+  vez de duplicar; el toggle es de presentación en el cliente Python, no de query SQL — una
+  sola consulta cubre cualquier combinación de checkboxes), plan de 5 fases, y **una decisión
+  pendiente de confirmar antes de implementar**: al togglear "Postulantes históricos" (universo
+  más amplio que matriculados), ¿la tabla solo agrega columnas a los matriculados existentes
+  (recomendado, consistente con la regla ya establecida de que `participants` = solo
+  matriculados) o agrega filas nuevas de gente que nunca matriculó? Quedó como default (a) sin
+  ejecutar.
+- **Decisión heredada y carried forward explícitamente:** Tkinter/escritorio, no web, sin
+  autenticación nueva — ya decidido por Samuel el 2026-07-21 con motivo documentado
+  (`panel-riesgo-mejora.md`), no se volvió a preguntar, se anotó como vigente salvo aviso
+  contrario.
+- **`panel-riesgo-mejora.md` marcado como archivado/fusionado** — su Fase 1 (ya hecha) se
+  hereda, sus Fases 2-3 quedan absorbidas en el documento nuevo.
+- **Nada de código nuevo ejecutado para el panel de control** — solo el documento de diseño, a
+  pedido explícito. Próximo paso: confirmar la decisión de §6 del documento nuevo y empezar por
+  la Fase 1 (ampliar `v_gui_personas` con asistencia + postulantes históricos).
+- Documentado en `docs/procesos/zoom-asistencia.md`.

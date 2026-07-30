@@ -1,5 +1,13 @@
 # Panel de Riesgo — Plan de mejora (migración a Supabase + panel de decisiones)
 
+> ⚠ **ARCHIVADO / FUSIONADO (2026-07-30).** Samuel pidió una herramienta nueva desde cero en
+> vez de seguir evolucionando `panel_riesgo_gui.py` — ver [[panel-control-jc-mr]]. La Fase 1 de
+> este documento (migración a Supabase, completada 2026-07-21) se hereda tal cual en la
+> herramienta nueva. Las Fases 2-3 de abajo (tab "Decisiones", ficha ampliada, semáforo) quedan
+> **absorbidas** en `panel-control-jc-mr.md` §5 — no implementarlas aquí, implementarlas allá.
+> Se conserva este archivo por su historia (decisiones de diseño ya tomadas y sus motivos, aún
+> vigentes: Tkinter/no-web, `service_role`).
+
 **Estado:** Fase 1 completada (2026-07-21) — fuente de datos migrada a Supabase, misma UI.
 Fases 2-3 pendientes. Decisión de arquitectura
 tomada con Samuel: **se mantiene la GUI de escritorio (Tkinter)**, no se construye un panel

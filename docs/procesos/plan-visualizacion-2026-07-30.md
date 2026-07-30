@@ -8,6 +8,11 @@
 > rama `main`, working tree limpio. La afirmación "repo no montado" de este documento y de la
 > sesión de la tarde nunca se verificó contra el filesystem — se heredó de una sesión anterior
 > sin comprobarlo. Pendiente de ejecutar, no de desbloquear.
+> ⏸ **Fase 2 PAUSADA (2026-07-30, misma tarde).** Samuel pidió una herramienta nueva desde
+> cero para GUI de control JC/MR (fuentes togglables, histórico completo 2023-2026), no seguir
+> con mejoras incrementales sobre `panel_riesgo_gui.py`. Ver [[panel-control-jc-mr]] — ese
+> documento absorbe el paso 1 (apuntar a `v_gui_personas`, con el mismo hallazgo de grano ya
+> documentado abajo) y los pasos 2-4 de esta Fase 2. No seguir trabajando la Fase 2 aquí.
 
 # Plan de visualización y operabilidad de la DB (2026-07-30)
 
