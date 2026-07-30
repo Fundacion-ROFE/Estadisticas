@@ -660,14 +660,28 @@ individual ya disponibles para MR, si Emoflow se habilitara el análisis sería 
 2. `sync_emoflow.py` (deprecado 2026-07-20): **(hecho 2026-07-24)** movido a
    `scripts/panel-datos/_obsoletos/`.
 
-### Monitoreo continuo (propuesta — pendiente de aprobación)
+### Monitoreo continuo — implementado (`panel-verificacion-diaria`, `alerta-frescura-vencida`)
 
-Workflow n8n `panel-verificacion-diaria` (candidato): Schedule 10:30 COT (tras el sync de
-9:45) → Execute Command `python scripts/panel-datos/test_integridad_supabase.py --rapido` →
-IF exit≠0 → Telegram a Samuel (chat 8141703221, credencial existente `Telegram Q10 Bot`).
-Opcional (requiere aprobar la escritura): upsert del resultado en `alertas_datos`
-(id=`integridad_supabase`, activa=true/false, detalle=tests fallidos). No se implementó nada
-en n8n todavía — al aprobarse, exportar JSON a `n8n-workflows/` según checklist.
+Ya no es propuesta: `panel-verificacion-diaria` (Schedule 8:00 COT → `test_integridad_supabase.py
+--rapido` → IF exit≠0 → Telegram) y `alerta-frescura-vencida` (`v_frescura`, cada 30 min) corren
+en producción. Ambos capturan el stdout del script vía `> log 2>&1` + `powershell Get-Content`
+para no perder el detalle en la expresión de n8n (ver gotcha de escapes en `convenciones.md`).
+
+**Umbral de `v_frescura` ajustado 6h → 12h (migración 029, 2026-07-30)** para
+`cohorte_ingresos`/`aprobacion_cursos`/`retiros`: `q10-sync-supabase` corre en ventana nocturna
+(`30 17,19,21,23,1,3,5,7 * * *`) con un hueco de diseño de 10h entre las 07:30 y las 17:30; un
+umbral de 6h disparaba falsa alarma todas las tardes (8 mensajes/día). Regla general agregada a
+`convenciones.md`: el umbral tiene que ser mayor al hueco máximo del cron que alimenta el
+proceso. Verificado tras el cambio: 0 procesos vencidos a media tarde, y un proceso simulado a
+13h de antigüedad sigue disparando `vencido=true` (detecta una corrida real perdida en ~2h).
+
+**Gotcha nuevo (2026-07-30) — `Get-Content -Encoding UTF8` no basta.** PowerShell 5.1 lee el log
+UTF-8 bien con `-Encoding UTF8`, pero al reenviar la cadena a stdout la re-codifica con el
+codepage de consola/OEM del proceso — un bullet `•` correctamente leído sale mutilado igual
+(confirmado con bytes crudos: sin el fix se emite `0x07`, no siquiera el mojibake de 3 bytes
+típico). **Fix completo:** `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;` antes del
+`Get-Content` en el mismo `-Command` de PowerShell. Aplicado en los 2 workflows que usan este
+patrón (`alerta-frescura-vencida`, `panel-verificacion-diaria`).
 
 ### Testeo de carga 2026-07-25/26 (28 h a cadencia 2 h) — resultados
 

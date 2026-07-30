@@ -937,3 +937,44 @@ pero `updated_at` de días atrás es la señal. **Regla:** al auditar coherencia
 UNIQUE por nombre, siempre revisar `max(updated_at)` agrupado por esa clave, no solo el conteo
 total — el conteo total puede cuadrar por casualidad mientras dos filas están fragmentando el
 mismo curso real.
+
+## El umbral de una alerta de frescura tiene que ser mayor al hueco de diseño del cron que alimenta el proceso
+
+Encontrado auditando el canal de Telegram (2026-07-30): `v_frescura` marcaba `vencido=true` para
+`cohorte_ingresos`/`aprobacion_cursos`/`retiros` todos los días de 13:30 a 17:30, con el pipeline
+funcionando perfectamente — `q10-sync-supabase` corre en ventana nocturna
+(`30 17,19,21,23,1,3,5,7 * * *`) y el hueco entre la última corrida del día (07:30) y la primera
+de la tarde (17:30) es **de diseño**, 10h. Un umbral de 6h < 10h dispara todos los días a la
+misma hora — y como la alerta corre cada 30 min, son 8 mensajes falsos diarios que entrenan a la
+gente a ignorar el canal. Ya había pasado una vez (migración 021, `emoflow_ingresos_diario`
+6h→30h) y volvió a pasar en los 3 procesos que comparten el mismo cron de origen (migración 029,
+6h→12h).
+
+**Fórmula:** `umbral > hueco máximo de diseño entre corridas consecutivas + una corrida de
+tolerancia` (para detectar una corrida real perdida en un tiempo razonable, no solo evitar el
+falso positivo). No sobrecorregir con un umbral gigante "por si acaso" — eso tapa fallas reales
+durante toda una ventana (ej. 30h en un proceso que corre 8 veces por noche dejaría pasar una
+noche entera sin avisar). Calcular el umbral desde el cron real del proceso que alimenta el
+dato, no a ojo.
+
+## `Get-Content -Encoding UTF8` no basta para que un log con acentos/emoji llegue intacto a Telegram
+
+Un `executeCommand` que hace `python script.py > log.txt 2>&1 & powershell ... Get-Content log.txt
+-Tail N` puede seguir mutilando caracteres no-ASCII (`•`, `⚠`, tildes, ñ) **incluso con
+`-Encoding UTF8` en el `Get-Content`**. Ese flag solo corrige cómo PowerShell 5.1 *lee* el
+archivo — pero al reenviar la cadena a stdout para que n8n la capture, PowerShell la
+**re-codifica con el codepage de consola/OEM del proceso**, que no sabe representar esos
+caracteres. Confirmado con los bytes crudos (2026-07-30): sin el fix completo, un bullet `•`
+correctamente leído sale como `0x07` (ni siquiera el mojibake típico de 3 bytes) — la lectura
+fue perfecta, la reemisión no.
+
+**Fix completo:** anteponer `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;` al
+`Get-Content` dentro del mismo `-Command` de PowerShell:
+
+```
+powershell -NoProfile -Command "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Content 'ruta/log.txt' -Tail 15 -Encoding UTF8"
+```
+
+Aplicado en `alerta-frescura-vencida` y `panel-verificacion-diaria` — los únicos 2 workflows del
+proyecto con este patrón. Cualquier workflow nuevo que capture stdout de un script Python vía
+archivo + `Get-Content` necesita las dos partes del fix, no solo `-Encoding UTF8`.

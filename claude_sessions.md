@@ -5030,3 +5030,167 @@ automático; solo se actualizaba cuando alguien lo lanzaba a mano.
   JC — primera corrida real: 43 DSN, 15 rebotadas (4 hard, 11 soft), pestaña `RebotesJC`
   quedó con 149 filas totales acumuladas.
 - READMEs de ambos scripts actualizados con el bug, el fix y el nuevo comportamiento.
+
+## 2026-07-29 (cont.) — Galería de fotos reales en el rediseño MR (6to Encuentro Regional)
+
+Samuel pidió agregar fotos al rediseño de Mujeres ROFÉ. Primer lote de 8 fotos de WhatsApp
+descartado por él mismo ("no correspondían al programa"); entregó 4 fotos reales del 6to
+Encuentro Regional Mujeres ROFÉ (Cartagena, 11-jul-2026) — 2 de grupo en el patio, 1
+participante riendo, 1 participante con gafas. 3 de las 4 eran originales de cámara sin
+comprimir (6000×4000 hasta 11287×7525px, 12-48 MB c/u).
+
+- Redimensionadas con PIL: `ImageOps.exif_transpose` (aplica rotación EXIF y descarta el resto
+  del metadata — sin GPS/dispositivo en el archivo publicado) + resize a máx. 1800px + JPEG
+  calidad 82 → 170-395 KB c/u. Guardadas en `tools/mujeres-rofe-redesign/img/` como
+  `encuentro-grupo-1.jpg`, `encuentro-risas.jpg`, `encuentro-participante.jpg`,
+  `encuentro-grupo-2.jpg`.
+- Sección nueva `id="galeria"` en `index.html` (entre Acompañamiento y Requisitos), mosaico CSS
+  grid (1 foto grande + 3 chicas, colapsa a 1 columna en móvil), reutilizando la clase `.mr-ph`
+  existente. Mismo patrón dual que el resto del sitio: `src` = URL absoluta
+  `tocaunavida.org/wp-content/uploads/2026/07/<nombre>` (mes actual, para cuando se suban a
+  Media Library) + `data-local="img/<nombre>"`.
+  `wordpress-embed.html` regenerado con `build_wordpress_embed.py` (no necesitó cambios, ya
+  soporta el patrón); verificado 0 rutas relativas sin resolver.
+- **No verificado visualmente en navegador** — la extensión de Chrome no conectó esta sesión.
+  Pendiente que Samuel confirme el mosaico abriendo `index.html` localmente antes de subir las
+  4 fotos a Media Library.
+- Doc actualizado: `docs/procesos/wordpress-tocaunavida.md` (sección "Galería del 6to Encuentro
+  Regional") + `img/LEEME.md` con las 4 entradas nuevas. Ver [[project-mr-website-rediseno-html]].
+
+## 2026-07-29 (cont.) — Plan de tolerancia de soft bounces (4 strikes→hard) + liberación al actualizar dato
+
+Pedido de Samuel: correos que rebotan soft una y otra vez (ejemplo dado: `@sena.edu.co`) nunca
+se excluían de las listas porque solo `tipo=hard` es supresión definitiva. Pidió: (1) promover
+a hard automáticamente cuando el mismo correo rebota soft 4+ veces, para que además aparezca en
+Rebotes y el equipo llame a esa persona a actualizar su dato; (2) como ya existe un sistema de
+actualización de datos (`actualizar_bd_mr.py`, form → BD-Mujeres ROFÉ), que al actualizar un
+correo se libere de `email_bounces` si estaba ahí.
+
+- **Migración `028_email_bounces_veces_soft_APLICADA.sql`** aplicada vía Supabase MCP
+  (`apply_migration`, proyecto `kbxptoowtnteflhrfwid`): columna `veces_soft integer default 0`
+  en `email_bounces` (compartida MR/JC).
+- **Diseño sin estado persistente entre corridas:** `capturar_rebotes.py` (MR y JC) ya recorre
+  30 días de DSN en cada corrida (comportamiento existente, `--desde` por defecto). En vez de
+  llevar un contador acumulado entre corridas (riesgo real de doble conteo: el mismo DSN se ve
+  de nuevo en cada corrida mientras siga dentro de la ventana de 30 días — un contador que solo
+  sumara +1 por corrida habría inflado el número artificialmente), se cuenta cuántos DSN
+  *distintos* de un correo se vieron soft **dentro de la corrida actual** (`_combinar()` ahora
+  acumula `veces_soft` por mensaje, y se propaga correctamente al fusionar las 2 cuentas de MR).
+  Es idempotente: cada corrida recalcula completo sobre la misma ventana, sin arrastrar error.
+  `UMBRAL_SOFT_A_HARD = 4` (constante + flag `--umbral-soft` para pruebas), en ambos scripts.
+- Correos promovidos llevan el motivo prefijado `[Promovido a HARD: N soft en 30 dias]` para
+  distinguirlos de un hard real (5.x permanente). Pestaña `Rebotes`/`RebotesJC` ganó una 7ª
+  columna `VecesSoft`.
+- **`actualizar_bd_mr.py`** (antes no tocaba Supabase en absoluto): ahora carga `.env.local` y,
+  cuando el correo de una fila cambia, borra el correo VIEJO de `email_bounces`
+  (`liberar_rebotes()`, DELETE vía REST). La pestaña Rebotes se autolimpia sola en la próxima
+  corrida de `capturar_rebotes.py` (lee la misma tabla) — no hace falta que este script la
+  toque directamente. `RESUMEN` ganó el campo `rebotes_liberados=`.
+- **Verificado con datos reales:**
+  - JC (corrida completa, 43 DSN): 4 correos promovidos de 7 soft detectados.
+  - MR (corrida completa, 1.339 DSN combinados de las 2 cuentas): **100 de 427 correos
+    promovidos** — confirma la sospecha de Samuel sobre reincidencia masiva (un caso llegó a
+    12 soft en 30 días). `hard` pasó de 172 a 272 tras la promoción.
+  - Sheet verificado por API: las 100 filas promovidas quedaron en rojo con el motivo y
+    `VecesSoft` correctos.
+- Un test intermedio de 2 días (`--desde` reciente, solo para probar rápido que el pipeline no
+  rompía con la columna nueva) dejó temporalmente el `veces_soft` de esos 97 correos por debajo
+  de su valor real de 30 días — corregido re-corriendo la ventana completa antes de cerrar la
+  sesión; **gotcha para la próxima vez:** una corrida con `--desde` corto SIEMPRE deprime
+  `veces_soft` para los correos que toca (upsert reemplaza la fila entera) — no usar `--desde`
+  corto si se quiere preservar el conteo real, solo para probar que el código no truena.
+- READMEs de MR/JC y `docs/procesos/mr-actualizacion-datos.md` actualizados.
+
+## 2026-07-29 (cont.) — Cierre de curso disfrazado de deserción en MR: 167 falsas retiradas (Cowork)
+
+**Estado:** Detectado, contenido con alerta y arreglo de fondo escrito (falta correrlo)
+**Proceso relacionado:** [[diccionario-metricas]] · [[panel-datos-etl]] · [[supabase-estructura]]
+
+- Salió al verificar una hipótesis de Lina sobre los retiros MR. **Su hipótesis era correcta y
+  el mecanismo resultó peor de lo esperado.** Verificado: las 33 filas MR de `retiros` vienen
+  TODAS de `fuente='inactivas_mr'` (no hay otra fuente), ninguna tiene `fecha_retiro`, y sus
+  motivos son de microcrédito ("No pago Icredit/Microcredito", "Pidió retiro"), no de abandono
+  de curso.
+- **Hallazgo nuevo y urgente:** al cerrar 2 de los 3 cursos MR de 2026 (para abrir Finanzas
+  Inteligentes), Q10 dejó de reportar como habilitadas a esas mujeres y el pipeline de
+  aprobación lo leyó como retiro. `cohorte_ingresos` MR 2026 pasó de **322 activas / 24
+  retiradas** a **179 / 167**. Ninguna mujer se retiró. **El dato malo alcanzó a entrar a
+  producción** durante la sesión (el sync corre cada 2 h) — a las 12:38 aún estaba bien, en la
+  corrida siguiente ya no.
+- Es el mismo patrón del renombre de curso de esta misma mañana, en otro dominio: **una fuente
+  que deriva "activo" de "aparece en el export de hoy" convierte cualquier cierre de curso en
+  deserción.** Agregado como regla general al diccionario.
+- **Definición corregida (confirmada por Lina):** en MR se consideran habilitadas TODAS las
+  mujeres de la cohorte; la única baja real es la de Inactivas. Entonces
+  `activas MR = ingresados − bajas confirmadas` (346 − 8 = 338), no `habilitados_unicos`.
+  JC no se toca: ahí el habilitados de Q10 sí coincide con la pestaña Seguimiento.
+- **Migración 028 aplicada — `v_choques_cohorte`.** No usa serie de tiempo (`cohorte_ingresos`
+  no guarda historia): compara contra 2 fuentes independientes que no comparten el error
+  (universo de `enrollments` y la tabla individual `retiros`). Un invariante cruzado es más
+  robusto que un umbral sobre el cambio, porque no depende de que el valor anterior fuera
+  correcto. Umbrales medidos: JC (ratio 0.978, 79 vs 72, descuadre −7 por reingresos) no
+  dispara nada; MR con el dato malo (ratio 0.516, 167 vs 8) dispara las 2 señales altas.
+- **`sync_aprobacion_supabase.py` parcheado** para derivar `activos`/`retirados` de MR desde la
+  tabla `retiros` en vez de Q10. Sintaxis verificada, **no ejecutado** (sin credenciales en esta
+  sesión). Hasta que Samuel lo corra, MR sigue mostrando 179/167 en producción.
+- Verificado además, por pedido de Lina (contar cada persona una sola vez): **0 personas están
+  en JC y MR a la vez** (777 y 347, intersección 0) y ninguna persona tiene 2 ciudades
+  (`participants` es 1 fila por persona). Los agregados por ciudad no doble-cuentan.
+- **Sobre el panel:** Lina pidió adaptar el panel de Netlify (`panel-datos-rofe`, Next.js) con
+  filtros por cohorte/ciudad y estadísticas que varíen según el filtro, más desglose de área
+  metropolitana. **Bloqueado: ese repo no está montado en la sesión.** Se documentó que los
+  municipios satélite (Soacha, Soledad, Jamundí, Bello…) existen vía migración 016 pero son
+  **100% MR, cero JC** (JC registra todo el área metropolitana como "Bogotá D.C."), y que las
+  celdas son de 1-8 personas.
+- **Pendiente:** correr `sync_aprobacion_supabase.py` parcheado (urgente, hay un número malo en
+  producción); conectar `v_choques_cursos` + `v_choques_cohorte` a n8n/Telegram; montar el repo
+  del panel para el trabajo de frontend.
+
+---
+
+## 2026-07-30 — [panel-datos-etl] 4 arreglos del canal de Telegram (alertas falsas + mojibake)
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-datos-etl]] · [[supabase-estructura]] · [[convenciones]]
+
+- **Arreglo 4 (umbral frescura 6h→12h, migración 029):** verificado en vivo antes de tocar nada
+  — `cohorte_ingresos`/`aprobacion_cursos`/`retiros` a 7.0h contra umbral 6h, `vencido=true` los
+  tres, exactamente como predecía el diagnóstico (hueco de diseño de 10h en `q10-sync-supabase`,
+  ventana nocturna). Subido a 12h. Verificado tras aplicar: 0 vencidos a media tarde; un proceso
+  simulado a 13h de antigüedad sigue disparando `vencido=true` (detecta corrida real perdida).
+- **Arreglo 1 (choques-cursos/choques-cohorte):** `alerta-choques-cursos` ya filtraba
+  `severidad=alta` correctamente en vivo (arreglado en la sesión del 29-jul junto al gotcha de
+  enrutamiento del IF) — nada que tocar ahí. `v_choques_cohorte` (migración 028) **no estaba
+  conectada a ningún workflow**: creado `check_choques_cohorte.py` (mismo patrón que
+  `check_choques_cursos.py`, `_md_seguro()` incluido) + workflow n8n nuevo
+  `alerta-choques-cohorte` (diario 13:05, mismo patrón de IF/error que su hermano). Hoy ambas
+  vistas dan 0 filas de severidad alta — el canal no debería recibir nada de choques.
+- **Arreglos 2+3 (mojibake):** el diagnóstico original (`Get-Content` sin `-Encoding UTF8`) era
+  **incompleto**. Confirmado con prueba real en Telegram (leyendo la respuesta confirmada de la
+  API de Telegram vía archivo, nunca por terminal — la terminal de Bash mostraba el bullet bien
+  aunque el valor real ya estaba corrupto, un falso negativo que casi hace cerrar el arreglo sin
+  estar resuelto): incluso con `-Encoding UTF8` en `Get-Content` **y** `[Console]::OutputEncoding
+  = UTF8`, el bullet seguía llegando mutilado. La causa real: el patrón
+  `python script.py > log 2>&1 & powershell Get-Content log` reintroduce una re-codificación en
+  algún punto de la tubería `cmd.exe`→cliente n8n que ningún flag de PowerShell corrige. **Fix
+  real:** eliminar el patrón completo y dejar que n8n capture el stdout de Python directamente
+  (`cd ... && python script.py`, sin archivo intermedio ni relectura) — el mismo patrón que ya
+  usaban `check_choques_cursos.py`/`check_choques_cohorte.py` sin problema. Aplicado en
+  `alerta-frescura-vencida` y `panel-verificacion-diaria`. El mojibake horneado en el JSON local
+  de `panel-verificacion-diaria` (`âš` / `Â¿`) resultó estar **solo en el archivo exportado
+  desestabilizado, no en el workflow real** (ya estaba limpio en n8n desde el 28-jul) — se
+  corrigió re-exportando el JSON correcto tras el fix de arriba.
+- **Verificado en Telegram real (no solo `ok:true`):** mensaje de prueba en
+  `alerta-frescura-vencida` con bullet `•` y en `panel-verificacion-diaria` con `⚠` +
+  `verificación`/`explícitas`/`Fundación ROFÉ` — los 3 llegaron íntegros tras el fix. Gotcha de
+  markdown ya conocido reapareció de paso: los `_` del texto estático `test_integridad_supabase`
+  en el nodo Telegram (no viene de `_md_seguro()`, es texto fijo del nodo) se comen — deuda
+  cosmética menor, no bloqueante, no se tocó.
+- **Regla nueva en `convenciones.md`:** un umbral de frescura tiene que ser mayor al hueco de
+  diseño del cron que lo alimenta; y `Get-Content -Encoding UTF8` no es suficiente para un log
+  con acentos/emoji — usar captura directa de stdout, no el patrón archivo+relectura.
+- Workflows re-exportados a `n8n-workflows/`: `alerta-frescura-vencida.json`,
+  `panel-verificacion-diaria.json`, `alerta-choques-cohorte.json` (nuevo).
+- **Pendiente:** el bug menor de guiones bajos en el texto estático de
+  `panel-verificacion-diaria` (no crítico); seguir con `plan-visualizacion-2026-07-30.md` ahora
+  que el canal de alertas es creíble de nuevo.
