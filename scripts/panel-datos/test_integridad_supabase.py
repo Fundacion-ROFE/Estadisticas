@@ -239,6 +239,24 @@ def main() -> int:
     malos_pct = [a for a in apro if a["pct_aprobados"] is not None and not (0 <= a["pct_aprobados"] <= 100)]
     test("aprobacion_cursos.pct_aprobados en [0,100]", not malos_pct, f"{len(malos_pct)} fuera")
 
+    # Guarda (Fase 1.4 de plan-visualizacion-2026-07-30.md): en_seguimiento_jc es una columna de
+    # ALERTA operativa haciendo el trabajo de una columna de ESTADO — si alguien cambia su
+    # significado (ej. deja de excluir false, o el sync deja de refrescarla), los conteos por
+    # curso se mueven en silencio y ningún otro test lo detecta hoy. Cruza dos caminos
+    # independientes: cohorte_ingresos.activos (derivado de Q10) contra un conteo recalculado
+    # desde participants×enrollments filtrado por en_seguimiento_jc — deben coincidir exacto.
+    seg_jc_2026 = supa.get_todo(
+        "/participants?select=id,en_seguimiento_jc,enrollments!inner(courses!inner(programa,cohorte))"
+        "&enrollments.courses.programa=eq.jc&enrollments.courses.cohorte=eq.2026"
+    )
+    seg_por_id = {p["id"]: p["en_seguimiento_jc"] for p in seg_jc_2026}  # dedupe (1 fila por matrícula)
+    activos_calc_jc_2026 = sum(1 for v in seg_por_id.values() if v is not False)
+    activos_coh_jc_2026_v2 = next((c["activos"] for c in coh if c["cohorte"] == "2026" and c["programa"] == "jc"), None)
+    test(f"JC 2026 activos vía en_seguimiento_jc cuadra con cohorte_ingresos.activos ({activos_coh_jc_2026_v2})",
+         activos_coh_jc_2026_v2 is not None and activos_calc_jc_2026 == activos_coh_jc_2026_v2,
+         f"conteo independiente (participants×enrollments, en_seguimiento_jc≠false)={activos_calc_jc_2026} "
+         f"vs cohorte_ingresos.activos={activos_coh_jc_2026_v2}")
+
     # v_retiro_probable_jc debe cuadrar exacto con count(en_seguimiento_jc=false) — no es
     # tolerancia, son la misma cosa contada dos veces por dos caminos independientes.
     retiro_prob = supa.get_todo("/v_retiro_probable_jc?select=*")
@@ -293,11 +311,22 @@ def main() -> int:
         supa_anon = Supa(url, anon)
         PII = ["participants", "emoflow_ingresos", "email_optout", "email_bounces",
                "participants_snapshots", "postulantes_mr", "postulantes_jc", "retiros",
-               "asistencia_zoom", "asistencia_promedio", "v_puntaje_estudiante"]
+               "asistencia_zoom", "asistencia_promedio", "v_puntaje_estudiante",
+               "v_gui_personas"]
         for t in PII:
             status, cuerpo = supa_anon._req("GET", f"/{t}?select=*&limit=1")
             bloqueado = status in (401, 403, 404) or (status == 200 and not cuerpo)
             test(f"anon bloqueado en {t}", bloqueado, f"HTTP {status}, filas={len(cuerpo or [])}")
+
+        # Espejo del chequeo anterior: las vistas públicas nuevas (Fase 1.2 de
+        # plan-visualizacion-2026-07-30.md) tienen que seguir siendo legibles por anon — un
+        # REVOKE de más aquí rompería el panel Netlify tan silenciosamente como un GRANT de
+        # más rompería la privacidad arriba.
+        PUBLICAS = ["v_pub_cohorte", "v_pub_geografia", "v_pub_avance",
+                    "v_aprobacion_cursos_vigencia"]
+        for t in PUBLICAS:
+            status, cuerpo = supa_anon._req("GET", f"/{t}?select=*&limit=1")
+            test(f"anon puede leer {t}", status == 200, f"HTTP {status}")
     else:
         test("anon key disponible para test de seguridad", False,
              "falta SUPABASE_ANON_KEY en .env.local — sección F no ejecutada")
