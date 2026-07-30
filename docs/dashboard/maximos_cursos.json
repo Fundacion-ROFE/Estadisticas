@@ -17,15 +17,15 @@
     "inscritos": 830,
     "inscritos_fecha": "2026-06-26",
     "promedio_en_pico": 94.43,
-    "finalizados": 723,
+    "finalizados": 726,
     "finalizados_fecha": "2026-07-29"
   },
   "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026": {
     "inscritos": 806,
     "inscritos_fecha": "2026-06-26",
     "promedio_en_pico": 89.13,
-    "finalizados": 737,
-    "finalizados_fecha": "2026-07-28"
+    "finalizados": 738,
+    "finalizados_fecha": "2026-07-29"
   },
   "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI": {
     "inscritos": 244,
@@ -73,7 +73,14 @@
     "inscritos": 760,
     "inscritos_fecha": "2026-07-24",
     "promedio_en_pico": 84.33,
-    "finalizados": 577,
+    "finalizados": 587,
     "finalizados_fecha": "2026-07-29"
+  },
+  "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026": {
+    "inscritos": 249,
+    "inscritos_fecha": "2026-07-29",
+    "promedio_en_pico": 1.08,
+    "finalizados": 0,
+    "finalizados_fecha": ""
   }
 }
