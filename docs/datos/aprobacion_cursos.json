@@ -1,26 +1,5 @@
 [
   {
-    "id": 1,
-    "cohorte": "2026",
-    "curso": "Bienvenidos a Jóvenes creaTIvos",
-    "programa": "jc",
-    "cursaron": 832,
-    "activos": 760,
-    "aprobados": 760,
-    "aprobados_retirados": 72,
-    "retirados": 0,
-    "banda_0_25": 0,
-    "banda_26_80": 0,
-    "banda_81_100": 760,
-    "aprobados_total": 832,
-    "no_aprobados": 0,
-    "sin_finalizar": 0,
-    "promedio": 100.0,
-    "pct_aprobados": 100.0,
-    "finalizado": true,
-    "updated_at": "2026-07-30T03:31:21"
-  },
-  {
     "id": 9,
     "cohorte": "2026",
     "curso": "De la idea a la acción, tu guía para emprender con éxito",
@@ -42,6 +21,27 @@
     "updated_at": "2026-07-21T09:45:24"
   },
   {
+    "id": 1,
+    "cohorte": "2026",
+    "curso": "Bienvenidos a Jóvenes creaTIvos",
+    "programa": "jc",
+    "cursaron": 832,
+    "activos": 760,
+    "aprobados": 760,
+    "aprobados_retirados": 72,
+    "retirados": 0,
+    "banda_0_25": 0,
+    "banda_26_80": 0,
+    "banda_81_100": 760,
+    "aprobados_total": 832,
+    "no_aprobados": 0,
+    "sin_finalizar": 0,
+    "promedio": 100.0,
+    "pct_aprobados": 100.0,
+    "finalizado": true,
+    "updated_at": "2026-07-30T05:31:03"
+  },
+  {
     "id": 2,
     "cohorte": "2026",
     "curso": "Emprendimiento: Idea de Negocio JC",
@@ -60,7 +60,7 @@
     "promedio": 99.53,
     "pct_aprobados": 93.9,
     "finalizado": true,
-    "updated_at": "2026-07-30T03:31:21"
+    "updated_at": "2026-07-30T05:31:03"
   },
   {
     "id": 3,
@@ -81,7 +81,7 @@
     "promedio": 99.78,
     "pct_aprobados": 97.5,
     "finalizado": true,
-    "updated_at": "2026-07-30T03:31:21"
+    "updated_at": "2026-07-30T05:31:03"
   },
   {
     "id": 4,
@@ -102,7 +102,7 @@
     "promedio": 99.84,
     "pct_aprobados": 98.9,
     "finalizado": true,
-    "updated_at": "2026-07-30T03:31:21"
+    "updated_at": "2026-07-30T05:31:03"
   },
   {
     "id": 5,
@@ -123,7 +123,7 @@
     "promedio": 98.87,
     "pct_aprobados": 95.3,
     "finalizado": true,
-    "updated_at": "2026-07-30T03:31:21"
+    "updated_at": "2026-07-30T05:31:03"
   },
   {
     "id": 6,
@@ -144,7 +144,7 @@
     "promedio": 99.52,
     "pct_aprobados": 96.8,
     "finalizado": true,
-    "updated_at": "2026-07-30T03:31:21"
+    "updated_at": "2026-07-30T05:31:03"
   },
   {
     "id": 150,
@@ -162,52 +162,10 @@
     "aprobados_total": 637,
     "no_aprobados": 130,
     "sin_finalizar": 129,
-    "promedio": 90.13,
+    "promedio": 90.16,
     "pct_aprobados": 83.1,
     "finalizado": true,
-    "updated_at": "2026-07-30T03:31:21"
-  },
-  {
-    "id": 365,
-    "cohorte": "2026",
-    "curso": "Desarrollo Web Front-End - JavaScript - 2026",
-    "programa": "jc",
-    "cursaron": 251,
-    "activos": 249,
-    "aprobados": 3,
-    "aprobados_retirados": 0,
-    "retirados": 2,
-    "banda_0_25": 242,
-    "banda_26_80": 4,
-    "banda_81_100": 3,
-    "aprobados_total": 3,
-    "no_aprobados": 248,
-    "sin_finalizar": 246,
-    "promedio": 2.1,
-    "pct_aprobados": 1.2,
-    "finalizado": false,
-    "updated_at": "2026-07-30T03:31:21"
-  },
-  {
-    "id": 107,
-    "cohorte": "2026",
-    "curso": "Finanzas Inteligentes, gestión para emprendedoras",
-    "programa": "mr",
-    "cursaron": 346,
-    "activos": 179,
-    "aprobados": 4,
-    "aprobados_retirados": 0,
-    "retirados": 167,
-    "banda_0_25": 156,
-    "banda_26_80": 19,
-    "banda_81_100": 4,
-    "aprobados_total": 4,
-    "no_aprobados": 342,
-    "sin_finalizar": 175,
-    "promedio": 7.8,
-    "pct_aprobados": 1.2,
-    "finalizado": false,
-    "updated_at": "2026-07-30T03:31:21"
+    "updated_at": "2026-07-30T05:31:03"
   },
   {
     "id": 8,
@@ -229,5 +187,47 @@
     "pct_aprobados": 25.8,
     "finalizado": false,
     "updated_at": "2026-07-29T12:38:51"
+  },
+  {
+    "id": 365,
+    "cohorte": "2026",
+    "curso": "Desarrollo Web Front-End - JavaScript - 2026",
+    "programa": "jc",
+    "cursaron": 251,
+    "activos": 249,
+    "aprobados": 3,
+    "aprobados_retirados": 0,
+    "retirados": 2,
+    "banda_0_25": 242,
+    "banda_26_80": 4,
+    "banda_81_100": 3,
+    "aprobados_total": 3,
+    "no_aprobados": 248,
+    "sin_finalizar": 246,
+    "promedio": 2.1,
+    "pct_aprobados": 1.2,
+    "finalizado": false,
+    "updated_at": "2026-07-30T05:31:03"
+  },
+  {
+    "id": 107,
+    "cohorte": "2026",
+    "curso": "Finanzas Inteligentes, gestión para emprendedoras",
+    "programa": "mr",
+    "cursaron": 346,
+    "activos": 179,
+    "aprobados": 4,
+    "aprobados_retirados": 0,
+    "retirados": 167,
+    "banda_0_25": 156,
+    "banda_26_80": 19,
+    "banda_81_100": 4,
+    "aprobados_total": 4,
+    "no_aprobados": 342,
+    "sin_finalizar": 175,
+    "promedio": 7.8,
+    "pct_aprobados": 1.2,
+    "finalizado": false,
+    "updated_at": "2026-07-30T05:31:03"
   }
 ]
