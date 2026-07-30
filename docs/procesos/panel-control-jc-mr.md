@@ -8,8 +8,10 @@
 > preguntas la misma tarde (ver `claude_sessions.md`). **Documento previo a ejecutar** — a
 > pedido explícito de Samuel, esto se escribe ANTES de tocar código.
 >
-> **Estado (2026-07-30, noche): Fase 1 ✅ HECHA y verificada** (ver §5) — Samuel autorizó
-> empezar a construir. Fases 2-5 sin empezar.
+> **Estado (2026-07-30, noche): Fase 1 y Fase 2 ✅ HECHAS** (ver §5). Fase 2 verificada solo
+> parcialmente — sin traceback al lanzarla, pero sin inspección visual (no hay herramienta de
+> captura para apps de escritorio en este entorno); la ventana quedó abierta en el escritorio
+> real para que Samuel la revise. Fases 3-5 sin empezar.
 
 ---
 
@@ -163,11 +165,43 @@ investigó a fondo porque está fuera de alcance de la Fase 1 (leer las vistas t
 depurar la fuente) — si se quiere cerrar, es trabajo de `courses`/`cursos_alias`, no de este
 módulo.
 
-### Fase 2 — Interfaz: selector + toggles + tabla base (estado 1 del toggle, ver §6)
-Selector de programa/cohorte + panel de checkboxes de fuentes + tabla con columnas dinámicas +
-filtros combinables (ciudad, avance, estado). Reusar `TablaFiltrable`. El toggle de
-"Postulantes históricos" en este estado **solo agrega columnas** a las filas de matriculados
-ya visibles — cero filas nuevas (ver §6, estado 1).
+### Fase 2 — Interfaz: selector + toggles + tabla base (estado 1 del toggle, ver §6) — ✅ HECHO 2026-07-30
+
+`tools/panel_control_gui.py` (nuevo, gitignoreado). Reusa la paleta y `TablaFiltrable` de
+`panel_riesgo_gui.py` por import directo (cero código copiado) y toda la capa de datos de la
+Fase 1 (`panel_control_datos.leer_panel_control`).
+
+- **Selector de programa** (JC/MR, radiobuttons) + **selector de cohorte** (dinámico, todas
+  las cohortes presentes en los datos cargados de ese programa — 2023-2026 JC, 2025-2026 MR).
+- **3 checkboxes de fuentes** (BD Seguimiento · Retiros+Emoflow+Asistencia ·
+  Postulantes históricos+Microcréditos MR) + "Q10 (base)" siempre marcado y deshabilitado.
+  Reparto de columnas por grupo documentado en el propio código (`COLUMNAS_BASE`,
+  `TOGGLE_BD_SEGUIMIENTO`, etc.) — city/grupo_ciudad y el flag `retirado` quedan en la base
+  (se usan como filtro con o sin el toggle prendido); el detalle sociodemográfico/de retiro
+  vive en los toggles.
+- **Filtros combinables:** ciudad/grupo (dropdown dinámico según lo cargado), banda de avance
+  (Todos / En riesgo 0-25% / En progreso 26-80% / Al día >80% — mismas bandas ya establecidas
+  en el proyecto, no se inventó ninguna nueva), estado (Todos/Activos/Retirados).
+- **Estadísticas de cabecera** recalculadas sobre el conjunto filtrado: personas, avance
+  promedio, % al día, % retirados.
+- Al prender/apagar un toggle, `TablaFiltrable` se **destruye y recrea** con el nuevo set de
+  columnas (el componente fija sus columnas en el constructor; se reusa tal cual, sin
+  modificarlo, tal como pedía §1).
+- Toggle de "Postulantes históricos" en **estado 1 confirmado**: solo agrega columnas
+  (`Postulante JC`/`Postulante MR`/`Rol/fuente JC`/`Estado MR`/`Microcrédito`) a las filas de
+  matriculados que ya trajo la Fase 1 — cero filas nuevas.
+- Reglas de "sin dato" aplicadas (`_sin_dato()`/`_si_no()`): ninguna columna muestra 0%/vacío
+  cuando la fuente no tiene cobertura para esa persona.
+
+**Verificación — parcial, con una limitación honesta que hay que decir:** el módulo importa
+limpio (`python -c "import panel_control_gui"`, sin lanzar la GUI) y la app se lanzó en
+segundo plano sin ningún traceback en 9+ segundos (tiempo de sobra para que el hilo de datos
+termine — la misma llamada a Supabase ya tardó unos segundos en la verificación de la Fase 1).
+**No se pudo verificar visualmente la ventana ni las interacciones** (clicks en toggles,
+combos, etc.) — no hay herramienta de captura/computer-use para apps de escritorio nativas de
+Windows en este entorno (solo hay automatización de navegador). La ventana quedó abierta en el
+escritorio real de Samuel al terminar esta fase — pendiente que la revise él mismo antes de
+darla por buena del todo.
 
 ### Fase 3 — Modo aparte "Postulantes que nunca matricularon" (estado 2 del toggle, ver §6)
 Vista/pestaña separada y explícita, con su propio contador ("452 JC · 4.588 MR" o el número

@@ -5810,3 +5810,35 @@ corregido.
   `ASISTENCIA-VALIDADA` hasta la corrida diaria de `validar_asistencia.py`** dentro de
   `asistencia-zoom-diario` (17:45 COT) — no hay actualización en vivo de esa pestaña salvo
   que se corra el script a mano.
+
+## 2026-07-30 (cont.) — [panel-datos-etl] Fase 2 de panel-control-jc-mr.md: interfaz Tkinter
+
+**Estado:** Hecho, verificado parcialmente (sin traceback al lanzar; sin inspección visual —
+limitación de herramientas de este entorno, no del código).
+**Proceso relacionado:** [[panel-control-jc-mr]]
+
+- **`tools/panel_control_gui.py` (nuevo, gitignoreado).** Reusa `TablaFiltrable` y la paleta
+  de `panel_riesgo_gui.py` por import directo (cero código copiado, tal como pedía el plan) +
+  toda la capa de datos de la Fase 1 (`panel_control_datos.leer_panel_control`).
+- Selector programa (JC/MR) + selector de cohorte dinámico + 3 checkboxes de fuentes (BD
+  Seguimiento · Retiros+Emoflow+Asistencia · Postulantes históricos+Microcréditos MR) + "Q10
+  (base)" fijo y deshabilitado + filtros combinables (ciudad, banda de avance — mismas bandas
+  ya establecidas 0-25/26-80/81-100, estado activo/retirado) + estadísticas de cabecera
+  recalculadas sobre el filtro vigente.
+- **Decisión de diseño:** ciudad/`grupo_ciudad` y el flag `retirado` quedan en las columnas
+  base (filtrables con o sin el toggle correspondiente prendido); el detalle sociodemográfico
+  y de retiro/fecha vive en los toggles — así el filtro de ciudad/estado sigue funcionando
+  aunque el usuario no quiera ver esas columnas en la tabla.
+- **`TablaFiltrable` se destruye y recrea** cuando cambia el set de columnas activas (el
+  componente fija sus columnas en el constructor) — se reusa tal cual, sin tocarlo, en línea
+  con la decisión de no duplicar ni modificar componentes ya existentes.
+- Toggle de "Postulantes históricos" confirmado en estado 1: solo agrega columnas a los
+  matriculados ya visibles, cero filas nuevas.
+- **Verificación honesta, con su límite declarado:** el módulo importa limpio, y la app se
+  lanzó en segundo plano sin ningún traceback en 9+ segundos (tiempo de sobra para que el
+  hilo de datos termine, la misma consulta ya se cronometró en la Fase 1). **No se pudo
+  verificar visualmente la ventana ni las interacciones** — no hay herramienta de captura para
+  apps de escritorio nativas de Windows en este entorno, solo automatización de navegador. La
+  ventana quedó abierta en el escritorio real para que Samuel la revise antes de darla por
+  buena del todo.
+- Próximo paso: Fase 3 (modo aparte "postulantes que nunca matricularon"), sin empezar.
