@@ -1,9 +1,9 @@
 {
-  "ultima_actualizacion": "2026-07-30T05:01:12.353477-05:00",
+  "ultima_actualizacion": "2026-07-30T17:01:16.331482-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
-      "estudiantes": 760,
+      "estudiantes": 754,
       "finalizados": 776,
       "promedio": 100.0,
       "min": 100.0,
@@ -14,9 +14,9 @@
     },
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
-      "estudiantes": 760,
-      "finalizados": 590,
-      "promedio": 90.16,
+      "estudiantes": 754,
+      "finalizados": 596,
+      "promedio": 90.99,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 760,
@@ -25,20 +25,20 @@
     },
     {
       "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
-      "estudiantes": 249,
+      "estudiantes": 252,
       "finalizados": 0,
-      "promedio": 2.1,
+      "promedio": 4.13,
       "min": 0.0,
       "max": 97.0,
-      "inscritos": 249,
-      "promedio_pico": 1.08,
+      "inscritos": 252,
+      "promedio_pico": 4.13,
       "finalizado": false
     },
     {
       "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
-      "estudiantes": 760,
+      "estudiantes": 754,
       "finalizados": 726,
-      "promedio": 99.53,
+      "promedio": 99.55,
       "min": 0.0,
       "max": 101.0,
       "inscritos": 830,
@@ -47,9 +47,9 @@
     },
     {
       "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
-      "estudiantes": 760,
+      "estudiantes": 754,
       "finalizados": 738,
-      "promedio": 98.87,
+      "promedio": 99.24,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 806,
@@ -58,7 +58,7 @@
     },
     {
       "curso": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
-      "estudiantes": 760,
+      "estudiantes": 754,
       "finalizados": 749,
       "promedio": 99.78,
       "min": 0.0,
@@ -69,7 +69,7 @@
     },
     {
       "curso": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
-      "estudiantes": 760,
+      "estudiantes": 754,
       "finalizados": 773,
       "promedio": 99.84,
       "min": 22.0,
@@ -80,7 +80,7 @@
     },
     {
       "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
-      "estudiantes": 760,
+      "estudiantes": 754,
       "finalizados": 751,
       "promedio": 99.52,
       "min": 0.0,
@@ -97,7 +97,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 252
+      "cantidad": 232
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -106,17 +106,17 @@
   ],
   "totales": {
     "total_cursos": 8,
-    "total_estudiantes_unicos": 760,
-    "total_habilitados": 760,
-    "total_db": 939
+    "total_estudiantes_unicos": 754,
+    "total_habilitados": 754,
+    "total_db": 933
   },
   "mr": {
     "por_curso": [
       {
         "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
         "estudiantes": 179,
-        "finalizados": 2,
-        "promedio": 7.8,
+        "finalizados": 3,
+        "promedio": 8.88,
         "min": 0.0,
         "max": 100.0,
         "inscritos": 179,
@@ -127,7 +127,7 @@
     "anomalias": [
       {
         "categoria": "AVANCE 0%",
-        "cantidad": 149
+        "cantidad": 146
       },
       {
         "categoria": "AVANCE IRREGULAR",
