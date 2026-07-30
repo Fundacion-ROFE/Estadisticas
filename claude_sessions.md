@@ -5871,3 +5871,46 @@ solo al importar el módulo).
   (sin herramienta de captura para apps de escritorio). Ventana dejada abierta en el
   escritorio real para revisión de Samuel.
 - Próximo paso: Fase 4 (ficha 360 al doble clic sobre una fila de Matriculados), sin empezar.
+
+## 2026-07-30 (cont.) — [panel-datos-etl] Especificación de rediseño del panel público
+
+**Estado:** Solo diagnóstico + especificación, sin plan de fases ni código — a pedido
+explícito ("analiza el prompt y mejóralo para hacer una correcta creación... desde 0"), mismo
+patrón que `panel-control-jc-mr.md`.
+**Proceso relacionado:** [[plan-rediseno-panel-datos-2026-07-30]]
+
+- Samuel pidió reconfigurar el panel público (Netlify) igual que la GUI: filtros que se
+  adapten mejor a habilitados/todos, cohortes, demografía, JC/MR, estadísticas, asistencia y
+  Emoflow, con más sencillez de UI/UX. Pidió explícitamente que primero mejorara el prompt
+  antes de construir.
+- **Primer intento de investigación delegada a un fork falló silenciosamente:** 0 tool_uses,
+  7 segundos de duración, y el campo de resultado devolvió literalmente mi propio mensaje
+  anterior al usuario en vez de hallazgos reales. Descartado sin usarlo — hice la
+  investigación yo mismo directamente en vez de confiar en un resultado con esa señal de
+  fallo tan clara.
+- **Hallazgos reales del diagnóstico** (`app/page.tsx`/`lib/api.ts` completos + búsqueda en
+  `docs/` para confirmar que no hay un plan previo que duplicar):
+  - **No existe ningún filtro de "habilitados/todos"** — ingresados/activos/retirados solo
+    se muestran como KPIs pasivos, nunca como un control que el usuario pueda accionar.
+  - **Lógica de aprobación duplicada** entre los tabs Resumen y Cursos (`app/page.tsx:687` y
+    `:833`) — la misma decisión `esActual && aprobacionProg.length>0` calculada dos veces en
+    dos lugares distintos.
+  - **"Demografía" son 2 tabs distintos disfrazados de uno** — 6 gráficos para MR, 3
+    completamente distintos para JC, sin ningún elemento visual compartido ni explicación de
+    por qué cambia el contenido al cambiar de programa.
+  - **Asistencia Zoom no existe en el panel público en absoluto** — no es un problema de
+    organización, es una ausencia total (`type Tab` no la incluye, ninguna llamada de
+    `lib/api.ts` la trae). Samuel la mencionó explícitamente en su pedido.
+  - El selector de ciudad (solo JC, solo cohorte actual) y el drill-down de municipio que se
+    agregó ayer (ambos programas, vía `v_pub_geografia`) viven en dos lugares distintos del
+    mismo tab Resumen — otro síntoma de la misma falta de organización que señaló Samuel.
+- **`docs/procesos/plan-rediseno-panel-datos-2026-07-30.md` (nuevo):** diagnóstico completo +
+  el prompt de Samuel reescrito como especificación funcional (filtros globales incluyendo el
+  nuevo filtro de Estado, secciones con manejo explícito de "no aplica" en vez de ocultar
+  tabs) + 4 preguntas abiertas antes de pasar a un plan de fases ejecutable: (1) mismo
+  stack/repo o uno nuevo, (2) si Asistencia Zoom entra al panel público, (3) si el filtro de
+  Estado aplica a Demografía/Emprendimiento/Emoflow o solo a Resumen/Cursos, (4) prioridad
+  frente a las Fases 4-5 pendientes de `panel-control-jc-mr.md`.
+- Enlace agregado en `00-vision-global.md`. Cero código tocado en `panel-datos-rofe` en esta
+  entrada — solo documentación, como se pidió.
+- Pendiente: que Samuel responda las 4 preguntas antes de escribir el plan de fases.
