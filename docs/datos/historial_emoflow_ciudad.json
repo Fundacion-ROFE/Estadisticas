@@ -945,7 +945,7 @@
     "participantes": 80,
     "ingresos_promedio": 34.3,
     "ingresos_mediana": 28,
-    "activos_7d": 36,
+    "activos_7d": 37,
     "inactivos_30d": 20,
     "fuente": "emoflow-api"
   },
@@ -973,7 +973,7 @@
     "fecha": "2026-07-29",
     "grupo_ciudad": "QTO",
     "participantes": 39,
-    "ingresos_promedio": 45.5,
+    "ingresos_promedio": 45.7,
     "ingresos_mediana": 41,
     "activos_7d": 31,
     "inactivos_30d": 3,
