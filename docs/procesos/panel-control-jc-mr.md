@@ -8,10 +8,12 @@
 > preguntas la misma tarde (ver `claude_sessions.md`). **Documento previo a ejecutar** — a
 > pedido explícito de Samuel, esto se escribe ANTES de tocar código.
 >
-> **Estado (2026-07-30, noche): Fase 1 y Fase 2 ✅ HECHAS** (ver §5). Fase 2 verificada solo
-> parcialmente — sin traceback al lanzarla, pero sin inspección visual (no hay herramienta de
-> captura para apps de escritorio en este entorno); la ventana quedó abierta en el escritorio
-> real para que Samuel la revise. Fases 3-5 sin empezar.
+> **Estado (2026-07-30, noche): Fases 1-3 ✅ HECHAS** (ver §5). Verificadas solo parcialmente
+> — sin traceback al lanzar la app (un bug real de Tkinter sí se encontró y corrigió así:
+> `pady=(10,0)` no es válido en el constructor de un `Frame`, solo en `.pack()`), pero sin
+> inspección visual (no hay herramienta de captura para apps de escritorio en este entorno);
+> la ventana quedó abierta en el escritorio real para que Samuel la revise. Fases 4-5 sin
+> empezar.
 
 ---
 
@@ -203,11 +205,30 @@ Windows en este entorno (solo hay automatización de navegador). La ventana qued
 escritorio real de Samuel al terminar esta fase — pendiente que la revise él mismo antes de
 darla por buena del todo.
 
-### Fase 3 — Modo aparte "Postulantes que nunca matricularon" (estado 2 del toggle, ver §6)
-Vista/pestaña separada y explícita, con su propio contador ("452 JC · 4.588 MR" o el número
-vigente al momento de construirla — **reverificar en vivo, no copiar el número de este
-documento**), que lista `postulantes_jc`/`postulantes_mr` con `participant_id IS NULL`. Nunca
-se mezcla con la tabla de matriculados ni se suma a ningún total de "estudiantes".
+### Fase 3 — Modo aparte "Postulantes que nunca matricularon" (estado 2 del toggle, ver §6) — ✅ HECHO 2026-07-30
+
+`panel_control_datos.leer_postulantes_sin_matricula(programa, supa)` (nuevo): consulta
+`postulantes_jc`/`postulantes_mr` directo con `participant_id=is.null&select=*` — nunca llama
+ni se mergea con `leer_panel_control()`. **Reverificado en vivo antes de tocar código** (no se
+copió el número del documento, como pedía esta misma sección): **462 JC / 4.757 MR** — igual
+a la medición de la corrección de ayer, estable.
+
+En la interfaz: `panel_control_gui.py` ahora tiene un `ttk.Notebook` con **2 pestañas que
+nunca se muestran juntas** — "Matriculados" (Fase 2) y "Postulantes sin matrícula" (esta
+fase). La segunda pestaña tiene su propio contador (`_kpi` en naranja, para diferenciarla
+visualmente de la pestaña de matriculados), su propia tabla (`TablaFiltrable` con columnas
+propias por programa — `postulantes_jc`/`postulantes_mr` no comparten esquema) y una nota
+explícita en la parte superior recordando que es un universo distinto. Sin toggles ni filtro
+de cohorte (ese universo no tiene cohorte asignada) — solo la búsqueda/orden que ya trae
+`TablaFiltrable` gratis.
+
+**Bug real encontrado y corregido al lanzar la app (no solo al importar el módulo):**
+`tk.Frame(..., pady=(10, 0))` — una tupla de padding es válida en `.pack()`/`.grid()` pero
+**no** en el constructor del widget (`_tkinter.TclError: bad screen distance "10 0"`). Fix:
+mover el padding vertical al `.pack()`. Este es exactamente el tipo de error que
+`import panel_control_gui` (sin lanzar la GUI) no detecta — reforzó la necesidad de lanzar la
+app de verdad, no solo importarla, como paso de verificación mínimo en este entorno sin
+captura visual.
 
 ### Fase 4 — Ficha 360
 Doble clic sobre una fila de matriculados → popup que consulta `v_persona_360` por cédula.

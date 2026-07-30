@@ -5842,3 +5842,32 @@ limitación de herramientas de este entorno, no del código).
   ventana quedó abierta en el escritorio real para que Samuel la revise antes de darla por
   buena del todo.
 - Próximo paso: Fase 3 (modo aparte "postulantes que nunca matricularon"), sin empezar.
+
+## 2026-07-30 (cont.) — [panel-datos-etl] Fase 3 de panel-control-jc-mr.md: postulantes sin matrícula
+
+**Estado:** Hecho. Bug real de Tkinter encontrado y corregido al lanzar la app de verdad (no
+solo al importar el módulo).
+**Proceso relacionado:** [[panel-control-jc-mr]]
+
+- **`panel_control_datos.leer_postulantes_sin_matricula(programa, supa)`** (nuevo): consulta
+  `postulantes_jc`/`postulantes_mr` directo (`participant_id=is.null`) — nunca llama ni se
+  mergea con `leer_panel_control()`, tal como exige el estado 3 del §6 (prohibido mezclar
+  universos). **Reverificado en vivo antes de escribir una sola línea** (regla que el propio
+  documento pedía): 462 JC / 4.757 MR — igual a la corrección de ayer, número estable.
+- **`panel_control_gui.py` ahora tiene un `ttk.Notebook` con 2 pestañas que nunca se muestran
+  juntas:** "Matriculados" (Fase 2, sin cambios) y "Postulantes sin matrícula" (nueva), con su
+  propio contador en naranja (para diferenciarla visualmente), su propia tabla con columnas
+  específicas por programa (`postulantes_jc` y `postulantes_mr` no comparten esquema — Rol vs.
+  Estado, Fuente vs. Fuente pestaña, etc.) y una nota explícita recordándolo. Sin toggles ni
+  filtro de cohorte ahí (ese universo no tiene cohorte).
+- **Bug real encontrado al lanzar la app (no al importar):** `tk.Frame(..., pady=(10, 0))` —
+  una tupla de padding es válida en `.pack()` pero no en el constructor del widget
+  (`_tkinter.TclError: bad screen distance "10 0"`). El `import panel_control_gui` sin GUI no
+  lo detectó — reforzó por qué el paso de "lanzar la app de verdad" (aunque sin captura
+  visual) sigue siendo obligatorio en este entorno, no alcanza con que el módulo importe.
+  Corregido moviendo el padding al `.pack()`. Relanzada después: 9+ segundos sin traceback,
+  memoria creciendo de forma consistente con la carga real de datos.
+- **Sigue sin poder verificarse visualmente** — misma limitación de siempre en este entorno
+  (sin herramienta de captura para apps de escritorio). Ventana dejada abierta en el
+  escritorio real para revisión de Samuel.
+- Próximo paso: Fase 4 (ficha 360 al doble clic sobre una fila de Matriculados), sin empezar.
