@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-07-30T17:02:20.395268-05:00",
+  "ultima_actualizacion": "2026-08-01T17:02:50.289558-05:00",
   "segmento": "Logica-Nivel 2-2026",
   "por_curso": [
     {
@@ -13,8 +13,8 @@
     },
     {
       "nombre": "Hackea Tu Cerebro",
-      "estudiantes": 762,
-      "aprobados": 758,
+      "estudiantes": 756,
+      "aprobados": 752,
       "pct_aprobados": 99.5,
       "promedio": 99.58,
       "min": 0.0,
@@ -22,57 +22,57 @@
     },
     {
       "nombre": "Habilidades Esenciales",
-      "estudiantes": 762,
-      "aprobados": 741,
-      "pct_aprobados": 97.2,
+      "estudiantes": 756,
+      "aprobados": 737,
+      "pct_aprobados": 97.5,
       "promedio": 99.51,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "Emprendimiento",
-      "estudiantes": 761,
-      "aprobados": 724,
-      "pct_aprobados": 95.1,
-      "promedio": 99.42,
+      "estudiantes": 755,
+      "aprobados": 726,
+      "pct_aprobados": 96.2,
+      "promedio": 99.48,
       "min": 0.0,
       "max": 101.0
     },
     {
       "nombre": "IA",
-      "estudiantes": 760,
-      "aprobados": 744,
-      "pct_aprobados": 97.9,
-      "promedio": 99.49,
+      "estudiantes": 754,
+      "aprobados": 742,
+      "pct_aprobados": 98.4,
+      "promedio": 99.53,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "Lógica de Programación",
-      "estudiantes": 760,
-      "aprobados": 738,
-      "pct_aprobados": 97.1,
-      "promedio": 98.87,
+      "estudiantes": 754,
+      "aprobados": 736,
+      "pct_aprobados": 97.6,
+      "promedio": 99.26,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "HTML",
-      "estudiantes": 760,
-      "aprobados": 590,
-      "pct_aprobados": 77.6,
-      "promedio": 90.16,
+      "estudiantes": 754,
+      "aprobados": 619,
+      "pct_aprobados": 82.1,
+      "promedio": 91.89,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "HTML - AUT",
       "estudiantes": 777,
-      "aprobados": 0,
-      "pct_aprobados": 0.0,
-      "promedio": 1.34,
+      "aprobados": 4,
+      "pct_aprobados": 0.5,
+      "promedio": 6.65,
       "min": 0.0,
-      "max": 97.0
+      "max": 100.0
     },
     {
       "nombre": "HTML",
@@ -104,10 +104,10 @@
   ],
   "totales": {
     "total_cursos": 11,
-    "total_registros": 8453,
+    "total_registros": 8417,
     "estudiantes_unicos_id": 780,
-    "promedio_general": 76.14,
-    "total_aprobados": 6037
+    "promedio_general": 76.73,
+    "total_aprobados": 6058
   },
   "anomalias": [
     {
@@ -116,7 +116,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 1697
+      "cantidad": 1617
     },
     {
       "categoria": "AVANCE IRREGULAR",
