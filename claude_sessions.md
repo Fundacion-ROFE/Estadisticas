@@ -5943,3 +5943,54 @@ patrón que `panel-control-jc-mr.md`.
   con el mismo nivel de detalle en el propio archivo.
 - **Nada ejecutado todavía** — el plan queda para que Samuel lo revise antes de tocar
   Supabase o el repo `panel-datos-rofe`.
+
+## 2026-08-03 (cont.) — [gobernanza-contexto-ia] Roles activados: Lina, Rocío, Cristian
+
+**Estado:** Completado (contenido); repo privado y hooks locales siguen pendientes
+**Proceso relacionado:** [[gobernanza-contexto-ia]] · [[prioridades-automatizacion-ia]]
+
+- Lina pidió avanzar la gobernanza de contexto IA por rol: carpetas de solo-lectura para
+  consultar la BD, skills puntuales por persona, y un guion fijo de "necesita luz verde de
+  Samuel" cuando una petición no encaje en lo permitido.
+- **Hallazgo antes de construir nada:** el repo `Fundacion-ROFE/Estadisticas`, donde ya vivía
+  el scaffolding de `usuarios-ia/` (2026-07-27), es **público** (verificado vía API de
+  GitHub: `"private": false`). El diseño original siempre asumió un repo privado aparte,
+  bloqueado desde el 27-jul por "crear el repo real en GitHub". Decisión con Lina: diseñar y
+  dejar todo el contenido listo en este repo ahora, migrar al repo privado como prerrequisito
+  explícito antes de activar cualquier `logs/` de sesión real — no se crea el repo privado en
+  esta sesión. La `anon key` de Supabase en sí no es un problema nuevo (ya pública por diseño,
+  RLS solo expone agregados, ya vive en el Netlify público); el riesgo real es la info de
+  roles/restricciones/futuros logs quedando indexable.
+- **Segundo hallazgo:** `commit_y_push.py` estaba pensado para correr en una sola máquina
+  (Schedule n8n en el equipo de Samuel) subiendo todo `usuarios-ia/` de una vez — pero Lina,
+  Rocío y Cristian van a correr su propia instancia en su propia máquina, así que un Schedule
+  en el equipo de Samuel no puede ver esos cambios locales. Corregido: se agregó el flag
+  `--usuario <nombre>` (acota `git status`/`add`/mensaje de commit a esa carpeta), pensado
+  para un hook `Stop` local de Claude Code por persona en vez de n8n.
+- Construido: bloque fijo nuevo "Límites de autonomía y luz verde de Samuel" (qué SÍ/NUNCA
+  puede hacer cada instancia, y el guion exacto para cuando algo no encaja) + línea de "URL de
+  este contexto en GitHub" en el encabezado — agregados a `_plantilla/CLAUDE.md` y replicados
+  en las 3 carpetas activas. También se agregó la sección de conexión Supabase (URL + anon key
+  + snippet Python) que antes solo existía en `CLAUDE-asistente-informes.md`, para que estas
+  carpetas sí puedan consultar datos de verdad.
+- **`usuarios-ia/lina/`** (nueva): rol de coordinación/estratégico; skills copiados
+  `evaluar` + `consejo-ligero`/`consejo-medio`/`consejo-profundo`.
+- **`usuarios-ia/rocio/`** (nueva): rol contabilidad; sin skill formal (la redacción de
+  correos ya la cubre la conversación libre, sin capacidad de envío); documentado
+  explícitamente que el clasificador de WhatsApp que pidió en su entrevista P0 **no es un
+  skill suyo** — es el proyecto `whatsapp-identificacion-manychat`, bloqueado por falta de
+  cuenta ManyChat, para no prometerle algo que aún no existe.
+- **`usuarios-ia/cristian/`** (actualizada): agregados los bloques nuevos + Rol/Permisos con
+  lo confirmado en su entrevista P0 (asistencia por clase/estudiante, alertas de riesgo para
+  monitores), apuntando a `zoom-asistencia`/`panel-clase-vivo` como el mecanismo real — no se
+  le inventó un skill nuevo. Queda documentado como pendiente operativo migrar su carpeta de
+  trabajo standalone (`Downloads/DB-ROFE-Cristian`) a este modelo.
+- Astrid y Sandra quedan sin carpeta activa (scaffold no creado) — bloqueadas hasta levantar
+  su propia entrevista de necesidades, tal como ya estaba decidido el 28-jul.
+- `docs/procesos/gobernanza-contexto-ia.md`, `usuarios-ia/README.md` y `00-vision-global.md`
+  actualizados con el estado nuevo y la tabla de estado por persona.
+- **Pendiente (fuera de esta sesión):** crear el repo privado real y migrar `usuarios-ia/`
+  (requiere permisos de cuenta de Samuel); configurar el hook `Stop` en las máquinas de
+  Lina/Rocío/Cristian; diseñar el skill de "borrador de correo" para Rocío si el volumen lo
+  justifica; activar a Astrid/Sandra cuando se levanten sus necesidades; el rol de Postgres
+  de solo-lectura para datos individuales sigue pendiente solo para Cristian.
