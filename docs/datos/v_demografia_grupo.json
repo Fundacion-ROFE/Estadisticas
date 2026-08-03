@@ -16,19 +16,19 @@
     "otros_genero": null
   },
   {
-    "grupo_ciudad": "PAN",
-    "total": 35,
-    "edad_promedio": 18.3,
-    "mujeres": 24,
-    "hombres": 11,
-    "otros_genero": null
-  },
-  {
     "grupo_ciudad": "BOG",
     "total": 129,
     "edad_promedio": 17.3,
     "mujeres": 66,
     "hombres": 63,
+    "otros_genero": null
+  },
+  {
+    "grupo_ciudad": "PAN",
+    "total": 35,
+    "edad_promedio": 18.3,
+    "mujeres": 24,
+    "hombres": 11,
     "otros_genero": null
   },
   {
