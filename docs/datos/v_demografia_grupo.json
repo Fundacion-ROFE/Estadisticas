@@ -9,9 +9,9 @@
   },
   {
     "grupo_ciudad": "CTG",
-    "total": 99,
-    "edad_promedio": 18.1,
-    "mujeres": 48,
+    "total": 98,
+    "edad_promedio": 18.0,
+    "mujeres": 47,
     "hombres": 51,
     "otros_genero": null
   },
@@ -25,25 +25,25 @@
   },
   {
     "grupo_ciudad": "BOG",
-    "total": 130,
+    "total": 129,
     "edad_promedio": 17.3,
-    "mujeres": 67,
+    "mujeres": 66,
     "hombres": 63,
     "otros_genero": null
   },
   {
     "grupo_ciudad": "MED",
-    "total": 94,
+    "total": 93,
     "edad_promedio": 18.5,
     "mujeres": 47,
-    "hombres": 47,
+    "hombres": 46,
     "otros_genero": null
   },
   {
     "grupo_ciudad": "QTO",
-    "total": 38,
-    "edad_promedio": 20.0,
-    "mujeres": 21,
+    "total": 37,
+    "edad_promedio": 20.1,
+    "mujeres": 20,
     "hombres": 17,
     "otros_genero": null
   },
@@ -57,9 +57,9 @@
   },
   {
     "grupo_ciudad": "UY",
-    "total": 62,
-    "edad_promedio": 21.6,
-    "mujeres": 25,
+    "total": 60,
+    "edad_promedio": 21.5,
+    "mujeres": 23,
     "hombres": 37,
     "otros_genero": null
   },
