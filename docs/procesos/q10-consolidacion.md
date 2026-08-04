@@ -115,7 +115,8 @@ Retirados), por eso puede ir primero.
 `active: true` y la cadena de nodos real bajo `Schedule 4h` termina en
 `Ejecutar export_retirados → Ejecutar export_sin_completar → Responder OK` (mismo orden en la rama
 `Sched:` que corre por Telegram). `exportar_sin_completar.py` sigue corriendo cada 4h, sin cambios
-desde 2026-07-08 — no quedó huérfano ni desconectado. Ver [[feedback-verificar-n8n-en-vivo]].
+desde 2026-07-08 — no quedó huérfano ni desconectado. Verificado contra el workflow en vivo, no
+solo el JSON exportado — ver [[convenciones#Editar workflows n8n por API (sin abrir la UI)]].
 
 **Tiempo estimado total (`/actualizar h2test`):** ~4-5 minutos.
 

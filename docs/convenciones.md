@@ -88,6 +88,29 @@ en fallo + `estado=error` + `sys.exit(1)` en `main()`). Probar con
 `git push --dry-run origin main` desde una terminal sin sesión de credenciales activa — debe
 salir sin prompt.
 
+### Gotcha: `git commit` sin pathspec se lleva todo lo que esté staged, no solo lo tuyo
+
+Pasó el 2026-08-03/04: una sesión de Claude Code dejó `usuarios-ia/` con un `git rm -r`
+staged (sin commitear todavía, a propósito, para no pushear contenido sensible a este repo
+público). El siguiente `export_supabase_json.py` automático de n8n corrió su `git add
+docs/datos` (correctamente acotado) seguido de `git commit -m "..."` **sin pathspec** — y
+`git commit` sin pathspec commitea el índice completo, no solo lo que el script acaba de
+agregar. Resultado: el `git rm` ajeno viajó pegado al commit automático y se pusheó sin que
+nadie lo pidiera, dejando esa carpeta pública ~16h hasta que se notó.
+
+**Todo `git_commit_y_push()` de este proyecto (los 6 `export_*.py` + `commit_y_push.py` en
+`comunicaciones-ai/Contexts`) debe pasar `-- <rutas>` al `git commit`, nunca solo `-m
+mensaje`:**
+
+```python
+["git", "commit", "-m", mensaje, "--", *rutas]   # ✓ acotado, inmune a lo demás staged
+["git", "commit", "-m", mensaje]                  # ✗ commitea TODO el índice
+```
+
+Aplica a cualquier script nuevo que haga commit automático sobre un repo donde también se
+trabaja interactivamente — el índice es compartido, no hay aislamiento entre una sesión de
+Claude Code y un cron de n8n corriendo en la misma máquina sobre el mismo working tree.
+
 ## SSL corporativo
 
 Esta red tiene un proxy/firewall corporativo que intercepta HTTPS (MITM). Aplica a **todos** los procesos que hagan llamadas HTTP desde Python o n8n.
@@ -228,7 +251,7 @@ Usar el patrón `leer_registros(ws)`: `get_all_values()` + conservar solo column
 no vacío y no duplicado (ver `organizador_headless.py`). Regla para humanos: fórmulas de análisis
 van en pestañas aparte, nunca en las pestañas que los scripts leen/escriben.
 
-## ✅ Normalización de ciudades (resuelto 2026-07-24, ver [[supabase_mr_sincronizacion_gap]])
+## ✅ Normalización de ciudades (resuelto 2026-07-24)
 
 **Estado:** Resuelto a nivel de base de datos. Ya no es responsabilidad de cada script
 reinventar la detección de variantes.
@@ -555,6 +578,19 @@ credencial en memoria `reference-n8n-api-key`). Reglas aprendidas (2026-07-07 y 
   `$('Nodo').item.json.stdout` sin concatenar ni construir strings con `\n` embebido.** Es el
   mismo patrón que ya usaba `alerta-desercion-semanal` — evitarlo (concatenar en la expresión,
   como se hizo primero en `alerta-choques-cursos`) fue lo que introdujo el bug.
+- **Gotcha (2026-07-30) — cambiar el cron de un `Schedule Trigger` por `PUT` en un workflow
+  que YA está `active: true` guarda el valor nuevo (se ve correcto en un `GET` posterior) pero
+  el trigger en memoria del proceso n8n sigue corriendo con el cron viejo — no dispara en la
+  hora nueva.** Encontrado probando `asistencia-zoom-diario` en caliente: se adelantó el cron
+  de `45 17 * * *` a un par de minutos en el futuro, el `PUT` respondió 200 y el `GET` mostraba
+  el cron nuevo, pero pasó la hora objetivo sin ninguna ejecución nueva en
+  `GET /executions`. **Fix:** tras el `PUT`, forzar siempre
+  `POST /workflows/{id}/deactivate` → `POST /workflows/{id}/activate` — eso obliga a n8n a
+  re-registrar el `Schedule Trigger` con la definición actual. Con eso el disparo llegó exacto
+  al segundo. **Patrón útil para probar un workflow con Schedule Trigger sin esperar al tick
+  real:** adelantar el cron unos minutos + forzar el ciclo deactivate/activate, confirmar la
+  ejecución en `GET /executions` (o por `v_frescura`/tabla destino), y **revertir el cron al
+  valor original con el mismo ciclo** en cuanto se confirme — no dejar el cron de prueba puesto.
 
 ## Exclusión de usuarios de prueba en exporters
 
@@ -834,6 +870,27 @@ al optimista y al economista (nivel profundo, 3 spawns).
 
 Reutilizable para cualquier decisión futura del proyecto (arquitectura, migraciones, alcance de un
 proceso nuevo) — no está atado a ningún dominio de datos específico.
+
+## Grupos de filas/columnas colapsables por API de Sheets (`addDimensionGroup`)
+
+Gotchas encontrados construyendo el bloque colapsable por sesión de `validar_asistencia.py`
+(ver `docs/procesos/zoom-asistencia.md`, 2026-07-30):
+
+- **Dos grupos hermanos (mismo nivel/depth) que quedan adyacentes sin ninguna fila suelta
+  entre ellos se FUSIONAN en un solo grupo grande**, en vez de quedar como 2 cajas
+  independientes con su propio `+`/`-`. Fix: dejar siempre al menos 1 fila sin agrupar
+  entre 2 grupos consecutivos (en este caso, una fila "divisoria" con el resumen de la
+  sesión, que de paso da visibilidad sin abrir el detalle).
+- **`addDimensionGroup` para varios grupos en el mismo `batchUpdate` los crea colapsados
+  por defecto**, no expandidos como se esperaría. Fix: después de crearlos, mandar una
+  segunda tanda de `updateDimensionGroup` (`fields: "collapsed"`, `collapsed: false`) —
+  tiene que ir en una llamada `batch_update` aparte, posterior a la que los crea (el grupo
+  tiene que existir antes de poder actualizarlo).
+- **`deleteDimensionGroup` borra la definición del grupo pero NO vuelve a mostrar las filas
+  que quedaron ocultas** si alguien colapsó ese grupo a mano antes de borrarlo — quedan
+  ocultas "huérfanas", y el grupo que se cree encima en la siguiente corrida hereda esa
+  ocultación. Fix: antes de recrear grupos (o al limpiar los viejos), mandar
+  `updateDimensionProperties` (`hiddenByUser: false`) sobre todo el rango relevante.
 
 ## Nunca usar `row_count`/`gridProperties` de Google Sheets como proxy de volumen de datos
 

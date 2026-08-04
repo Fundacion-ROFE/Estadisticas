@@ -161,6 +161,42 @@ los cruces en Python).
   (correo/celular exacto, tokens de nombre, vecindad de cédula ordenada). Nunca slicear una
   lista grande dentro de su propio loop externo.
 
+## Hallazgo nuevo (2026-07-28) — microcrédito ICREDIT, dato valioso sin ingestar
+
+Buscando si existía un cruce estudiante↔empresa patrocinadora (pedido de Samuel para los
+informes segmentados de Lina, ver `diccionario-metricas.md`), se escanearon las 57 pestañas
+de los 3 Sheets fuente. No es la relación que Samuel tenía en mente, pero encontró dos
+piezas de información **útiles para MR y sin conservar en ningún lado versionado hoy**:
+
+- **Pestaña `Icredit | Microcredito`** (mismo Sheet BD-Mujeres ROFÉ, id
+  `1ZsC4WyY26aOCEMrnZ_l8Tn-l69DB_0ADs5lnecaoEP8`): **64 filas** con nombre, cédula, correo,
+  tipo de crédito (columna `CREDITO`: 26 "ICREDIT", 38 "MICROCREDITO") y fecha de
+  desembolso. Vínculo persona↔producto financiero real, ninguna cédula cruzada todavía
+  contra `postulantes_mr`.
+- **Pestaña `HerpowerED`** — **CORRECCIÓN (2026-07-28, tarde):** la nota de arriba
+  ("contradice la Fase 0", "~1.500 filas más que General") estaba mal medida — usaba
+  `row_count` de metadata de Google Sheets (6.677) en vez de filas reales con datos. La
+  auditoría estadística de esa misma tarde (`tools/auditoria_2026-07-28/`) recontó fila
+  por fila: **5.109 filas reales**, no 6.677. Encabezados idénticos a `General` en las
+  36 primeras columnas, **incluida `Microcredito | Icredit`** (sí existe en ambas, mismo
+  fill-rate). Comparación completa de cédulas: intersección 5.107, solo-en-General 19
+  (altas recientes), solo-en-HerpowerED 1 (mismo caso ya conocido de typo de cédula,
+  Gina Gleisy). **`HerpowerED` SÍ es copia casi exacta de `General` (99.98% de solape),
+  sin universo exclusivo — la decisión original de Fase 0 (2026-07-22, "se descarta,
+  copia de General") queda confirmada, no contradicha.** Lección general: nunca usar
+  `row_count`/metadata de grid de Sheets como proxy de volumen de datos en este proyecto.
+
+**Ingestado (2026-07-28):** tabla `mr_microcreditos` creada
+(`docs/migrations/024_mr_microcreditos.sql`) + script `sync_microcreditos_mr.py`
+(reutiliza `Supa`/`cargar_env_local`/`norm_id` de `sync_postulantes_mr.py` por import, no
+reescribe el helper). Cargado: **64 filas (26 ICREDIT, 38 MICROCREDITO), 61 cédulas
+distintas** (3 personas con más de un desembolso — ej. cédula `1002189955` dos veces,
+fechas `22-mar` y `24mayo`), **64/64 con match en `postulantes_mr`**. `fecha_desembolso`
+queda como texto crudo (2 formatos incompatibles y ambiguos en año: `"15-mar"` sin año,
+`"agosto25"` vs `"julio2026"`) — no se casteó a DATE. PII → RLS sin `anon` verificado
+(401). Corrida puntual por ahora, no encadenada a n8n (64 filas no lo justifica hoy;
+re-correr a mano si el Sheet se actualiza).
+
 ## Pendiente / Próximos pasos
 - [x] Fase 0: resolver las 3 preguntas con Samuel (2026-07-22).
 - [x] Fase 1: migración del esquema.
@@ -169,7 +205,7 @@ los cruces en Python).
 - [ ] Fase 4: encadenar a n8n `sociodemograficos-semanal` (por ahora corrida manual única).
 - [x] Fase 5: herramienta de búsqueda unificada — `v_persona_360` (vista SQL, no script).
 - [x] Fase 6 (2026-07-24): columna generada `ciudad_norm` + tabla `ciudad_alias` — ver
-  [[supabase_mr_sincronizacion_gap]] y `docs/convenciones.md` ("Normalización de ciudades").
+  [[convenciones#✅ Normalización de ciudades (resuelto 2026-07-24)]].
   Se agregó tras confirmar que la migración de esta tabla SÍ estaba completa (512 filas
   Bogotá) pero un filtro de ciudad hecho a mano en un script (`.upper()` no quita tildes) lo
   hacía parecer un gap de datos. Filtrar siempre por `ciudad_norm`, nunca por `ciudad`.

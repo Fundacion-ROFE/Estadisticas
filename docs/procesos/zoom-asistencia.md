@@ -6,7 +6,11 @@ escribe en la pestaña **`ZOOM-ASISTANCE`** (mismo spreadsheet H3Test), con form
 condicional <70% y pestañas `CUPOS` + `ZOOM-STATS` (estadísticas por sesión y por semana,
 denominadores "X de Y" desde la BD de Monitorias). Quedan pendientes las pruebas de casos
 límite (reunión ≤20 min, participante sin correo) y la decisión del Sheet de producción.
-**Última actualización:** 2026-07-13
+**Última actualización:** 2026-07-30 — validación de identidad del asistente →
+`ASISTENCIA-VALIDADA`, **FUNCIONAL en producción**: encadenada antes del sync a Supabase en
+`asistencia-zoom-diario` (n8n), excluye staff/mentores Sofka/reuniones no-clase, resuelve
+por correo→ID→nombre, agrupa por sesión colapsable y ordena cronológicamente. Ver sección
+propia para el detalle y el historial completo de la implementación.
 **Procesos relacionados:** —
 
 ## Qué hace
@@ -147,6 +151,17 @@ pestaña `Asistencia` de la BD Seguimiento de Monitorias (bloques horizontales p
     por clase, promedio % estancia.
   - Columnas helper ocultas R:U aplanan `ZOOM-ASISTANCE` (con % normalizado a número y
     semana ISO); todas las tablas se derivan de ahí con COUNTIFS/AVERAGEIFS.
+
+**`ZOOM-STATS-VALIDADO` (2026-08-03) — mismas estadísticas, fuente limpia:** pestaña
+gemela que corre en paralelo, con las mismas tablas por sesión/semana pero calculadas
+sobre `ASISTENCIA-VALIDADA` (ver sección más abajo) en vez de `ZOOM-ASISTANCE` crudo —
+ya sin staff, mentores Sofka ni reuniones no-clase (excluidos aguas arriba por
+`validar_asistencia.py`), sin duplicados por typo de correo, y con una columna extra
+"Identidad por confirmar" (cuenta REVISAR/EXAMINAR/MANUAL de la sesión, sin restar de
+"Conectados"). Construida con `construir_zoom_stats_validado()` en
+`setup_zoom_asistance.py` (`python setup_zoom_asistance.py --solo-validado`, no toca
+`ZOOM-ASISTANCE`/`CUPOS`/`ZOOM-STATS`). No reemplaza a `ZOOM-STATS` todavía — ver
+decisión y detalle completo en [[panel-clase-vivo]].
 
 El destino final de producción (con `Validar` + hoja `Seguimiento` reales) sigue pendiente —
 cuando se decida, `setup_zoom_asistance.py` puede reconstruir las 3 pestañas en ese
@@ -369,6 +384,23 @@ probado con `curl` en la sesión anterior. Los nodos siguientes leen
    51/51 emparejadas. Patrón reutilizable si vuelve a faltar un dato retroactivo.
 
 ## Gotchas / Limitaciones conocidas
+- **`asistencia_promedio` (Supabase) lleva 66h+ sin refrescar (detectado 2026-07-28 vía
+  `v_frescura`, ver Bloque 1 de `plan-testing-produccion-2026-07-29.md`).** Última corrida
+  exitosa de `asistencia-zoom-diario`: 26-jul 22:45 COT. La de 27-jul 17:45 COT no aparece
+  ni como error en el historial de ejecuciones — no llegó a correr, no diagnosticado a
+  fondo. **Prioridad baja a propósito:** Zoom sigue siendo una herramienta beta — de las
+  cuentas/salas involucradas solo **comunicaciones** está capturada automáticamente (ver
+  "Cobertura multi-cuenta" abajo: soporte sigue bloqueada, y hay una tercera cuenta/correo
+  aún sin habilitar), así que su cobertura real ya es parcial y su frescura no es vital
+  para producción. `v_frescura` sigue marcándolo `vencido=true` (umbral 30h) — es la señal
+  correcta, se deja así en vez de subir el umbral para no enmascarar el problema si algún
+  día Zoom pasa a ser crítico.
+- **`CUPOS` (BD Seguimiento) es un snapshot manual, no se regenera solo** —
+  `tools/analizar_cupos_bd.py` lo lee tal cual está en el Sheet. El gap real 47 vs 51
+  detectado el 2026-07-30 fue por **retiros no reflejados todavía en `CUPOS`**, no por un
+  error de staff ni del cálculo de asistencia — la fuente de verdad (retiros en Supabase)
+  iba adelante del snapshot manual. Ver también la idea de Lina de validar por asistencia
+  real (10 estudiantes distintos conectados) como respaldo, más abajo.
 - **Crítico, sin resolver:** Email e Identificación se capturan como texto libre manual
   por el estudiante al unirse (no vía formulario de registro de Zoom estructurado).
   Esto implica parseo de texto sucio, alto riesgo de error de formato humano.
@@ -559,6 +591,73 @@ el paso manual equivalente si n8n falla durante una sesión Zoom.
 - [[zoom-youtube]] — proceso hermano (documentado, sin implementar): reusa esta misma app
   Zoom Server-to-Server OAuth, el webhook, el patrón CRC + firma y el túnel cloudflared;
   solo agrega el scope de cloud recording y el evento `recording.completed`
+- [[panel-clase-vivo]] — Fase 1 y Fase 2 CONSTRUIDAS (2026-08-03): `ZOOM-STATS-VALIDADO`
+  (stats desde `ASISTENCIA-VALIDADA`) + panel en vivo de quién falta por entrar
+  (`REUNIONES-ACTIVAS` + `PANEL-EN-VIVO`), reusa `LIVE-LOG` y el criterio joined/left de
+  `Presentes @10min`. 4 nodos nuevos en este workflow — ver "Nodos del panel en vivo"
+  abajo. Falta probar con una clase real de 2 salas simultáneas.
+
+### Nodos del panel en vivo (agregados 2026-08-03)
+Insertados en el workflow `Zoom - Asistencia` (id `jkNaE51PKQ4TQzNq`), reusan la rama
+`joined/left` y la rama `ended` que ya existían — no se tocó la lógica de match ni
+`ZOOM-ASISTANCE`/`ASISTENCIA-10MIN`:
+- **`Detectar Apertura Reunion`** (Code, cuelga de `Registrar LIVE-LOG`) → **`Abrir en
+  REUNIONES-ACTIVAS`** (Google Sheets `appendOrUpdate`, upsert por `UUID`). Usa
+  `$getWorkflowStaticData('global')` para no volver a tocar Sheets en cada evento
+  `joined/left` repetido del mismo UUID (evita agotar la cuota de lectura, ya ocurrido
+  2 veces en sesiones anteriores).
+- **`Cerrar Reunion Activa`** (Code) → **`Cerrar en REUNIONES-ACTIVAS`** (Google Sheets
+  `appendOrUpdate`, mismo upsert por `UUID`, pone `Activo=FALSE`), insertados EN LÍNEA
+  entre la salida `ended` de `Ruteo Evento Zoom` y `Esperar 90s` (no en paralelo — ver
+  gotcha de timing en [[panel-clase-vivo]]).
+- **`Diario 21:00 -- Limpiar LIVE-LOG`** (Schedule Trigger, cron `0 21 * * *`) →
+  **`Limpiar LIVE-LOG`** (Execute Command, corre `scripts/zoom-asistencia/limpiar_live_log.py`)
+  — agregado 2026-08-04, mismo patrón que `asistencia-zoom-diario` para llamar scripts
+  Python. `LIVE-LOG` crece sin límite con el tráfico real (801 filas de una sola reunión de
+  1.5h); se vacía a diario sin afectar `PANEL-EN-VIVO` (solo consulta la reunión activa del
+  momento) ni el dato permanente (ya capturado en `ZOOM-ASISTANCE`/`ASISTENCIA-10MIN`).
+
+## Color por host — columna "Host" (2026-07-29)
+Ambas ramas (completa y de 10 min) ahora escriben una columna **`Host`** con la etiqueta
+`comunicaciones` o `jovenescreativos` (mapeada por `host_id` del payload/`Info Reunion`,
+ver constante `HOST_LABELS` en `scripts/zoom-asistencia/nodo-calcular-momentos-dorados.js`
+y `nodo-presentes-10min.js`). En `ZOOM-ASISTANCE` es la columna **I**, en
+`ASISTENCIA-10MIN` es la columna **H** — agregadas con
+`scripts/zoom-asistencia/colorear_por_host.py` (idempotente, se puede re-correr sin
+duplicar headers ni reglas).
+
+**Formato condicional:** la celda `Host` se pinta amarilla (`comunicaciones`) o azul
+(`jovenescreativos`) — regla `CUSTOM_FORMULA` sobre esa columna únicamente, NO la fila
+completa. **Gotcha real (2026-07-29):** las 2 reglas preexistentes de `ZOOM-ASISTANCE`
+(roja <70%, verde ≥70%) terminaban justo en el borde del grid de 8 columnas — al
+agregar la columna `Host` (9na), Sheets las **auto-extendió** para cubrirla también,
+lo que hubiera tapado el color de host con la alerta de asistencia. `colorear_por_host.py`
+detecta y restaura esas reglas a su rango original (A:H) antes de agregar las suyas.
+Si se agrega otra columna nueva a `ZOOM-ASISTANCE` en el futuro, revisar si alguna regla
+de formato condicional con rango "hasta el borde" se auto-extendió de nuevo.
+
+**No hay backfill histórico de Host/color en estas 2 pestañas** (decisión 2026-07-29):
+ni `ZOOM-ASISTANCE` ni `ASISTENCIA-10MIN` guardan Meeting UUID (solo `Curso`+`Fecha`), y
+la app S2S no tiene el scope `meeting:read:list_meetings:admin` para listar reuniones
+pasadas de la cuenta — no hay forma confiable de recuperar el host real de una fila ya
+escrita antes de este cambio. Intentar un match aproximado por tema+hora contra las
+grabaciones en la nube tampoco cubriría más que las últimas ~2-4 semanas (retención de
+Zoom), muy por debajo de las 1146 filas/490 estudiantes acumulados desde 2026-07-02 —
+se descartó por riesgo de mal-etiquetar asistencia real de estudiantes. Las filas nuevas
+se colorean solas desde el 2026-07-29 en adelante. Ver [[zoom-youtube]] para el backfill
+que SÍ fue viable (YT-GRABACIONES-LOG/NOVA-GRABACIONES-LOG sí guardan Meeting UUID).
+
+## Tercer host confirmado dentro de comunicaciones — jovenescreativos@ (2026-07-29)
+`jovenescreativos@tocaunavida.org` es **Miembro** de la cuenta Zoom "Fundación ROFÉ / Toca
+una Vida" (mismo `account_id u08qlWbRTR2VBSs0bRwZPQ`), donde `comunicaciones@` es
+**Propietario** — verificado en User Management del panel de comunicaciones (2 usuarios
+listados). Como el webhook `meeting.ended`/`meeting.started` es una Event Subscription **de
+cuenta completa** (no filtrada por host) y `past_meetings/{uuid}` se resuelve por UUID de
+reunión (no por host), **no hace falta ningún cambio de código**: cualquier clase que
+jovenescreativos@ dicte dentro de esta cuenta ya dispara el workflow igual que las de
+comunicaciones@ — el mismo patrón que ya probó "Cobertura multi-cuenta" abajo con los 2
+`host_id` distintos vistos dentro de comunicaciones. Ver [[zoom-youtube]] para el único gap
+real que sí hizo falta corregir (el backfill de grabaciones, que sí tenía un host hardcodeado).
 
 ## Cobertura multi-cuenta — HALLAZGO 2026-07-06 (crítico)
 La operación usa **dos cuentas Zoom Business independientes** (las "2 salas"), en data centers
@@ -581,6 +680,362 @@ cuenta dueña** de la reunión (el token de comunicaciones no lee reuniones de s
 Token Zoom` debe elegir credencial por `account_id`. El resto (cálculo, escritura a Sheets) ya es
 genérico. La **Dashboard API** (feature de 10 min) habrá que habilitarla por soporte de Zoom en
 **ambas** cuentas.
+
+## Espera anclada a horario oficial — nodo "Calcular Espera Anclada" (2026-07-30)
+**Problema:** el host abre la sala de Zoom 20-30 min antes de la hora oficial de clase.
+El nodo `Esperar 10 min` contaba desde el evento `meeting.started` (= apertura real de la
+sala, no la hora oficial) → el corte "presentes @10min" caía dentro de ese colchón
+anticipado, cuando casi nadie real había llegado todavía (caso reportado: clase de hoy
+con muy pocos presentes al corte).
+
+**Se descartó pedirle la hora oficial a Zoom:** `GET /meetings/{id}` sobre la reunión de
+HTML-Jueves en curso devolvió `type: 8` (recurrente sin hora fija) con
+`start_time: null, duration: null` — Zoom no guarda ninguna hora programada para este
+tipo de reunión, solo la apertura real. La hora oficial tiene que inferirse desde una
+fuente externa.
+
+**Fix implementado (v2 — lee el horario real, no infiere por redondeo):** nuevos nodos
+`Leer CUPOS Clases` (rango `A1:F400`) y `Leer CUPOS Keywords` (rango `H1:I40`, rangos
+separados porque la columna `Área` se repite en A e I y colisionaría como header) +
+Code **`Calcular Espera Anclada`**, insertados entre `Ruteo Evento Zoom` (salida
+`started`) y `Esperar 10 min`. `Esperar 10 min` pasó de `resume: timeInterval` (duración
+fija) a `resume: specificTime` apuntando a `{{ $json.targetISO }}`.
+
+El nodo Code infiere el área por palabra clave en el topic (mismo criterio que
+`CUPOS!H:I`) y busca en `CUPOS!A:F` la clase de esa área+día con hora más cercana a la
+apertura real (tolerancia ±45 min) — **el mismo dato y criterio que ya usa la fórmula de
+cupo por horario en `ZOOM-STATS`**, reutilizado en vez de duplicar lógica de negocio.
+
+- **Por qué no v1 (redondear la apertura a la hora en punto más cercana), que se probó
+  primero y se descartó:** funciona hoy porque las 89 clases de `tools/cupos_clases.json`
+  inician todas en `:00`, pero se rompe apenas exista una clase a la media hora — si son
+  las 6:30 y la sala abre exacto a las 6:00 (30 min antes, dentro del patrón normal), 6:00
+  cae justo en una marca de hora y el redondeo la confunde con la oficial (corte a las
+  6:10 en vez de 6:40). Se cambió por decisión explícita: mejor leer cómo está programada
+  la clase de verdad que inferir por aproximación, porque en la operación real los
+  horarios cambian sin aviso previo — confiar en el comportamiento de apertura de los
+  usuarios es frágil.
+- **Validado con datos reales (2026-07-30):** simulación en Python contra el `CUPOS` real
+  — el caso de hoy (HTML-Jueves, apertura 9:36am COL) resuelve a hora oficial 10:00 ✓.
+  Con una fila hipotética de prueba (clase a las 6:30pm, sala abierta exacto a las 6:00pm,
+  sin otra clase real cerca en esa franja) resuelve correctamente a 6:30 → corte a las
+  6:40, no 6:10. **Límite conocido que sí queda:** si algún día hay DOS clases reales de
+  la misma área+día separadas por menos de 45 min (ej. 6:00 y 6:30 ambas reales), la
+  apertura puede matchear con la más cercana en vez de la correcta — no ocurre hoy (todas
+  las franjas de una misma área+día están separadas por ≥2h), pero si el equipo agrega
+  horarios así de apretados en el futuro, revisar este caso.
+- Tolerancia: si el topic no matchea ningún área conocida o el día no tiene clase
+  registrada en `CUPOS` para esa área (reunión de prueba/monitores, o clase nueva que aún
+  no está en el último análisis de la BD), usa un fallback de 2° nivel: redondear la
+  apertura real a la hora en punto más cercana (la lógica v1); si el desfase de eso supera
+  90 min, cae al comportamiento original (10 min desde la apertura real).
+- Si el objetivo ya quedó en el pasado (host abrió después de la hora oficial + buffer),
+  usa un margen mínimo desde ahora en vez de apuntar el Wait al pasado.
+- Campos `_debug*` en el item de salida (área/día/hora oficial inferidos, si ancló o no)
+  — quedan en el log de ejecución de n8n para poder auditar el criterio sin releer código.
+- Código: `scripts/zoom-asistencia/nodo-calcular-espera-anclada.js` (copia de
+  referencia) — desplegado en n8n vía API, exportado a `n8n-workflows/zoom-asistencia.json`.
+- **Pendiente relacionado, aún sin implementar:** el checkpoint `min10` de "Calcular
+  Momentos Dorados" (rama completa, al `meeting.ended`) tiene la misma raíz — usa
+  `info.start_time` real de `past_meetings/{uuid}` (apertura anticipada), no la hora
+  oficial — probablemente subestima presencia temprana en `Instancias`/`% Asistencia` de
+  `ZOOM-ASISTANCE`. Mismo fix (leer el horario real de `CUPOS`) aplicaría ahí, pero no se
+  tocó todavía porque cambia el cálculo del % ya en producción — evaluar con el equipo
+  antes de tocarlo.
+- **Validar con una clase real de punta a punta:** lo probado hasta ahora es simulación
+  contra datos reales, no una ejecución real del workflow de inicio a fin — confirmar en
+  `ASISTENCIA-10MIN` que el próximo corte cae cerca de la hora oficial + 10 min (no de la
+  apertura real) y que el conteo de presentes sube respecto al patrón anterior.
+- **Idea de Lina (2026-08-03), sin implementar — segundo validador por asistencia real, no
+  solo por horario:** además de anclar a la hora oficial de `CUPOS`, arrancar el
+  temporizador de 10 min también cuando entren **10 estudiantes distintos** a la sesión
+  (contando `joined` únicos en `LIVE-LOG`, no solo `CUPOS`) — lo que ocurra primero de los
+  2. Motivo: `CUPOS` puede estar desactualizado (ver [[zoom-asistencia#Gotchas / Limitaciones conocidas]] —
+  ya hubo un gap real 47 vs 51 por esto) o el match área+día+hora puede fallar; contar
+  asistentes reales es una señal directa de que la clase "de verdad" empezó, sin depender
+  de que el horario programado siga siendo exacto.
+  **Decisiones de diseño (confirmadas por Lina, 2026-08-03):**
+  1. **Cualquier `joined` distinto cuenta, sin cruzar contra el roster de matriculados.**
+     No importa que alguno de los 10 sea staff o mentor — esa validación de identidad ya
+     la hace `validar_asistencia.py` más adelante (`staff_o_bot`/`mentor_sofka`), no hace
+     falta duplicarla aquí solo para decidir si la clase ya empezó. Más simple y más
+     barato de calcular en vivo que cruzar contra Supabase.
+  2. **No hace falta umbral proporcional ni fallback para clases chicas.** Las clases
+     reales tienen entre 50 y 300 estudiantes — algo con menos de 10 personas conectadas
+     casi seguro es una reunión/prueba/entrevista, no una clase real, así que el ancla de
+     horario sigue cubriendo esos casos sin necesidad de lógica especial.
+
+  Relevante también para [[panel-clase-vivo]] (Fase 2): el mismo "¿ya empezó de verdad la
+  clase?" que decide cuándo arrancar el temporizador de `ASISTENCIA-10MIN` es la misma
+  señal que necesitaría `REUNIONES-ACTIVAS` para saber que una sesión está genuinamente
+  en curso.
+
+## Validación de identidad del asistente — `ASISTENCIA-VALIDADA` (2026-07-30)
+
+**Resumen funcional (cierre 2026-07-30) — leer esto primero, el resto de la sección es el
+historial de cómo se llegó aquí:**
+- **Automatizado en producción:** `validar_asistencia.py` corre antes de
+  `sync_asistencia_supabase.py` en el workflow n8n `asistencia-zoom-diario` (17:45 COT
+  diario). Si falla, el sync no corre y llega una alerta a Telegram — el panel nunca se
+  actualiza con una corrida sin validar.
+- **Resuelve identidad en cascada:** correo exacto → cédula exacta → typo de correo
+  (similitud ≥0.85) → nombre + primer apellido (único en la cohorte activa) → manual.
+- **Excluye automáticamente lo que no es un estudiante real** (staff de la fundación,
+  mentores/instructores de Sofka — leídos en vivo de una hoja externa — y reuniones que no
+  son clase) — esas filas no se escriben en `ASISTENCIA-VALIDADA`, solo se cuentan en el log.
+- **Presentación:** filas agrupadas por sesión con una fila divisoria (curso/fecha/host +
+  conteo por estado) y el detalle colapsable debajo; orden cronológico real de principio a
+  fin; sin colores grises.
+- **Hallazgo abierto, no bloqueante:** la columna `Identificacion` del formulario de Zoom
+  viene 0% llena — pendiente de resolver con el equipo, no con más código (ver hallazgo
+  completo más abajo).
+
+**Problema original:** hoy la asistencia se cuenta igual esté bien o mal escrita la credencial. El
+proceso manual del equipo (descrito por Lina) es: formulario de Zoom pide correo e
+identificación → se descarga el reporte → se compara contra la BD Seguimiento → **si el
+correo está mal pero el ID está bien, la asistencia cuenta** (y viceversa); si ninguno
+coincide, validación manual. La automatización solo reproduce el conteo, no la validación.
+
+**Solución (script `scripts/zoom-asistencia/validar_asistencia.py`):** misma regla, pero
+contra la base canónica de Supabase y **resolviendo** el dato bueno. Salida en una pestaña
+nueva `ASISTENCIA-VALIDADA` del mismo Sheet H3Test; el registro crudo nunca se sobreescribe.
+
+**Línea base medida (2026-07-30, sobre los 549 correos distintos de `asistencia_zoom`):**
+
+| Situación | Correos |
+|---|---|
+| Coinciden exacto con la cohorte 2026 | 453 (82,5%) |
+| Cuenta de la fundación / bot | 5 |
+| Coinciden pero de otra cohorte | 1 |
+| **Sin match — hoy se cuentan sin validar** | **90** |
+| └ de esos, con candidato de similitud ≥0.80 en la cohorte | 17 |
+
+Los 17 son typos evidentes y confirman el diseño: `gmail.ccom`, `hmail.com`, `gnail.com`,
+`hormail.com`, `@mail.com`, letras dobles (`vbuesaquilloo` vs `vbuesaquillloo`) o faltantes
+(`mezarango` vs `mezaarango`). Los ~73 restantes son estudiantes que usan un correo distinto
+al registrado en Q10 — ahí la cédula es el único camino, y para eso hace falta que la columna
+`Identificacion` venga llena (ver Gotchas: hoy es texto libre y frecuentemente vacía).
+
+**Cascada de match** (cada fila sale con `Tipo de match` + descripción en lenguaje natural):
+
+1. `correo_e_id_exactos` → VÁLIDA (caso limpio).
+2. `conflicto_correo_vs_id` → REVISAR (el correo es de una persona y el ID de otra; no se adivina).
+3. `id_exacto_corrige_correo` → VÁLIDA, muestra el correo real en verde.
+4. `correo_exacto` → VÁLIDA, muestra la cédula real en verde.
+5. `correo_con_typo` → VÁLIDA (corregida): similitud ≥ 0.85, margen ≥ 0.06 sobre el 2°
+   candidato **y** apoyo de nombre o de dominio. Local exacto con dominio distinto se
+   fuerza a 0.97 (typo de dominio).
+6. `typo_ambiguo` → REVISAR (dos correos igual de parecidos: no se corrige).
+7. `nombre_exacto` → REVISAR (nombre único en el universo; sugerencia, no corrección).
+8. `fuera_del_curso` / `otra_cohorte` → REVISAR.
+9. `sin_match` → MANUAL (igual que hoy).
+10. `staff_o_bot` / `reunion_no_clase` → EXCLUIR.
+
+**Universo acotado (decisión de Lina):** no se busca contra toda la base (3.679 personas),
+sino contra la **cohorte 2026 activa** y, cuando el tema de Zoom se mapea a un curso, contra
+los **matriculados en ese curso**. El mapeo tema→curso usa palabras clave (`KEYWORDS_CURSO`),
+el mismo criterio que `CUPOS!H:I` para inferir el área en `ZOOM-STATS` — probado contra los
+temas reales ("Desarrollo Web - GIT, HTML y CSS", "… - Sala 2", "Sesión Virtual - Sábado 25
+de Julio", "Mi reunión"). ⚠ **Hallazgo:** en 2026 el filtro por curso casi no acota, porque
+toda la cohorte está matriculada en cada curso (760 de 777 en HTML y CSS) — lo que realmente
+controla el riesgo de falso positivo es la cohorte. Se implementa igual porque separa JC de
+MR y porque servirá cuando haya cursos electivos.
+
+**Marcado visual:**
+- En `ASISTENCIA-VALIDADA`: la celda del dato **corregido** va en verde con negrita; la fila
+  completa se pinta por `Estado` con formato condicional (amarillo REVISAR, rojo MANUAL,
+  gris EXCLUIR).
+- En `ZOOM-ASISTANCE` / `ASISTENCIA-10MIN`: la celda del dato malo queda **tachada y en
+  rojo**. Antes de pintar se limpia el formato de esas columnas, así una fila corregida a
+  mano deja de aparecer tachada en la corrida siguiente (idempotente).
+
+**Estado: automatizado en producción (2026-07-30).** Encadenado en el workflow n8n
+`asistencia-zoom-diario` (id `qKBCgp1zFa3qeZAB`) como primer paso, antes de
+`sync_asistencia_supabase.py` — si `validar_asistencia.py` no imprime la línea sentinela
+`[OK] Validacion completa`, el sync NO corre y llega una alerta a Telegram
+(`Error Validacion`), así el panel nunca se actualiza con una corrida donde falló la
+validación. Ver diagrama en el JSON exportado (`n8n-workflows/asistencia-zoom-diario.json`).
+
+**Primera corrida real (2026-07-30, sobre las 1249 filas vivas de `ZOOM-ASISTANCE` +
+`ASISTENCIA-10MIN`, no la muestra de 549 correos de la línea base):**
+
+| Resultado | Filas | % (excl. no-clase y staff/bot) |
+|---|---|---|
+| `correo_exacto` (VÁLIDA) | 842 | 84,4% |
+| `correo_con_typo` (VÁLIDA corregida) | 34 | 3,4% |
+| `nombre_exacto` (REVISAR) | 14 | — |
+| `otra_cohorte` (REVISAR) | 5 | — |
+| `sin_match` (MANUAL) | 102 | 10,2% |
+| `reunion_no_clase` (EXCLUIR) | 194 | — |
+| `staff_o_bot` (EXCLUIR) | 58 | — |
+| **Total** | **1249** | |
+
+Consistente con la línea base (~82% correo exacto / ~90 sin match sobre 549 correos): al
+excluir no-clase y staff/bot, el % de correo exacto real (84,4%) queda dentro del rango
+esperado. `id_exacto_corrige_correo` salió en **0** filas — ver hallazgo abajo.
+
+**Ampliación del match por nombre (2026-07-30, mismo día, a pedido de Lina):** revisando a
+mano los casos en rojo, Lina identificó casos como "Rodrigo Samudio" que resuelven a una
+sola persona en la base ("Rodrigo Leonel Samudio Fernández") pero el match por nombre
+original (paso 5 de la cascada) no los agarraba porque exigía que el **conjunto completo**
+de tokens del nombre coincidiera exacto — un nombre corto escrito en Zoom nunca calza con
+el nombre completo (con segundo nombre/segundo apellido) de la base. **Cambio:** el paso 5
+ahora busca por **nombre + primer apellido** (`primer_token_nombre()` sobre los campos
+`Nombre`/`Apellido` ya separados del Sheet, no sobre el texto libre completo), exigiendo
+solo que esos 2 tokens estén *contenidos* en el nombre completo de algún candidato — sin
+importar orden ni si falta un nombre/apellido intermedio — y ampliando la búsqueda a
+**toda la cohorte activa** (`idx_cohorte`), no solo el curso. Si resuelve a una sola
+persona, sigue igual que antes (`nombre_exacto`, REVISAR/amarillo). Si resuelve a **2 o
+más**, es un nuevo tipo `nombre_ambiguo` con estado **`EXAMINAR`** (naranja, nueva regla de
+formato condicional) — deliberadamente separado de los demás REVISAR porque el motivo es
+distinto (colisión de nombre, no conflicto correo/ID) y el volumen de candidatos puede ser
+alto (nombres muy comunes truncan la lista a 6 + "y N más").
+
+**Resultado tras el cambio (misma corrida, re-ejecutada):**
+
+| Resultado | Filas (antes → después) |
+|---|---|
+| `nombre_exacto` (REVISAR) | 14 → **79** |
+| `nombre_ambiguo` (EXAMINAR, nuevo) | — → **5** |
+| `sin_match` (MANUAL) | 102 → **32** |
+
+70 de los 102 casos rojos originales se resolvieron por nombre único; los 5 que quedan
+ambiguos son colisiones reales (ej. "Juan Esteban Cardona Nieto" tiene 4 homónimos
+parciales en la base, ninguno con ese apellido exacto — correctamente no se adivina).
+Casos con apellido demasiado corto para ser un token válido (ej. "David JM", "Gabriel A")
+caen sin apellido útil, buscan solo por nombre de pila y por eso generan listas largas de
+candidatos en `EXAMINAR` — no es un error, es la ausencia de dato la que fuerza la
+ambigüedad. El diseño nunca asigna una persona incorrecta: o resuelve a 1 candidato
+único, o pasa a examen manual.
+
+**Exclusión de mentores/instructores Sofka (2026-07-30, mismo día):** revisando los rojos
+a mano, Lina identificó varios que en realidad eran mentores de Sofka (evaluadores de
+proyectos/entrevistas), no estudiantes con dato mal escrito — compartió la hoja
+"Programación monitores e instructores 2026" (pestañas `info mentores Sofka`, registro
+maestro, y `Programación`, correo del mentor por sesión) para usarla como fuente de
+exclusión, igual que ya se hace con `DOMINIOS_STAFF` para cuentas de la fundación.
+
+**Implementación:** `cargar_mentores_sofka()` lee **en vivo** ambas pestañas en cada
+corrida (no una lista fija en el script, porque el roster de mentores rota) y arma un set
+de correos. El chequeo corre **antes** de cualquier match por correo/id/nombre — no
+después — porque un mentor cuyo nombre coincida por casualidad con un estudiante real
+puede terminar asignándole la asistencia al estudiante equivocado si primero se prueba el
+match por nombre. **Caso real que lo confirmó:** "Johan Sebastian Cobos" resolvía por
+`nombre_exacto` a un estudiante real de la cohorte, pero el correo de esa fila
+(`johan.cobos@sofka.com.co`) era de un mentor — sin este chequeo, ese estudiante habría
+quedado con una asistencia que no le correspondía. Nuevo tipo `mentor_sofka`, estado
+`EXCLUIR` (mismo gris que `staff_o_bot`, es la misma categoría "no es estudiante").
+
+**Resultado (misma corrida, re-ejecutada una tercera vez):** 18 filas eran mentores/
+instructores (59 correos únicos cargados de la hoja compartida). De esas 18: 15 venían
+mal clasificadas como `sin_match`/MANUAL (32 → **17**), 2 como `nombre_ambiguo`/EXAMINAR
+(5 → **3**) y 1 era la falsa atribución de `nombre_exacto`/REVISAR descrita arriba (84 →
+83). `EXCLUIR` subió de 252 a **270**.
+
+⚠ **Nota de datos sensibles:** la pestaña `Programación` de esa hoja también tiene una
+columna `Usuario` con credenciales de las cuentas Zoom de host **en texto plano**
+(correo-contraseña). `cargar_mentores_sofka()` solo lee la columna `Correo` — no tocar ni
+loguear esa columna si se toca este código en el futuro.
+
+**Filas de sesión colapsables (2026-07-30):** a pedido de Lina, `ASISTENCIA-VALIDADA` ahora
+agrupa visualmente por clase. Antes de escribir, `main()` ordena las filas de cada pestaña
+de origen por `(Curso, Fecha)` para que cada sesión quede contigua; `insertar_encabezados_sesion()`
+inserta una **fila divisoria azul** (`SESION -- <curso>`, fecha, host, conteo por `Estado`)
+antes de cada bloque, y agrupa (colapsable con el `+`/`-` del margen izquierdo) solo las
+filas de detalle debajo — la divisoria nunca se colapsa, así el día/curso queda visible
+aunque el detalle esté cerrado.
+
+**Gotcha de la API de Sheets que obligó a la fila divisoria:** dos grupos de filas
+*adyacentes* al mismo nivel (sin ninguna fila suelta entre ellos) se **fusionan** en un
+solo grupo grande en vez de quedar como 2 cajas independientes — probado empíricamente:
+sin la divisoria, 46 sesiones reales colapsaron a solo 8 grupos gigantes (uno de 270
+filas). La fila divisoria (que no se agrupa) rompe la adyacencia y cada sesión queda como
+su propia caja. Con esto: 46 sesiones identificadas, 39 con 2+ filas (colapsables; el
+resto son sesiones de 1 fila, sin necesidad de colapsar).
+
+`limpiar_grupos()` (idempotencia, mismo patrón que `limpiar_reglas()`) borra los grupos
+existentes antes de re-escribir — `ws.clear()` solo borra valores, no metadata de grupos.
+
+**Sin gris en la hoja (2026-07-30, mismo día):** a pedido explícito de Lina, se quitó el
+gris de los 2 únicos lugares donde aparecía — el encabezado (fila 1, ahora fondo blanco
+explícito en vez de solo negrita) y la regla condicional de `EXCLUIR` (staff/mentores/
+no-clase, ahora sin color de fondo, se distinguen solo por el texto de `Estado`).
+Constante `GRIS` eliminada del script. Colores restantes: verde (dato corregido), azul
+(fila divisoria de sesión), amarillo/naranja/rojo (REVISAR/EXAMINAR/MANUAL).
+
+**`EXCLUIR` ya no se escribe en `ASISTENCIA-VALIDADA` (2026-07-30, mismo día):** siguiente
+pedido de Lina — staff/mentores Sofka/reuniones no-clase no aportan nada que revisar, solo
+ruido. Se filtran ANTES de armar la fila de salida (siguen contando en el resumen de
+consola para auditoría, solo no se escriben en la hoja). Impacto medido: 1249 filas leídas
+→ **979 escritas** en `ASISTENCIA-VALIDADA` (las 270 `EXCLUIR` desaparecen del reporte) y
+las sesiones colapsables bajaron de 46 a **24** (las sesiones que eran 100% reuniones
+no-clase ya no generan ni fila divisoria, porque no les queda ninguna fila). El sentinel
+`[OK] Validacion completa: N registros...` sigue reportando el total **leído** (1249, no
+979) para no romper la semántica que ya lee el IF de n8n — solo cambia qué se escribe en
+el Sheet, no lo que se cuenta como procesado.
+
+**Gotcha adicional de los grupos colapsables (2026-07-30, mismo día):** después de escribir
+los 24 grupos, Lina reportó que solo el primero mostraba el botón `+`/`-` en Sheets. Dos
+causas reales, ambas en `escribir_salida()`/`limpiar_grupos()`:
+1. Si alguien colapsa un grupo a mano, Sheets oculta esas filas (`hiddenByUser`);
+   `deleteDimensionGroup` borra la definición del grupo pero **no** vuelve a mostrar esas
+   filas — quedan "huérfanas" ocultas, y el grupo que se cree encima en la siguiente
+   corrida nace ya colapsado. Fix: `limpiar_grupos()` ahora también manda
+   `updateDimensionProperties` (`hiddenByUser: false`) sobre todo el rango de filas antes
+   de que `escribir_salida()` cree los grupos nuevos.
+2. **Más de fondo:** `addDimensionGroup` para varios grupos hermanos en el mismo
+   `batchUpdate` los crea **colapsados por defecto** (no expandidos, como se esperaría).
+   Fix: tras crearlos, una segunda tanda de `updateDimensionGroup` (`collapsed: false`)
+   fuerza el expandido explícito grupo por grupo — el grupo tiene que existir antes de
+   poder actualizarlo, por eso va en una llamada `batch_update` aparte, después de la que
+   los crea. Verificado tras el fix: 24/24 grupos con `collapsed: false`.
+
+**Orden cronológico automático (2026-07-30, mismo día):** a pedido de Lina, las clases
+quedan ordenadas por fecha real de principio a fin, no por nombre de curso. Antes, `main()`
+ordenaba las filas de cada pestaña por `(Curso, Fecha)` — agrupaba por curso primero, así
+que el orden general no era cronológico y encima `ZOOM-ASISTANCE` y `ASISTENCIA-10MIN` se
+procesaban como 2 bloques separados. Ahora se leen las 2 pestañas completas primero, se
+combinan en una sola lista y se ordena globalmente por `(clave_fecha(Fecha), Curso)` antes
+de validar ninguna fila — así ambas pestañas quedan intercaladas cronológicamente.
+
+**Gotcha real encontrado al implementarlo:** el campo `Fecha` no trae cero a la izquierda en
+la hora (`"7:44"`, no `"07:44"`) — ordenar por el **texto crudo** de la fecha rompe el orden
+dentro de un mismo día: `"13:45"` queda antes que `"7:44"` porque `'1' < '7'` como carácter.
+Encontrado comparando el orden real de salida contra el esperado (04-jul salía
+13:45→13:54→15:55→7:44→7:46→9:59, claramente mal). Fix: `clave_fecha()` parsea el string con
+`datetime.strptime("%Y-%m-%d %H:%M")` (acepta hora sin cero a la izquierda) y ordena por el
+objeto `datetime` real; las fechas que no calzan el formato (vacías, mal escritas) se mandan
+al final en vez de fallar. Verificado con el caso real del 04-jul: queda 7:44→7:46→9:59→
+13:45→13:54→15:55.
+
+**Verificado end-to-end en n8n antes de esperar al tick de las 17:45:** se adelantó el cron
+del `Schedule Trigger` unos minutos (ver gotcha en `docs/convenciones.md` — cambiar el cron
+de un workflow ya activo por API exige ciclo `deactivate`→`activate` para que el trigger en
+memoria lo recargue, si no el PUT queda guardado pero nunca dispara) y se revirtió a
+`45 17 * * *` apenas confirmada la ejecución (id `1282`, `success`, 18:16:00→18:20:21 UTC):
+corrieron en cadena `validar_asistencia` → `sync_asistencia_supabase` (1166 filas) →
+`calcular_asistencia_promedio` (4 nuevos, 549 actualizados) → nodo `OK`, sin tocar ningún
+nodo de error. `v_frescura` confirmó `asistencia_promedio (zoom)` con 0,1h desde el último
+dato, no vencido.
+
+**🔴 Hallazgo crítico (2026-07-30) — columna `Identificacion` viene 0% llena:** de las 1249
+filas de esta primera corrida real, **ninguna** trae la columna `Identificacion` con dato
+(`id_zoom` vacío en el 100% de los casos, en ambas pestañas de origen). No es "frecuentemente
+vacía" como se sospechaba — es sistemáticamente vacía. Consecuencia directa: el camino
+"ID correcto → corrige correo" (`id_exacto_corrige_correo`) nunca se activa, y los 102 casos
+`sin_match` no tienen ningún dato de respaldo distinto al correo para resolverse — quedan
+100% dependientes de que el correo esté bien escrito o tenga un typo detectable. **Acción
+pendiente:** llevar este hallazgo al equipo — el formulario/instrucción de Zoom no está
+capturando la identificación del asistente, y ningún algoritmo de match lo puede compensar
+sin ese dato.
+
+**Pendientes que abre:**
+- Resuelto (ver hallazgo arriba): tasa de llenado de `Identificacion` medida = 0%. Falta
+  la conversación con el equipo sobre cómo corregir la captura en el formulario de Zoom.
+- Decidir si `sync_asistencia_supabase.py` debe subir el **correo corregido** (de
+  `ASISTENCIA-VALIDADA`) en vez del crudo (hoy sube el crudo, así que `asistencia_promedio`
+  reparte la asistencia de una misma persona entre 2 correos cuando hubo typo) — ver
+  "Pendiente que este plan NO cubre" en `docs/procesos/plan-encadenar-validacion-zoom-2026-07-30.md`.
 
 ## Pendiente / Próximos pasos
 - [ ] **Integración Supabase asistencia (2026-07-13):** crear tabla `asistencia_zoom` en
@@ -655,6 +1110,17 @@ genérico. La **Dashboard API** (feature de 10 min) habrá que habilitarla por s
 - [ ] Verificar con el equipo si grupos "Uno/Dos/Avanzado" de una misma franja se dictan
   en reuniones Zoom separadas — si es así, el cupo por horario los suma de más y hay que
   usar `Alias Zoom` para separar.
+- [ ] **Dato a arreglar — `CUPOS` desactualizado (detectado 2026-07-30):** `tools/cupos_clases.json`
+  tiene `fecha_analisis: 2026-07-02` y no se regenera solo (`analizar_cupos_bd.py` es manual,
+  "re-ejecutar cuando cambie la BD" — `mapa-codigo.md`). Caso real: Cristian reportó 47
+  conectados en "HTML - Jueves 10:00 A.M." de hoy, pero `CUPOS` sigue marcando 51 (snapshot
+  de hace ~4 semanas). El cupo **no** incluye personal/staff (se descartó esa hipótesis — sale
+  de la pestaña `Seguimiento`, una fila = un estudiante, y el numerador `Conectados` ya excluye
+  emails de staff desde 2026-07-03); el gap probablemente es por retiros de esa clase entre
+  2026-07-02 y hoy que aún no se reflejan. Acción: descargar BD Seguimiento fresca, re-ejecutar
+  `tools/analizar_cupos_bd.py` + `setup_zoom_asistance.py` para refrescar `CUPOS`, y decidir si
+  esto necesita automatizarse (cron/n8n) en vez de quedar manual una vez se defina el Sheet de
+  producción.
 - [ ] Cuando se decida el Sheet de producción: re-ejecutar `setup_zoom_asistance.py` con el
   `SHEET_ID` nuevo (reconstruye ZOOM-ASISTANCE/CUPOS/ZOOM-STATS) y reapuntar el nodo del
   workflow.

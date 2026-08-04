@@ -5944,6 +5944,250 @@ patrón que `panel-control-jc-mr.md`.
 - **Nada ejecutado todavía** — el plan queda para que Samuel lo revise antes de tocar
   Supabase o el repo `panel-datos-rofe`.
 
+## 2026-07-30 (cont.) — [Zoom asistencia] Incidente meeting.started + idea nueva documentada
+
+- **Incidente de hoy:** una clase de las 16:00 no generó fila en `ASISTENCIA-10MIN`.
+  Diagnosticado en vivo (ejecuciones reales de n8n, no doc/JSON exportado): Zoom nunca
+  mandó el evento `meeting.started` para esa clase (solo llegaron
+  `meeting.participant_joined/left`, que van a una rama distinta — `LIVE-LOG`). Descartada
+  la hipótesis de "se nos pasó por estar haciendo cambios": la cuenta/app es la correcta y
+  n8n estuvo recibiendo y procesando eventos sin parar durante toda la ventana. Coincide
+  con el pendiente ya documentado (agregar `meeting.started` a las Event Subscriptions de
+  Zoom Marketplace, tarea de Samuel).
+- **Recuperación:** se reenvió un `meeting.started` sintético con datos 100% reales (UUID,
+  host, tema, hora de apertura sacados de un evento `participant_joined` real de esa misma
+  clase), firmado con el Secret Token real — mismo patrón ya usado antes en este proyecto
+  para recuperar clases perdidas. Costó 3 intentos por la cuota de la API de Sheets
+  (compartida con el tráfico real de la clase en vivo, que también escribe a `LIVE-LOG`
+  constantemente) — al 3er intento con más margen de espera, corrió toda la cadena limpia:
+  `Calcular Espera Anclada → Esperar 10 min → Leer LIVE-LOG → Presentes @10min → Escribir
+  ASISTENCIA-10MIN`. Confirmado con asistentes reales escritos en la hoja.
+- **Idea nueva de Lina, documentada para después (no construida):** panel de clase en vivo
+  que muestre en rojo quién de los matriculados no ha entrado a una clase que está
+  pasando, para que los monitores llamen a esos estudiantes en tiempo real; además, una
+  hoja de estadísticas tipo `ZOOM-STATS` pero sobre `ASISTENCIA-VALIDADA` (datos limpios).
+  Refinado en `docs/procesos/panel-clase-vivo.md`: son 2 herramientas con frecuencias de
+  actualización incompatibles (diaria vs. en vivo), así que no se pueden fusionar en una
+  sola hoja. El panel en vivo es viable en Sheets (mismo mecanismo de fórmulas reactivas
+  que ya usa `ZOOM-STATS`), pero necesita 3 piezas nuevas: roster de matriculados con
+  correo desde Supabase (`CUPOS` no sirve, solo tiene conteos), una pestaña
+  `REUNIONES-ACTIVAS` para saber qué clase está en curso (sin depender de
+  `meeting.started`, que hoy falla — se propone usar el primer `participant_joined` de un
+  UUID nuevo como señal de apertura), y la vista de cruce con formato condicional.
+
+---
+
+## 2026-08-03 — [n8n-suspend-resume] Diagnóstico de interrupción del fin de semana + 3 bugs de workflow corregidos
+
+**Estado:** Completado
+**Proceso relacionado:** [[project_n8n_suspend_resume]] · [[panel-datos-etl]] · [[mr-actualizacion-datos]]
+
+- **Diagnóstico:** n8n estuvo caído (portátil suspendido) en dos ventanas: jue 30-jul ~17:03
+  COT → sáb 1-ago ~14:00 COT (~40h), y sáb 1-ago ~17:04 COT → hoy lun 3-ago ~08:38 COT (~39h,
+  incluyó todo el domingo). En medio, el sábado por la tarde n8n estuvo despierto ~3h
+  (326 asistencias Zoom reales procesadas). Se auto-recuperó solo hoy ~08:38 COT (probable
+  auto-heal en resume); los 18 workflows ya estaban `active` y no requirieron reactivación
+  manual. Cruce de ejecuciones vía API REST de n8n (`/executions`), no solo el healthz.
+- **Bug crítico encontrado (no relacionado con la caída):** `mr-actualizacion-datos` lleva
+  reportando `success` desde al menos 2026-07-20 **sin ejecutar nada real** — el nodo
+  disparador se renombró de "Schedule Diario 7:30" a "9:30" pero la conexión de salida
+  quedó apuntando al nombre viejo (huérfana), así que solo corría el trigger y nunca se
+  llamaba a `actualizar_bd_mr.py`. Corregido vía API (`PUT /workflows/{id}`, conexión
+  reapuntada al nombre correcto del nodo) y reexportado a `n8n-workflows/mr-actualizacion-datos.json`.
+- **Bug encontrado:** `sociodemograficos-semanal` fallaba con "Destination node not found"
+  desde 2026-07-22 — los 2 nodos IF se llaman `¿Sociodemograficos JC/MR OK?` pero las
+  conexiones apuntaban a una versión con el carácter `¿` corrupto (mojibake U+FFFD, de una
+  edición anterior con encoding roto). Corregido igual vía API + reexportado.
+- **Bug encontrado:** `correos-rebotes-diario` fallaba en Telegram ("can't parse entities")
+  al notificar el resumen JC — causa raíz: el nodo Telegram de n8n fuerza `parse_mode=Markdown`
+  por defecto cuando no se especifica (`GenericFunctions.js` de `n8n-nodes-base`), y el texto
+  reenviado es el `stdout`/`stderr` crudo del script, que puede traer `_`, `*`, `` ` ``, `[`, `]`
+  sin parear. Se agregó `.replace(/[_*\`\[\]]/g, '')` a los 4 nodos Telegram del workflow
+  (resumen/error × MR/JC) para sanear el texto antes de enviarlo. Reexportado.
+- **No es bug — transitorio:** `panel-verificacion-diaria` falló hoy 08:38 COT justo al
+  reanudarse (red aún no lista); reejecutado el mismo `test_integridad_supabase.py --rapido`
+  a mano y pasó 50/50. `Bot Q10` tuvo un `ConnectionAbortedError` de red el 1-ago justo antes
+  de dormirse — igual, autoresuelve en su próxima corrida. `zoom-yt-backfill` sigue con
+  errores intermitentes ya documentados (bloqueo de re-consentimiento OAuth, ver
+  [[project_zoom_youtube_mr]]) — no es nuevo.
+- **Gotcha:** el archivo exportado de `mr-actualizacion-datos.json` en el repo traía embebido
+  un snapshot completo `activeVersion` (con el mismo bug de conexión duplicado dentro) más
+  metadata de proyecto/owner (`shared`, `tags`) — el reexport limpio ya no la incluye.
+- Pendiente: confirmar en la próxima corrida natural (mañana 06:30 COT) que
+  `correos-rebotes-diario` ya no falla en Telegram. Los 3 archivos JSON quedaron modificados
+  en el working tree, sin commitear — pendiente confirmación de Samuel/Lina para el commit.
+
+## 2026-08-03 — [plan-rediseno-panel-datos] Fase 1 (backend): filtro global "Estado" en Supabase
+
+**Estado:** Completado (Fase 1 de 4)
+**Proceso relacionado:** [[plan-rediseno-panel-datos-2026-07-30]] · [[supabase-estructura]] · [[panel-datos-etl]]
+
+- Aplicada migración `docs/migrations/037_vistas_pub_estado_rediseno.sql` vía Supabase MCP:
+  función `retiro_registrado(participant_id, cedula, programa)` (SECURITY DEFINER, mismo
+  patrón que `participa_en()`) como fuente única del filtro "Estado" — usa la tabla `retiros`,
+  no `en_seguimiento_jc` (esa es alerta operativa JC-only, no retiro real, y no cubre MR).
+- 3 vistas públicas nuevas: `v_pub_demografia`, `v_pub_emprendimiento`, `v_pub_asistencia`
+  (primera exposición pública de `asistencia_promedio`) + 4 vistas Emoflow `_retirado`
+  (mirrors de las `_canonico` de la migración 011, completan el 3er estado del toggle
+  Activos/Todos/Retirados).
+- **Decisión de diseño no resuelta en la spec original:** `v_pub_demografia` se implementó en
+  formato "largo" (`dimension`/`categoria`/`total`) en vez de la fila ancha (una columna por
+  dimensión) que describía el plan — cruzar las 6 dimensiones a la vez por persona explota en
+  celdas de tamaño 1 y rompe el criterio de k-anonimato (n<5) que ya usa `v_demografia_grupo`.
+  Documentado en el header del SQL y en `supabase-estructura.md`.
+- Guarda cumplida: `test_integridad_supabase.py` completo (no solo `--rapido`) corrido antes
+  y después — **53/53 PASS en ambos casos**, cero vistas existentes tocadas. Verificado con
+  `SET ROLE anon` en las 7 vistas nuevas. `get_advisors` solo marca los mismos warnings
+  `security_definer_view` ya aceptados para el resto de vistas `v_*` del proyecto.
+- Pendiente: Fase 2 (`lib/api.ts` — tipos y llamadas), Fase 3 (reescritura `app/page.tsx`),
+  Fase 4 (pulido + verificación visual, bloqueada por falta de Chrome conectado en este entorno).
+
+## 2026-08-03 — [plan-rediseno-panel-datos] Fase 2: `lib/api.ts` — tipos y llamadas de las vistas nuevas
+
+**Estado:** Completado (Fase 2 de 4)
+**Proceso relacionado:** [[plan-rediseno-panel-datos-2026-07-30]] · [[panel-datos-etl]]
+
+- Agregadas a `~/panel-datos-rofe/lib/api.ts` las interfaces `PubDemografia`,
+  `PubEmprendimiento`, `PubAsistencia` y sus llamadas (`v_pub_demografia`, `v_pub_emprendimiento`,
+  `v_pub_asistencia`) a `Datos`/`cargarTodo()`. Ninguna llamada vieja se tocó ni se conectó
+  todavía a `page.tsx` (eso es Fase 3).
+- **De paso:** se conectó el trío Emoflow del filtro "Estado" (`v_emoflow_resumen_canonico` +
+  hermanas de ciudad/bandas, migración 011) que quedó documentado como "listo" desde
+  2026-07-23 pero nunca se había cableado al frontend — hallazgo real de esta sesión, no
+  planeado. Se agregó junto con las 4 vistas `_retirado` nuevas (037), reusando las interfaces
+  `EmoflowResumen`/`EmoflowPorCiudad`/`EmoflowBanda`/`EmoflowBandaCiudad` ya existentes (mismas
+  columnas) — no hicieron falta tipos nuevos para esa parte.
+- **Verificación:** `npx tsc --noEmit` y `npm run build` limpios. Como `cargarTodo()` corre en
+  build time (generación estática), las 11 llamadas nuevas ya se probaron en vivo contra el
+  endpoint `anon` sin error HTTP — no solo compiló, sí trajo datos reales.
+- **Cuadre cruzado (hallazgo, no bug):** `v_pub_emprendimiento` (jc/activo) da menos que
+  `v_emprendimiento_situacion` en 2 de 4 categorías — esperado, las dos vistas usan una
+  definición distinta de "activo" a propósito (decisión de Fase 1: `retiro_registrado()` en vez
+  de `en_seguimiento_jc`). Documentado en el plan para que no se lea como regresión.
+- Working tree: solo `lib/api.ts` modificado en `panel-datos-rofe` (se limpió un
+  `tsconfig.tsbuildinfo` que dejó el `tsc --noEmit`, no gitignoreado). Sin commit/push — pendiente
+  de confirmación.
+- Pendiente: Fase 3 (reescritura `app/page.tsx` — filtro global "Estado", demografía unificada,
+  tab Asistencia nuevo, selector de ciudad unificado), Fase 4 (pulido + verificación visual).
+
+## 2026-08-03 — [Zoom asistencia / panel-clase-vivo] Refinamiento: segundo validador por asistencia real
+
+- Lina propuso un segundo validador para saber cuándo "de verdad" empezó una clase: además
+  de anclar al horario oficial de `CUPOS`, arrancar el temporizador de 10 min cuando entren
+  **10 estudiantes distintos** (lo que ocurra primero de los 2). Motivo: `CUPOS` puede
+  estar desactualizado (gap real ya documentado, 47 vs 51) o el match área+día+hora puede
+  fallar — contar asistentes reales no depende de que el horario programado siga siendo
+  exacto.
+- Aplica a 2 lugares: el `Calcular Espera Anclada` que ya está en producción (feature
+  `ASISTENCIA-10MIN`) y a la futura pieza `REUNIONES-ACTIVAS` de [[panel-clase-vivo]] (Fase
+  2, sin construir) — ambas necesitan la misma señal de "¿ya empezó de verdad la clase?".
+- Documentado como idea sin implementar en ambos docs, con 2 preguntas de diseño abiertas
+  sin resolver: si los 10 deben ser matriculados reales (cruce con Supabase) o cualquier
+  `joined`, y qué hacer con clases de menos de 10 matriculados en total (fallback al ancla
+  de horario, o umbral proporcional).
+
+## 2026-08-03 — [plan-rediseno-panel-datos] Fase 3: reescritura completa de `app/page.tsx`
+
+**Estado:** Completado (Fase 3 de 4)
+**Proceso relacionado:** [[plan-rediseno-panel-datos-2026-07-30]] · [[panel-datos-etl]]
+
+- Reescritura completa de `~/panel-datos-rofe/app/page.tsx` (mismo archivo, ~1000 líneas).
+  `npx tsc --noEmit` y `npm run build` limpios — la generación estática ejecuta `cargarTodo()`
+  en build time, así que las 36 llamadas (25 viejas + 11 de Fase 2) corrieron en vivo contra
+  `anon` sin error HTTP.
+- **Filtro global "Estado"** (Activos/Todos/Retirados) en la barra superior, propagado a
+  Resumen, Cursos, Demografía, Emprendimiento, Emoflow y Asistencia (Historial queda fuera,
+  tal como decidió el plan — esa fuente no tiene dimensión de retiro).
+- **Eliminada la duplicación de §1.2:** `mostrarCanonico` es ahora una sola constante,
+  compartida por Resumen y Cursos — antes la misma condición se repetía 3 veces con una
+  variante sutil que podía desalinearse.
+- **Demografía unificada** JC/MR en un solo componente (`TarjetaDemografia`, 6 dimensiones de
+  `v_pub_demografia`); JC muestra "No aplica — [razón]" en las 4 dimensiones que no captura en
+  vez de no tener esas tarjetas.
+- **Selector de ciudad/municipio unificado:** un solo control (antes dos) basado en
+  `v_pub_geografia`, que ya cubre ambos programas — reemplaza también el KPI ciudad-filtrada
+  JC-only (`v_programa_stats_por_ciudad`) por una fuente que sí funciona para Mujeres ROFÉ.
+- **Tab nuevo "Asistencia"** (siempre visible) usando `v_pub_asistencia`.
+- **Todos los tabs son siempre visibles** ahora (se eliminó `tabsDisponibles()`); cada sección
+  decide "no aplica" (incompatibilidad estructural) vs. "sin datos" (el filtro vigente está
+  vacío pero la fuente sí aplica) — mismo componente `NoAplica`, tono distinto.
+- Limpieza de paso: eliminado `kpis.empMarcha`, calculado pero nunca renderizado en el archivo
+  original (dead code).
+- **Decisión pragmática:** la tarjeta "Emprendimiento" (booleano) de Demografía-MR sigue
+  usando la vista vieja `v_mr_demografia` — `v_pub_demografia` (037) no incluye esa dimensión;
+  agregarla habría significado volver a tocar Supabase en plena Fase 3, rompiendo la disciplina
+  de fases. Documentado en el plan.
+- **Sin verificación visual:** se confirmó de nuevo que la extensión de Chrome no está
+  conectada en este entorno (mismo límite ya declarado en `panel-control-jc-mr.md`).
+- Working tree: `lib/api.ts` + `app/page.tsx` modificados en `panel-datos-rofe`, sin commit/push.
+- Pendiente: Fase 4 — revisión visual de Samuel/Lina (`npm run dev`) y, tras confirmación
+  explícita, `git push` a `comunicaciones/main` (deploy Netlify).
+
+## 2026-08-03 — [panel-control-jc-mr] Universo canónico 832 (JC) + exportar CSV
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-control-jc-mr]] · [[q10-consolidacion]] · [[diccionario-metricas]]
+
+- Pedido de Lina antes de una reunión de equipo: exportar CSV con los filtros ya aplicados
+  (agregado a `panel_control_gui.py`, mismo patrón que `panel_riesgo_gui.py`) y que el panel
+  muestre el universo canónico de **832** (JC 2026, `diccionario-metricas.md`) en vez de los
+  777 (universo de matrícula) que traía `v_gui_personas`.
+- **Causa raíz del hueco de 55:** esas personas (Q10 las marca inhabilitadas) nunca tuvieron
+  una matrícula activa sincronizada → nunca llegaron a tener fila en `participants`. No era
+  un bug de la vista.
+- `export_aprobacion.py` ahora captura nombre por cédula (reporte Detallado) y lo persiste en
+  `tools/cohorte_2026.json`. Tabla nueva `cohorte_2026_ceds` (migración 038) + script
+  `sync_cohorte_2026.py`: puebla el canon completo (832 JC / 346 MR) e inserta en
+  `participants` las 55 filas faltantes (con nombre). `v_gui_personas` reescrita (migración
+  039): universo = `enrollments` UNION `cohorte_2026_ceds` sin matrícula (avance/cursos en
+  NULL, nunca 0).
+- **Gotcha real, corregido antes de aplicar:** la primera versión usó el canon Q10 para
+  `retirado` en JC y MR por igual → MR/2026 saltó de 0 a 167 "retiradas", contradiciendo la
+  decisión ya confirmada por Lina (2026-07-29): en MR, Q10 inhabilita TODAS las matrículas al
+  cerrar un curso — no es retiro real. Fix: `retirado` con canon Q10 solo aplica a
+  `programa='jc'`; MR sigue usando exclusivamente `retiros` (Sheets/Inactivas).
+- Verificado: conteos idénticos en todas las cohortes salvo jc/2026 (777→832, 83 retirados, 55
+  con "sin dato" en cursos/avance); `panel_control_datos.leer_panel_control('jc')` confirma
+  las mismas cifras end-to-end sin tocar código de la GUI. `test_integridad_supabase.py`:
+  53/53 PASS (incluye `anon bloqueado en v_gui_personas`).
+- Sin verificación visual de la GUI (Tkinter, sin herramienta de captura en este entorno).
+
+## 2026-08-03 (cont.) — Resueltas las 2 preguntas de diseño del segundo validador
+
+- **Umbral de 10 sin roster:** confirmado que cuenta cualquier `joined` distinto (staff o
+  estudiante), sin cruzar contra Supabase — esa validación de identidad ya la hace
+  `validar_asistencia.py` más adelante, no hace falta duplicarla solo para detectar que la
+  clase empezó.
+- **Sin fallback para clases chicas:** confirmado que no hace falta — las clases reales son
+  de 50-300 estudiantes, así que algo con menos de 10 conectados casi seguro es una
+  reunión/prueba, no una clase real; el ancla de horario ya cubre ese caso.
+- Actualizado en `docs/procesos/zoom-asistencia.md` y `docs/procesos/panel-clase-vivo.md`
+  — ya no quedan como preguntas abiertas, quedan como decisiones tomadas.
+
+## 2026-08-03 (cont.) — [Zoom asistencia] Fase 1 de panel-clase-vivo: `ZOOM-STATS-VALIDADO`
+
+**Estado:** Completado
+**Proceso relacionado:** [[zoom-asistencia]] · [[panel-clase-vivo]]
+
+- Construida la pestaña `ZOOM-STATS-VALIDADO` en H3Test — mismas tablas que `ZOOM-STATS`
+  (por sesión y por semana ISO) pero calculadas sobre `ASISTENCIA-VALIDADA` en vez del
+  crudo `ZOOM-ASISTANCE`. Nueva función `construir_zoom_stats_validado()` en
+  `setup_zoom_asistance.py`, invocable sola con `--solo-validado` (no toca
+  `ZOOM-ASISTANCE`/`CUPOS`/`ZOOM-STATS`, que sí se recrean desde cero en una corrida
+  normal — evita arriesgar datos de producción).
+- Diseño ya estaba refinado en `panel-clase-vivo.md` (2026-07-30, Fase 1); se siguió tal
+  cual (correr en paralelo a `ZOOM-STATS`, no reemplazarla) y se le agregó una columna
+  nueva no prevista en ese documento: "Identidad por confirmar" (cuenta REVISAR+EXAMINAR+
+  MANUAL de la sesión, sin restar del número de "Conectados") — dato de calidad por clase
+  que hoy no existe en ningún lado.
+- Verificado con datos reales de la pestaña en vivo: sesiones de ruido ("Mi reunión",
+  "TEST AUTOMATIZACION...") que sí aparecían en `ZOOM-STATS` con 0 conectados ya no
+  existen en la versión validada; conectados bajan 1 en varias sesiones por mentores
+  Sofka que `ZOOM-STATS` no filtraba (solo excluye por dominio de correo, no por la hoja
+  de mentores). Semana 2026-S31: 6 clases, 222 conexiones, promedio 66% de estancia.
+- Pendiente: correr ambas pestañas en paralelo un tiempo antes de decidir si
+  `ZOOM-STATS-VALIDADO` reemplaza a `ZOOM-STATS`.
+
 ## 2026-08-03 (cont.) — [gobernanza-contexto-ia] Roles activados: Lina, Rocío, Cristian
 
 **Estado:** Completado (contenido); repo privado y hooks locales siguen pendientes
@@ -5994,6 +6238,110 @@ patrón que `panel-control-jc-mr.md`.
   Lina/Rocío/Cristian; diseñar el skill de "borrador de correo" para Rocío si el volumen lo
   justifica; activar a Astrid/Sandra cuando se levanten sus necesidades; el rol de Postgres
   de solo-lectura para datos individuales sigue pendiente solo para Cristian.
+
+## 2026-08-03 — [panel-clase-vivo] Fase 2 construida: panel en vivo de asistencia por sala
+
+**Estado:** Completado (falta prueba con clase real de 2 salas simultáneas)
+**Proceso relacionado:** [[panel-clase-vivo]] · [[zoom-asistencia]]
+
+- Construidas las 2 fases documentadas el 2026-07-30 como idea: **Fase 1**
+  (`ZOOM-STATS-VALIDADO`, mismas stats que `ZOOM-STATS` pero sobre `ASISTENCIA-VALIDADA`
+  — sin staff/mentores/reuniones de prueba, sin duplicados por typo) y **Fase 2** (panel en
+  vivo para monitores: quién de los matriculados ya entró vs. quién falta, en rojo).
+- **Corrección crítica de diseño antes de construir:** el plan original (2026-07-30) asumía
+  que el roster de matriculados por sala saldría de Supabase. Se verificó con la API real que
+  Supabase solo matricula a nivel de curso completo (760 en "HTML" 2026), sin distinguir
+  subgrupos de horario (Uno/Dos/Avanzado) — hubiera mostrado a cientos de personas de otros
+  horarios en rojo por error. Corregido: el roster sale de la BD Seguimiento (misma fuente que
+  ya usa `CUPOS`), extendiendo `tools/analizar_cupos_bd.py` para capturar también
+  nombre+correo por horario (5.319 asignaciones, 89 horarios).
+- Piezas nuevas: `MATRICULADOS-VIVO` (roster por horario), `REUNIONES-ACTIVAS` (qué sala está
+  en vivo, con `Activo` TRUE/FALSE en vez de borrar filas) y `PANEL-EN-VIVO` (2 bloques
+  Sala A/B, cruce roster × `LIVE-LOG` con el mismo criterio joined>left de
+  `Presentes @10min`, formato condicional verde/rojo). 4 nodos nuevos en el workflow n8n
+  `Zoom - Asistencia`: `Detectar Apertura Reunion` + `Abrir en REUNIONES-ACTIVAS` (rama
+  joined/left, dedup en `$getWorkflowStaticData` para no gastar cuota de Sheets en cada
+  evento), `Cerrar Reunion Activa` + `Cerrar en REUNIONES-ACTIVAS` (insertados en línea en la
+  rama `ended`, antes de `Esperar 90s`). Probado extremo a extremo con eventos sintéticos:
+  abre, dedup, muestra presencia real, cierra y el panel se vacía solo.
+- **Gotcha nuevo documentado:** tras `deactivate`/`activate` de un workflow activo, el runtime
+  necesita 30+ segundos (no unos pocos) antes de que un nodo nuevo en una rama de webhook
+  dispare — probar demasiado pronto se ve idéntico a "el fan-out no soporta 2-3 nodos", que es
+  lo que se sospechó primero y resultó ser un diagnóstico equivocado. Ver detalle en
+  [[panel-clase-vivo]] Fase 2.
+- De paso: se resolvió el bug de `CUPOS` donde 3 clases de HTML sábado 2pm (Uno/Dos/Avanzado)
+  sin `Alias Zoom` sumaban 144 cupos en vez de resolver a una sola — fijado cruzando correos
+  reales de asistentes contra la BD Seguimiento y completando `Alias Zoom` para Sala 1/Sala 2.
+- Documentación actualizada: `panel-clase-vivo.md` (de "idea" a "construida", body reescrito
+  para reflejar el diseño real: `Activo` booleano no string, 2 bloques no 4, gotcha de
+  timing), `zoom-asistencia.md` (nodos nuevos listados), `mapa-codigo.md` (entradas de
+  `analizar_cupos_bd.py` extendido y las 3 funciones nuevas de `setup_zoom_asistance.py`).
+- **Pendiente:** probar con una clase real de 2 salas simultáneas antes de que el equipo
+  confíe en el panel para llamar estudiantes en vivo. También sigue sin confirmar el
+  recordatorio semanal por correo para el dato manual del grupo "Avanzado" (soporte@,
+  propuesto el 2026-07-30/08-03, sin agendar todavía).
+
+## 2026-08-03 (cont.) — [panel-clase-vivo] Recordatorio "Avanzado" creado + prueba con clase real en curso
+
+**Estado:** Recordatorio completado. Prueba con clase real en progreso (agente en segundo plano).
+**Proceso relacionado:** [[panel-clase-vivo]]
+
+- Se retomó el pendiente suelto desde el 2026-07-30: recordatorio por correo para tomar
+  manualmente el dato de las clases Avanzado (HTML/Lógica), que se registra desde
+  soporte@tocaunavida.org sin posibilidad de automatización. Confirmado el horario de 5
+  franjas (jueves 4pm, sábados 8am/10am/2pm/4pm — un slot por cada horario "Avanzado"
+  distinto en `CUPOS`) y creados como eventos recurrentes semanales en Google Calendar,
+  con aviso email + popup 10 minutos antes de cada clase.
+- **Gotcha real:** el conector de Google Calendar de esta sesión no tenía acceso de
+  escritura a `soportejunior@tocaunavida.org` (ni existe conexión a `linagarcia@` ni a
+  `soporte@tocaunavida.org`, que es la cuenta que realmente toma el dato) — solo a
+  `samueldavidvida@gmail.com`. Se confirmó con Samuel y los eventos quedaron en esa cuenta
+  personal en vez de una institucional. Pendiente real si se quiere migrar esto a una
+  cuenta de equipo: dar acceso de escritura al conector sobre `soporte@tocaunavida.org` o
+  crear los eventos manualmente ahí.
+- En paralelo, se lanzó un agente en segundo plano para observar con la clase real de hoy
+  ("Hackea tu cerebro", lunes 7pm) si `REUNIONES-ACTIVAS`/`PANEL-EN-VIVO` (Fase 2,
+  construida el mismo día) funcionan igual de bien con tráfico real que con los eventos
+  sintéticos ya probados — resultado pendiente, se documentará en la próxima entrada.
+
+## 2026-08-04 — [panel-clase-vivo] Estado tri-estado + limpieza automática de LIVE-LOG
+
+**Estado:** Completado
+**Proceso relacionado:** [[panel-clase-vivo]] · [[zoom-asistencia]]
+
+- Se confirmó que el roster de `PANEL-EN-VIVO` ya sale de la BD Seguimiento (no de
+  Supabase, corregido el 2026-08-03) y ya lista el curso completo, no solo los ausentes —
+  ambos puntos que Lina/Samuel iban a pedir ya estaban resueltos por diseño.
+- **Estado ampliado de 2 a 3 valores:** `NUNCA ENTRÓ` / `PRESENTE` / `ENTRÓ Y SALIÓ`
+  (antes mezclaba "nunca entró" y "entró y se salió" en un solo "NO HA ENTRADO"). Formato
+  condicional: verde/rojo/ámbar. Probado con datos sintéticos insertados y limpiados en
+  el mismo Sheet de producción — los 3 estados salieron correctos.
+- **Hallazgo real:** `LIVE-LOG` crece sin límite con tráfico real (801 filas de una sola
+  reunión de 1.5h la noche del 2026-08-03) — a diferencia de `MATRICULADOS-VIVO`, que es
+  un snapshot estático de 5.319 filas (todo el roster de los 89 horarios) y no crece.
+  Creado `limpiar_live_log.py` (vacía `LIVE-LOG` conservando el encabezado) + agendado en
+  n8n (`Diario 21:00 -- Limpiar LIVE-LOG` → `Limpiar LIVE-LOG`, cron `0 21 * * *`, mismo
+  patrón que `asistencia-zoom-diario`). Corrido manualmente (801 filas borradas) y
+  verificado en vivo tras el ciclo deactivate/activate del workflow (31 nodos, activo).
+- **Intento de prueba con clase real (2026-08-03, sin resultado):** se lanzó un
+  monitoreo en segundo plano para la clase de las 7pm ("Hackea tu cerebro"). No llegó
+  ningún evento webhook esa noche (confirmado en `LIVE-LOG` y en las ejecuciones de n8n) —
+  la Fase 2 sigue sin validarse con tráfico real. Pendiente investigar por qué no llegó
+  nada esa noche antes de reintentar.
+- Documentación actualizada: `panel-clase-vivo.md` (tri-estado, gotcha de LIVE-LOG,
+  intento de prueba real documentado), `zoom-asistencia.md` (nodos nuevos), `mapa-codigo.md`
+  (`limpiar_live_log.py`).
+
+## 2026-08-04 (cont.) — [panel-clase-vivo] Causa confirmada del fallo de la prueba real
+
+- Samuel confirmó la hipótesis: el portátil probablemente se suspendió la noche del
+  2026-08-03, justo antes de la clase de las 7pm. Verificado con `LastBootUpTime` (6+
+  días sin apagado/reinicio real) — consistente con suspensión, no con apagado total.
+  Mismo gotcha ya conocido de sesiones anteriores (n8n queda vivo en memoria, `healthz`
+  sigue en 200, pero el túnel del webhook pierde la conexión de red). Cerrado en
+  `panel-clase-vivo.md`: para el próximo intento de prueba real, confirmar antes de la
+  clase que el portátil está enchufado/sin suspensión programada, no solo que `healthz`
+  responda.
 
 ## 2026-08-04 — [gobernanza-contexto-ia] Migración a repo privado `comunicaciones-ai/Contexts`
 

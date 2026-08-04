@@ -268,8 +268,10 @@ real, no el rediseño) vía `WebFetch` para comparar estructura. Hallazgos:
   al 20 de febrero") — respalda la nota de los $120.000 que se agregó al rediseño.
 - Nombres de cursos difieren un poco del rediseño (live: "Habilidades blandas" + "Modelo CANVAS" +
   "Identidad de marca"; rediseño: "Habilidades clave" + "Modelo de negocio" + "Validación y acción") —
-  no se tocó, queda como diferencia conocida (puede ser un rename ya decidido en otra sesión, ver
-  [[wordpress-fundacion-rofe]]).
+  no se tocó, queda como diferencia conocida. **Resuelto en la auditoría de documentación
+  2026-08-04:** el enlace `[[wordpress-fundacion-rofe]]` que quedó aquí apuntaba a una nota que
+  nunca se creó — este mismo documento (`wordpress-tocaunavida.md`) es la nota viva del sitio, no
+  hubo un rename pendiente en otra parte.
 - El live tiene una **galería de 3 fotos de encuentros comunitarios** (sin título propio, ubicada junto
   a "¡Puedes hacer parte de esta comunidad!") que el rediseño NO tenía. URLs reales obtenidas por
   WebFetch: `2026/01/foto-2-encuentro.webp`, `2026/01/Foto-3-encuentro-.webp` (la misma que ya usa

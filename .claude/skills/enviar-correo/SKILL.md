@@ -135,7 +135,7 @@ Tres caminos, según la petición (ver Paso a.1 para elegir):
    `tools/mujeres-rofe-correos/data/lista_<ID>.csv` con las 3 columnas.
 
    > NOTA de cobertura: Supabase solo tiene el histórico MR de 2025/2026
-   > (ver [[project-supabase-mr-historico-gap]]). Para campañas que deban alcanzar 2024 hacia
+   > (ver `scripts/mujeres-rofe-correos/README.md`, sección "Origen de la lista"). Para campañas que deban alcanzar 2024 hacia
    > atrás, la fuente completa es `extraer_lista_mr_ultimos3anios.py` (combina Supabase + Excel).
    > Avísale a Samuel qué cohortes cubre la lista que generaste.
 
