@@ -243,7 +243,7 @@ def git_commit_y_push(timestamp: str) -> bool:
 
     pasos = [
         ["git", "add", ruta_relativa],
-        ["git", "commit", "-m", f"chore: actualizar avance manual [{timestamp}]"],
+        ["git", "commit", "-m", f"chore: actualizar avance manual [{timestamp}]", "--", ruta_relativa],
         ["git", "push", "origin", "main"],
     ]
     for cmd in pasos:

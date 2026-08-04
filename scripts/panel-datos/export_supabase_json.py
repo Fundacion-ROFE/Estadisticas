@@ -164,7 +164,7 @@ def git_commit_y_push(timestamp: str, output_dir: str) -> bool:
 
     pasos = [
         ["git", "add", rel_dir],
-        ["git", "commit", "-m", f"chore: actualizar export supabase->json [{timestamp}]"],
+        ["git", "commit", "-m", f"chore: actualizar export supabase->json [{timestamp}]", "--", rel_dir],
         ["git", "push", "origin", "main"],
     ]
     for cmd in pasos:

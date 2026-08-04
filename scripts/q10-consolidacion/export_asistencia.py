@@ -211,7 +211,7 @@ def git_commit_y_push(timestamp: str) -> None:
     ruta_relativa = os.path.join("docs", "asistencia", "data.json")
     pasos = [
         ["git", "add", ruta_relativa],
-        ["git", "commit", "-m", f"chore: actualizar asistencias [{timestamp}]"],
+        ["git", "commit", "-m", f"chore: actualizar asistencias [{timestamp}]", "--", ruta_relativa],
         ["git", "push", "origin", "main"],
     ]
     for cmd in pasos:

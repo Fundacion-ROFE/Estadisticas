@@ -528,7 +528,7 @@ def git_commit_y_push(timestamp: str, incluir_history: bool = False) -> bool:
     sufijo = " +history" if incluir_history else ""
     pasos = [
         ["git", "add"] + archivos,
-        ["git", "commit", "-m", f"chore: actualizar estadisticas [{timestamp}]{sufijo}"],
+        ["git", "commit", "-m", f"chore: actualizar estadisticas [{timestamp}]{sufijo}", "--"] + archivos,
         ["git", "push", "origin", "main"],
     ]
     for cmd in pasos:

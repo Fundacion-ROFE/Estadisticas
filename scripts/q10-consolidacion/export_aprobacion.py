@@ -599,7 +599,7 @@ def git_commit_y_push(timestamp: str) -> bool:
 
     pasos = [
         ["git", "add"] + archivos,
-        ["git", "commit", "-m", f"chore: actualizar aprobacion por curso [{timestamp}]"],
+        ["git", "commit", "-m", f"chore: actualizar aprobacion por curso [{timestamp}]", "--"] + archivos,
         ["git", "push", "origin", "main"],
     ]
     for cmd in pasos:
