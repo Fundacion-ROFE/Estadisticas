@@ -6432,3 +6432,31 @@ ejecutadas; archivado con aprobación explícita punto por punto.
   `00-vision-global.md`, posible solape con `panel-datos-etl.md`), `docs/migrations/README.md` y
   `tools/reference-n8n-api-key.md` (ambos legítimos pero huérfanos en el grafo de enlaces — bajo
   riesgo, solo discoverabilidad).
+
+## 2026-08-04 (cont.) — [gobernanza-contexto-ia] Fix: `git commit` sin pathspec en los 6 exporters
+
+**Estado:** Completado
+**Proceso relacionado:** [[gobernanza-contexto-ia]] · [[panel-datos-etl]] · [[q10-consolidacion]]
+
+- Lina pidió revisar si el pipeline de n8n podía romper algo más, después del incidente de
+  `usuarios-ia/` publicado por accidente. Se encontró la causa raíz exacta: los 6 scripts
+  `export_*.py` (stats, aprobacion, avance, retirados, asistencia, supabase->json) hacen
+  `git add <rutas propias>` (correctamente acotado) pero luego `git commit -m mensaje` **sin
+  pathspec** — y `git commit` sin pathspec commitea TODO lo que esté staged en el índice, no
+  solo lo que el script acaba de agregar. Por eso el `git rm` de `usuarios-ia/` que dejé
+  pendiente sin commitear viajó pegado al siguiente commit automático.
+- Fix aplicado a los 6 scripts: agregar `"--"] + rutas` al comando de commit, que lo acota
+  exactamente a esas rutas sin importar qué más haya staged — sin cambiar ningún otro
+  comportamiento. Mismo fix aplicado a `commit_y_push.py` en `comunicaciones-ai/Contexts`
+  (el script de gobernanza-ia, aunque todavía no está conectado a ningún trigger, comparte el
+  mismo patrón y hubiera tenido el mismo bug el día que se active).
+- Documentado como gotcha nuevo en `docs/convenciones.md` (junto a los otros 2 gotchas de git
+  ya existentes) para que cualquier script nuevo de commit automático lo tenga en cuenta desde
+  el diseño.
+- Revisado el resto de `n8n-workflows/*.json`: no hay comandos git embebidos directamente en
+  los workflows (todo pasa por estos scripts Python), así que los 6 + `commit_y_push.py` son
+  el universo completo de commits automáticos del proyecto — no quedó ninguno sin revisar.
+- `n8n healthz` respondió OK; no se profundizó en ejecuciones fallidas vía la API REST de n8n
+  (requiere la API key, fuera de alcance de esta revisión puntual de git).
+- 2 commits separados pusheados: `bfe3f5b` (los 6 exporters) en `Fundacion-ROFE/Estadisticas`,
+  `5b8ef4e` (`commit_y_push.py`) en `comunicaciones-ai/Contexts`.
