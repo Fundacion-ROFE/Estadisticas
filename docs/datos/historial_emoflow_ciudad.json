@@ -1085,7 +1085,7 @@
     "participantes": 137,
     "ingresos_promedio": 45.4,
     "ingresos_mediana": 31,
-    "activos_7d": 84,
+    "activos_7d": 85,
     "inactivos_30d": 33,
     "fuente": "emoflow-api"
   },
@@ -1104,7 +1104,7 @@
     "grupo_ciudad": "CAL",
     "participantes": 107,
     "ingresos_promedio": 37.4,
-    "ingresos_mediana": 32,
+    "ingresos_mediana": 33,
     "activos_7d": 71,
     "inactivos_30d": 20,
     "fuente": "emoflow-api"
