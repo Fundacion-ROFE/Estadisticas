@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-08-03T08:41:57.097884-05:00",
+  "ultima_actualizacion": "2026-08-04T15:20:58.815579-05:00",
   "segmento": "Logica-Nivel 2-2026",
   "por_curso": [
     {
@@ -50,27 +50,36 @@
     {
       "nombre": "Lógica de Programación",
       "estudiantes": 754,
-      "aprobados": 736,
-      "pct_aprobados": 97.6,
-      "promedio": 99.26,
+      "aprobados": 739,
+      "pct_aprobados": 98.0,
+      "promedio": 99.41,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "HTML",
       "estudiantes": 754,
-      "aprobados": 619,
-      "pct_aprobados": 82.1,
-      "promedio": 91.89,
+      "aprobados": 653,
+      "pct_aprobados": 86.6,
+      "promedio": 93.51,
+      "min": 0.0,
+      "max": 100.0
+    },
+    {
+      "nombre": "JS",
+      "estudiantes": 272,
+      "aprobados": 9,
+      "pct_aprobados": 3.3,
+      "promedio": 26.23,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "HTML - AUT",
       "estudiantes": 777,
-      "aprobados": 8,
-      "pct_aprobados": 1.0,
-      "promedio": 7.68,
+      "aprobados": 9,
+      "pct_aprobados": 1.2,
+      "promedio": 9.0,
       "min": 0.0,
       "max": 100.0
     },
@@ -91,23 +100,14 @@
       "promedio": 0.0,
       "min": 0.0,
       "max": 0.0
-    },
-    {
-      "nombre": "Lógica de Programación",
-      "estudiantes": 777,
-      "aprobados": 718,
-      "pct_aprobados": 92.4,
-      "promedio": 96.83,
-      "min": 0.0,
-      "max": 100.0
     }
   ],
   "totales": {
     "total_cursos": 11,
-    "total_registros": 8417,
+    "total_registros": 7912,
     "estudiantes_unicos_id": 780,
-    "promedio_general": 76.83,
-    "total_aprobados": 6062
+    "promedio_general": 73.42,
+    "total_aprobados": 5391
   },
   "anomalias": [
     {
@@ -116,7 +116,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 1607
+      "cantidad": 1710
     },
     {
       "categoria": "AVANCE IRREGULAR",
