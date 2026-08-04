@@ -1,9 +1,15 @@
 # Gobernanza de contexto IA por usuario
 
 **Estado:** En progreso (Lina/Rocío/Cristian activados con carpeta+skills; Astrid/Sandra
-bloqueadas pendiente de su propia entrevista; repo privado real sigue sin crear)
-**Última actualización:** 2026-08-03
+bloqueadas pendiente de su propia entrevista; **repo privado ya creado y migrado**, falta
+conectar el hook local por persona)
+**Última actualización:** 2026-08-04
 **Procesos relacionados:** [[pseudonimizador]] · [[convenciones]] · [[prioridades-automatizacion-ia]]
+
+> **`usuarios-ia/` y `scripts/gobernanza-ia/` ya NO viven en este repo** — se migraron el
+> 2026-08-04 a `comunicaciones-ai/Contexts` (privado). Este documento se queda acá porque es
+> la nota de proceso del repo `Fundacion-ROFE/Estadisticas`; el contenido real (contextos,
+> skills, logs) vive en el repo privado.
 
 ## Qué hace
 
@@ -48,20 +54,26 @@ a un trigger real (ver Pendiente).
 
 ## Destino de los datos
 
-**El diseño siempre fue un repo git privado central** (una carpeta por persona bajo
-`usuarios-ia/`), pero ese repo privado **aún no existe**. El scaffolding se construyó como
+**Repo privado dedicado: [`comunicaciones-ai/Contexts`](https://github.com/comunicaciones-ai/Contexts)**
+(migrado 2026-08-04). El scaffolding original (2026-07-27) se había construido como
 prototipo dentro de `Fundacion-ROFE/Estadisticas` — que es **público** (verificado vía API de
-GitHub, 2026-08-03: `"private": false`). Mientras no se migre:
+GitHub, 2026-08-03: `"private": false`) porque sirve el dashboard de GitHub Pages — y ahí
+quedaron expuestos temporalmente roles/restricciones/notas de incidente de cada persona
+(nunca llegó a activarse ningún `logs/` real, así que no hubo exposición de sesiones). El
+2026-08-04 se migró todo `usuarios-ia/` y `scripts/gobernanza-ia/` al repo privado y se
+eliminaron de este repo público.
 
-- La `anon key` de Supabase embebida en cada `CLAUDE.md` **no es un riesgo nuevo** — ya es
+- La `anon key` de Supabase embebida en cada `CLAUDE.md` nunca fue un riesgo nuevo — es
   pública por diseño (RLS la protege, solo expone agregados, y ya vive en el frontend Netlify).
-- Lo que **sí** queda expuesto públicamente sin necesidad son los roles/restricciones/estado
-  interno de cada persona (ej. la nota de incidente de Cristian) y, si se activaran, sus
-  `logs/` de sesión — información operativa interna, no destinada a ser pública.
-
-**Migrar a un repo privado real es un prerrequisito explícito antes de:** activar cualquier
-push automático de `logs/` de sesión, o subir cualquier dato operativo más sensible que el ya
-público hoy. Ver Pendiente.
+- El acceso a `comunicaciones-ai/Contexts` es por colaborador explícito en GitHub (cuenta
+  `soportejunior-codeJR` con permiso `push`, confirmado 2026-08-04).
+- **Gotcha del proceso de migración:** al configurar el remoto del repo nuevo, un comando
+  imprimió por error la URL con el token de acceso en texto plano en una sesión de Claude
+  Code — el token se rotó de inmediato (revocado en GitHub + generado uno nuevo) antes de
+  seguir. Lección para cualquier automatización futura: nunca construir una URL de git con
+  el token embebido y luego correr un comando que la imprima (`git remote -v`, logs, etc.);
+  usar el credential helper de forma transparente o, si hay que insertar el token en la URL
+  temporalmente, evitar cualquier comando que la muestre después.
 
 ## Decisiones de diseño clave
 
@@ -94,11 +106,12 @@ público hoy. Ver Pendiente.
   documentó para n8n (`credential.interactive never`, `GCM_INTERACTIVE=never`,
   `GIT_TERMINAL_PROMPT=0`) — si no, un push colgado en modo credencial se cuelga para
   siempre sin avisar (mismo gotcha ya resuelto en `convenciones.md`).
-- El repo privado dedicado aún no existe — hay que decidir bajo qué organización/cuenta vive,
-  quién tiene acceso, y crear el remoto. Hoy `commit_y_push.py` pushearía a `Fundacion-ROFE/Estadisticas`
-  (el remoto configurado en este checkout), que es público — ver "Destino de los datos".
+- `commit_y_push.py` y `scan_pii.py` ahora viven en `comunicaciones-ai/Contexts`, no en este
+  repo — ver "Destino de los datos". Cualquier ajuste a esos scripts se hace ahí.
 
-## Estado por persona (2026-08-03)
+## Estado por persona (2026-08-04)
+
+Carpetas en `comunicaciones-ai/Contexts` (privado), no en este repo.
 
 | Persona | Carpeta | Estado | Skills habilitados | Notas |
 |---|---|---|---|---|
@@ -110,12 +123,9 @@ público hoy. Ver Pendiente.
 
 ## Pendiente / Próximos pasos
 
-- **Crear el repo privado real en GitHub** y migrar `usuarios-ia/` ahí (fuera del alcance de
-  sesiones de código — requiere credenciales/decisión de cuenta de Samuel). Configurar
-  `http.sslBackend schannel` + `credential.interactive never` en él, igual que cualquier repo
-  nuevo de esta red. **Bloquea:** activar `logs/` real de cualquier persona.
-- Configurar el hook `Stop` de Claude Code en las máquinas de Lina, Rocío y Cristian (comando
-  documentado arriba en "Disparador") — requiere estar en cada máquina.
+- **Configurar el hook `Stop` de Claude Code en las máquinas de Lina, Rocío y Cristian**
+  (comando documentado arriba en "Disparador") — requiere estar en cada máquina. Es lo único
+  que falta para que `logs/` real empiece a llenarse solo; el repo privado ya existe.
 - Decidir quién revisa las alertas de bloqueo y con qué frecuencia se mira el historial del
   repo (la "auditoría" en sí — hoy el diseño deja los datos, falta el proceso humano de
   revisión).

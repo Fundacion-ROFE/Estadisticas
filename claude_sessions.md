@@ -5994,3 +5994,93 @@ patrón que `panel-control-jc-mr.md`.
   Lina/Rocío/Cristian; diseñar el skill de "borrador de correo" para Rocío si el volumen lo
   justifica; activar a Astrid/Sandra cuando se levanten sus necesidades; el rol de Postgres
   de solo-lectura para datos individuales sigue pendiente solo para Cristian.
+
+## 2026-08-04 — [gobernanza-contexto-ia] Migración a repo privado `comunicaciones-ai/Contexts`
+
+**Estado:** Completado
+**Proceso relacionado:** [[gobernanza-contexto-ia]]
+
+- Samuel ya tenía creado el repo privado `comunicaciones-ai/Contexts` (con la cuenta de
+  comunicaciones), pendiente desde el 27-jul. Lina agregó como colaborador (permiso `push`)
+  a la cuenta `soportejunior-codeJR`, que es la que autentica git en esta máquina — verificado
+  con la API de GitHub (200, antes 404).
+- **Incidente de seguridad durante la migración:** al configurar el remoto del clon local con
+  el token embebido en la URL, un `git remote -v` de verificación lo imprimió en texto plano
+  en la conversación. Se corrigió la URL de inmediato y se le indicó a Lina rotar el token
+  (revocar el viejo en GitHub + generar uno nuevo) antes de seguir — confirmado hecho.
+- **Gotcha real de la rotación:** costó varios intentos porque `Fundacion-ROFE/Estadisticas`
+  es público, y los repos públicos se leen por HTTPS sin credenciales — probar la rotación
+  contra ese repo nunca iba a mostrar ningún cambio, sin importar qué token existiera. La
+  prueba real es contra un repo privado (`comunicaciones-ai/Contexts`). Segundo gotcha: la
+  config global `credential.interactive never` (puesta a propósito para que n8n nunca se
+  cuelgue esperando un prompt) también bloqueaba el prompt en la terminal interactiva normal
+  de Lina — se quitó temporalmente para permitir el re-login y se restauró después de
+  confirmar que el token nuevo funcionaba.
+- Migrado con `git`, no reescritura de historia: clon nuevo de `Contexts`, copiado
+  `usuarios-ia/` + `scripts/gobernanza-ia/` (sin `__pycache__`), URLs de "Carpeta de este
+  contexto en GitHub" actualizadas en los 4 `CLAUDE.md` (ya no dicen "provisional, repo
+  público"), `usuarios-ia/README.md` y un `README.md` nuevo en la raíz de `Contexts`
+  reescritos para reflejar que ese repo YA es el privado. `commit_y_push.py`/`scan_pii.py`
+  movidos tal cual (la referencia cruzada a `docs/procesos/gobernanza-contexto-ia.md`, que se
+  queda en `Estadisticas`, quedó aclarada en el docstring). Push exitoso, verificado con la
+  API (`usuarios-ia/` con las 4 carpetas visible en `comunicaciones-ai/Contexts`).
+- En `Estadisticas`: `git rm -r usuarios-ia scripts/gobernanza-ia` + actualizado
+  `gobernanza-contexto-ia.md` (estado, tabla por persona, Pendiente) y la fila de
+  `00-vision-global.md`. **Gotcha de higiene git:** al revisar qué quedó en stage antes de
+  commitear, aparecieron 3 renames (`docs/*.md` → `docs/archivo/`) ya staged por algo externo
+  a esta sesión (linter o edición manual en paralelo) — se desmarcaron explícitamente
+  (`git restore --staged`) para no mezclarlos con este commit; mismo patrón de aislar hunks ya
+  usado el 08-03.
+- Commit local hecho en `Estadisticas`, **no pusheado** (pendiente confirmación explícita).
+
+## 2026-08-04 (cont.) — Auditoría y saneamiento de la documentación
+
+**Estado:** Fase 1-2 completas (mapa del grafo + lectura por niveles). Correcciones y creaciones
+ejecutadas; archivado con aprobación explícita punto por punto.
+**Proceso relacionado:** todo `docs/` — sin nota propia (auditoría transversal, no un proceso)
+
+- **Fase 1 (mapa del grafo, sin leer contenido):** inventario de 116 `.md` del repo, extracción
+  de ~780 `[[wikilinks]]`. Encontrados: ~12 enlaces rotos reales (la mayoría apuntando a slugs
+  con formato de memoria `project_*`/`feedback_*` que nunca se promovieron a nota del repo), los
+  4 archivos de 0 bytes ya conocidos (todos con enlaces entrantes reales, ninguno para eliminar),
+  y varios huérfanos en `docs/procesos/` que resultaron ser prompts ya ejecutados.
+- **Enlaces rotos en notas vivas — 5 corregidos:** `q10-consolidacion.md` (repuntado a
+  `convenciones.md`, el contenido ya existía), `postulantes-mr-supabase.md` +
+  `convenciones.md` (enlace circular a sí misma eliminado), `zoom-asistencia.md` (gotcha real de
+  `CUPOS` agregado a su propia sección de Gotchas), `wordpress-tocaunavida.md` (autorreferencia
+  resuelta), `enviar-correo/SKILL.md` (repuntado al README del script).
+- **Nota nueva:** `docs/procesos/correos-mujeres-rofe.md` — el proceso de envíos masivos MR
+  (2.693/2.693 enviados 2026-07-14, rebotes automatizados) operaba en producción sin nota de
+  proceso, solo el README técnico. Creada con la plantilla, registrada en `00-vision-global.md`.
+- **Los 4 archivos de 0 bytes resueltos como redirect** (evita duplicar contenido que ya vive en
+  otra nota): `servicio-consultoria-alcance.md` → `gobernanza-contexto-ia.md` +
+  `whatsapp-identificacion-manychat.md`; `project-emoflow-supabase.md` y
+  `project-panel-datos-supabase.md` → `panel-datos-etl.md`; `consejo-profundo.md` (raíz) →
+  aclara que el enlace real era al skill, no a una nota de proceso.
+- **Archivado (con aprobación explícita, revisado uno por uno):** `panel-riesgo-mejora.md`
+  (ya se autodeclaraba "ARCHIVADO/FUSIONADO" en su propio encabezado pero seguía en
+  `docs/procesos/`), `n8n-workflows-setup.md` (dato desactualizado: cron `00:00` vs el real
+  `17:45`, 100% superado por `zoom-asistencia.md`), `DIAGNOSTICO-2026-07-24.md` (snapshot para
+  Coordinación superado por los `.docx` del 28-jul), y 3 de los 5 prompts de arranque de
+  `docs/procesos/` confirmados como ejecutados (`prompt-cierre-choques-cursos.md` —
+  verificado: `alerta-choques-cursos.json` ya existe en `n8n-workflows/`;
+  `prompt-ejecucion-visualizacion.md` y `prompt-fix-alertas-telegram.md` — el segundo confirma
+  la ejecución del primero en su propio texto) más `plan-encadenar-validacion-zoom-2026-07-30.md`
+  (confirmado COMPLETADO por `zoom-asistencia.md`). Los 7 archivados tienen fila nueva en
+  `docs/archivo/README.md`. **`prompt-loop-coherencia-fuentes.md` se dejó vivo a propósito** —
+  es un prompt reutilizable multi-sesión (no un one-shot), aunque su sección "YA EXPLICADAS"
+  está desactualizada respecto al estado del 08-03/08-04 y convendría refrescarla en la próxima
+  corrida.
+- **Gotcha de sesión concurrente:** mientras se archivaban 3 notas con `git mv`, otra sesión
+  (migración de `usuarios-ia/` a `comunicaciones-ai/Contexts`) encontró esos 3 renames ya
+  staged y los desmarcó explícitamente (`git restore --staged`) para no mezclarlos con su propio
+  commit — el contenido en el working tree no se perdió, solo quedó sin commitear. Confirma que
+  el patrón de aislar hunks entre sesiones concurrentes (ya usado el 08-03) sigue funcionando.
+- **Sin resolver, pendiente de Samuel:** `CLAUDE-asistente-informes.md` (raíz) — solo una mención
+  indirecta en toda la bitácora, sin evidencia de uso activo reciente; no se tocó por falta de
+  certeza sobre quién lo usa hoy.
+- **Pendiente de esta auditoría (no evaluado a fondo por acotar el alcance a las 4 ramas
+  priorizadas):** `docs/hojas-intermedias-setup.md` (vivo pero sin enlace desde
+  `00-vision-global.md`, posible solape con `panel-datos-etl.md`), `docs/migrations/README.md` y
+  `tools/reference-n8n-api-key.md` (ambos legítimos pero huérfanos en el grafo de enlaces — bajo
+  riesgo, solo discoverabilidad).
