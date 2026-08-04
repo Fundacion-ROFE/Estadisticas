@@ -950,6 +950,46 @@
     "fuente": "emoflow-api"
   },
   {
+    "fecha": "2026-07-29",
+    "grupo_ciudad": "MED",
+    "participantes": 99,
+    "ingresos_promedio": 27.7,
+    "ingresos_mediana": 19,
+    "activos_7d": 42,
+    "inactivos_30d": 18,
+    "fuente": "emoflow-api"
+  },
+  {
+    "fecha": "2026-07-29",
+    "grupo_ciudad": "PAN",
+    "participantes": 39,
+    "ingresos_promedio": 40.4,
+    "ingresos_mediana": 33,
+    "activos_7d": 34,
+    "inactivos_30d": 3,
+    "fuente": "emoflow-api"
+  },
+  {
+    "fecha": "2026-07-29",
+    "grupo_ciudad": "QTO",
+    "participantes": 39,
+    "ingresos_promedio": 45.7,
+    "ingresos_mediana": 41,
+    "activos_7d": 31,
+    "inactivos_30d": 3,
+    "fuente": "emoflow-api"
+  },
+  {
+    "fecha": "2026-07-29",
+    "grupo_ciudad": "UY",
+    "participantes": 77,
+    "ingresos_promedio": 32.5,
+    "ingresos_mediana": 29,
+    "activos_7d": 42,
+    "inactivos_30d": 17,
+    "fuente": "emoflow-api"
+  },
+  {
     "fecha": "2026-08-04",
     "grupo_ciudad": "BAQ",
     "participantes": 137,
@@ -1027,46 +1067,6 @@
     "ingresos_mediana": 41,
     "activos_7d": 29,
     "inactivos_30d": 3,
-    "fuente": "emoflow-api"
-  },
-  {
-    "fecha": "2026-07-29",
-    "grupo_ciudad": "MED",
-    "participantes": 99,
-    "ingresos_promedio": 27.7,
-    "ingresos_mediana": 19,
-    "activos_7d": 42,
-    "inactivos_30d": 18,
-    "fuente": "emoflow-api"
-  },
-  {
-    "fecha": "2026-07-29",
-    "grupo_ciudad": "PAN",
-    "participantes": 39,
-    "ingresos_promedio": 40.4,
-    "ingresos_mediana": 33,
-    "activos_7d": 34,
-    "inactivos_30d": 3,
-    "fuente": "emoflow-api"
-  },
-  {
-    "fecha": "2026-07-29",
-    "grupo_ciudad": "QTO",
-    "participantes": 39,
-    "ingresos_promedio": 45.7,
-    "ingresos_mediana": 41,
-    "activos_7d": 31,
-    "inactivos_30d": 3,
-    "fuente": "emoflow-api"
-  },
-  {
-    "fecha": "2026-07-29",
-    "grupo_ciudad": "UY",
-    "participantes": 77,
-    "ingresos_promedio": 32.5,
-    "ingresos_mediana": 29,
-    "activos_7d": 42,
-    "inactivos_30d": 17,
     "fuente": "emoflow-api"
   },
   {
