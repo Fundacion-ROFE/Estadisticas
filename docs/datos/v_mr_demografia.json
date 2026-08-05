@@ -52,32 +52,32 @@
   {
     "dimension": "tipo_vivienda",
     "categoria": "arrendado",
-    "total": 312
+    "total": 563
   },
   {
     "dimension": "tipo_vivienda",
     "categoria": "familiar",
-    "total": 190
+    "total": 340
   },
   {
     "dimension": "tipo_vivienda",
     "categoria": "propia",
-    "total": 67
+    "total": 189
   },
   {
     "dimension": "estrato",
     "categoria": "2",
-    "total": 163
+    "total": 370
   },
   {
     "dimension": "estrato",
     "categoria": "4",
-    "total": 2
+    "total": 18
   },
   {
     "dimension": "estrato",
     "categoria": "3",
-    "total": 61
+    "total": 173
   },
   {
     "dimension": "estrato",
@@ -87,17 +87,17 @@
   {
     "dimension": "estrato",
     "categoria": "5",
-    "total": 1
+    "total": 3
   },
   {
     "dimension": "estrato",
     "categoria": "1",
-    "total": 343
+    "total": 517
   },
   {
     "dimension": "edad_rango",
     "categoria": "18-25",
-    "total": 66
+    "total": 751
   },
   {
     "dimension": "edad_rango",
@@ -112,7 +112,7 @@
   {
     "dimension": "edad_rango",
     "categoria": "26-35",
-    "total": 190
+    "total": 210
   },
   {
     "dimension": "edad_rango",
@@ -122,7 +122,7 @@
   {
     "dimension": "emprendimiento",
     "categoria": "sin_emprendimiento",
-    "total": 163
+    "total": 704
   },
   {
     "dimension": "emprendimiento",

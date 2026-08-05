@@ -91,11 +91,11 @@
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
     "cohorte": "2026",
     "matriculados": 272,
-    "completados": 50,
-    "en_progreso": 90,
-    "sin_iniciar": 132,
-    "pct_completados": 18.4,
-    "promedio_avance": 25.7,
+    "completados": 64,
+    "en_progreso": 109,
+    "sin_iniciar": 99,
+    "pct_completados": 23.5,
+    "promedio_avance": 34.5,
     "programa": "jc"
   },
   {
@@ -234,11 +234,11 @@
     "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
     "cohorte": "2026",
     "matriculados": 179,
-    "completados": 11,
+    "completados": 15,
     "en_progreso": 27,
-    "sin_iniciar": 141,
-    "pct_completados": 6.1,
-    "promedio_avance": 12.4,
+    "sin_iniciar": 137,
+    "pct_completados": 8.4,
+    "promedio_avance": 15.2,
     "programa": "mr"
   },
   {
@@ -283,6 +283,17 @@
     "sin_iniciar": 35,
     "pct_completados": 92.2,
     "promedio_avance": 92.6,
+    "programa": "jc"
+  },
+  {
+    "curso": "Aprobados 2023 (BD Monitorias, sin curso específico)",
+    "cohorte": "2023",
+    "matriculados": 152,
+    "completados": 11,
+    "en_progreso": 0,
+    "sin_iniciar": 0,
+    "pct_completados": 7.2,
+    "promedio_avance": 7.2,
     "programa": "jc"
   },
   {
@@ -432,11 +443,11 @@
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
     "cohorte": "2026",
     "matriculados": 754,
-    "completados": 676,
-    "en_progreso": 64,
+    "completados": 687,
+    "en_progreso": 53,
     "sin_iniciar": 14,
-    "pct_completados": 89.7,
-    "promedio_avance": 93.5,
+    "pct_completados": 91.1,
+    "promedio_avance": 94.3,
     "programa": "jc"
   },
   {

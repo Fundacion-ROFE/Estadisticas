@@ -105,9 +105,9 @@
     "programa": "jc",
     "grupo_ciudad": "BOG",
     "matriculados": 128,
-    "completados": 111,
-    "promedio_avance": 92.7,
-    "pct_completados": 86.7
+    "completados": 118,
+    "promedio_avance": 95.2,
+    "pct_completados": 92.2
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -125,9 +125,9 @@
     "programa": "jc",
     "grupo_ciudad": "CTG",
     "matriculados": 98,
-    "completados": 88,
-    "promedio_avance": 92.4,
-    "pct_completados": 89.8
+    "completados": 89,
+    "promedio_avance": 92.8,
+    "pct_completados": 90.8
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -135,9 +135,9 @@
     "programa": "jc",
     "grupo_ciudad": "GYL",
     "matriculados": 79,
-    "completados": 62,
-    "promedio_avance": 83.1,
-    "pct_completados": 78.5
+    "completados": 64,
+    "promedio_avance": 84.9,
+    "pct_completados": 81.0
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -146,7 +146,7 @@
     "grupo_ciudad": "MED",
     "matriculados": 93,
     "completados": 80,
-    "promedio_avance": 91.7,
+    "promedio_avance": 92.1,
     "pct_completados": 86.0
   },
   {
@@ -155,9 +155,9 @@
     "programa": "jc",
     "grupo_ciudad": "PAN",
     "matriculados": 35,
-    "completados": 31,
-    "promedio_avance": 95.5,
-    "pct_completados": 88.6
+    "completados": 32,
+    "promedio_avance": 96.4,
+    "pct_completados": 91.4
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -185,9 +185,9 @@
     "programa": "jc",
     "grupo_ciudad": "BAQ",
     "matriculados": 50,
-    "completados": 7,
-    "promedio_avance": 19.9,
-    "pct_completados": 14.0
+    "completados": 12,
+    "promedio_avance": 34.3,
+    "pct_completados": 24.0
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
@@ -195,9 +195,9 @@
     "programa": "jc",
     "grupo_ciudad": "BOG",
     "matriculados": 40,
-    "completados": 6,
-    "promedio_avance": 21.7,
-    "pct_completados": 15.0
+    "completados": 10,
+    "promedio_avance": 43.4,
+    "pct_completados": 25.0
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
@@ -205,9 +205,9 @@
     "programa": "jc",
     "grupo_ciudad": "CAL",
     "matriculados": 23,
-    "completados": 7,
-    "promedio_avance": 37.4,
-    "pct_completados": 30.4
+    "completados": 9,
+    "promedio_avance": 45.7,
+    "pct_completados": 39.1
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
@@ -216,7 +216,7 @@
     "grupo_ciudad": "CTG",
     "matriculados": 22,
     "completados": 3,
-    "promedio_avance": 14.1,
+    "promedio_avance": 17.3,
     "pct_completados": 13.6
   },
   {
@@ -226,7 +226,7 @@
     "grupo_ciudad": "GYL",
     "matriculados": 28,
     "completados": 7,
-    "promedio_avance": 40.4,
+    "promedio_avance": 43.3,
     "pct_completados": 25.0
   },
   {
@@ -236,7 +236,7 @@
     "grupo_ciudad": "MED",
     "matriculados": 49,
     "completados": 8,
-    "promedio_avance": 20.1,
+    "promedio_avance": 21.6,
     "pct_completados": 16.3
   },
   {
@@ -246,7 +246,7 @@
     "grupo_ciudad": "PAN",
     "matriculados": 21,
     "completados": 1,
-    "promedio_avance": 17.1,
+    "promedio_avance": 21.3,
     "pct_completados": 4.8
   },
   {
@@ -255,9 +255,9 @@
     "programa": "jc",
     "grupo_ciudad": "QTO",
     "matriculados": 12,
-    "completados": 3,
-    "promedio_avance": 42.3,
-    "pct_completados": 25.0
+    "completados": 4,
+    "promedio_avance": 47.1,
+    "pct_completados": 33.3
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
@@ -265,9 +265,9 @@
     "programa": "jc",
     "grupo_ciudad": "UY",
     "matriculados": 26,
-    "completados": 8,
-    "promedio_avance": 37.6,
-    "pct_completados": 30.8
+    "completados": 10,
+    "promedio_avance": 46.8,
+    "pct_completados": 38.5
   },
   {
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
@@ -728,5 +728,985 @@
     "completados": 0,
     "promedio_avance": 0.0,
     "pct_completados": 0.0
+  },
+  {
+    "curso": "Bienvenidos a Jóvenes creaTIvos",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "BAQ",
+    "matriculados": 57,
+    "completados": 57,
+    "promedio_avance": 99.6,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Bienvenidos a Jóvenes creaTIvos",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "BOG",
+    "matriculados": 44,
+    "completados": 43,
+    "promedio_avance": 98.7,
+    "pct_completados": 97.7
+  },
+  {
+    "curso": "Bienvenidos a Jóvenes creaTIvos",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "CAL",
+    "matriculados": 68,
+    "completados": 67,
+    "promedio_avance": 98.4,
+    "pct_completados": 98.5
+  },
+  {
+    "curso": "Bienvenidos a Jóvenes creaTIvos",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "CTG",
+    "matriculados": 49,
+    "completados": 49,
+    "promedio_avance": 99.4,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Bienvenidos a Jóvenes creaTIvos",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "GYL",
+    "matriculados": 22,
+    "completados": 22,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Bienvenidos a Jóvenes creaTIvos",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "MED",
+    "matriculados": 62,
+    "completados": 62,
+    "promedio_avance": 99.7,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Bienvenidos a Jóvenes creaTIvos",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "UY",
+    "matriculados": 51,
+    "completados": 46,
+    "promedio_avance": 93.1,
+    "pct_completados": 90.2
+  },
+  {
+    "curso": "Desarrollo front end avanzado",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "BAQ",
+    "matriculados": 6,
+    "completados": 3,
+    "promedio_avance": 67.8,
+    "pct_completados": 50.0
+  },
+  {
+    "curso": "Desarrollo front end avanzado",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "BOG",
+    "matriculados": 5,
+    "completados": 4,
+    "promedio_avance": 89.2,
+    "pct_completados": 80.0
+  },
+  {
+    "curso": "Desarrollo front end avanzado",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "CAL",
+    "matriculados": 4,
+    "completados": 3,
+    "promedio_avance": 89.5,
+    "pct_completados": 75.0
+  },
+  {
+    "curso": "Desarrollo front end avanzado",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "CTG",
+    "matriculados": 2,
+    "completados": 2,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Desarrollo front end avanzado",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "GYL",
+    "matriculados": 1,
+    "completados": 1,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Desarrollo front end avanzado",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "MED",
+    "matriculados": 4,
+    "completados": 2,
+    "promedio_avance": 76.0,
+    "pct_completados": 50.0
+  },
+  {
+    "curso": "Desarrollo front end avanzado",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "UY",
+    "matriculados": 3,
+    "completados": 1,
+    "promedio_avance": 52.0,
+    "pct_completados": 33.3
+  },
+  {
+    "curso": "Desarrollo Web Front-End - CSS - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "BAQ",
+    "matriculados": 56,
+    "completados": 27,
+    "promedio_avance": 52.3,
+    "pct_completados": 48.2
+  },
+  {
+    "curso": "Desarrollo Web Front-End - CSS - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "BOG",
+    "matriculados": 56,
+    "completados": 26,
+    "promedio_avance": 51.6,
+    "pct_completados": 46.4
+  },
+  {
+    "curso": "Desarrollo Web Front-End - CSS - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "CAL",
+    "matriculados": 64,
+    "completados": 34,
+    "promedio_avance": 56.8,
+    "pct_completados": 53.1
+  },
+  {
+    "curso": "Desarrollo Web Front-End - CSS - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "CTG",
+    "matriculados": 69,
+    "completados": 46,
+    "promedio_avance": 70.8,
+    "pct_completados": 66.7
+  },
+  {
+    "curso": "Desarrollo Web Front-End - CSS - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "GYL",
+    "matriculados": 22,
+    "completados": 15,
+    "promedio_avance": 70.0,
+    "pct_completados": 68.2
+  },
+  {
+    "curso": "Desarrollo Web Front-End - CSS - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "MED",
+    "matriculados": 51,
+    "completados": 28,
+    "promedio_avance": 59.5,
+    "pct_completados": 54.9
+  },
+  {
+    "curso": "Desarrollo Web Front-End - CSS - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "UY",
+    "matriculados": 46,
+    "completados": 10,
+    "promedio_avance": 24.6,
+    "pct_completados": 21.7
+  },
+  {
+    "curso": "Desarrollo Web Front-End - HTML - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "BAQ",
+    "matriculados": 55,
+    "completados": 35,
+    "promedio_avance": 67.7,
+    "pct_completados": 63.6
+  },
+  {
+    "curso": "Desarrollo Web Front-End - HTML - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "BOG",
+    "matriculados": 46,
+    "completados": 29,
+    "promedio_avance": 68.2,
+    "pct_completados": 63.0
+  },
+  {
+    "curso": "Desarrollo Web Front-End - HTML - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "CAL",
+    "matriculados": 76,
+    "completados": 56,
+    "promedio_avance": 79.8,
+    "pct_completados": 73.7
+  },
+  {
+    "curso": "Desarrollo Web Front-End - HTML - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "CTG",
+    "matriculados": 64,
+    "completados": 52,
+    "promedio_avance": 83.4,
+    "pct_completados": 81.3
+  },
+  {
+    "curso": "Desarrollo Web Front-End - HTML - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "GYL",
+    "matriculados": 23,
+    "completados": 19,
+    "promedio_avance": 92.6,
+    "pct_completados": 82.6
+  },
+  {
+    "curso": "Desarrollo Web Front-End - HTML - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "MED",
+    "matriculados": 58,
+    "completados": 44,
+    "promedio_avance": 81.7,
+    "pct_completados": 75.9
+  },
+  {
+    "curso": "Desarrollo Web Front-End - HTML - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "UY",
+    "matriculados": 56,
+    "completados": 25,
+    "promedio_avance": 51.9,
+    "pct_completados": 44.6
+  },
+  {
+    "curso": "Desarrollo Web Front-End - JS - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "BAQ",
+    "matriculados": 52,
+    "completados": 32,
+    "promedio_avance": 64.4,
+    "pct_completados": 61.5
+  },
+  {
+    "curso": "Desarrollo Web Front-End - JS - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "BOG",
+    "matriculados": 52,
+    "completados": 38,
+    "promedio_avance": 74.7,
+    "pct_completados": 73.1
+  },
+  {
+    "curso": "Desarrollo Web Front-End - JS - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "CAL",
+    "matriculados": 58,
+    "completados": 42,
+    "promedio_avance": 73.0,
+    "pct_completados": 72.4
+  },
+  {
+    "curso": "Desarrollo Web Front-End - JS - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "CTG",
+    "matriculados": 63,
+    "completados": 53,
+    "promedio_avance": 84.3,
+    "pct_completados": 84.1
+  },
+  {
+    "curso": "Desarrollo Web Front-End - JS - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "GYL",
+    "matriculados": 15,
+    "completados": 12,
+    "promedio_avance": 83.3,
+    "pct_completados": 80.0
+  },
+  {
+    "curso": "Desarrollo Web Front-End - JS - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "MED",
+    "matriculados": 48,
+    "completados": 35,
+    "promedio_avance": 73.2,
+    "pct_completados": 72.9
+  },
+  {
+    "curso": "Desarrollo Web Front-End - JS - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "UY",
+    "matriculados": 41,
+    "completados": 16,
+    "promedio_avance": 40.5,
+    "pct_completados": 39.0
+  },
+  {
+    "curso": "Emprendimiento: Idea de Negocio JC",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "BAQ",
+    "matriculados": 65,
+    "completados": 59,
+    "promedio_avance": 94.1,
+    "pct_completados": 90.8
+  },
+  {
+    "curso": "Emprendimiento: Idea de Negocio JC",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "BOG",
+    "matriculados": 61,
+    "completados": 56,
+    "promedio_avance": 93.0,
+    "pct_completados": 91.8
+  },
+  {
+    "curso": "Emprendimiento: Idea de Negocio JC",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "CAL",
+    "matriculados": 78,
+    "completados": 71,
+    "promedio_avance": 93.4,
+    "pct_completados": 91.0
+  },
+  {
+    "curso": "Emprendimiento: Idea de Negocio JC",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "CTG",
+    "matriculados": 68,
+    "completados": 66,
+    "promedio_avance": 97.2,
+    "pct_completados": 97.1
+  },
+  {
+    "curso": "Emprendimiento: Idea de Negocio JC",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "GYL",
+    "matriculados": 27,
+    "completados": 27,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Emprendimiento: Idea de Negocio JC",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "MED",
+    "matriculados": 68,
+    "completados": 67,
+    "promedio_avance": 98.4,
+    "pct_completados": 98.5
+  },
+  {
+    "curso": "Emprendimiento: Idea de Negocio JC",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "UY",
+    "matriculados": 53,
+    "completados": 42,
+    "promedio_avance": 82.5,
+    "pct_completados": 79.2
+  },
+  {
+    "curso": "Fundamentos Lógica de Programación - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "BAQ",
+    "matriculados": 67,
+    "completados": 53,
+    "promedio_avance": 84.0,
+    "pct_completados": 79.1
+  },
+  {
+    "curso": "Fundamentos Lógica de Programación - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "BOG",
+    "matriculados": 63,
+    "completados": 52,
+    "promedio_avance": 85.9,
+    "pct_completados": 82.5
+  },
+  {
+    "curso": "Fundamentos Lógica de Programación - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "CAL",
+    "matriculados": 81,
+    "completados": 69,
+    "promedio_avance": 88.8,
+    "pct_completados": 85.2
+  },
+  {
+    "curso": "Fundamentos Lógica de Programación - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "CTG",
+    "matriculados": 76,
+    "completados": 68,
+    "promedio_avance": 91.4,
+    "pct_completados": 89.5
+  },
+  {
+    "curso": "Fundamentos Lógica de Programación - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "GYL",
+    "matriculados": 27,
+    "completados": 27,
+    "promedio_avance": 99.3,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Fundamentos Lógica de Programación - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "MED",
+    "matriculados": 69,
+    "completados": 60,
+    "promedio_avance": 90.7,
+    "pct_completados": 87.0
+  },
+  {
+    "curso": "Fundamentos Lógica de Programación - 2026",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "UY",
+    "matriculados": 51,
+    "completados": 29,
+    "promedio_avance": 69.5,
+    "pct_completados": 56.9
+  },
+  {
+    "curso": "Habilidades esenciales para ser un emprendedor exitoso",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "BAQ",
+    "matriculados": 63,
+    "completados": 61,
+    "promedio_avance": 98.0,
+    "pct_completados": 96.8
+  },
+  {
+    "curso": "Habilidades esenciales para ser un emprendedor exitoso",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "BOG",
+    "matriculados": 59,
+    "completados": 58,
+    "promedio_avance": 98.2,
+    "pct_completados": 98.3
+  },
+  {
+    "curso": "Habilidades esenciales para ser un emprendedor exitoso",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "CAL",
+    "matriculados": 77,
+    "completados": 75,
+    "promedio_avance": 98.3,
+    "pct_completados": 97.4
+  },
+  {
+    "curso": "Habilidades esenciales para ser un emprendedor exitoso",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "CTG",
+    "matriculados": 66,
+    "completados": 65,
+    "promedio_avance": 98.5,
+    "pct_completados": 98.5
+  },
+  {
+    "curso": "Habilidades esenciales para ser un emprendedor exitoso",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "GYL",
+    "matriculados": 27,
+    "completados": 27,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Habilidades esenciales para ser un emprendedor exitoso",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "MED",
+    "matriculados": 74,
+    "completados": 73,
+    "promedio_avance": 99.5,
+    "pct_completados": 98.6
+  },
+  {
+    "curso": "Habilidades esenciales para ser un emprendedor exitoso",
+    "cohorte": "2024",
+    "programa": "jc",
+    "grupo_ciudad": "UY",
+    "matriculados": 59,
+    "completados": 50,
+    "promedio_avance": 90.0,
+    "pct_completados": 84.7
+  },
+  {
+    "curso": "Aprobados 2023 (BD Monitorias, sin curso específico)",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "BAQ",
+    "matriculados": 25,
+    "completados": 0,
+    "promedio_avance": 0.0,
+    "pct_completados": 0.0
+  },
+  {
+    "curso": "Aprobados 2023 (BD Monitorias, sin curso específico)",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "BOG",
+    "matriculados": 29,
+    "completados": 2,
+    "promedio_avance": 6.9,
+    "pct_completados": 6.9
+  },
+  {
+    "curso": "Aprobados 2023 (BD Monitorias, sin curso específico)",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "CAL",
+    "matriculados": 23,
+    "completados": 2,
+    "promedio_avance": 8.7,
+    "pct_completados": 8.7
+  },
+  {
+    "curso": "Aprobados 2023 (BD Monitorias, sin curso específico)",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "CTG",
+    "matriculados": 9,
+    "completados": 0,
+    "promedio_avance": 0.0,
+    "pct_completados": 0.0
+  },
+  {
+    "curso": "Aprobados 2023 (BD Monitorias, sin curso específico)",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "MED",
+    "matriculados": 52,
+    "completados": 6,
+    "promedio_avance": 11.5,
+    "pct_completados": 11.5
+  },
+  {
+    "curso": "Aprobados 2023 (BD Monitorias, sin curso específico)",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "UY",
+    "matriculados": 14,
+    "completados": 1,
+    "promedio_avance": 7.1,
+    "pct_completados": 7.1
+  },
+  {
+    "curso": "Desarrollo front end avanzado",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "BAQ",
+    "matriculados": 1,
+    "completados": 1,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Desarrollo front end avanzado",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "BOG",
+    "matriculados": 4,
+    "completados": 4,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Desarrollo front end avanzado",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "CAL",
+    "matriculados": 2,
+    "completados": 1,
+    "promedio_avance": 50.0,
+    "pct_completados": 50.0
+  },
+  {
+    "curso": "Desarrollo front end avanzado",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "CTG",
+    "matriculados": 7,
+    "completados": 6,
+    "promedio_avance": 85.7,
+    "pct_completados": 85.7
+  },
+  {
+    "curso": "Desarrollo front end avanzado",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "MED",
+    "matriculados": 9,
+    "completados": 9,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Desarrollo front end avanzado",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "UY",
+    "matriculados": 1,
+    "completados": 1,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Desarrollo Web Front-End - HTML - 2026",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "BAQ",
+    "matriculados": 50,
+    "completados": 49,
+    "promedio_avance": 98.5,
+    "pct_completados": 98.0
+  },
+  {
+    "curso": "Desarrollo Web Front-End - HTML - 2026",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "BOG",
+    "matriculados": 29,
+    "completados": 29,
+    "promedio_avance": 99.3,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Desarrollo Web Front-End - HTML - 2026",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "CAL",
+    "matriculados": 48,
+    "completados": 31,
+    "promedio_avance": 76.4,
+    "pct_completados": 64.6
+  },
+  {
+    "curso": "Desarrollo Web Front-End - HTML - 2026",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "CTG",
+    "matriculados": 43,
+    "completados": 43,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Desarrollo Web Front-End - HTML - 2026",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "MED",
+    "matriculados": 62,
+    "completados": 57,
+    "promedio_avance": 95.6,
+    "pct_completados": 91.9
+  },
+  {
+    "curso": "Desarrollo Web Front-End - HTML - 2026",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "UY",
+    "matriculados": 17,
+    "completados": 17,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Emprendimiento: Idea de Negocio JC",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "BAQ",
+    "matriculados": 42,
+    "completados": 42,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Emprendimiento: Idea de Negocio JC",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "BOG",
+    "matriculados": 37,
+    "completados": 37,
+    "promedio_avance": 99.6,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Emprendimiento: Idea de Negocio JC",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "CAL",
+    "matriculados": 50,
+    "completados": 44,
+    "promedio_avance": 88.1,
+    "pct_completados": 88.0
+  },
+  {
+    "curso": "Emprendimiento: Idea de Negocio JC",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "CTG",
+    "matriculados": 39,
+    "completados": 39,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Emprendimiento: Idea de Negocio JC",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "MED",
+    "matriculados": 73,
+    "completados": 70,
+    "promedio_avance": 98.6,
+    "pct_completados": 95.9
+  },
+  {
+    "curso": "Emprendimiento: Idea de Negocio JC",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "UY",
+    "matriculados": 20,
+    "completados": 19,
+    "promedio_avance": 95.0,
+    "pct_completados": 95.0
+  },
+  {
+    "curso": "Fundamentos Lógica de Programación - 2026",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "BAQ",
+    "matriculados": 48,
+    "completados": 47,
+    "promedio_avance": 98.9,
+    "pct_completados": 97.9
+  },
+  {
+    "curso": "Fundamentos Lógica de Programación - 2026",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "BOG",
+    "matriculados": 37,
+    "completados": 36,
+    "promedio_avance": 99.0,
+    "pct_completados": 97.3
+  },
+  {
+    "curso": "Fundamentos Lógica de Programación - 2026",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "CAL",
+    "matriculados": 50,
+    "completados": 41,
+    "promedio_avance": 86.0,
+    "pct_completados": 82.0
+  },
+  {
+    "curso": "Fundamentos Lógica de Programación - 2026",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "CTG",
+    "matriculados": 48,
+    "completados": 47,
+    "promedio_avance": 99.5,
+    "pct_completados": 97.9
+  },
+  {
+    "curso": "Fundamentos Lógica de Programación - 2026",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "MED",
+    "matriculados": 85,
+    "completados": 84,
+    "promedio_avance": 98.6,
+    "pct_completados": 98.8
+  },
+  {
+    "curso": "Fundamentos Lógica de Programación - 2026",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "UY",
+    "matriculados": 8,
+    "completados": 8,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Habilidades esenciales para ser un emprendedor exitoso",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "BAQ",
+    "matriculados": 45,
+    "completados": 45,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Habilidades esenciales para ser un emprendedor exitoso",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "BOG",
+    "matriculados": 27,
+    "completados": 27,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Habilidades esenciales para ser un emprendedor exitoso",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "CAL",
+    "matriculados": 53,
+    "completados": 47,
+    "promedio_avance": 92.4,
+    "pct_completados": 88.7
+  },
+  {
+    "curso": "Habilidades esenciales para ser un emprendedor exitoso",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "CTG",
+    "matriculados": 43,
+    "completados": 43,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Habilidades esenciales para ser un emprendedor exitoso",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "MED",
+    "matriculados": 83,
+    "completados": 83,
+    "promedio_avance": 99.6,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Habilidades esenciales para ser un emprendedor exitoso",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "UY",
+    "matriculados": 10,
+    "completados": 10,
+    "promedio_avance": 98.8,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Sistema de Control de Versiones - GIT",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "BAQ",
+    "matriculados": 49,
+    "completados": 48,
+    "promedio_avance": 97.8,
+    "pct_completados": 98.0
+  },
+  {
+    "curso": "Sistema de Control de Versiones - GIT",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "BOG",
+    "matriculados": 36,
+    "completados": 36,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Sistema de Control de Versiones - GIT",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "CAL",
+    "matriculados": 55,
+    "completados": 40,
+    "promedio_avance": 74.3,
+    "pct_completados": 72.7
+  },
+  {
+    "curso": "Sistema de Control de Versiones - GIT",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "CTG",
+    "matriculados": 47,
+    "completados": 47,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Sistema de Control de Versiones - GIT",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "MED",
+    "matriculados": 86,
+    "completados": 86,
+    "promedio_avance": 99.8,
+    "pct_completados": 100.0
+  },
+  {
+    "curso": "Sistema de Control de Versiones - GIT",
+    "cohorte": "2023",
+    "programa": "jc",
+    "grupo_ciudad": "UY",
+    "matriculados": 18,
+    "completados": 18,
+    "promedio_avance": 100.0,
+    "pct_completados": 100.0
   }
 ]

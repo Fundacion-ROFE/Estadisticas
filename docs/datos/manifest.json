@@ -1,14 +1,14 @@
 {
-  "fecha_exportacion": "2026-08-04T09:41:40.989719",
-  "total_registros": 1708,
+  "fecha_exportacion": "2026-08-05T17:31:09.130722",
+  "total_registros": 1901,
   "tablas_configuradas": 16,
   "tablas_exportadas_ok": 16,
   "tablas_fallidas": [],
   "tablas_con_0_filas": [],
   "detalle": {
-    "courses": 41,
-    "v_curso_completion": 41,
-    "v_curso_completion_por_ciudad": 73,
+    "courses": 42,
+    "v_curso_completion": 42,
+    "v_curso_completion_por_ciudad": 171,
     "v_demografia_grupo": 9,
     "v_mr_demografia": 26,
     "cohorte_stats": 6,
@@ -16,11 +16,11 @@
     "v_emoflow_por_ciudad": 9,
     "v_emoflow_bandas": 5,
     "v_emoflow_bandas_ciudad": 43,
-    "historial_emoflow": 29,
-    "historial_emoflow_ciudad": 126,
+    "historial_emoflow": 30,
+    "historial_emoflow_ciudad": 135,
     "cohorte_ingresos": 2,
     "aprobacion_cursos": 11,
-    "historial_cursos": 242,
-    "historial_cursos_ciudad": 1044
+    "historial_cursos": 253,
+    "historial_cursos_ciudad": 1116
   }
 }
