@@ -32,7 +32,7 @@
   {
     "dimension": "nivel_estudio",
     "categoria": "secundaria",
-    "total": 217
+    "total": 852
   },
   {
     "dimension": "nivel_estudio",
@@ -122,7 +122,7 @@
   {
     "dimension": "emprendimiento",
     "categoria": "sin_emprendimiento",
-    "total": 704
+    "total": 798
   },
   {
     "dimension": "emprendimiento",
