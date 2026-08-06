@@ -1,17 +1,17 @@
 {
-  "ultima_actualizacion": "2026-08-05T17:03:08.346466-05:00",
+  "ultima_actualizacion": "2026-08-06T17:02:54.321344-05:00",
   "anio": "2026",
   "totales": {
-    "total_retirados": 250,
+    "total_retirados": 245,
     "cancelados": 78,
     "desertores": 0,
     "aplazados": 0,
-    "sin_registro_hoja": 172
+    "sin_registro_hoja": 167
   },
   "por_tipo": [
     {
       "tipo": "Sin registro de retiro",
-      "cantidad": 172
+      "cantidad": 167
     },
     {
       "tipo": "Cancelado",
@@ -21,7 +21,7 @@
   "por_causa": [
     {
       "causa": "Sin registro de retiro",
-      "cantidad": 172
+      "cantidad": 167
     },
     {
       "causa": "Voluntario",
@@ -35,7 +35,7 @@
     },
     {
       "programa": "Jóvenes creaTIvos",
-      "cantidad": 83
+      "cantidad": 78
     }
   ],
   "por_mes": [
@@ -95,7 +95,7 @@
     {
       "orden": 7,
       "etapa": "Desarrollo Web Front-End - HTML - 2026",
-      "cantidad": 5
+      "cantidad": 0
     }
   ],
   "ruta": [
