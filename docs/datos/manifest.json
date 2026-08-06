@@ -1,6 +1,6 @@
 {
-  "fecha_exportacion": "2026-08-05T21:35:56.756721",
-  "total_registros": 1901,
+  "fecha_exportacion": "2026-08-06T09:12:40.064590",
+  "total_registros": 1994,
   "tablas_configuradas": 16,
   "tablas_exportadas_ok": 16,
   "tablas_fallidas": [],
@@ -16,11 +16,11 @@
     "v_emoflow_por_ciudad": 9,
     "v_emoflow_bandas": 5,
     "v_emoflow_bandas_ciudad": 43,
-    "historial_emoflow": 30,
-    "historial_emoflow_ciudad": 135,
+    "historial_emoflow": 31,
+    "historial_emoflow_ciudad": 144,
     "cohorte_ingresos": 2,
     "aprobacion_cursos": 11,
-    "historial_cursos": 253,
-    "historial_cursos_ciudad": 1116
+    "historial_cursos": 264,
+    "historial_cursos_ciudad": 1188
   }
 }
