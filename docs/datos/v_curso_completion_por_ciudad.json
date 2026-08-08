@@ -95,9 +95,9 @@
     "programa": "jc",
     "grupo_ciudad": "BAQ",
     "matriculados": 131,
-    "completados": 124,
-    "promedio_avance": 97.4,
-    "pct_completados": 94.7
+    "completados": 126,
+    "promedio_avance": 98.0,
+    "pct_completados": 96.2
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -105,9 +105,9 @@
     "programa": "jc",
     "grupo_ciudad": "BOG",
     "matriculados": 128,
-    "completados": 118,
-    "promedio_avance": 95.3,
-    "pct_completados": 92.2
+    "completados": 119,
+    "promedio_avance": 95.6,
+    "pct_completados": 93.0
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -126,7 +126,7 @@
     "grupo_ciudad": "CTG",
     "matriculados": 98,
     "completados": 89,
-    "promedio_avance": 92.8,
+    "promedio_avance": 92.9,
     "pct_completados": 90.8
   },
   {
@@ -135,9 +135,9 @@
     "programa": "jc",
     "grupo_ciudad": "GYL",
     "matriculados": 79,
-    "completados": 68,
-    "promedio_avance": 87.5,
-    "pct_completados": 86.1
+    "completados": 70,
+    "promedio_avance": 89.2,
+    "pct_completados": 88.6
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -145,9 +145,9 @@
     "programa": "jc",
     "grupo_ciudad": "MED",
     "matriculados": 93,
-    "completados": 80,
-    "promedio_avance": 92.1,
-    "pct_completados": 86.0
+    "completados": 82,
+    "promedio_avance": 93.2,
+    "pct_completados": 88.2
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -185,9 +185,9 @@
     "programa": "jc",
     "grupo_ciudad": "BAQ",
     "matriculados": 50,
-    "completados": 17,
-    "promedio_avance": 53.6,
-    "pct_completados": 34.0
+    "completados": 24,
+    "promedio_avance": 68.9,
+    "pct_completados": 48.0
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
@@ -195,9 +195,9 @@
     "programa": "jc",
     "grupo_ciudad": "BOG",
     "matriculados": 40,
-    "completados": 12,
-    "promedio_avance": 52.4,
-    "pct_completados": 30.0
+    "completados": 14,
+    "promedio_avance": 59.0,
+    "pct_completados": 35.0
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
@@ -206,7 +206,7 @@
     "grupo_ciudad": "CAL",
     "matriculados": 23,
     "completados": 10,
-    "promedio_avance": 57.3,
+    "promedio_avance": 59.4,
     "pct_completados": 43.5
   },
   {
@@ -215,9 +215,9 @@
     "programa": "jc",
     "grupo_ciudad": "CTG",
     "matriculados": 22,
-    "completados": 5,
-    "promedio_avance": 23.8,
-    "pct_completados": 22.7
+    "completados": 9,
+    "promedio_avance": 42.9,
+    "pct_completados": 40.9
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
@@ -225,9 +225,9 @@
     "programa": "jc",
     "grupo_ciudad": "GYL",
     "matriculados": 28,
-    "completados": 10,
-    "promedio_avance": 54.1,
-    "pct_completados": 35.7
+    "completados": 11,
+    "promedio_avance": 59.0,
+    "pct_completados": 39.3
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
@@ -235,9 +235,9 @@
     "programa": "jc",
     "grupo_ciudad": "MED",
     "matriculados": 49,
-    "completados": 9,
-    "promedio_avance": 28.2,
-    "pct_completados": 18.4
+    "completados": 13,
+    "promedio_avance": 38.4,
+    "pct_completados": 26.5
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
@@ -246,7 +246,7 @@
     "grupo_ciudad": "PAN",
     "matriculados": 21,
     "completados": 1,
-    "promedio_avance": 25.8,
+    "promedio_avance": 27.5,
     "pct_completados": 4.8
   },
   {
@@ -256,7 +256,7 @@
     "grupo_ciudad": "QTO",
     "matriculados": 12,
     "completados": 4,
-    "promedio_avance": 47.5,
+    "promedio_avance": 48.0,
     "pct_completados": 33.3
   },
   {
@@ -265,9 +265,9 @@
     "programa": "jc",
     "grupo_ciudad": "UY",
     "matriculados": 26,
-    "completados": 10,
-    "promedio_avance": 48.4,
-    "pct_completados": 38.5
+    "completados": 11,
+    "promedio_avance": 62.4,
+    "pct_completados": 42.3
   },
   {
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
