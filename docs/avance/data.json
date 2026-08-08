@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-08-06T17:01:59.210839-05:00",
+  "ultima_actualizacion": "2026-08-08T10:02:57.261434-05:00",
   "segmento": "Logica-Nivel 2-2026",
   "por_curso": [
     {
@@ -23,27 +23,27 @@
     {
       "nombre": "Habilidades Esenciales",
       "estudiantes": 756,
-      "aprobados": 737,
-      "pct_aprobados": 97.5,
-      "promedio": 99.51,
+      "aprobados": 740,
+      "pct_aprobados": 97.9,
+      "promedio": 99.53,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "Emprendimiento",
       "estudiantes": 755,
-      "aprobados": 726,
-      "pct_aprobados": 96.2,
-      "promedio": 99.48,
+      "aprobados": 731,
+      "pct_aprobados": 96.8,
+      "promedio": 99.54,
       "min": 0.0,
       "max": 101.0
     },
     {
       "nombre": "IA",
       "estudiantes": 754,
-      "aprobados": 742,
-      "pct_aprobados": 98.4,
-      "promedio": 99.53,
+      "aprobados": 743,
+      "pct_aprobados": 98.5,
+      "promedio": 99.66,
       "min": 0.0,
       "max": 100.0
     },
@@ -59,27 +59,27 @@
     {
       "nombre": "HTML",
       "estudiantes": 754,
-      "aprobados": 669,
-      "pct_aprobados": 88.7,
-      "promedio": 94.33,
+      "aprobados": 675,
+      "pct_aprobados": 89.5,
+      "promedio": 94.71,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "JS",
       "estudiantes": 272,
-      "aprobados": 10,
-      "pct_aprobados": 3.7,
-      "promedio": 40.25,
+      "aprobados": 15,
+      "pct_aprobados": 5.5,
+      "promedio": 48.14,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "HTML - AUT",
       "estudiantes": 777,
-      "aprobados": 12,
-      "pct_aprobados": 1.5,
-      "promedio": 15.29,
+      "aprobados": 19,
+      "pct_aprobados": 2.4,
+      "promedio": 18.55,
       "min": 0.0,
       "max": 100.0
     },
@@ -106,8 +106,8 @@
     "total_cursos": 11,
     "total_registros": 7912,
     "estudiantes_unicos_id": 780,
-    "promedio_general": 74.6,
-    "total_aprobados": 5411
+    "promedio_general": 75.25,
+    "total_aprobados": 5438
   },
   "anomalias": [
     {
@@ -116,7 +116,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 1601
+      "cantidad": 1559
     },
     {
       "categoria": "AVANCE IRREGULAR",
