@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-08-08T10:02:57.261434-05:00",
+  "ultima_actualizacion": "2026-08-08T10:09:42.033147-05:00",
   "segmento": "Logica-Nivel 2-2026",
   "por_curso": [
     {
@@ -79,7 +79,7 @@
       "estudiantes": 777,
       "aprobados": 19,
       "pct_aprobados": 2.4,
-      "promedio": 18.55,
+      "promedio": 18.56,
       "min": 0.0,
       "max": 100.0
     },
