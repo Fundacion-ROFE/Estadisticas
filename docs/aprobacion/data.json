@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-08-08T10:03:56.813072-05:00",
+  "ultima_actualizacion": "2026-08-08T10:11:08.116759-05:00",
   "anio": "2026",
   "nota_metodo": "Cohorte = matriculados del periodo (habilitados + inhabilitados). Aprobado = avance > 80 (desde 2026-07-09; antes >= 100). Un inhabilitado que ya había superado el 80 cuenta como 'aprobó y se retiró' (no pierde su logro); solo los retirados sin superar 80 cuentan como no aprobados. Cada curso trae bandas de progreso de los activos: banda_0_25 / banda_26_80 / banda_81_100 (suman a 'activos').",
   "por_curso": [
@@ -165,19 +165,19 @@
         "Desarrollo-Avanzado-2026"
       ],
       "activos": 272,
-      "aprobados": 97,
+      "aprobados": 98,
       "aprobados_retirados": 0,
       "retirados": 1,
       "cursaron": 273,
       "banda_0_25": 74,
-      "banda_26_80": 101,
-      "banda_81_100": 97,
-      "aprobados_total": 97,
-      "no_aprobados": 176,
-      "sin_finalizar": 175,
-      "promedio": 53.01,
-      "pct_aprobados": 35.5,
-      "pct_no_aprobados": 64.5,
+      "banda_26_80": 100,
+      "banda_81_100": 98,
+      "aprobados_total": 98,
+      "no_aprobados": 175,
+      "sin_finalizar": 174,
+      "promedio": 53.15,
+      "pct_aprobados": 35.9,
+      "pct_no_aprobados": 64.1,
       "finalizado": false
     },
     {
@@ -208,10 +208,10 @@
       "programa": "Jóvenes creaTIvos",
       "cursos": 8,
       "cursaron": 5950,
-      "aprobados": 5565,
+      "aprobados": 5566,
       "aprobados_retirados": 261,
       "retirados": 139,
-      "sin_finalizar": 246,
+      "sin_finalizar": 245,
       "matriculas_activas": 5550,
       "pct_aprobados": 93.5,
       "estudiantes_cohorte": 832,
@@ -236,7 +236,7 @@
   "totales": {
     "total_cursos": 9,
     "total_matriculas": 6296,
-    "total_aprobados": 5582,
+    "total_aprobados": 5583,
     "total_aprobados_retirados": 261,
     "total_retirados_2026": 245,
     "estudiantes_cohorte_2026": 1178
