@@ -2,23 +2,23 @@
   {
     "grupo_ciudad": "BAQ",
     "participantes": 137,
-    "ingresos_promedio": 47.9,
+    "ingresos_promedio": 48.2,
     "ingresos_mediana": 34,
-    "activos_7d": 112,
+    "activos_7d": 113,
     "inactivos_30d": 19
   },
   {
     "grupo_ciudad": "BOG",
     "participantes": 142,
-    "ingresos_promedio": 35.4,
+    "ingresos_promedio": 35.5,
     "ingresos_mediana": 28,
-    "activos_7d": 84,
+    "activos_7d": 86,
     "inactivos_30d": 39
   },
   {
     "grupo_ciudad": "CAL",
     "participantes": 107,
-    "ingresos_promedio": 39.2,
+    "ingresos_promedio": 39.3,
     "ingresos_mediana": 34,
     "activos_7d": 75,
     "inactivos_30d": 20
@@ -26,49 +26,49 @@
   {
     "grupo_ciudad": "CTG",
     "participantes": 106,
-    "ingresos_promedio": 31.4,
-    "ingresos_mediana": 26,
-    "activos_7d": 57,
+    "ingresos_promedio": 31.5,
+    "ingresos_mediana": 27,
+    "activos_7d": 59,
     "inactivos_30d": 21
   },
   {
     "grupo_ciudad": "GYL",
     "participantes": 80,
-    "ingresos_promedio": 35.6,
+    "ingresos_promedio": 35.7,
     "ingresos_mediana": 29,
-    "activos_7d": 40,
+    "activos_7d": 41,
     "inactivos_30d": 19
   },
   {
     "grupo_ciudad": "MED",
     "participantes": 99,
-    "ingresos_promedio": 29.2,
+    "ingresos_promedio": 29.5,
     "ingresos_mediana": 20,
-    "activos_7d": 40,
+    "activos_7d": 42,
     "inactivos_30d": 20
   },
   {
     "grupo_ciudad": "PAN",
     "participantes": 39,
-    "ingresos_promedio": 106.3,
+    "ingresos_promedio": 106.5,
     "ingresos_mediana": 38,
-    "activos_7d": 32,
+    "activos_7d": 34,
     "inactivos_30d": 3
   },
   {
     "grupo_ciudad": "QTO",
     "participantes": 39,
-    "ingresos_promedio": 49.9,
+    "ingresos_promedio": 50.0,
     "ingresos_mediana": 41,
-    "activos_7d": 29,
+    "activos_7d": 30,
     "inactivos_30d": 3
   },
   {
     "grupo_ciudad": "UY",
     "participantes": 77,
-    "ingresos_promedio": 34.1,
+    "ingresos_promedio": 34.2,
     "ingresos_mediana": 31,
-    "activos_7d": 49,
+    "activos_7d": 51,
     "inactivos_30d": 18
   }
 ]
