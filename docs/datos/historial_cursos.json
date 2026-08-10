@@ -2134,24 +2134,24 @@
     "created_at": "2026-07-26T06:30:34.809165"
   },
   {
-    "id": 705,
+    "id": 708,
     "fecha": "2026-08-10",
-    "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
+    "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
     "programa": "jc",
-    "matriculados": 272,
-    "promedio_avance": 55.4,
-    "completados": 105,
+    "matriculados": 751,
+    "promedio_avance": 99.7,
+    "completados": 748,
     "fuente": "sync-diario",
     "created_at": "2026-08-10T16:56:23.954217"
   },
   {
-    "id": 706,
+    "id": 709,
     "fecha": "2026-08-10",
-    "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
+    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
     "programa": "jc",
     "matriculados": 751,
-    "promedio_avance": 99.4,
-    "completados": 745,
+    "promedio_avance": 95.8,
+    "completados": 703,
     "fuente": "sync-diario",
     "created_at": "2026-08-10T16:56:23.954217"
   },
@@ -2233,35 +2233,13 @@
     "created_at": "2026-07-26T06:30:34.809165"
   },
   {
-    "id": 707,
+    "id": 705,
     "fecha": "2026-08-10",
-    "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
+    "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
     "programa": "jc",
-    "matriculados": 751,
-    "promedio_avance": 100.0,
-    "completados": 751,
-    "fuente": "sync-diario",
-    "created_at": "2026-08-10T16:56:23.954217"
-  },
-  {
-    "id": 708,
-    "fecha": "2026-08-10",
-    "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
-    "programa": "jc",
-    "matriculados": 751,
-    "promedio_avance": 99.7,
-    "completados": 748,
-    "fuente": "sync-diario",
-    "created_at": "2026-08-10T16:56:23.954217"
-  },
-  {
-    "id": 709,
-    "fecha": "2026-08-10",
-    "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
-    "programa": "jc",
-    "matriculados": 751,
-    "promedio_avance": 95.6,
-    "completados": 700,
+    "matriculados": 272,
+    "promedio_avance": 59.3,
+    "completados": 117,
     "fuente": "sync-diario",
     "created_at": "2026-08-10T16:56:23.954217"
   },
@@ -2385,6 +2363,28 @@
     "completados": 753,
     "fuente": "sync-diario",
     "created_at": "2026-08-08T14:58:05.996713"
+  },
+  {
+    "id": 706,
+    "fecha": "2026-08-10",
+    "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
+    "programa": "jc",
+    "matriculados": 751,
+    "promedio_avance": 99.4,
+    "completados": 745,
+    "fuente": "sync-diario",
+    "created_at": "2026-08-10T16:56:23.954217"
+  },
+  {
+    "id": 707,
+    "fecha": "2026-08-10",
+    "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
+    "programa": "jc",
+    "matriculados": 751,
+    "promedio_avance": 100.0,
+    "completados": 751,
+    "fuente": "sync-diario",
+    "created_at": "2026-08-10T16:56:23.954217"
   },
   {
     "id": 370,
@@ -3129,8 +3129,8 @@
     "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
     "programa": "mr",
     "matriculados": 179,
-    "promedio_avance": 16.3,
-    "completados": 17,
+    "promedio_avance": 17.1,
+    "completados": 20,
     "fuente": "sync-diario",
     "created_at": "2026-08-10T16:56:23.954217"
   },
