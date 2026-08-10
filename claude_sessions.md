@@ -6460,3 +6460,790 @@ ejecutadas; archivado con aprobación explícita punto por punto.
   (requiere la API key, fuera de alcance de esta revisión puntual de git).
 - 2 commits separados pusheados: `bfe3f5b` (los 6 exporters) en `Fundacion-ROFE/Estadisticas`,
   `5b8ef4e` (`commit_y_push.py`) en `comunicaciones-ai/Contexts`.
+
+## 2026-08-04 (cont.) — [panel-datos-etl] Arranca validación cohorte-por-cohorte: JC 2023 sellada
+
+**Estado:** Completado (1/8 cohortes)
+**Proceso relacionado:** [[panel-datos-etl]] · [[validacion-cohortes]] · [[supabase-estructura]]
+
+- Dirección pidió asegurar que la BD + su consulta vía Claude den resultados coherentes en
+  cualquier año. Se acordó ir cohorte por cohorte (históricas primero, la viva 2026 se queda
+  bajo el suite continuo) en vez de auditar todo de una — nueva nota
+  `docs/procesos/validacion-cohortes.md` lleva el estado.
+- Samuel entregó `BD Monitorias seguimiento Jóvenes creaTIvos 2023 - Base Global.csv` (roster de
+  aprobados 2023, con ciudad). Hallazgo: los 336 participantes de esa cohorte ya cargados en
+  Supabase (`importar_historico_q10.py`) tenían `ciudad`/`grupo_ciudad` en NULL. Script nuevo
+  `scripts/panel-datos/cargar_bd2023_jc.py`: cruce por cédula + agrupación por metro (mismo
+  criterio ya vigente: Envigado/Sabaneta/Itagüí→MED, Paysandú/Guichón/Fray Bentos/Quebracho→UY)
+  → 331/336 actualizados.
+- 158 cédulas del CSV no existían en Supabase (141 nuevas + 17 en `postulantes_jc` sin
+  `participant_id`). Decisión confirmada con Samuel: sin curso/avance individual en el CSV, se
+  crean bajo un curso "sello" (`Aprobados 2023 (BD Monitorias, sin curso específico)`,
+  avance=100) en vez de inventar granularidad que no hay. Resultado: 494 personas en cohorte
+  2023/jc, 488 con ciudad. Idempotente (`--aplicar` / `--crear-nuevos`, re-corrible sin duplicar).
+- Gotcha de encoding: el CSV se ve roto (`Medell�n`) en la terminal de Windows pero es UTF-8
+  válido byte a byte — no "arreglar" reconvirtiendo a latin-1 (documentado en `mapa-codigo.md`).
+- Se retomó `CLAUDE-asistente-informes.md` (el asistente de solo-lectura para informes, sin uso
+  activo confirmado hasta ahora) como documento vivo: semilla de futuros agentes personales por
+  integrante del equipo, alimentado con cada hallazgo relevante de esta validación (caveats en
+  lenguaje simple, sin duplicar el detalle técnico). Registrado en `00-vision-global.md`.
+- Pendiente: JC 2024/2025, MR 2023/2024/2025 (MR tiene el hueco conocido de `courses` sin
+  2023/2024 cargado — ver `supabase-estructura.md`).
+
+## 2026-08-04 (cont.) — Ajustes menores al rediseño MR: foto Acompañamiento + texto Bienestar
+
+Feedback puntual de Samuel sobre `tools/mujeres-rofe-redesign/index.html` (rediseño standalone
+de Mujeres ROFÉ, ver [[mr-website]]):
+
+- **Foto "Acompañamiento" reemplazada**: la sección `id="acompanamiento"` usaba
+  `img/Copia de DSC07581.jpg` (foto de grupo del 6to Encuentro Regional). Samuel pidió cambiarla
+  por una foto nueva (mujer del equipo con tote bag roja "Mujeres ROFÉ" junto a mesa de kits en
+  bolsas kraft). Procesada igual que el lote anterior — `ImageOps.exif_transpose` + resize a
+  máx. 1800px + JPEG calidad 82 (691 KB → 307 KB) — y guardada como
+  `img/acompanamiento-kits.jpg`. `wordpress-embed.html` regenerado con
+  `build_wordpress_embed.py` (no requirió cambios al script).
+- **`Copia de DSC07516.jpg` descartada**: foto de las 3 coordinadoras frente a la pantalla
+  "6to encuentro regional" (Cartagena, 11-jul-2026). Samuel la excluyó explícitamente del lote
+  de candidatas — no estaba usada en el HTML (solo `DSC07581` y `DSC07586` del mismo lote del
+  29-jul llegaron a usarse), así que no hubo que tocar código; queda documentado para no
+  reintroducirla si se retoma la curación del lote `Copia de DSC0751x/64/86/34/81.jpg` que
+  Samuel tiene en Downloads.
+- **Texto de "Bienestar" recortado**: se quitó "Dos veces al mes." del final de la descripción
+  (quedó "Charlas que fortalecen la conexión mente-cuerpo y mejoran la gestión de las
+  emociones."). Mismo cambio aplicado en `index.html` y propagado a `wordpress-embed.html` vía
+  el script de build.
+- No verificado visualmente en navegador (no se pidió).
+- **Ajuste adicional mismo día**: la foto de "Acompañamiento" ahora usa
+  `object-position:right center` (antes `cover` centraba el recorte; el foco visual de la foto
+  quedaba a la izquierda). Además, coordinación pidió eliminar los 5 "entregables" numerados
+  (Guía metodológica / Red de expertos/as / Entrevistas en profundidad / Encuesta empresarial /
+  50 empresas vinculadas) de la sección "El rol de Fundación ROFÉ" en `id="nova-detalle"` — se
+  quitó el bloque `.mr-entregables` completo (HTML + CSS `.mr-entregable`/`.mr-enum`, incluidas
+  las reglas responsive) y quedó solo el encabezado + párrafo introductorio de esa sección.
+  `wordpress-embed.html` regenerado de nuevo.
+- **Otro ajuste el mismo día**: Samuel pidió quitar del carrusel del header (`mr-hero-photo-box`)
+  el slide `img/Copia de DSC07586.jpg` (mujer con gafas riendo, jalándose la camiseta) — quedan
+  8 fotos en el carrusel (antes 9); se limpió también la regla CSS
+  `.mr-hero-photo:nth-of-type(9)` que quedaba sin nada que seleccionar. Y en "Preguntas
+  frecuentes" (`id="preguntas"`) reemplazó la foto de acompañamiento
+  (`img/WhatsApp Image 2026-07-29 at 4.36.55 PM (6).jpeg`) por una foto nueva de dos mujeres
+  riendo/abrazadas — procesada igual que las anteriores y guardada como
+  `img/dudas-comunes.jpg`. `wordpress-embed.html` regenerado otra vez.
+- **Testimonio nuevo agregado como primero**: Samuel pidió el YouTube Short
+  `https://youtube.com/shorts/fzOGmj7tcno` como primer testimonio (antes de Tania Banquez); el
+  nombre de la persona (Anatilde Arias Cadena) no se pudo extraer por WebFetch (la página de
+  Shorts no expone metadata al fetch estático) — se preguntó a Samuel directamente. Sección
+  `id="testimonios"` pasó de 3 a 4 videos; grid `.mr-testis` ajustado de
+  `repeat(3,1fr)` a `repeat(4,1fr)` en desktop para que no quede un video suelto en la fila de
+  abajo. `wordpress-embed.html` regenerado.
+- **Testimonio de Tania Banquez eliminado**: a los pocos minutos Samuel pidió quitarlo. Quedan 3
+  testimonios (Anatilde Arias Cadena, Luz Mery Yepes, Belsys Padilla); grid `.mr-testis` revertido
+  de `repeat(4,1fr)` a `repeat(3,1fr)`. `wordpress-embed.html` regenerado otra vez.
+
+## 2026-08-04 (cont.) — [panel-datos-etl] Corrección: JC 2023 solo 345 culminaron, no 494
+
+**Estado:** Completado (con 1 pendiente técnico)
+**Proceso relacionado:** [[panel-datos-etl]] · [[validacion-cohortes]]
+
+- Samuel confirmó la cifra oficial de aprobados de la cohorte 2023: **345**, no las 494 que se
+  habían cargado horas antes. Cruce exacto por cédula: las 345 son subconjunto perfecto de las
+  494 (0 huérfanas) — de las 149 restantes, 141 eran de las 158 creadas bajo el curso "sello"
+  (la premisa "el CSV es solo aprobados" resultó parcialmente incorrecta) y 8 son de las 336
+  con datos reales de Q10 (matriculadas pero sin confirmación oficial).
+- Script nuevo `scripts/panel-datos/marcar_culminados_2023_jc.py`: corrigió las 141 enrollments
+  del curso sello de `100/completado` a `0/inscrito` (ya no cuentan como aprobadas). Las 8 con
+  datos reales de Q10 no se tocaron — son matrícula/avance genuinos.
+- Migración preparada `docs/migrations/040_cohorte_2023_jc_ceds.sql` (tabla
+  `cohorte_2023_ceds`, mismo patrón que `cohorte_2026_ceds` pero con `culminado` en vez de
+  `retirado`) — **queda pendiente de aplicar**: el MCP de Supabase se desconectó a mitad de
+  sesión y no reconectó. El script ya soporta re-correrse después (`--aplicar`, idempotente,
+  detecta si la tabla no existe y avisa sin fallar).
+- Lección explícita para `docs/procesos/validacion-cohortes.md`: no asumir que un CSV
+  entregado como "los que aprobaron" es 100% preciso sin contraste contra la fuente oficial —
+  exactamente el tipo de error que esta iniciativa de validación cohorte-por-cohorte busca
+  atrapar antes de que llegue a un panel.
+- `CLAUDE-asistente-informes.md` actualizado: "¿cuántos aprobaron 2023?" = 345, no 494.
+- **Pendiente próxima sesión:** aplicar migración 040 cuando el MCP de Supabase reconecte, y
+  re-correr `marcar_culminados_2023_jc.py --aplicar` para poblar `cohorte_2023_ceds`.
+
+## 2026-08-04 (cont.) — [panel-datos-etl] Segunda corrección: 143 retirados oficiales confirmados
+
+**Estado:** Completado (cuadre exacto), 1 pendiente técnico sigue abierto
+**Proceso relacionado:** [[panel-datos-etl]] · [[validacion-cohortes]]
+
+- Samuel entregó una segunda lista oficial, esta vez de **retirados**: 143 cédulas de la
+  cohorte JC 2023. Cruce exacto: las 143 son subconjunto perfecto de las 149 que habían
+  quedado "no confirmadas como aprobadas" en la corrección anterior — resolución casi total:
+  141 son de las 158 creadas bajo el curso sello (las mismas que se habían corregido de
+  aprobadas-por-error a no-confirmadas) + 2 de las 336 con datos reales de Q10. Quedan 6 sin
+  dato en ninguna lista (de las 336, no se les asume nada).
+- **Cuadre final de la cohorte JC 2023: 345 aprobados + 143 retirados + 6 sin dato = 494.**
+  Verificado en vivo contra Supabase, no de memoria.
+- `marcar_culminados_2023_jc.py` extendido: (1) el enrollment del curso sello para las 141
+  pasó de `0/inscrito` (corrección anterior) a `0/abandonado` (estado más preciso); (2) las 143
+  retiradas se insertaron en la tabla YA EXISTENTE `retiros` (`on_conflict=cedula,cohorte,
+  programa`, sin duplicar contra 4 filas que ya estaban ahí por otra fuente
+  `sheet_retirados_q10`) — no hizo falta ninguna tabla nueva para esta parte.
+- Gotcha nuevo: el primer intento de poblar `retiros` con un solo POST de 143 filas + `Prefer:
+  resolution=merge-duplicates` falló completo (409, transacción atómica) porque 1 de las 143
+  ya existía y faltaba el parámetro `on_conflict=cedula,cohorte,programa` en la URL — PostgREST
+  necesita ambos (el Prefer Y el on_conflict) para hacer upsert real, no solo el header.
+- Sigue pendiente lo mismo de la corrección anterior: migración 040 (`cohorte_2023_ceds`, flag
+  `culminado`) sin aplicar — el MCP de Supabase no ha reconectado en toda la sesión. No bloquea
+  nada: el cuadre 345/143/6 ya vive en `retiros` + el curso sello, la tabla nueva solo sería
+  para consultar el flag positivo de aprobación más directo.
+- Todo documentado: `validacion-cohortes.md`, `mapa-codigo.md`, `CLAUDE-asistente-informes.md`
+  (ahora dice explícitamente 345/143/6), memoria persistente.
+
+## 2026-08-04 (cont.) — [panel-datos-etl] Tercera corrección: los 6 "sin dato" eran duplicados — JC 2023 cierra en 345/143=488
+
+**Estado:** Completado — cohorte JC 2023 cerrada con cuadre exacto
+**Proceso relacionado:** [[panel-datos-etl]] · [[validacion-cohortes]]
+
+- Investigando el origen de los 6 "sin dato" (pedido del usuario: ¿de dónde salió ese dato,
+  Mongo o Q10?), se confirmó que vienen de Q10 (`importar_historico_q10.py`, Consolidado de
+  Educación Virtual, periodos que Q10 mismo etiqueta "2023" — no es inferencia nuestra ni error
+  de año). Se armó un Excel en Downloads (`JC2023_6_sin_dato_explicacion.xlsx`) con hipótesis.
+- Al cruzar por EMAIL (no solo cédula) contra el CSV original, se descubrió que los 6 ya
+  existían **dos veces** en Supabase: registro Q10 (cédula con typo de 1 dígito, matrículas
+  reales de 3-5 cursos) + registro de `cargar_bd2023_jc.py` (cédula oficial correcta, ya
+  contada en los 345, pero solo con el curso "sello" genérico). Las 6 cédulas oficiales SÍ
+  estaban en la lista de 345 aprobados — confirmado antes de tocar nada.
+- Usuario preguntó si corregir la cédula preservaría 345/143: se confirmó que sí (ya estaban
+  contados), y se detectó que en realidad eran duplicados, no gente sin explicar.
+- Fusión aplicada (`scripts/panel-datos/fusionar_duplicados_2023_jc.py`): matrículas reales
+  repuntadas al participant con cédula oficial, enrollment "sello" redundante archivado
+  (`datos_archivados`) y borrado, participant/participant_metrics duplicado de Q10 archivado y
+  borrado, `recompute_aggregates()`. Verificado sin FKs huérfanas antes de borrar (retiros,
+  emoflow_ingresos, postulantes_mr, postulantes_jc — ninguno referenciaba a los 6 duplicados).
+- **Cierre definitivo JC 2023: 345 aprobados + 143 retirados = 488 personas, 0 sin dato, 0
+  huérfanas.** El roster bajó de 494 a 488 (los 6 nunca fueron nuevos, eran fantasmas del mismo
+  día de carga).
+- Lección añadida a `validacion-cohortes.md`: un "sin dato" no siempre es un hueco real —
+  cruzar por nombre/email contra la MISMA cohorte antes de reportarlo como pendiente, porque un
+  typo de cédula en la fuente manual puede generar duplicados invisibles al cruce estricto.
+- Migración 040 (`cohorte_2023_ceds`) sigue pendiente de aplicar — MCP de Supabase no
+  reconectó en toda la sesión.
+
+## 2026-08-04 (cont.) — [panel-datos-etl] JC 2024 sellada: mismo ejercicio, sin lista de retirados
+
+**Estado:** Completado — cohorte JC 2024 cerrada con cuadre exacto
+**Proceso relacionado:** [[panel-datos-etl]] · [[validacion-cohortes]]
+
+- Samuel entregó la lista oficial de aprobados 2024 (433 cédulas) y pidió repetir el ejercicio
+  de 2023, pero con una regla más simple: 2024 careció de rigor en la toma de este dato, así
+  que no hay lista de retirados separada — todo lo que no esté en la lista oficial pasa a un
+  estado "no confirmado" (sinónimo de reprobado/no habilitado), sin reconstruir la causa.
+- Cruce contra las 470 personas ya cargadas (`importar_historico_q10.py`, 8 cursos reales de
+  Q10): 432 directo por cédula + 1 (José Luis Erazo Tutivén) por email — mismo patrón de typo
+  de 1 dígito que en 2023 (`959454874` vs `959455874` oficial). Corregida sin conflicto.
+- `scripts/panel-datos/marcar_aprobados_2024_jc.py`: las 37 no confirmadas se insertaron en
+  `retiros` (mismo espacio reusado que 2023) con motivo explícito de "no confirmado, no es
+  retiro formal". Enrollments reales de Q10 intactos para las 470.
+- Gotcha propio de esta corrida: la clasificación usó la cédula vieja (con typo) antes de que
+  la corrección surtiera efecto, insertando un retiro fantasma para esa 1 persona — detectado,
+  archivado en `datos_archivados` y borrado; script corregido para incluir ambas variantes de
+  cualquier corrección conocida antes de clasificar.
+- **Cierre definitivo: 433 aprobados + 37 no confirmados = 470, 0 sin dato.**
+- Migración 040 (`cohorte_2023_ceds`) sigue pendiente — MCP de Supabase no reconectó en toda la
+  sesión. Pendiente: JC 2025, MR 2023/2024/2025.
+
+## 2026-08-04 (cont.) — [panel-datos-etl] JC 2024: universo real era 608, no 470 — cerrado
+
+**Estado:** Completado — cohorte JC 2024 cuadrada al universo oficial completo
+**Proceso relacionado:** [[panel-datos-etl]] · [[validacion-cohortes]]
+
+- El usuario preguntó por qué el universo oficial de 2024 (608, según coordinación) no
+  cuadraba con los 470 cargados. Se investigó la causa raíz sin asumir nada: confirmada en el
+  propio código de `importar_historico_q10.py` (ya documentada antes de esta sesión) — el
+  Consolidado histórico de Q10 solo trae a quienes seguían habilitados al momento de la
+  consulta; los retirados históricos nunca aparecen ahí. Se descartó Mongo como fuente
+  alterna (`postulantes_jc` promo_year=2024 = 434 filas, casi la misma población que los 433
+  aprobados — otra vista de "graduados", no el universo completo).
+- Samuel entregó el archivo real: `BD Seguimiento de Monitorias JC2024 - ACTUALIZADA -
+  Seleccionados.csv` (608 filas exactas, con Ciudad/Barrio/Género). Cruce: 469 de las 470 ya
+  cargadas coincidían directo; la única que no fue un perfil de prueba histórico ("Prueba
+  Carlitos" `123456780`, sin relación con datos reales). Las otras 139 del universo NUNCA
+  habían generado ningún registro en Q10 — confirma la hipótesis.
+- `scripts/panel-datos/completar_universo_2024_jc.py`: enriqueció ciudad/grupo_ciudad de las
+  469 (estaban NULL), creó las 139 faltantes con demografía real (sin inventar
+  enrollments/avance — a diferencia del curso "sello" de 2023, aquí no hay premisa de
+  aprobación) y las insertó en `retiros` (espacio ya existente).
+- Gotcha propio: primer intento crasheó (`KeyError: 'ciudad'`) porque el JSON intermedio se
+  había guardado sin el campo ciudad en un paso anterior ad-hoc — verificado que no escribió
+  nada antes de crashear (Supabase intacto), corregido y re-ejecutado limpio.
+- **Cierre: 433 aprobados + 176 retirados = 609** (608 del universo oficial + 1 perfil de
+  prueba que quedó colado en `retiros`, pendiente de confirmar con el usuario si se purga).
+- Lección reforzada: la causa raíz de un gap de universo puede estar ya documentada en el
+  propio código (no hacía falta adivinar) — y ni Q10 ni Mongo alcanzan solos para el universo
+  completo histórico; hace falta la fuente manual del equipo.
+
+## 2026-08-05 — [panel-datos-etl] Optimización de egress Supabase (cerca del límite 5 GB free tier)
+
+**Estado:** Completado — cambios aplicados en vivo (n8n API) + código
+**Proceso relacionado:** [[panel-datos-etl]] · [[migracion-n8n-digitalocean]]
+
+- Lina avisó que el proyecto está a punto de copar los 5 GB de egress mensual de Supabase.
+  Pidió espaciar los workflows n8n de cadencia 2-4h y un análisis a fondo del resto, sin tocar
+  la asistencia Zoom/H3 (que no debería depender de Supabase — los datos salen de Zoom).
+- Auditoría en vivo (`GET /api/v1/workflows/{id}`, 18 workflows) encontró el hallazgo real:
+  `cargar_supabase.py` (usado por `q10-sync-supabase`, cada 2h) hacía `SELECT *` completo de
+  `participants` **en cada corrida** solo para el snapshot de auditoría — pero
+  `participants_snapshots` tiene `UNIQUE(snapshot_date)`, así que las corridas 2ª+ del mismo
+  día pisaban la misma fila sin aportar nada. 8 lecturas completas/día para un dato que solo
+  necesitaba 1.
+- Confirmado (no solo asumido) que el pipeline Zoom→H3 no lee Supabase: solo hace 2 upserts
+  chicos diarios (`asistencia_zoom`, `asistencia_promedio`), cero `SELECT`. Ya estaba bien
+  diseñado.
+- Cambios: (1) `cargar_supabase.py` ahora consulta si ya existe snapshot de hoy antes del
+  `SELECT *` — corta esa lectura de 8x/día a 1x/día; (2) `q10-sync-supabase` cada 2h→4h; (3)
+  `Bot Q10 - Actualizar Grupos` cada 4h→8h (no toca Supabase, pero honra la petición general);
+  (4) `datos-respaldo-diario` (25 tablas `select=*`, 2º mayor consumidor) diario→cada 3 días.
+  `alerta-frescura-vencida` (30 min) y `panel-verificacion-diaria` no se tocaron — confirmado
+  que su egress es insignificante pese a la frecuencia.
+- Aplicado directo sobre n8n en vivo (`PUT /api/v1/workflows/{id}`, API key ya en
+  `.env.local`) + JSON de `n8n-workflows/` sincronizados + código. Aplicado el gotcha ya
+  documentado en `convenciones.md`: tras el `PUT` se forzó `deactivate`→`activate` en los 3
+  workflows para que n8n re-registrara el Schedule Trigger con el cron nuevo (si no, el
+  trigger en memoria sigue con el valor viejo aunque el `GET` ya muestre el nuevo).
+- No cuantificado: el frontend Netlify lee Supabase directo desde el navegador de cada
+  visitante — tráfico real de uso, no un job de n8n, fuera de alcance de esta auditoría. Si el
+  egress sigue subiendo, revisar el desglose por tabla en el dashboard de Supabase antes de
+  seguir ajustando cron jobs.
+- Detalle completo (tabla de auditoría, gotcha del `*/3` en cruce de mes) en
+  [[panel-datos-etl]].
+
+## 2026-08-05 — [panel-clase-vivo] Verificado en vivo + bug corregido: reunión sin cerrar bloqueaba el panel
+
+**Estado:** Bug encontrado y corregido; pendiente confirmación de un monitor con clase completa
+**Proceso relacionado:** [[panel-clase-vivo]] · [[zoom-asistencia]]
+
+- Verificación en vivo pedida por Lina ("¿cómo sé que el panel funciona y cuándo puedo
+  probarlo?"): confirmado que el workflow `Zoom - Asistencia` (n8n, activo) tiene los 4 nodos
+  del panel + el cron de `LIVE-LOG`, y que las 4 pestañas existen en H3Test. A diferencia del
+  intento fallido del 2026-08-03 (portátil suspendido), hoy `LIVE-LOG`/`REUNIONES-ACTIVAS`
+  tenían eventos reales de una clase en curso (nombres/correos reales de estudiantes).
+- **Bug encontrado:** `PANEL-EN-VIVO` tomaba la 1ª/2ª fila de `REUNIONES-ACTIVAS` con
+  `Activo=TRUE` en orden de aparición, no por recencia. Una reunión del 2026-08-04 18:18
+  nunca recibió el evento de cierre (mismo gotcha de `meeting.ended`, ya documentado) y quedó
+  `Activo=TRUE` para siempre — ocupaba el slot "SALA A" mostrando "SIN ALIAS" mientras 2
+  clases reales de hoy quedaban invisibles para los monitores.
+- **Corrección aplicada:** `bloque_sala()` en `construir_panel_en_vivo()`
+  (`scripts/zoom-asistencia/setup_zoom_asistance.py`) ahora ordena las reuniones activas por
+  `Apertura` descendente (`SORT(FILTER(...),4,FALSE)`) antes de tomar la 1ª/2ª — confirmado
+  que `Apertura` se guarda como serial de fecha real, no texto, así que el orden numérico es
+  correcto aunque la hora se muestre sin cero a la izquierda ("9:49"). Aplicado en el código
+  fuente Y directamente sobre las 8 celdas de fórmula en vivo (Sala A `B2:B5`, Sala B
+  `B235:B238`) sin recrear `REUNIONES-ACTIVAS`/`PANEL-EN-VIVO` (`recrear()` borra la pestaña
+  completa — recrearla mientras una clase real escribía en vivo habría perdido esos datos).
+- Verificado: la fila zombie desapareció del panel. Limitación que queda (diseño, no bug): si
+  hay >2 reuniones `Activo=TRUE` simultáneas (incluye reuniones de staff o de prueba que
+  tampoco cerraron — se vio en vivo una llamada "TEEEEEEEEEEEEEEEEEST" desplazar a una clase
+  real minutos después del fix), las 2 más recientes ganan el slot aunque no sean clase real.
+  No se implementó filtro de ruido — no se pidió y cambiaría el comportamiento cuando sí hay
+  una clase real sin alias configurado.
+- Documentado en `docs/procesos/panel-clase-vivo.md` (sección "Bug corregido") y memoria
+  persistente. Pendiente: que un monitor mire el panel durante una clase completa antes de
+  confiar en él para llamar estudiantes en producción.
+
+## 2026-08-05/06 — [demografia-historica-jc] Cerrado el hueco sociodemográfico de JC (4 cohortes, 0%→67-99%)
+
+**Estado:** Hueco principal cerrado; `estado_civil` descartado por dirección; quedan cabos sueltos
+**Proceso relacionado:** [[demografia-historica-jc]] · [[validacion-cohortes]] · [[panel-datos-etl]]
+
+- Arrancó de una pregunta exploratoria ("¿son suficientes los datos demográficos para
+  investigación con Claude workspace?") — medido en vivo: JC tenía **0% estrato/nivel_estudio y
+  0-31% edad/género/vivienda** en las 4 cohortes (2023-2026). Se descartó que Mongo lo
+  resolviera solo (postulantes_jc no trae campos sociodemográficos).
+- ~15 scripts nuevos, todos con el mismo patrón (cruzar por cédula contra el roster real,
+  llenar solo `NULL`s, reporte antes de `--aplicar`) — ver el patrón formalizado en
+  `convenciones.md`. Fuentes: `firstPhase` de Mongo (rescatado, solo tenía estrato/vivienda
+  para 2023 — confirmado con datos, no era limitación de extracción), un export maestro de
+  30.050 postulantes JC 2019-2026, y formularios "Fase 1" de postulación por año (2023/2024) y
+  por país (2025: COL/ECU/UY; 2026: Colombia). Descartados sin aportar nada: Fase 2 (prueba
+  psicotécnica) y Fase 3 (panel de jurados) de 2026 — no traen sociodemografía.
+- `nivel_estudio` se derivó de "grado escolar" con una regla de años-transcurridos
+  (2023→+3 … 2026→+0) — **bug real detectado y corregido en modo reporte** (18 falsos
+  "primaria"): el umbral pensado para la escala colombiana (1-11) generaba falsos positivos en
+  fuentes de Ecuador (BGU 1°-3°) y Uruguay (Liceo 1-6), donde esos mismos números YA son
+  bachillerato en su propia escala.
+- **Resultado final (2026-08-06), % de `participants` con el campo lleno:**
+
+  | Cohorte | Estrato | Edad | Género | Vivienda | Nivel estudio |
+  |---|---|---|---|---|---|
+  | 2023 | 66.8% | 71.5% | 71.3% | 68.6% | 91.8% |
+  | 2024 | 78.5% | 94.5% | 99.8% | 77.2% | 96.0% |
+  | 2025 | 70.9% | 98.0% | 97.5% | 72.6% | 88.3% |
+  | 2026 | 71.0% | 99.6% | 99.9% | 66.7% | 71.0% |
+
+- **Hallazgo lateral importante:** los "sobrantes" del cruce de JC 2025 (14 personas en el
+  roster sin cruzar con aprobados/retirados oficiales) resultaron ser 13 cuentas de
+  staff/mentores/aliados corporativos + la dueña de la fundación — Q10 no distingue rol al
+  exportar. Confirmado por Samuel: documentar, no eliminar (limpieza anual, mismo criterio que
+  el perfil de prueba de 2024). El cierre formal de JC 2025 (aprobados/retirados) quedó
+  **calculado pero sin aplicar** — bloqueado por excluir esas 14 cuentas antes del `--aplicar`.
+- Pendiente: `grupo_ciudad` en 2025 solo 0.1% (hueco nuevo, sin investigar); ~20-40% restante en
+  estrato/vivienda de 2023-2025 sin fuente conocida (candidatos a typo de cédula, mismo patrón
+  que años anteriores); ningún trabajo equivalente hecho para MR. Detalle completo, fuente por
+  fuente y comando por comando, en [[demografia-historica-jc]] y `mapa-codigo.md`.
+
+---
+
+## 2026-08-06 — [n8n-oom-mitigacion] Guard de no-solapamiento + optimización de memoria contra WorkflowCrashedError (OOM)
+
+**Estado:** Completado (incluye aplicación en vivo del fix de Bot Q10)
+**Proceso relacionado:** [[n8n-standards]] · [[q10-consolidacion]] · [[panel-datos-etl]] · [[migracion-n8n-digitalocean]]
+
+- Origen: logs de Telegram con `WorkflowCrashedError: possible out-of-memory issue` repetidos en
+  "Bot Q10 - Actualizar Grupos", `datos-respaldo-diario`, `q10-sync-supabase`,
+  `sociodemograficos-semanal`, `panel-verificacion-diaria`. RAM real del PC verificada en vivo:
+  16GB totales, solo ~2GB libres en uso normal; n8n 2.8.4/Node 22 sin `NODE_OPTIONS` puede crecer
+  su heap a ~4GB por defecto.
+- **Causa raíz principal:** "Bot Q10 - Actualizar Grupos" combina Telegram Trigger (on-demand) +
+  Schedule Trigger en el mismo workflow sin ningún guard — si ambos disparan casi a la vez, corren
+  dos pipelines pesados de Python+pandas en paralelo en el mismo PC. Patrón "Trigger dual" ya
+  documentado en `convenciones.md` pero sin advertir este riesgo.
+- **Hecho (band-aids config):** `iniciar_n8n.bat` ahora fija `NODE_OPTIONS=--max-old-space-size=2048`,
+  `EXECUTIONS_DATA_PRUNE`/`EXECUTIONS_DATA_MAX_AGE=168`, `N8N_CONCURRENCY_PRODUCTION_LIMIT=2`.
+- **Hecho (guard generalizable, pedido explícito de Samuel — "nos hemos demorado en crear esto"):**
+  `scripts/common/lock_cli.py` (lock de archivo, staleness verificada contra `GET /executions/{id}`
+  de n8n para auto-liberarse si la ejecución dueña crasheó, soporta múltiples locks en una llamada
+  con rollback todo-o-nada), formalizado como paso **obligatorio** en
+  `.claude/skills/n8n-standards/SKILL.md` ("Guard de no-solapamiento") y en `convenciones.md`.
+- **Aplicado en vivo (mismo día, tras reanudar n8n):** `scripts/common/aplicar_lock_bot_q10.py`
+  insertó los 7 nodos del guard en "Bot Q10 - Actualizar Grupos" vía API — probado antes con
+  pruebas unitarias contra el JSON real, y verificado después con un `GET` independiente en vivo
+  (39 nodos, `active: true`, rewiring de conexiones correcto) más una prueba manual de
+  `lock_cli.py acquire`/`release` vía `cmd.exe` (el intérprete real de `executeCommand` en
+  n8n/Windows). JSON re-exportado a `n8n-workflows/q10-consolidacion.json`. Pendiente: extender el
+  lock `heavy-pipeline` a los otros 4 workflows pesados (menor prioridad, no hecho).
+- **Hecho (memoria en 5 scripts Python):** `respaldo_supabase.py` ahora escribe
+  `participants_snapshots` página por página (streaming, con limpieza de archivo parcial si falla
+  a mitad de camino) en vez de acumular todo en RAM; `sync_sociodemograficos.py` acota el rango de
+  Sheets leído a las columnas realmente usadas; `q10_to_sheets.py` limita la detección de header a
+  `nrows=30` en vez de parsear el Excel completo dos veces; `organizador_headless.py` cambió
+  `get_all_records()` por `get_values()` + construcción directa del DataFrame.
+- **Desviación deliberada del plan aprobado:** NO se tocó `cargar_supabase.py` (mover el blob de
+  `participants_snapshots.data` fuera de Supabase a un archivo local, como proponía el plan
+  original) — se detectó a tiempo que rompería el runbook de restauración ya documentado en
+  `supabase-estructura.md` ("Supabase free tier no tiene PITR; participants_snapshots (jsonb
+  completo) es la única forma de reconstruir `participants`"). Mover ese blob a un archivo local
+  gitignoreado sería cambiar la única copia redundante por un punto único de falla peor, no una
+  optimización real.
+- **emoflow-ingresos-diario:** decisión de Samuel de dejarlo `active: false` deliberadamente (costo
+  de Supabase) en vez de reactivarlo — documentado en `panel-datos-etl.md`. Diseño futuro (solo
+  documentado, no implementado): reemplazar el Schedule Trigger por un Webhook + botón manual en
+  el panel web, reutilizando el patrón ya existente en `zoom-crear-reunion.json`.
+- Bloqueos: extender el lock `heavy-pipeline` a los otros 4 workflows pesados
+  (`q10-sync-supabase`, `datos-respaldo-diario`, `sociodemograficos-semanal`,
+  `panel-verificacion-diaria`) queda para una sesión futura — menor prioridad.
+
+## 2026-08-06 — [validacion-cohortes] JC 2025 sellada + diagnóstico de fallas n8n + Panel de Control alineado
+
+**Estado:** JC 2025 sellada; 1 dato real corregido (email duplicado); Panel de Control con 2 huecos cerrados
+**Proceso relacionado:** [[validacion-cohortes]] · [[demografia-historica-jc]] · [[panel-control-jc-mr]]
+
+- **JC 2025 sellada:** se confirmó la tabla de cifras del equipo contra Supabase (2023/2024
+  coinciden, 2025 coincidía en el papel pero no estaba aplicado). Se agregó
+  `tools/cohorte-2025-jc/staff_excluidos.json` (las 14 cédulas de staff ya diagnosticadas) y se
+  aplicó `marcar_aprobados_2025_jc.py --aplicar`: 559 aprobados + 160 insertados en `retiros` →
+  163 total, coincide exacto con la lista oficial. 2026 (cohorte viva) NO se tocó — su
+  pipeline (`cohorte_ingresos`) se recalcula solo a diario, no es algo que se "aplique" a mano;
+  queda una diferencia de 6-8 personas sin investigar entre ese pipeline y el conteo manual del
+  equipo.
+- **Alertas de n8n investigadas una por una, en vez de asumir un solo incidente:** las
+  "VENCIDO" de frescura resultaron mayormente ya resueltas (`emoflow_ingresos` en particular —
+  confirmado con `check_frescura.py` en vivo, `vencidos=0`). Los "Command failed" de
+  `panel-verificacion-diaria`/`mr-actualizacion-datos` NO eran el bug de nombre de archivo que
+  parecían (Telegram come guiones bajos al renderizar Markdown, ya documentado antes) — la
+  causa real de `panel-verificacion-diaria` era un **dato roto de verdad**: 2 personas
+  distintas (cédulas distintas, una de `q10` con matrícula real, otra de la carga del universo
+  2024) compartiendo el mismo email por error de digitación en la hoja manual. Corregido:
+  email de la segunda puesto en `NULL` (no se inventó un valor). `test_integridad_supabase.py`
+  pasó de 49/50 a 50/50. El resto de los "out-of-memory" de esa mañana coincide en el tiempo
+  con el trabajo pesado de esta misma sesión contra Supabase en la misma PC que hostea n8n —
+  hipótesis razonable, no confirmada con métricas de sistema.
+- **Panel de Control auditado contra el cierre de 2025 — 2 huecos reales encontrados y
+  cerrados** (detalle completo en [[panel-control-jc-mr#7.6]]): las 14 cuentas de staff
+  aparecían como estudiantes activos normales en `v_gui_personas` (sin señal de que no lo
+  eran) → toggle "Mostrar staff" nuevo (off por defecto, afecta tabla y KPIs a la vez).
+  `grupo_ciudad`/`municipio` en JC 2025 estaban casi vacíos (732/733) → cerrado con
+  `cargar_ciudad_2025_jc.py` (fuente: las mismas listas oficiales de aprobados/retirados, ya
+  traen `ciudad_codigo` limpio) a 98.2%/95.2%.
+- **Corrección de privacidad real de paso:** las 14 cédulas+nombres de staff estaban
+  hardcodeadas en `marcar_aprobados_2025_jc.py`, que sí se sube a git — violaba la regla de PII
+  del proyecto. Movidas a `tools/cohorte-2025-jc/staff_excluidos.json` (gitignoreado), fuente
+  única que ahora leen tanto ese script como el panel.
+
+## 2026-08-06 — [panel-clase-vivo] Primera clase real con monitor: 2 bugs corregidos en vivo + resumen + plan correos alternos
+
+**Estado:** Clase de comunicaciones (HTML jueves 10am) desbloqueada en caliente; panel con
+resumen de conteo + indicador de actividad viva; plan de correos alternos escrito, sin aplicar
+**Proceso relacionado:** [[panel-clase-vivo]] · [[supabase-estructura]]
+
+- **2 bugs reales encontrados y corregidos sin interrumpir la clase:** (1) `Detectar Apertura
+  Reunion` en n8n usa una bandera en memoria por UUID que nunca expira — como Zoom reutiliza el
+  mismo UUID para la sala recurrente de `comunicaciones`, la reapertura de hoy nunca volvió a
+  marcar `Activo=TRUE` tras el cierre correcto de ayer (fix manual aplicado, fix de fondo
+  pendiente: bandera por `uuid+fecha`). (2) `CUPOS` tenía el mismo `Alias Zoom` fijo a la fila
+  de miércoles cuando la sala también se usa jueves con otro roster — el panel resolvía
+  siempre miércoles sin mirar el día real (fix temporal: alias movido a jueves, ⚠️ revertir
+  antes del próximo miércoles; fix de fondo pendiente: resolver por día+hora, no solo nombre).
+- **Rediseño de `PANEL-EN-VIVO` aplicado:** bloques de 8 columnas (roster 4 + resumen 2 +
+  separación 2) en vez de 5 — `jovenescreativos` quedó 3 columnas más a la derecha (ya no choca
+  visualmente con `comunicaciones`). Resumen nuevo por bloque: conteo Presentes/Entró y
+  salió/Nunca entró + Total matriculados + **Última actividad** (timestamp del evento más
+  reciente de `LIVE-LOG`, para confirmar de un vistazo que el panel sigue vivo).
+  `construir_panel_en_vivo()` (`setup_zoom_asistance.py`) llamado directo, sin pasar por
+  `--solo-panel-vivo` (que también recrea `REUNIONES-ACTIVAS` y habría perdido la clase en
+  curso).
+- **2 discrepancias del equipo diagnosticadas con datos, no supuestos:** "42 vs 47
+  matriculados" = `MATRICULADOS-VIVO` es una foto de hace 3 días (BD Seguimiento
+  desactualizada, no un bug). "26 vs 36 presentes en Zoom" = de 32 correos que `LIVE-LOG`
+  alcanzó a capturar, 26 coincidieron con el roster (81%, consistente con el ~84% baseline ya
+  documentado) — los 6 restantes: 1 cuenta institucional (correctamente excluida) + 5 casi
+  seguro estudiantes reales con correo distinto al registrado.
+- **`/consejo-medio` sobre "pintar en rosado" a los no-match:** veredicto adelante con
+  ajustes, NO aplicado hoy — el escéptico (subagente aislado) marcó como riesgo mayor tocar el
+  panel recién estabilizado el mismo día, y como riesgo determinante un Forms sin pipeline de
+  vuelta a la BD (se perdería cada semana). Plan de 5 pasos escrito en
+  [[panel-clase-vivo#Plan: correos alternos]], a la espera de instrucción explícita para
+  empezar.
+- **Duda de fondo resuelta contra el esquema real:** la base de datos NO tiene campo de correo
+  secundario hoy — verificado con `list_tables` de Supabase, `participants`/`postulantes_jc`/
+  `postulantes_mr` tienen un solo `email` varchar cada una, sin equivalente al patrón
+  `ciudad_alias` que sí existe para ciudades. El plan propone una tabla `correo_alias` nueva
+  calcada de ese mismo patrón.
+- **Plan de correos alternos EJECUTADO el mismo día** (autorizado explícitamente: "aún es una
+  herramienta en testeo, sin problema"). Aplicado: migración `041_correo_alias_APLICADA.sql`
+  (tabla `correo_alias` + `normalizar_correo()`/`correo_a_participante()`, RLS solo
+  service_role); `scripts/panel-datos/correo_utils.py` y `sync_correo_alias.py` (ingesta de
+  Forms → Supabase, resuelve por CÉDULA contra `participants.q10_id`, nunca por nombre
+  parecido); `construir_correo_alias()` nueva en `setup_zoom_asistance.py` (puente
+  Supabase→Sheets, pestaña `CORREO-ALIAS`); `construir_panel_en_vivo()` extendido con match
+  vía alias (degrada solo al comportamiento anterior si `CORREO-ALIAS` está vacía), estado
+  nuevo `PRESENTE/ENTRÓ Y SALIÓ (correo alterno)`, color 🩷 rosado, resumen con 1 fila más.
+  **Probado end-to-end con datos sintéticos** (fila falsa en `CORREO-ALIAS` + evento falso en
+  `LIVE-LOG`, nunca con una coincidencia real por nombre parecido): un estudiante del roster
+  pasó de `NUNCA ENTRÓ` a `PRESENTE (correo alterno)` con el color correcto confirmado por
+  API; datos de prueba eliminados después, estado real quedó limpio (0 correos alternos).
+  **Pendiente real, no de código:** crear el Forms a mano (sin herramienta de API de Google
+  Forms disponible) — texto exacto de las 4 preguntas dejado en
+  [[panel-clase-vivo#Plan: correos alternos]]; sin eso `sync_correo_alias.py` no tiene de dónde
+  leer (falla rápido y explícito si `SHEET_ID_FORMS` sigue vacío, ya probado). Retroalimentar
+  el resto de scripts que cruzan por correo queda incremental, no de una sola vez.
+
+## 2026-08-06 — [q10-consolidacion] Bug real en export_aprobacion.py: 5 falsos "retirados" — encontrado porque Samuel desconfió de un número y verificó a mano
+
+**Estado:** Bug encontrado, corregido, validado en vivo y sincronizado de punta a punta
+**Proceso relacionado:** [[q10-consolidacion]] · [[panel-control-jc-mr]] · [[validacion-cohortes]]
+
+- Samuel abrió H1Test manualmente y encontró a un estudiante marcado "retirado" en el panel
+  con 100% de avance y "Activo" en Q10 — contradiciendo una confirmación mía anterior ("Q10 sí
+  los tiene marcados como retirados"). Insistió, y tenía razón: **era un bug real de
+  `export_aprobacion.py`, no un atraso de Administración actualizando el Sheet Seguimiento.**
+- **Causa raíz confirmada contra Q10 en vivo** (script de diagnóstico puntual, período por
+  período): Q10 pre-matricula a cada estudiante en TODOS los niveles de su ruta desde el
+  inicio (ej. Desarrollo Web: Nivel 3 = periodo 20, Avanzado = periodo 24). El script
+  clasificaba "inhabilitado" comparando el roster de UN periodo contra los activos de ESE
+  MISMO periodo — así que alguien ya activo en un nivel siguiente (por ir muy adelantado)
+  pero sin actividad todavía en un nivel futuro donde Q10 ya lo había pre-matriculado, se
+  contaba como retirado sin estarlo. Las 5 personas afectadas tenían 100% de avance en 6-8
+  cursos cada una — de las mejores de la cohorte, penalizadas justamente por ir rápido.
+- **Fix:** `activos_global` (unión de activos de TODOS los periodos del año, calculada antes
+  del loop) reemplaza la comparación aislada por periodo. **Validado en vivo:** JC pasó de 83 a
+  78 retirados — exactamente -5, ningún otro caso se movió. Propagado de punta a punta:
+  `sync_cohorte_2026.py` + `sync_aprobacion_supabase.py` re-corridos, `test_integridad_
+  supabase.py` 50/50 PASS (antes 754+83−832=5 "reingresos" fantasma sin explicación clara,
+  ahora 754+78=832 cuadra exacto).
+- **Hallazgo lateral:** `sync_cohorte_2026.py` (sube `cohorte_2026.json` a `cohorte_2026_ceds`)
+  **nunca quedó en el pipeline automático** — solo se corrió una vez, el 2026-08-03, y nunca
+  más (`export_aprobacion.py` sí corre solo cada 4h, pero el paso que sube su resultado a
+  Supabase no). Eso agravó la confusión inicial (dato de 3 días de antigüedad). Pendiente:
+  agregarlo al workflow n8n `Bot Q10 - Actualizar Grupos` para que no vuelva a quedar
+  desactualizado — no se hizo todavía, requiere confirmación antes de tocar el workflow en
+  vivo.
+- **Lección explícita (ya documentada en `panel-control-jc-mr.md` §7.12):** un pipeline
+  automatizado no tiene la razón por ser "el oficial" — cuando alguien verifica a mano contra
+  la fuente cruda y encuentra una contradicción, investigar a fondo antes de defender el
+  número derivado. La pestaña "Datos desactualizados Q10" construida horas antes en esta misma
+  sesión fue justo la que señaló estos 5 casos para empezar a mirar.
+
+## 2026-08-06 — [panel-control-jc-mr] Fase 4: ficha 360 al doble clic (pedido de Lina)
+
+**Estado:** Implementado, importa y arranca sin traceback; sin verificación visual del popup
+**Proceso relacionado:** [[panel-control-jc-mr]]
+
+- Pedido de Lina: que `panel_control_gui.py` (el reemplazo de `panel_riesgo_gui.py`) tuviera la
+  misma capacidad que la GUI vieja — doble clic en una fila → ver el historial completo de la
+  persona (cursos, información, desglose). Era exactamente la Fase 4 del plan original,
+  pendiente desde el 2026-07-30.
+- **Hallazgo antes de programar:** ni `v_gui_personas` ni `v_persona_360` traen el curso por
+  curso — ambas solo tienen el agregado (avance promedio, conteo de cursos). Hizo falta una
+  consulta nueva: `panel_control_datos.leer_cursos_por_participante()` (embed PostgREST
+  `enrollments`→`courses` por `participant_id`, todas las cohortes, no solo la seleccionada).
+- Popup nuevo `panel_control_gui._detalle_persona()`: datos generales + las 3 fuentes
+  togglables siempre visibles (reusa las mismas lambdas de columnas, sin duplicar formato) +
+  historial por cohorte (de datos ya cargados, sin fetch) + cursos con % avance coloreado
+  (verde/amarillo/rojo), cargados en hilo aparte para no congelar la ventana.
+- **Verificado:** import limpio, app relanzada en primer plano sin traceback. **No verificado
+  visualmente** (abrir el popup con doble clic de verdad) — sin herramienta de captura para
+  apps de escritorio en este entorno, igual que todas las fases anteriores de este panel.
+  Pendiente que Samuel/Lina lo prueben en el escritorio real.
+
+## 2026-08-06 — [panel-control-jc-mr] [panel-riesgo-mejora] Filtro por rango (dos punteros) en TablaFiltrable
+
+**Estado:** Implementado y probado headless (asserts sobre la lógica real, sin mock); apps arrancan sin traceback
+**Proceso relacionado:** [[panel-control-jc-mr]] · componente compartido con `panel_riesgo_gui.py`
+
+- Pedido: que la barra de búsqueda de la tabla (usada en ambos paneles) permitiera acotar
+  por rango cuando la columna filtrada es numérica (ej. Avance %, Edad, Estrato), a la par
+  de seguir pudiendo buscar un valor fijo por texto — sin tener que elegir entre una forma
+  u otra.
+- Implementado en `tools/panel_riesgo_gui.py` (componente `TablaFiltrable`, reusado por
+  `panel_control_gui.py` sin cambios en ese archivo salvo heredar el comportamiento):
+  `_RangeSlider` (Canvas con dos punteros arrastrables) + 2 `Entry` editables, que aparecen
+  solo cuando la columna elegida en "en:" es 100% numérica (`_es_columna_numerica`). Rango
+  y búsqueda de texto se combinan con AND, nunca se excluyen. Detalle completo y regla para
+  extenderlo a otras tablas: `convenciones.md` § "Filtro por rango (dos punteros)".
+- **Verificado con un script headless** (Tk sin mostrar ventana, `root.withdraw()`):
+  detección numérica correcta (True para "Avance %", False para "Nombre"), límites del
+  slider calculados del dataset real, filtrado por rango correcto, combinación rango+texto
+  correcta, reset correcto, ocultamiento al volver a "Todos" — todos los asserts pasaron.
+  Las dos apps (`panel_control_gui.py`, `panel_riesgo_gui.py`) relanzadas en primer plano,
+  10s sin traceback. **No probado el arrastre real del mouse** (misma limitación de
+  siempre, sin herramienta de captura para apps de escritorio) — la lógica de arrastre
+  (`_on_press`/`_on_drag`) es la misma que ya usan otros patrones de Canvas en el proyecto,
+  pero el test headless solo ejercitó el camino de los `Entry` editables, no el drag.
+
+## 2026-08-06 — [panel-control-jc-mr] Ajustes al slider de rango: Cédula excluida + punteros tipo banderita sin superponerse
+
+**Estado:** Implementado y probado headless; apps arrancan sin traceback
+**Proceso relacionado:** [[panel-control-jc-mr]] · sigue en el componente compartido `TablaFiltrable`
+
+- Dos pedidos sobre el slider de rango recién agregado (ver entrada anterior del mismo día):
+  1. **Cédula nunca debe ofrecer el slider** aunque sea 100% dígitos — es un identificador,
+     no una magnitud sobre la que tenga sentido acotar un rango. `_es_columna_numerica()`
+     ahora excluye por nombre ("cédula"/"cedula", case-insensitive) antes de evaluar nada.
+  2. **Los dos punteros nunca deben poder superponerse** — cambiaron de círculos a
+     banderitas (verde = mínimo, roja = máximo, con su propio poste) y `_RangeSlider`
+     mantiene siempre una separación mínima en píxeles (`MIN_PX_GAP`) convertida a
+     unidades de valor según el ancho real del canvas — aplica tanto al arrastrar (el
+     puntero que se mueve se frena antes de tocar al otro, el otro no se desplaza) como al
+     escribir valores exactos en las cajas de texto (`set_valores` empuja el par completo
+     si quedan más cerca que el mínimo).
+- **Bug real encontrado por el propio test headless, no al ojo:** el cálculo de la
+  separación mínima dependía de `winfo_width()`, que en un canvas recién creado (antes del
+  primer `<Configure>`, o en una ventana `withdraw()`ada como la del test) puede devolver
+  1px — eso disparaba un "gap" absurdamente grande que terminaba anulando el rango
+  completo (volvía a mostrar todas las filas). Corregido con un ancho de reserva
+  (`ANCHO_RESERVA=220`) que se usa mientras el widget no tiene geometría real todavía.
+- **Verificado con asserts headless** (mismo script que la entrada anterior, extendido):
+  `_es_columna_numerica("Cédula")` → False; seleccionar Cédula no muestra el slider;
+  pedir lo=hi=70 por texto separa los punteros en vez de dejarlos pegados; arrastrar "lo"
+  agresivamente más allá de "hi" lo frena manteniendo la separación mínima en píxeles. Las
+  dos apps relanzadas en primer plano, sin traceback.
+
+## 2026-08-06 — [panel-control-jc-mr] Búsqueda masiva por lista de cédulas (CSV) en TablaFiltrable
+
+**Estado:** Implementado y probado headless (incluye lectura de un CSV real, no solo mock); apps arrancan sin traceback; copia compartida en Downloads sincronizada
+**Proceso relacionado:** [[panel-control-jc-mr]] · sigue en el componente compartido `TablaFiltrable`
+
+- Pedido: un lugar para cargar un CSV y buscar varios estudiantes a la vez por cédula,
+  viendo los datos de cada uno en la tabla — en vez de escribir una cédula a la vez en la
+  búsqueda de texto.
+- Implementado como botón "📂 Buscar por CSV" en la misma barra de búsqueda de
+  `TablaFiltrable` (componente compartido por `panel_control_gui.py` y
+  `panel_riesgo_gui.py`): abre un CSV cualquiera, barre TODAS las celdas (sin exigir
+  encabezado ni columna fija — más tolerante para gente no técnica), se queda con los
+  números de 5+ dígitos como cédulas candidatas, y filtra la tabla a esas cédulas. Se
+  combina con AND con la búsqueda de texto y el rango existentes, no los reemplaza.
+- Reusa `_normalizar_cedula` (nuevo helper): aplica el gotcha ya documentado en
+  `convenciones.md` (cédula float→".0" espurio) antes de limpiar separadores tipo
+  "1.234.567" — necesario porque un CSV exportado de Excel puede traer cualquiera de los
+  dos formatos.
+- El botón muestra la cuenta cargada (`📂 CSV (N)`) y la barra de resultados indica cuántas
+  de esas N aparecieron en la vista actual — señal rápida de cédulas no encontradas
+  (típicamente cohorte equivocada seleccionada).
+- **Verificado con 2 scripts headless:** uno simulando el estado interno (filtro
+  combinado con texto, reset), y otro leyendo un CSV real en disco (con formatos mixtos:
+  cédula plana, con puntos, con ".0" pegado, y un número de 2 dígitos de ruido que debía
+  quedar excluido) a través de `_cargar_csv_cedulas()` de verdad, con
+  `filedialog.askopenfilename` monkeypatcheado para no depender de una ventana real —
+  todos los casos correctos. **Gotcha de testing encontrado en el camino:** un CSV de
+  prueba con cédulas de solo 4 dígitos cae bajo el umbral de 5 y dispara
+  `messagebox.showwarning` (modal, sin ventana real que la cierre) — el proceso se cuelga
+  en vez de fallar con un assert; hubo que rehacer el CSV de prueba con cédulas realistas
+  de 7 dígitos.
+- Las dos apps relanzadas en primer plano sin traceback. Sincronizada la copia de
+  `panel_riesgo_gui.py` en `C:\Users\EstudiantesJC\downloads\Panel-Control-JC-MR\tools\`
+  (la carpeta ya compartida con los 2 compañeros) para que no quede desalineada con el
+  original.
+
+## 2026-08-06 — [panel-control-jc-mr] Fix real: fechas/horas de un CSV se contaban como cédulas
+
+**Estado:** Bug encontrado con un CSV real de Samuel, corregido y verificado contra ese mismo archivo
+**Proceso relacionado:** [[panel-control-jc-mr]] · sigue en `TablaFiltrable`
+
+- Samuel cargó un reporte de inscripción de Zoom real (`registration_82841124995_...csv`,
+  40 asistentes reales según el propio reporte) y la búsqueda por CSV mostró **86**
+  "cédulas" — casi el doble de lo esperado, y con razón dudó del número.
+- **Causa:** el filtro anterior (`len(ced) >= 5` tras quitarle todo lo que no fuera
+  dígito a cada celda) no distinguía una cédula de cualquier otro número. La columna
+  "Hora de registro" de Zoom trae fecha+hora en una sola celda con AM/PM
+  ("05/08/2026 09:55:14 AM") — al quitarle todo lo no-dígito quedaba un número de 14
+  dígitos que se contaba como cédula. Con 40 filas de asistente, cada una aportando ese
+  falso positivo además de su cédula real, el conteo casi se duplicaba.
+- **Fix:** `_parece_candidata_cedula()` (nuevo, en `panel_riesgo_gui.py`) rechaza de
+  entrada cualquier celda con letras, "/" o ":" — cubre fechas, horas, "aprobado",
+  nombres, correos, "Notetaker" (el bot de transcripción que Zoom registra como asistente
+  con cédula vacía) — ANTES de normalizar. Además se acotó el rango a 6-11 dígitos
+  (antes solo ≥5), el rango real de una cédula/NIT colombiana.
+- **Verificado contra el CSV real de Samuel, no un mock:** de 86 bajó a 40 — 39 cédulas
+  reales de asistentes + 1 falso positivo residual y explicado (el ID de la reunión de
+  Zoom, "828 4112 4995", que sin letras/separadores de fecha es indistinguible de una
+  cédula de 11 dígitos — se documenta como limitación conocida, no se persiguió un cero
+  perfecto). Fila del "Notetaker" (bot, sin cédula real) correctamente excluida.
+- Ambas apps relanzadas sin traceback; copia compartida en `Downloads\Panel-Control-JC-MR`
+  actualizada con el mismo fix.
+
+## 2026-08-06 — [panel-control-jc-mr] Aviso "N no encontradas" en la búsqueda por CSV — diagnosticado con el CSV real de Samuel
+
+**Estado:** Implementado y probado headless; explicado el caso real con nombres
+**Proceso relacionado:** [[panel-control-jc-mr]] · sigue en `TablaFiltrable`
+
+- Samuel cargó su reporte de Zoom real y preguntó por qué decía "37 de 832 · 40 cédulas
+  en la lista" si él ya había verificado que eran 37 — quería saber de dónde salían las 3
+  de más.
+- **Diagnosticado cruzando el CSV real contra la caché en disco de `panel_control_jc.json`
+  (no un mock):** de las 40 candidatas, 37 coinciden con JC 2026 y 3 no — 1 ya conocida
+  (el ID de reunión de Zoom "828 4112 4995") y **2 reales, con nombre**: Yehiron Bermudez
+  (cédula 123346533) y Catalina Lozada (cédula 1108336794), ambos aprobados en el registro
+  de Zoom pero sin fila en `participants` bajo ninguna cohorte JC (2023-2026) — hallazgo de
+  datos real, no un bug de la búsqueda (puede ser gente externa, de MR, o con la cédula mal
+  escrita al registrarse en Zoom).
+- **Para que esto no vuelva a generar la misma duda:** aviso nuevo "⚠ N no encontradas"
+  junto al botón de CSV (solo aparece si hay alguna) — clic abre un popup con la lista de
+  cédulas que no matchearon en la vista actual, para poder buscarlas directo. Se recalcula
+  también al cambiar de cohorte/programa (`_recalcular_csv_no_encontradas`, llamado desde
+  `set_datos`), no solo al cargar el CSV.
+- **Verificado headless:** simulando una cédula fantasma en la lista, el aviso aparece con
+  el conteo correcto y desaparece al quitar el filtro; el test end-to-end con el CSV real
+  de prueba (formatos mixtos) sigue pasando sin cambios. Apps relanzadas sin traceback;
+  copia compartida en `Downloads\Panel-Control-JC-MR` sincronizada.
+
+---
+
+## 2026-08-10 — [Ampliación panel-datos] Plan de nuevos espacios a partir de un Power BI externo
+
+**Estado:** Especificación lista, sin ejecutar
+**Proceso relacionado:** [[plan-ampliacion-panel-datos-2026-08-10]] · [[panel-datos-etl]] · [[plan-rediseno-panel-datos-2026-07-30]]
+
+- Samuel compartió un Power BI público y lo describió (no se pudo abrir: extensión Chrome sin
+  conectar + SPA no lee por fetch). Pidió un plan para llevar esos análisis por cohorte al panel.
+- **Hallazgo clave:** gran parte de ese PBI YA está construida en el rediseño (Fases 1-3,
+  2026-08-03) que sigue **sin commitear/desplegar** (filtro Estado, demografía unificada JC/MR,
+  selector ciudad unificado, tab Asistencia). El paso 0 del plan es desplegar eso, no construir.
+- **Nuevo real:** impacto financiero MR (beneficiarias/acceso a crédito desde `mr_microcreditos`)
+  + resultados JC por año/institución + deserción por género/ciudad. 3 huecos a auditar antes de
+  prometer gráficos: ingresos familiares MR, sectores de emprendimiento MR, institución educativa JC.
+- **Decisiones de Samuel:** (a) universo no-seleccionados >10k/cohorte → **DB aislada aparte,
+  DIFERIDO** (baja prioridad ahora, no ralentizar cronograma); (b) botón manual "Actualizar" solo
+  para syncs pesados vía webhook (patrón `zoom-crear-reunion.json`), NO para lecturas del panel —
+  esas no queman egress (medido: ~3,28/5 GB; el pico de 22-jul fue bug de paginación).
+- Doc creado, `00-vision-global` y `claude_sessions` actualizados.
+- **Pendiente:** Fase 0 (revisión visual de Samuel/Lina del rediseño + `git push` a `comunicaciones/main`).
+
+---
+
+## 2026-08-10 — [Monitoreo] Rutina de frescura en la nube + dispatcher de reintento + incidente 62h
+
+**Estado:** Construido, probado, en producción
+**Proceso relacionado:** [[panel-datos-etl]] · [[migracion-n8n-digitalocean]] · [[zoom-asistencia]]
+
+- Samuel preguntó cómo aprovechar las **rutinas de Claude** para chequear rápido los errores de
+  Telegram (alerta de `WorkflowCrashedError` + 8 tablas vencidas). Se explicaron `/loop` (local) vs
+  `/schedule` (nube) y sus límites: la rutina en la nube ve Supabase/GitHub pero NO el n8n local.
+- **Creada rutina en la nube `frescura-pipeline-rofe`** (id `trig_019fdLrZbvUUKwnjTgcvQ9tv`, cron
+  8:30 COT): puro `curl`, lee `v_frescura` (anon key), clasifica la causa y manda un Telegram con el
+  veredicto digerido. El conector Gmail se descartó (solo crea borradores, no envía) → Telegram con
+  bot token en el prompt.
+- **Diagnóstico en vivo (el hallazgo central):** el incidente de ~62h NO era OOM. Tablas diminutas
+  (máx `participants_snapshots` 21 filas/8.4 MB), paginación sana, scripts livianos. La etiqueta
+  `possible out-of-memory` de n8n es genérica; el `crashed` de las 8:32 fue el reinicio matando la
+  corrida. Causa real: **disponibilidad del portátil** — huecos de ~22h (Ago 9) y ~11.5h (Ago 10)
+  sin ninguna ejecución. Powercfg ya está en "nunca suspender" (AC+DC=0x0) → el gap fue equipo
+  físicamente apagado/de viaje. Es la evidencia dura que justifica [[migracion-n8n-digitalocean]].
+- **Dato destrancado:** corridos a mano los 8 scripts de `q10-sync` + `extract_emoflow_ingresos_diario`
+  + `calcular_asistencia_promedio` → `v_frescura` en `vencidos=0/8`. Sin un solo OOM (prueba final).
+- **Dispatcher de reintento remoto construido:** workflow n8n `rerun-dispatcher` (id `cPPNKo5fBH9Kas0s`),
+  webhook `POST /webhook/rerun-pipeline` autenticado con `x-rerun-key` (en `.env.local`), IF auth →
+  Switch por `body.target` → executeCommand (targets `ping`/`q10-sync`/`emoflow-diario`/`zoom-asistencia`).
+  Probado: ping local+ngrok, 403 con key mala, emoflow-diario real OK. La rutina lo usa SOLO en fallos
+  aislados. Exportado a `n8n-workflows/rerun-dispatcher.json` con el secreto redactado.
+- **Gotcha:** la API pública de n8n (v1) NO tiene endpoint para ejecutar un workflow bajo demanda;
+  el reintento remoto obligó a construir el webhook dispatcher. Y el reintento solo sirve con
+  n8n/portátil vivos — para "todo caído" la solución real es la migración.
+- **Pendiente sugerido:** confirmar con Samuel que llegó el Telegram de prueba; retomar migración.
+
+---
+
+## 2026-08-10 — [Ampliación panel-datos · Fase 0] Reconciliar rediseño con producción (merge)
+
+**Estado:** Merge hecho y build limpio; pendiente revisión visual + push
+**Proceso relacionado:** [[plan-ampliacion-panel-datos-2026-08-10]] · [[plan-rediseno-panel-datos-2026-07-30]]
+
+- Al arrancar Fase 0 (desplegar el rediseño) se descubrió que el clon local `panel-datos-rofe`
+  estaba **bifurcado desde 2026-07-16** y no tenía los **6 commits de julio de producción**
+  (reforma Emoflow: serie diaria real, actividad semanal, toggle canónico/histórico, retiro
+  probable JC). Ramas divergentes → push directo imposible, force-push habría borrado features vivas.
+- Samuel eligió **portar rediseño sobre producción**. Merge `--no-commit` resuelto a mano
+  (regla: estructura→rediseño, datos Emoflow/JC→producción): `api.ts` unión de fuentes (se retira
+  `emoflow_participacion_semanal` deprecada, 39=39=39 posicional); `page.tsx` conserva filtro
+  Estado/demografía/ciudad/Asistencia + secciones geografía/retiro-probable, tab Emoflow queda en
+  versión producción (se borra el viejo del rediseño, roto por fuentes retiradas) + "No aplica" MR.
+- **`tsc --noEmit` y `next build` limpios** (cargarTodo() corrió contra anon sin error). Commit
+  merge `7b1a2ed` local, `.gitignore` +`tsconfig.tsbuildinfo`. Divergencia cerrada (`0 3`, push = ff).
+- **Pendiente:** revisión visual de Samuel/Lina (`npm run dev`, Chrome no conecta en el entorno) →
+  luz verde → `git push comunicaciones main`. Backup del rediseño puro en rama `backup-rediseno-local`.
+
+---
+
+## 2026-08-10 — [Herramientas] Botonera de comandos de escritorio (Tkinter)
+
+**Estado:** Construida y verificada headless; falta que Samuel la abra
+**Proceso relacionado:** [[q10-consolidacion]] (bot Telegram)
+
+- Pedido de Samuel: un programa con botones para no tener que recordar los comandos del
+  bot de Telegram ni preguntar para qué sirve cada uno.
+- `scripts/botonera-comandos/botonera_comandos.py` + `Abrir_Botonera_Comandos.bat` + README.
+  Un botón por comando (los 7 `/actualizar …`), con descripción, "cuándo usarlo", confirmación
+  antes de correr, y consola de salida en vivo.
+- **Ejecución:** corre LOCALMENTE el mismo comando shell que dispara el bot (espejo de
+  `q10-consolidacion.json` nodo "Parsear Comando"). No pasa por Telegram/n8n (el trigger de
+  Telegram no se puede disparar con el token del bot). El pesado `q10` usa `lock_cli.py`
+  (execution-id vacío → n8n respeta el lock hasta 90 min) para no solaparse con el bot programado.
+- Verificado headless: py_compile OK, comandos renderizan idénticos a n8n, lock acquire/respetado/
+  release probado. Sin verificación visual (no puedo lanzar el Tk mainloop en este entorno).
+
+---
+
+## 2026-08-10 — [Panel de datos] Botón "Actualizar ahora" en el panel web
+
+**Estado:** Construido y verificado (backend en vivo + build frontend); falta push a producción
+**Proceso relacionado:** [[panel-datos-etl]] · [[rutina-frescura-nube]] · [[migracion-n8n-digitalocean]]
+
+- Pedido de Samuel: un botón en el panel de Vercel (repo `panel-datos-rofe`) para forzar la
+  actualización de datos bajo demanda, similar al de `panel_control_gui.py`.
+- Aclaración clave: el botón de la app de escritorio solo re-lee Supabase (el panel web ya hace eso
+  en cada carga). Lo útil aquí es disparar el **ETL de n8n** que ALIMENTA Supabase.
+- **Backend ya existía:** webhook autenticado `rerun-dispatcher` (`POST /webhook/rerun-pipeline`,
+  header `x-rerun-key`, target `q10-sync`). No se construyó workflow nuevo. Solo se le agregó CORS
+  (`allowedOrigins=*` en el Webhook + `Access-Control-Allow-Origin:*` en los 2 respond) aplicado en
+  vivo por API preservando la clave real; verificado con curl (preflight OPTIONS 204 + POST 403).
+- **Frontend:** `components/BotonActualizar.tsx` (nuevo) + `WEBHOOK_RERUN` en `lib/api.ts` + cableado
+  en `app/page.tsx` junto al indicador de frescura, con re-fetch al terminar. Build Next.js OK.
+- **Auth en página pública:** la clave NO va en el bundle; el usuario la escribe una vez y vive en
+  `localStorage` (`rofe_rerun_key`). Es la misma clave de la rutina de frescura.
+- Decisiones tomadas con Samuel: target = `q10-sync` (botón único), clave en localStorage.
+- Pendiente: `git push` del repo `panel-datos-rofe` (auto-deploy). No se pusheó en esta sesión.

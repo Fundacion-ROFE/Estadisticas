@@ -1,7 +1,46 @@
 # Panel de Datos Supabase (ETL + Dashboard)
 
 **Estado:** ✅ MVP completo (Fases 0-4) — en producción: https://venerable-truffle-331f3c.netlify.app
-**Última actualización:** 2026-07-21
+**Última actualización:** 2026-08-05 (optimización de egress Supabase — ver sección al final)
+
+> **Ampliación planeada (2026-08-10):** ver [[plan-ampliacion-panel-datos-2026-08-10]] — nuevos
+> espacios inspirados en un Power BI externo (impacto financiero MR, resultados JC por
+> año/institución), botón manual "Actualizar" para syncs pesados (patrón webhook), y universo de
+> no-seleccionados en DB aislada (diferido).
+
+## Botón "Actualizar ahora" — IMPLEMENTADO 2026-08-10
+Botón en la barra superior del panel (junto al indicador "Datos actualizados hace X h") que fuerza
+el ETL de n8n bajo demanda, sin esperar al sync diario de las 9:45. Pedido de Samuel: poder
+disponer la información "al segundo" cuando se necesite.
+
+- **No dispara una re-lectura de Supabase** (el panel ya lee Supabase en vivo en cada carga; un F5
+  hace eso). Dispara el **pipeline que ALIMENTA Supabase** — por eso el botón tiene sentido.
+- **Backend reutilizado (no se construyó nada nuevo en n8n):** webhook autenticado `rerun-dispatcher`
+  (id `cPPNKo5fBH9Kas0s`), `POST /webhook/rerun-pipeline` vía ngrok. El botón manda
+  `{"target":"q10-sync"}` con header `x-rerun-key`. `q10-sync` = los 8 scripts del pipeline
+  (normalize → sociodemográficos → cargar_supabase → aprobación → emoflow → retiros → export json →
+  sheets). ~1-3 min; la respuesta HTTP llega al terminar y el panel re-lee los datos (`onDone`).
+- **CORS (gotcha clave):** el panel (origen Netlify/Vercel) llama al webhook (origen ngrok) → es
+  cross-origin con header custom → el navegador hace **preflight OPTIONS**. Se agregó al workflow:
+  `options.allowedOrigins = "*"` en el nodo Webhook (n8n auto-responde el preflight, 204, reflejando
+  `Access-Control-Allow-Headers`) + header `Access-Control-Allow-Origin: *` en los dos nodos
+  `respondToWebhook` (para que el navegador pueda LEER la respuesta, incl. el 403 de clave mala).
+  Verificado end-to-end con curl (OPTIONS + POST) a través de ngrok. Aplicado en vivo por API
+  preservando la clave real (GET → modificar → PUT); exportado a `n8n-workflows/rerun-dispatcher.json`
+  (con placeholder `${N8N_RERUN_KEY}`, sin secreto).
+- **Auth en página pública (decisión):** el panel es público y estático (sin backend donde esconder
+  secretos). La clave `x-rerun-key` **NO va en el bundle** — el usuario la escribe una vez y vive en
+  `localStorage` (`rofe_rerun_key`). Solo quien conozca la clave puede disparar el sync. Es la misma
+  clave que usa la rutina de frescura en la nube (guardada en el prompt de esa rutina y en el nodo
+  `Auth?` del workflow en vivo).
+- **Archivos frontend** (repo `panel-datos-rofe`): `components/BotonActualizar.tsx` (nuevo),
+  constante `WEBHOOK_RERUN` en `lib/api.ts`, cableado en `app/page.tsx` junto a `frescuraResumen`.
+  Build local OK (Next.js 14 static export). **Pendiente: push a producción** (auto-deploy on push).
+- **Limitación conocida:** el sync corre en el PC de Samuel; si n8n/portátil están caídos el botón
+  falla (mismo límite de fondo que motiva la [[migracion-n8n-digitalocean]]). La espera de 1-3 min es
+  un `fetch` largo; si algún proxy/ngrok cortara antes, el componente muestra "no se pudo confirmar,
+  puede seguir corriendo" y sugiere revisar la frescura. Si en la práctica molesta, evaluar un ACK
+  inmediato (respondToWebhook antes del executeCommand) solo para la rama `q10-sync`.
 
 ## Frontend (Fase 3) — EN PRODUCCIÓN
 **URL vigente (2026-07-16, migración de hosting):** https://venerable-truffle-331f3c.netlify.app
@@ -240,9 +279,31 @@ hojas u otras fuentes NO). Se auditó cada dato y se corrigió la cadena.
   - `emoflow_ingresos_diario` (fecha × grupo_ciudad + NACIONAL): ingresos + usuarios_activos por día.
   - `emoflow_actividad_semanal` (semana_inicio=lunes ISO × grupo_ciudad): usuarios_activos, roster
     (matrícula Emoflow = distinct histórico de la ciudad), pct_activos = 100·activos/roster.
-  - **n8n `emoflow-ingresos-diario`** (id `DFPiF1RtD58FhGoZ`), scheduleTrigger **diario 21:30 COT**,
-    ACTIVO. Gotcha: activar por API `/activate` (el UPDATE directo en SQLite no registra el trigger);
+  - **n8n `emoflow-ingresos-diario`** (id `DFPiF1RtD58FhGoZ`), scheduleTrigger **diario 21:30 COT**.
+    Gotcha: activar por API `/activate` (el UPDATE directo en SQLite no registra el trigger);
     connections deben ir en formato `{"main": [[...]]}`.
+  - **INACTIVO deliberadamente desde 2026-08-06** — decisión de Samuel para no gastar presupuesto
+    limitado de Supabase en lecturas automáticas por horario. **No reactivar el Schedule Trigger.**
+    Esto explica por qué `emoflow_ingresos_diario` queda "VENCIDO" en el chequeo de frescura
+    (`alerta-frescura-vencida`, umbral 30h) de forma persistente — es esperado, no un bug.
+  - **✅ IMPLEMENTADO 2026-08-10 — ver sección «Botón "Actualizar ahora"» más abajo.** (El botón
+    del panel dispara `q10-sync` vía el webhook autenticado `rerun-dispatcher`, que ya existía y
+    también expone `emoflow-diario`/`zoom-asistencia`; no hizo falta convertir este workflow a
+    webhook.) El texto que sigue es el diseño original previo al dispatcher, se conserva por
+    contexto histórico.
+  - **Diseño futuro (solo documentado, no implementado):** cuando exista un botón en el panel web
+    (`Panel-De-Datos`, repo `comunicaciones-ai/Panel-De-Datos`, Next.js) para forzar la recolección
+    manual de datos, reemplazar el nodo `n8n-nodes-base.scheduleTrigger` de este workflow por un
+    `n8n-nodes-base.webhook` (`httpMethod: POST`, `responseMode: responseNode`) — reutilizar tal
+    cual el patrón ya usado en `n8n-workflows/zoom-crear-reunion.json` (Webhook → lógica →
+    `respondToWebhook`), sin inventar uno nuevo. El botón del panel haría `POST` a ese webhook;
+    falta definir autenticación mínima (secreto compartido en header, dado que el editor de n8n
+    hoy no está protegido más allá del túnel ngrok) — evaluar junto con la decisión de auth del
+    editor expuesto que de todas formas hay que tomar en la migración a DigitalOcean (ver
+    [[migracion-n8n-digitalocean]]). Este mismo patrón (Schedule → Webhook + botón) es candidato a
+    aplicarse a otros workflows con problema similar de costo de Supabase — revisar en la próxima
+    auditoría de egress. La implementación del botón (frontend) depende del roadmap del panel y
+    queda fuera de este repo.
 - **Panel (repo comunicaciones-ai/Panel-De-Datos):**
   - "Evolución de ingresos al sistema" = serie diaria real (nacional; por ciudad al filtrar);
     reemplaza el backfill plano de `historial_emoflow` (repetía 32.5). Notas aclaran ingresos vs usuarios.
@@ -1025,3 +1086,104 @@ vivo (ID de trigger tomado de `ola1_prompts.md`, ver Ola 1 · Anexo A):
   purga de la fila huérfana de `emoflow_ingresos` vía service_role): **`RESUMEN: total=47
   pass=47 fail=0 estado=exito`** — incluye las 3 pruebas nuevas de `retiros` (Track B) y
   confirma sana la purga de Track C.
+
+## Optimización de egress Supabase (2026-08-05) — disparado por acercarse al límite de 5 GB free tier
+
+**Disparador:** Samuel avisó que el proyecto está a punto de copar los 5 GB de egress mensual
+del free tier de Supabase. Pidió espaciar los workflows n8n que corren cada 2-4h (a criterio,
+esa cadencia no aporta valor práctico) y un análisis a fondo del resto, sin tocar la
+asistencia Zoom/H3 (que no debería depender de Supabase, porque los datos salen de Zoom).
+
+**Auditoría en vivo (`GET /api/v1/workflows/{id}` contra los 18 workflows reales, no solo los
+JSON de `n8n-workflows/` — convención ya documentada en [[convenciones]]):**
+
+| Workflow | Frecuencia (antes) | ¿Toca Supabase? | Egress real |
+|---|---|---|---|
+| `q10-sync-supabase` | cada 2h (8x/día) | Sí | 🔴 **Mayor consumidor** — ver hallazgo abajo |
+| `Bot Q10 - Actualizar Grupos` | cada 4h (4x/día) | No (Q10→Sheets→GitHub Pages) | Ninguno; espaciado igual por la petición general |
+| `datos-respaldo-diario` | diario 8:15 | Sí | 🟠 2º mayor — `respaldo_supabase.py` hace `select=*` de las 25 tablas base completas (incluye `enrollments`, 18.196 filas) |
+| `panel-verificacion-diaria` | diario 8:00, `--rapido` | Sí | Bajo — selecciona columnas puntuales, no `select=*` completo (excepción: 1 fila por tabla para el chequeo RLS anon) |
+| `alerta-frescura-vencida` | cada 30 min (48x/día) | Sí | Insignificante — solo lee la vista `v_frescura` (~8 filas) |
+| `asistencia-zoom-diario` / `Zoom - Asistencia` (webhook) | diario 17:45 / evento | Sí, pero solo **escritura** | Insignificante — 2 upserts pequeños (`asistencia_zoom`, `asistencia_promedio`), cero lecturas. Confirma que el pipeline Zoom→H3 está bien diseñado: no depende de leer Supabase |
+
+**Hallazgo principal — `cargar_supabase.py` (usado por `q10-sync-supabase`):** el paso 1
+("Snapshot del estado ANTERIOR", Decisión 2) hacía `supa.get_todo("/participants?select=*")` —
+un `SELECT *` completo de `participants` (2.919 filas, todas las columnas) — **en cada corrida**,
+solo para armar el snapshot de auditoría en `participants_snapshots`. Como esa tabla tiene
+`UNIQUE(snapshot_date)` con `on_conflict=snapshot_date`, las corridas 2ª+ del mismo día pisaban
+la misma fila sin aportar nada — pero igual pagaban el `SELECT *` completo. Con 8 corridas/día
+eso era 8 lecturas completas de `participants` para un dato que solo necesitaba persistirse 1
+vez al día.
+
+**Cambios aplicados (n8n en vivo vía API + JSON exportados sincronizados + código):**
+1. `cargar_supabase.py`: antes del `SELECT *`, ahora consulta si ya existe snapshot de hoy
+   (`select=snapshot_date&snapshot_date=eq.<hoy>`, 1 fila) — si existe, omite el `SELECT *`
+   completo. Corta esa lectura de 8x/día a 1x/día (la primera corrida del día), independiente
+   de cuántas veces corra el sync.
+2. `q10-sync-supabase`: cron `30 17,19,21,23,1,3,5,7 * * *` (cada 2h) → `30 17,21,1,5 * * *`
+   (cada 4h). Combinado con (1), la lectura de `participants` completa pasó de 8x/día a 1x/día
+   real (8x de reducción), no solo 2x.
+3. `Bot Q10 - Actualizar Grupos`: cron `0 17,21,1,5 * * *` (cada 4h) → `0 17,1 * * *` (cada 8h).
+   No reduce egress de Supabase (no la toca), pero reduce logins a Q10 y pushes a git por la
+   petición general de espaciar los flujos de 2-4h.
+4. `datos-respaldo-diario`: cron `15 8 * * *` (diario) → `15 8 */3 * *` (cada ~3 días). Sigue
+   dando varias versiones dentro de la retención de 14 días (`RETENCION_DIAS` en
+   `respaldo_supabase.py`) pero corta el `select=*` de las 25 tablas a un tercio de frecuencia.
+   ⚠ Gotcha del paso de día: `*/3` en el campo día-del-mes reinicia en 1 cada mes, así que el
+   salto real puede ser de 1 día en el cruce de mes (ej. día 31 → día 1) en vez de 3 — nunca
+   peor que eso, es una aproximación aceptada, no un bug.
+5. `alerta-frescura-vencida` (cada 30 min) y `panel-verificacion-diaria` (diario) **NO se
+   tocaron** — confirmado que su egress es insignificante pese a la frecuencia; tocarlos no
+   habría movido la aguja.
+
+**No cuantificado (fuera de alcance de esta sesión):** el frontend Next.js en Netlify
+(`venerable-truffle-331f3c.netlify.app`) lee Supabase directo desde el navegador de cada
+visitante — ese tráfico es real uso del dashboard, no un job de n8n, y esta auditoría no lo
+midió. Si el egress sigue subiendo tras estos cambios, revisar el desglose por tabla/endpoint
+en el dashboard de Supabase antes de seguir ajustando cron jobs.
+
+**Verificación:** siguiendo el gotcha ya documentado en [[convenciones]] ("cambiar el cron de
+un Schedule Trigger por PUT en un workflow ya `active:true` no reregistra el trigger en
+memoria"), tras cada `PUT` se forzó el ciclo `POST /deactivate` → `POST /activate` en los 3
+workflows, y se reconfirmó `active: true` con un `GET` posterior — no solo se confió en el
+`GET` inmediatamente después del `PUT`. `cargar_supabase.py` pasó `py_compile` tras el cambio;
+no se corrió en vivo en esta sesión (correrá sola en la próxima ejecución programada, 12:30
+COT).
+
+### Pico de egress del 2026-07-22 (1,5 GB en un día) — diagnosticado 2026-08-10
+Samuel reportó que el desglose de Supabase muestra **1,5 GB de egress el 2026-07-22**. Diagnóstico:
+ese día fue de desarrollo intenso de scripts nuevos contra Supabase (`sync_postulantes_mr.py`,
+cargadores Mongo JC/MR) y **el bug de paginación `offset += page` faltante apareció DOS VECES el
+mismo día** (registrado en `docs/convenciones.md#Paginación PostgREST` y en memoria). Un loop
+`while True` que no avanza el `offset` **re-descarga la misma primera página (~1.000 filas) en
+círculo** hasta que se mata el proceso → egress (lecturas GET) descontrolado. Encaja con el perfil
+del pico: es un **accidente puntual de desarrollo, ya corregido, no costo estructural del panel**.
+- **Egress = datos que SALEN** (GET). NO cuenta la extracción de Mongo (lee Mongo Atlas) ni las
+  cargas HACIA Supabase (eso es ingress/escritura).
+- **Auditoría de repo (2026-08-10):** se cruzaron los ~54 scripts que paginan Supabase contra los
+  que incrementan el cursor → **conjunto sospechoso vacío**. Los 3 patrones válidos (`offset += page`,
+  `desde += pagina` en `validar_asistencia.py`, `desde += tam_pagina` con header `Range` en
+  `cruzar_mongo_supabase.py`) están todos correctos; ningún incremento es `+= 1`. **No hay bug
+  latente ni regresión.**
+- **Modelo de egress del panel (medido):** el frontend estático lee agregados directo desde el
+  navegador de cada visitante; una carga completa ≈ 100-150 kB gzipeados. El "tiempo real" en sí es
+  barato — los picos grandes vienen de accidentes como este, no del uso normal. Si el egress vuelve
+  a subir: Supabase → Reports → Egress (desglose por día/tabla; los logs API por MCP solo cubren
+  24h). Detalle en la memoria `reference_supabase_egress_panel`.
+
+### Monitoreo de frescura en la nube + reintento remoto (2026-08-10)
+Además del workflow local `alerta-frescura-vencida` (que muere si el portátil se apaga), ahora hay
+un **monitor independiente del portátil**:
+- **Rutina Claude en la nube `frescura-pipeline-rofe`** (id `trig_019fdLrZbvUUKwnjTgcvQ9tv`, cron
+  8:30 COT). Con puro `curl` lee `v_frescura` (anon key), clasifica la causa (todo vencido =
+  n8n/portátil caído; solo emoflow / solo zoom = fallo aislado) y manda **un** Telegram con el
+  veredicto. Gestión con la skill `/schedule` (herramienta `RemoteTrigger`); no se borra por API.
+- **Dispatcher n8n `rerun-dispatcher`** (id `cPPNKo5fBH9Kas0s`, activo, exportado a
+  `n8n-workflows/rerun-dispatcher.json` con el secreto redactado). Webhook `POST /webhook/rerun-pipeline`
+  vía ngrok, autenticado con header `x-rerun-key` (en `.env.local` como `N8N_RERUN_KEY`). Ruta:
+  IF auth → Switch por `body.target` → `executeCommand`. Targets: `ping`, `q10-sync`, `emoflow-diario`,
+  `zoom-asistencia`. La rutina lo llama SOLO en fallos aislados; con 2+ vencidos o `q10-sync` no
+  reintenta (patrón de portátil apagado → el POST fallaría).
+- **Diagnóstico que originó esto:** un incidente de ~62h de datos vencidos que NO era OOM sino
+  indisponibilidad del portátil (detalle y evidencia en [[migracion-n8n-digitalocean]] adenda
+  2026-08-10). El dato se destrancó corriendo los 10 scripts a mano → `vencidos=0/8`.

@@ -1,0 +1,820 @@
+{
+  "updatedAt": "2026-08-10T19:42:19.446Z",
+  "createdAt": "2026-08-10T17:12:36.581Z",
+  "id": "cPPNKo5fBH9Kas0s",
+  "name": "rerun-dispatcher",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rerun-pipeline",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "wh-1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        340
+      ],
+      "webhookId": "rerun-pipeline"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c-${N8N_RERUN_KEY}",
+              "leftValue": "={{ $json.headers['x-rerun-key'] }}",
+              "rightValue": "${N8N_RERUN_KEY}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-auth",
+      "name": "Auth?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        460,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "forbidden: bad or missing x-rerun-key",
+        "options": {
+          "responseCode": 403,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "resp-403",
+      "name": "Respond 403",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        680,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c-ping",
+                    "leftValue": "={{ $json.body.target }}",
+                    "rightValue": "ping",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ping"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c-q10-sync",
+                    "leftValue": "={{ $json.body.target }}",
+                    "rightValue": "q10-sync",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "q10-sync"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c-emoflow-diario",
+                    "leftValue": "={{ $json.body.target }}",
+                    "rightValue": "emoflow-diario",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "emoflow-diario"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c-zoom-asistencia",
+                    "leftValue": "={{ $json.body.target }}",
+                    "rightValue": "zoom-asistencia",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "zoom-asistencia"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "sw-1",
+      "name": "Target",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "echo estado=exito rerun-ping-ok"
+      },
+      "id": "ec-ping",
+      "name": "run ping",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python normalize_q10_data.py && cd C:/Users/EstudiantesJC/downloads/admin-usable && python scripts/panel-datos/sync_sociodemograficos.py && cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python cargar_supabase.py && python sync_aprobacion_supabase.py && python sync_emoflow_api.py && python sync_retiros.py && python export_supabase_json.py && python sync_supabase_to_sheets.py"
+      },
+      "id": "ec-q10-sync",
+      "name": "run q10-sync",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python extract_emoflow_ingresos_diario.py"
+      },
+      "id": "ec-emoflow-diario",
+      "name": "run emoflow-diario",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "command": "cd \"C:\\Users\\EstudiantesJC\\downloads\\admin-usable\" && python scripts\\zoom-asistencia\\validar_asistencia.py && python scripts\\panel-datos\\sync_asistencia_supabase.py && python scripts\\panel-datos\\calcular_asistencia_promedio.py"
+      },
+      "id": "ec-zoom-asistencia",
+      "name": "run zoom-asistencia",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.stdout }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "resp-ok",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        340
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Auth?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auth?": {
+      "main": [
+        [
+          {
+            "node": "Target",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 403",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Target": {
+      "main": [
+        [
+          {
+            "node": "run ping",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "run q10-sync",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "run emoflow-diario",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "run zoom-asistencia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "run ping": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "run q10-sync": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "run emoflow-diario": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "run zoom-asistencia": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "8BL0kqnJDbyWMzpg",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "bd15a743-b7a6-4aef-9eb6-554b900a1aab",
+  "activeVersionId": "bd15a743-b7a6-4aef-9eb6-554b900a1aab",
+  "versionCounter": 6,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-08-10T17:12:36.589Z",
+      "createdAt": "2026-08-10T17:12:36.589Z",
+      "role": "workflow:owner",
+      "workflowId": "cPPNKo5fBH9Kas0s",
+      "projectId": "sCDSlnWeaXfVGSdx",
+      "project": {
+        "updatedAt": "2026-06-18T19:33:43.567Z",
+        "createdAt": "2026-06-18T17:26:43.451Z",
+        "id": "sCDSlnWeaXfVGSdx",
+        "name": "Samuel Rojas <soportejunior@tocaunavida.org>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-08-10T19:42:19.450Z",
+    "createdAt": "2026-08-10T19:42:19.450Z",
+    "versionId": "bd15a743-b7a6-4aef-9eb6-554b900a1aab",
+    "workflowId": "cPPNKo5fBH9Kas0s",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "rerun-pipeline",
+          "responseMode": "responseNode",
+          "options": {
+            "allowedOrigins": "*"
+          }
+        },
+        "id": "wh-1",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          240,
+          340
+        ],
+        "webhookId": "rerun-pipeline"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "loose",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "c-${N8N_RERUN_KEY}",
+                "leftValue": "={{ $json.headers['x-rerun-key'] }}",
+                "rightValue": "${N8N_RERUN_KEY}",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "if-auth",
+        "name": "Auth?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          460,
+          340
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "text",
+          "responseBody": "forbidden: bad or missing x-rerun-key",
+          "options": {
+            "responseCode": 403,
+            "responseHeaders": {
+              "entries": [
+                {
+                  "name": "Access-Control-Allow-Origin",
+                  "value": "*"
+                }
+              ]
+            }
+          }
+        },
+        "id": "resp-403",
+        "name": "Respond 403",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [
+          680,
+          560
+        ]
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "loose",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "c-ping",
+                      "leftValue": "={{ $json.body.target }}",
+                      "rightValue": "ping",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "ping"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "loose",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "c-q10-sync",
+                      "leftValue": "={{ $json.body.target }}",
+                      "rightValue": "q10-sync",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "q10-sync"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "loose",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "c-emoflow-diario",
+                      "leftValue": "={{ $json.body.target }}",
+                      "rightValue": "emoflow-diario",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "emoflow-diario"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "loose",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "c-zoom-asistencia",
+                      "leftValue": "={{ $json.body.target }}",
+                      "rightValue": "zoom-asistencia",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "zoom-asistencia"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "sw-1",
+        "name": "Target",
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3,
+        "position": [
+          700,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "command": "echo estado=exito rerun-ping-ok"
+        },
+        "id": "ec-ping",
+        "name": "run ping",
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          1120,
+          120
+        ]
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python normalize_q10_data.py && cd C:/Users/EstudiantesJC/downloads/admin-usable && python scripts/panel-datos/sync_sociodemograficos.py && cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python cargar_supabase.py && python sync_aprobacion_supabase.py && python sync_emoflow_api.py && python sync_retiros.py && python export_supabase_json.py && python sync_supabase_to_sheets.py"
+        },
+        "id": "ec-q10-sync",
+        "name": "run q10-sync",
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          1120,
+          280
+        ]
+      },
+      {
+        "parameters": {
+          "command": "cd C:/Users/EstudiantesJC/downloads/admin-usable/scripts/panel-datos && python extract_emoflow_ingresos_diario.py"
+        },
+        "id": "ec-emoflow-diario",
+        "name": "run emoflow-diario",
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          1120,
+          440
+        ]
+      },
+      {
+        "parameters": {
+          "command": "cd \"C:\\Users\\EstudiantesJC\\downloads\\admin-usable\" && python scripts\\zoom-asistencia\\validar_asistencia.py && python scripts\\panel-datos\\sync_asistencia_supabase.py && python scripts\\panel-datos\\calcular_asistencia_promedio.py"
+        },
+        "id": "ec-zoom-asistencia",
+        "name": "run zoom-asistencia",
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          1120,
+          600
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "text",
+          "responseBody": "={{ $json.stdout }}",
+          "options": {
+            "responseHeaders": {
+              "entries": [
+                {
+                  "name": "Access-Control-Allow-Origin",
+                  "value": "*"
+                }
+              ]
+            }
+          }
+        },
+        "id": "resp-ok",
+        "name": "Respond OK",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [
+          1360,
+          340
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Auth?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Auth?": {
+        "main": [
+          [
+            {
+              "node": "Target",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Respond 403",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Target": {
+        "main": [
+          [
+            {
+              "node": "run ping",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "run q10-sync",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "run emoflow-diario",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "run zoom-asistencia",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "run ping": {
+        "main": [
+          [
+            {
+              "node": "Respond OK",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "run q10-sync": {
+        "main": [
+          [
+            {
+              "node": "Respond OK",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "run emoflow-diario": {
+        "main": [
+          [
+            {
+              "node": "Respond OK",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "run zoom-asistencia": {
+        "main": [
+          [
+            {
+              "node": "Respond OK",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Samuel Rojas",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-08-10T19:42:19.510Z",
+        "id": 3467,
+        "workflowId": "cPPNKo5fBH9Kas0s",
+        "versionId": "bd15a743-b7a6-4aef-9eb6-554b900a1aab",
+        "event": "activated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-08-10T19:42:19.492Z",
+        "id": 3466,
+        "workflowId": "cPPNKo5fBH9Kas0s",
+        "versionId": "bd15a743-b7a6-4aef-9eb6-554b900a1aab",
+        "event": "deactivated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      }
+    ]
+  }
+}
