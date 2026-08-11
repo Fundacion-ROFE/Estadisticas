@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-08-11T01:01:43.987826-05:00",
+  "ultima_actualizacion": "2026-08-11T17:02:28.375230-05:00",
   "segmento": "Logica-Nivel 2-2026",
   "por_curso": [
     {
@@ -70,7 +70,7 @@
       "estudiantes": 272,
       "aprobados": 24,
       "pct_aprobados": 8.8,
-      "promedio": 59.5,
+      "promedio": 60.11,
       "min": 0.0,
       "max": 100.0
     },
@@ -106,7 +106,7 @@
     "total_cursos": 11,
     "total_registros": 7912,
     "estudiantes_unicos_id": 780,
-    "promedio_general": 75.96,
+    "promedio_general": 75.98,
     "total_aprobados": 5464
   },
   "anomalias": [
@@ -116,7 +116,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 1521
+      "cantidad": 1520
     },
     {
       "categoria": "AVANCE IRREGULAR",
