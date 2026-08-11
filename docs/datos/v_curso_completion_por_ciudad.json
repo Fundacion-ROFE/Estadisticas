@@ -186,7 +186,7 @@
     "grupo_ciudad": "BAQ",
     "matriculados": 50,
     "completados": 27,
-    "promedio_avance": 73.1,
+    "promedio_avance": 73.4,
     "pct_completados": 54.0
   },
   {
@@ -226,7 +226,7 @@
     "grupo_ciudad": "GYL",
     "matriculados": 28,
     "completados": 14,
-    "promedio_avance": 68.0,
+    "promedio_avance": 68.3,
     "pct_completados": 50.0
   },
   {
@@ -235,9 +235,9 @@
     "programa": "jc",
     "grupo_ciudad": "MED",
     "matriculados": 49,
-    "completados": 17,
-    "promedio_avance": 44.4,
-    "pct_completados": 34.7
+    "completados": 19,
+    "promedio_avance": 48.5,
+    "pct_completados": 38.8
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
