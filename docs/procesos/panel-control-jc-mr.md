@@ -1042,11 +1042,18 @@ tiene matriculadas 2025/2026) muestra la tabla vacía ahí — es correcto (no h
 esos años en MR); el análisis de esos años se hace en «Mujeres ROFÉ». Default "Todos" evita
 toparse con eso de entrada.
 
-**Cierre 2026-08-12:** para eliminar del todo esa confusión, la barra de años **se oculta
-cuando el programa es MR y la pestaña activa es «Explorar»** (`_actualizar_visibilidad_barra_cohorte`,
-ligada a `<<NotebookTabChanged>>` + cambio de programa, con bandera `_barra_cohorte_visible`).
-Reaparece en «Mujeres ROFÉ» (donde sí filtra) y siempre está visible en JC (donde es el
-selector de cohorte). Verificado: MR+Explorar=oculta, MR+Mujeres ROFÉ=visible, JC+Explorar=visible.
+**Cierre 2026-08-12 (v2, pedido del usuario "no tapar todos los botones"):** en vez de ocultar
+la barra entera en «Explorar», se ocultan SOLO los botones de años sin matriculadas (vistas
+vacías inútiles). `_cohortes_mr_para_vista()` + `_on_tab_change` (ligado a `<<NotebookTabChanged>>`):
+en «Explorar» MR los botones = "Todos" + años con matrícula en `v_gui_personas` (hoy 2025, 2026);
+en «Mujeres ROFÉ» = "Todos" + todos los años de registro (2022-2026). La barra queda siempre
+visible. Al cambiar de pestaña, si el año seleccionado ya no está en el set, cae a "Todos".
+Verificado: MR+Explorar botones=[Todos,2026,2025]; MR+Mujeres ROFÉ=[Todos,2026,2025,2024,2023,2022].
+
+**Diferencia de conteo panel (5.318) vs CSV Plataforma MR (5.157):** los 161 de más son mujeres
+que ya estaban en `postulantes_mr` desde OTRAS pestañas del Sheet BD-Mujeres ROFÉ (cursos_pct=107,
+inactivas=30, general=24), no en el CSV de la plataforma. De esas 161, 156 son las "sin año"
+(vinieron de fuentes sin fecha de registro). `postulantes_mr` es la UNIÓN de todas las fuentes MR.
 
 ## 8. Conexiones
 
