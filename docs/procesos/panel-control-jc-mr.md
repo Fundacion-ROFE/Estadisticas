@@ -1042,6 +1042,12 @@ tiene matriculadas 2025/2026) muestra la tabla vacía ahí — es correcto (no h
 esos años en MR); el análisis de esos años se hace en «Mujeres ROFÉ». Default "Todos" evita
 toparse con eso de entrada.
 
+**Cierre 2026-08-12:** para eliminar del todo esa confusión, la barra de años **se oculta
+cuando el programa es MR y la pestaña activa es «Explorar»** (`_actualizar_visibilidad_barra_cohorte`,
+ligada a `<<NotebookTabChanged>>` + cambio de programa, con bandera `_barra_cohorte_visible`).
+Reaparece en «Mujeres ROFÉ» (donde sí filtra) y siempre está visible en JC (donde es el
+selector de cohorte). Verificado: MR+Explorar=oculta, MR+Mujeres ROFÉ=visible, JC+Explorar=visible.
+
 ## 8. Conexiones
 
 [[plan-visualizacion-2026-07-30]] (Fase 2 pausada a favor de este documento — pendientes vivos
