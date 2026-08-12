@@ -1018,6 +1018,30 @@ datos de Q10. Rediseño (estructura propia de MR, no copia de JC):
 Las 566 con Q10 aparecen tanto aquí (con toggle) como en «Explorar» — solape intencional: esta
 pestaña es "todas las mujeres", «Explorar» es el detalle Q10.
 
+## 7.25 Extensión 2026-08-12 — botones de año de arriba = filtro de "Mujeres ROFÉ" (MR)
+
+Continuación de §7.24. El usuario pidió que los botones de año de la barra superior (que ya
+filtran «Explorar») sean TAMBIÉN el filtro de año de la sección "Mujeres ROFÉ", para no tener
+un dropdown de año redundante. Cambios (solo MR, JC intacto):
+
+- **Selector de año superior (MR):** ya no es matrícula∪canon (que daba solo 2025/2026), sino
+  **"Todos" + los años reales del universo de mujeres** (2022-2026, de `postulantes_mr`
+  fecha_creacion). Sin años vacíos. Default = "Todos". JC sigue con v_gui_personas∪canon
+  (2019-2026, default el más reciente).
+- **Los botones filtran ambas pestañas:** `_build_selector_cohorte` ahora llama a
+  `_on_cambio_cohorte` (refresca «Explorar» Y «Mujeres ROFÉ»). `_filas_programa_cohorte` trata
+  "Todos" como sin-filtro. Verificado: MR "2024" → Mujeres ROFÉ 1.063, "2022" → 671, "Todos" →
+  5.318.
+- **Dropdown de Año eliminado de la pestaña Mujeres ROFÉ** (redundante) — el `_frame_pm_anio`
+  se oculta en MR; en JC (pestaña Postulantes) se mantiene. Quedan Ciudad + toggle Q10.
+- **"De ellas, con Q10" solo se muestra en "Todos"** — al cambiar de año la lectura se volvía
+  confusa (pedido explícito). El título del KPI cambia a "Mujeres ROFÉ — 2024" al filtrar.
+
+Tradeoff conocido: como los botones son compartidos, elegir 2022-2024 en «Explorar» (que solo
+tiene matriculadas 2025/2026) muestra la tabla vacía ahí — es correcto (no hubo matriculadas
+esos años en MR); el análisis de esos años se hace en «Mujeres ROFÉ». Default "Todos" evita
+toparse con eso de entrada.
+
 ## 8. Conexiones
 
 [[plan-visualizacion-2026-07-30]] (Fase 2 pausada a favor de este documento — pendientes vivos
