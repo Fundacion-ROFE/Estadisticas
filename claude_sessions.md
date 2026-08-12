@@ -7247,3 +7247,250 @@ resumen de conteo + indicador de actividad viva; plan de correos alternos escrit
   `localStorage` (`rofe_rerun_key`). Es la misma clave de la rutina de frescura.
 - Decisiones tomadas con Samuel: target = `q10-sync` (botón único), clave en localStorage.
 - Pendiente: `git push` del repo `panel-datos-rofe` (auto-deploy). No se pusheó en esta sesión.
+
+---
+
+## 2026-08-11 — [Hito P0] Entregable "DB consultable por Claude" + regla "activo JC" = Seguimiento
+
+**Estado:** Entregable P0 construido (artefacto) y regla de gobernanza fijada en convenciones
+**Proceso relacionado:** [[panel-datos-etl]] · [[supabase-estructura]] · [[convenciones]]
+
+- Hito pactado (cronograma 28-jul): el 11-ago se presenta la **DB funcional de JC y MR
+  consultable por Claude** (MVP — todavía sin Zoom/asistencia en tiempo real, eso es P1). Cerradas
+  las 2 semanas de P0 (testing y corroboración).
+- **Entregable:** presentación compartible (artefacto HTML) con alcance (qué sí / qué no hoy),
+  cifras verificadas EN VIVO contra Supabase, batería "pregúntale lo que sea" (8 Q&A reales) y
+  roadmap P0→P5. Todas las cifras salieron de queries corridas hoy vía MCP Supabase.
+- **Cuadres verificados hoy:** JC 2026 = 832 ingresados / 78 retirados / 754 activos, idéntico
+  entre `cohorte_ingresos`, `cohorte_2026_ceds` y retiros individuales. MR 2026 = 346 con 8 retiros
+  reales (el 167 "inhabilitadas" NO es retiro en MR). Aprobación: JavaScript es el cuello de botella
+  JC (43,6%); Finanzas MR 6,4%. Emoflow 826/759 (91,8% match). Postulantes 2.556 JC + 5.310 MR.
+- **Duda de gobernanza de Samuel + decisión:** "activo JC" = Seguimiento (`en_seguimiento_jc`),
+  NO "habilitado en Q10". Medido en vivo: Q10-activo 754 vs Seguimiento 751, Δ≈3 (0,4%) — el margen
+  son retiros que el equipo borró del Sheet antes que Q10 (3 casos "activo Q10 / fuera Seguimiento",
+  0 al revés). **Mantener Sheet+Supabase NO es doble mantenimiento:** el equipo opera una sola
+  fuente (la hoja), Supabase la ingesta con `sync_sociodemograficos.py`, y el Δ es reconciliación
+  vigilada por `test_integridad_supabase.py`. Colapsar a uno destruye ese chequeo.
+- **Persistido:** nueva subsección en `docs/convenciones.md` ("Regla de consulta: activo JC = Seguimiento")
+  + memoria `feedback_activo_jc_seguimiento`. El template de contextos individuales por integrante
+  es entrega FUTURA (P5, ~sep) — snippet de la regla ya redactado y en cola, no aplica hoy.
+- **Pendiente:** compartir el artefacto con el equipo desde el menú de la página (nace privado).
+
+## 2026-08-11 — Plan de Trabajo de Soporte 2026: carga de fases + skill `/plan-sync`
+
+**Estado:** Fases P0–P7 cargadas en el Sheet del equipo; skill + motor de sync construidos y validados
+**Proceso relacionado:** [[plan-trabajo-cronograma]] · [[zoom-asistencia]] · [[zoom-youtube]]
+
+- El equipo pidió llevar los planes de trabajo a un Sheet compartido
+  (`1MYYrpgH5VRMwpYiGxMMur-jZrbU4PHHZG1pUUgiUjjs`, "Plan de Trabajo de Soporte 2026"). Se compartió
+  con la Service Account (`q10-automatizacion@...`) como Editor.
+- **Pestaña `Plataformas`:** cargadas las 9 fases del cronograma DB/automatización-IA (P0, Hito,
+  P1–P7) en filas 293–301, con el patrón de las filas recientes de Samuel (Estado "Sin iniciar"/
+  "En Progreso", vocabulario real del desplegable).
+- **Pestaña `Cronograma`:** (1) marcadas `Completado` las 6 sesiones de Samuel del 7–11 jul que
+  seguían en blanco (regla: pasado → Completado); (2) copiadas las fases P0–P7 como bloque dado
+  (filas 71–79) — nota: quedan duplicadas con Plataformas, y su Categoría/Estado no está en el
+  vocabulario de esa pestaña (puede salir triangulito naranja, cosmético).
+- **Skill `/plan-sync`** (`.claude/skills/plan-sync/`) + motor `scripts/plan-trabajo/sync_plan_cronograma.py`:
+  a demanda, marca las sesiones pasadas de Samuel como `Completado` y rellena Asistencia/Grabación
+  desde fuentes REALES (Supabase `asistencia_zoom` por fecha + logs `YT-GRABACIONES-LOG`/
+  `NOVA-GRABACIONES-LOG`). No inventa: sin evidencia → en blanco. Dos fases (`--plan` dry-run con
+  preview → `--aplicar`), idempotente, solo filas de Samuel.
+- **Decisiones de Samuel:** disparador = skill a demanda (no cron); rellenar Estado + datos reales;
+  alcance solo sus filas. Validado el motor contra fechas conocidas (07-jul 44 filas → Completa;
+  21-jul → Subido a Youtube). Hoy `--plan` da 0 candidatos (ya todo Completado) = correcto.
+- **Gotcha:** no hay tabla de grabaciones en Supabase; el único origen es el log en Sheets, que
+  solo tiene datos desde ~14-jul → sesiones previas quedan con Grabación en blanco (correcto).
+
+---
+
+## 2026-08-11 — [Coherencia cohortes] Canon histórico + v_pub_cohorte desde Seguimiento (aplicado a prod)
+
+**Estado:** EJECUTADO en producción; suite 53/53 PASS
+**Proceso relacionado:** [[plan-coherencia-cohortes-2026-08-11]] · [[supabase-estructura]] · [[panel-datos-etl]]
+
+- Samuel comparó el panel contra el consolidado oficial JC (CSV, 2019–2025) y no cuadraba. Diagnóstico
+  (7 problemas P1–P7): el panel contaba por matrícula, no por universo; `v_pub_cohorte` daba 754
+  (canon Q10) mientras la demografía daba 751 (Seguimiento); faltaban 2019–2022; el guard del test
+  ya estaba en rojo por el drift 751 vs 754.
+- **Hallazgo:** universo por año = matrículas ∪ `retiros` reconstruye casi exacto (2024 clava
+  433=433); el número correcto de cerradas es el del consolidado (retirados por descarte =
+  seleccionados − culminantes).
+- **Aplicado a prod (2 migraciones):** (1) tabla `cohorte_historico` con JC nacional 2019–2025 desde
+  el consolidado; (2) `v_pub_cohorte` reescrita — cerradas desde el canon, 2026 desde Seguimiento
+  (**832 = 751 + 81**). `cohorte_ingresos` intacto como canon Q10 interno. Guard del test con
+  tolerancia `TOL_SEG_VS_CANON_JC=5` (Seguimiento lidera el canon por lag, no es error).
+- **Verificado:** v_pub_cohorte cuadra fila por fila (ingresados=activos+retirados en los 9 años);
+  anon puede leer la vista (200); tablas base siguen bloqueadas (401); **suite completa 53/53 PASS**;
+  advisors sin clase nueva de riesgo (security_definer_view es el patrón preexistente de las 40+ vistas).
+- **Staged en** `scripts/panel-datos/migraciones_staged/`. **Pendiente menor:** v_pub_geografia por
+  ciudad histórica (sigue por matrícula), cleanup no-destructivo de fantasmas 2025/+4 retiros 2023,
+  MR cerradas. El card del panel ya es coherente; el drill-down geográfico histórico no.
+
+---
+
+## 2026-08-11 — [Panel de Control JC/MR] Rediseño UI/UX pasos 1-3 (consejo-profundo)
+
+**Estado:** IMPLEMENTADO y verificado con datos reales; falta revisión visual de Samuel/Lina
+**Proceso relacionado:** [[panel-control-jc-mr]] (§7.15)
+
+- El equipo administrativo (no técnico) se confundía con conceptos triviales para el dev. Se corrió
+  `/consejo-profundo` (3 subagentes aislados + juez). Veredicto: adelante con ajustes; hallazgo clave
+  del escéptico — *"Al día incluye retirados" no es UI, es una métrica que miente*.
+- **Implementados 3 pasos, todo en `tools/panel_control_gui.py` (cero SQL, solo presentación):**
+  (1) KPI "Al día" corregido = activos con ≥80% (antes contaba retirados con ≥80%); % sobre activos;
+  columna por-fila renombrada "Al día"→"≥80% avance". (2) Helper `_kpi()` con subtítulo/definición
+  inline (no tooltip — ya fallaron 3×); KPIs: Matriculados/Activos/En Seguimiento/Al día/Retirados/
+  Avance promedio, con "Activos" nuevo para atar los 3 números gemelos que se confundían. (3) Banner
+  de contexto en lenguaje plano arriba de los KPIs (`_actualizar_contexto`).
+- **Verificado (caché real, sin PII):** JC 2026 = 832 = 754 activos + 78 retirados; En Seguimiento
+  751; "Al día" 757→744 (los 13 retirados con ≥80% que el bug contaba de más). App relanzada de
+  verdad (no solo import): 4s sin traceback, banner poblado OK.
+- **Pendiente:** pasos 4-5 (validar preguntas reales con 2 usuarios → vistas por pregunta en pestaña
+  "Explorar" aparte). Paso (d) tooltips/modo-avanzado descartado (costo hundido, ya falló 3×).
+
+---
+
+## 2026-08-11 — [Panel de Control JC/MR] Pasos 4-5: pestaña "Vistas rápidas" + kit de validación
+
+**Estado:** Paso 5 construido (tarjetas provisionales); paso 4 (kit) entregado, pendiente de correr
+**Proceso relacionado:** [[panel-control-jc-mr]] (§7.16) · [[panel-control-validacion-usuarios]]
+
+- **Paso 5 (construido):** pestaña nueva "🏠 Vistas rápidas" de entrada con tarjetas por pregunta
+  ("¿Quiénes están en riesgo?", "¿Quiénes se retiraron?", etc.). Clic → `_aplicar_vista()` setea
+  filtros y salta a "Explorar" (ex "Matriculados", renombrada). Reusa toda la lógica de filtros,
+  cero duplicación; la lista de tarjetas es provisional (anclada en preguntas ya documentadas). NO
+  se esconde el poder analítico — "Explorar" queda entera (objeción del escéptico). `_exportar_csv`
+  ahora compara pestaña por widget, no por índice.
+- **Paso 4 (kit entregado, no ejecutable por Claude):** guía de validación con 2 usuarios reales
+  (~15 min c/u) en `docs/procesos/panel-control-validacion-usuarios.md` — qué preguntar ANTES de
+  mostrar el panel (sus preguntas en sus palabras), qué observar, cómo traducir a ediciones de la
+  lista `vistas`. Condición dura del escéptico: correr esto antes de dar las tarjetas por buenas.
+- **Verificado:** import limpio; app relanzada 5s sin traceback; `_aplicar_vista` ejercido
+  programáticamente aplica filtros + salta a Explorar + banner narra los filtros. Falta revisión
+  visual de Samuel/Lina y correr el paso 4.
+
+---
+
+## 2026-08-11 — [Panel de Control JC/MR] Canon oficial por cohorte en el panel (no destructivo)
+
+**Estado:** IMPLEMENTADO y verificado en vivo; falta revisión visual de Samuel
+**Proceso relacionado:** [[panel-control-jc-mr]] (§7.17) · plan-visualizacion-canon-cohortes.md
+
+- Samuel: en cohortes cerradas el panel no mostraba el canon con retirados (2024=608=433+175);
+  propuso "descartar" filas para cuadrar. **Rechazado por diseño:** los retirados históricos no
+  existen a nivel persona (Q10 nunca los exportó); cuadrar exigiría inventar ~481 filas fantasma
+  (viola regla dura) o borrar personas reales (destructivo, y aun así no agrega retirados). El
+  canon es verdad agregada a otro grano; no reconcilia fila por fila.
+- **Solución no destructiva:** el panel LEE el canon ya existente (`v_pub_cohorte` / `cohorte_historico`,
+  misma fuente del panel público) y lo muestra ENCIMA de la lista. `leer_canon_cohortes()` nuevo;
+  caché de disco extendido con clave `canon` (auto-sana cachés viejos); banner `_actualizar_canon()`
+  con canon + Δ vs individuos en base, distingue cohorte viva/cerrada.
+- **Verificado en vivo:** v_pub_cohorte = tabla canon exacta (2023 488=345+143 … 2026 832=751+81);
+  banner 2024 "608=433 culminantes+175 retirados·71,2%" + "en la base 470/608, faltan ~138 retirados
+  históricos"; 2026 "832=751 activos hoy+81". Sin traceback. Cero cambios en Supabase.
+
+---
+
+## 2026-08-11 — [Panel de Control JC/MR] Badge amarillo "+n en duda" + diagnóstico canon vs retiros
+
+**Estado:** Badge implementado; diagnóstico confirmado; decisión de no unir `retiros`
+**Proceso relacionado:** [[panel-control-jc-mr]] (§7.18)
+
+- **Badge amarillo (request 1):** KPI "⚠ En duda (Q10) = +n" + línea amarilla en canon, clickables
+  → pestaña desactualizados. n = disparidad Seguimiento vs Q10 por cohorte (hoy solo 2026 = 3).
+- **Diagnóstico (contra Supabase v_gui_personas × canon × retiros):** la medida "no-activo=retirado"
+  cuadra. Activos/culminantes EXACTOS en cerradas. Excepciones: (a) **2024** — los 139 retirados que
+  no se ven SÍ existen en tabla `retiros` (176 = canon 175 + 1 test); no entran a v_gui_personas
+  porque nunca tuvieron matrícula sincronizada. (b) **2026** — "activo" = Seguimiento (751) vs
+  no-retirado Q10 (754); Δ3 = los "en duda".
+- **Decisión de Samuel:** NO unir `retiros` a la lista (se mantiene matriculados = gestión Q10). Los
+  175 oficiales ya salen en el banner de canon con el Δ. Opción "matrículas ∪ retiros" evaluada y
+  descartada a propósito.
+
+---
+
+## 2026-08-11 — [Panel de Control JC/MR] Casilla "Mostrar en duda (Q10)" (off por defecto)
+
+**Estado:** IMPLEMENTADO y verificado
+**Proceso relacionado:** [[panel-control-jc-mr]] (§7.19)
+
+- Pedido de Samuel: casilla arriba que muestre/oculte a la gente "en duda" (Seguimiento vs Q10),
+  APAGADA por defecto (el equipo no entiende el concepto). Patrón "Mostrar staff".
+- `_mostrar_en_duda` off por defecto; `_aplicar_filtros` excluye de tabla Y KPIs a los identificados
+  por `filtrar_desactualizados_q10` salvo que se prenda. Se deshabilita en cohortes sin casos. Badge
+  "+n" y pestaña de detalle NO dependen de la casilla (siguen siempre).
+- **Efecto bueno verificado:** con OFF en JC 2026, Activos 754→751 (= En Seguimiento = canon); la
+  discrepancia confusa 754/751 desaparece del default. ON restaura 832/754. Cerradas: casilla
+  deshabilitada.
+
+---
+
+## 2026-08-11 — [Panel de Control JC/MR] "En duda" contados como retirados por defecto (datos digeridos)
+
+**Estado:** IMPLEMENTADO y verificado en vivo
+**Proceso relacionado:** [[panel-control-jc-mr]] (§7.19, corrige la versión previa)
+
+- Corrección de Samuel: (1) 832 es CONSTANTE, nunca reducir "Matriculados"; (2) los "en duda"
+  (disparidad Seguimiento vs Q10) deben contarse como RETIRADOS por defecto — datos digeridos que
+  cuadren con el canon sin explicar el limbo (lo cuestionaron por reportar 78 retirados vs 81 canon).
+- **Retiro efectivo:** `_marcar_retirado_efectivo` stampa `_ret_efectivo` = retirado crudo OR en-duda
+  (default). Estado/KPIs/columna "Retirado" usan `_ret_efectivo`. Ya NO se quitan de la lista (antes
+  la casilla los escondía 832→829, corregido). Solo presentación en memoria; pestaña de detalle sigue
+  mostrando crudo.
+- **Casilla "Contar 'en duda' como activos"** (off default): al prenderla vuelven a activos crudos.
+- **Verificado JC 2026:** default 832=751+81 (cuadra canon, Activos=En Seguimiento=751); casilla ON
+  832=754+78; 2024 470/433/37 casilla deshabilitada. Badge "+3" y detalle siempre visibles.
+
+---
+
+## 2026-08-11 — [Panel de Control JC/MR] KPIs de cohortes cerradas desde el canon (contrato de datos)
+
+**Estado:** IMPLEMENTADO y verificado en vivo
+**Proceso relacionado:** [[panel-control-jc-mr]] (§7.20)
+
+- Samuel trajo el contrato de datos autoritativo (2 regímenes: cerradas=agregado v_pub_cohorte /
+  cohorte_historico; viva=en_seguimiento_jc) + CSVs de JC 2024.
+- **NO se importan los CSVs como personas:** contrato dice cerradas=agregado; y medido: unión CSVs
+  retirados = 52 cédulas (→518, ni 470 ni 608); retiros ya tiene 176 (→609) más completo; el 608
+  incluye ~90 seleccionados que nunca ingresaron. Reconstruir a nivel persona = tercer número malo.
+- **KPIs de cerradas ahora del canon:** `_es_cohorte_viva()` + `_kpis_cohorte_cerrada()` → tarjetas
+  Ingresados/Culminantes/Retirados/Retención fijas de v_pub_cohorte + "En la base" (person-level
+  filtrable). Viva (2026) sigue por-persona filtrable. Banner ya no duplica cifras en cerradas.
+- **Verificado:** 2024 → 608/433/175/71,2% + En la base 470; 2026 → 832/751/81 + badge +3. Sin
+  traceback, cero cambios en Supabase.
+
+---
+
+## 2026-08-11 — [Panel público Vercel] Cohortes cerradas usan el canon de v_pub_cohorte
+
+**Estado:** COMMIT + PUSH a prod (repo panel-datos-rofe → comunicaciones/main, commit e68bb7d); Vercel auto-deploy
+**Proceso relacionado:** [[panel-control-jc-mr]] · [[panel-datos-etl]]
+
+- Samuel: que el panel de Vercel conserve la misma vista de cohorte que el de escritorio (canon).
+- **Diagnóstico:** el frontend armaba las tarjetas de cohorte desde `cohorte_ingresos`, que SOLO tiene
+  la cohorte viva (2026). Cerradas 2019-2025 salían en blanco. `v_pub_cohorte` (canon con todos los
+  años) existía pero NO estaba cableada (solo v_pub_seguimiento lo estaba).
+- **Fix mínimo (2 archivos):** `lib/api.ts` cablea `v_pub_cohorte` (campo `pubCohorte`, tipo
+  CohorteIngresos — calza exacto); `app/page.tsx` `ingresosProg` cae a `v_pub_cohorte` cuando
+  `cohorte_ingresos` no tiene la cohorte. Cerradas → canon (2024: 608=433+175, 71,2%); viva 2026 sin
+  cambios (832/751/81). Estado filter: Activos→culminantes, Retirados→retirados, Todos→ingresados.
+- **Verificado:** tsc --noEmit limpio + npm run build OK. Cero cambios en Supabase. Solo 2 archivos en main.
+
+## 2026-08-12 — [Enriquecimiento histórico + fix MR 2025] 66 fuentes → 37.788 filas nuevas + bug 1.016→302 corregido
+
+**Estado:** Datos cargados en Supabase (migraciones 043-045); código en commit d3b5792 (local, admin-usable, sin push); panel público Vercel commit 66e0ec7 (push+deploy); panel privado con pestaña nueva.
+**Proceso relacionado:** [[panel-control-jc-mr]] · [[panel-datos-etl]] · [[project_enriquecimiento_historico_final]] · [[project_mr_canon_bloqueado]] · [[project_consolidado_cohortes_por_ano]]
+
+Sesión larga en 3 hilos encadenados, todos con verificación en vivo antes de actuar (nunca confiar en docs viejos sin re-chequear contra la BD):
+
+1. **Reconciliación JC 2024 (470→608-609).** `v_gui_personas`/`v_pub_geografia`/`v_pub_demografia` solo contaban matrícula; los 139 retirados 2024 que Q10 purgó existían en `retiros` pero eran invisibles. Migraciones 043/044: base = matrícula ∪ retiros. Suite 53/53 PASS. Confirmado 3 vías que el AVANCE de esos retirados es irrecuperable desde Q10 (Consolidado excluye inhabilitados; reporte "cancelados" no trae avance). Piloto sobre BD Seguimiento de Monitorías (fuente manual, ajena a Q10) recuperó solo 24/139 (17%, un curso) — confirma la irrecuperabilidad, no la revierte.
+2. **Enriquecimiento histórico (COMPLETE-ORDEN-INFORMATION, 66 archivos 2019-2025).** Catalogados a `.md` navegables (herramienta nueva `catalogar_fuentes_historicas.py`). 4 subagentes en paralelo (socioeconómico, empleabilidad, resultados/proyecto final, MR extendido) extrajeron 379.979 registros con un helper de mejor match (cédula>correo>nombre). Con 2 filtros de privacidad explícitos del usuario (solo `participants` reales, excluir match-por-nombre): **37.788 filas / ~3.700 personas** cargadas a 4 tablas nuevas (RLS igual que `postulantes_jc`/`retiros`). Expuesto en la ficha 360 del panel privado.
+3. **Adaptar ambos paneles a cohortes 2019+.** Verificado ANTES de tocar UI: cierto para JC (canon 2019-2025 existía pero el selector de cohorte nunca lo alcanzaba — arreglado en ambos paneles, JC ahora 2019-2026 completo); **falso para MR** — sin cohortes pre-2025 (el usuario confirmó: MR no se organiza por cohortes de selección anual, no es un gap de datos). De paso se encontraron y corrigieron 2 bugs reales de MR: (a) MR 2025 mostraba 1.016 personas en vez de 302 — 2 cursos JC mal etiquetados como `mr` por un override "por periodo" del importador histórico (pid 16 de Q10), corregido en datos y en código; (b) "retiros MR roto estructuralmente" (documentado desde 2026-07-27) resultó ser un diagnóstico obsoleto/equivocado — 25/33 retiros MR son candidatas que se dieron de baja antes de matricular (correcto por diseño), simplemente invisibles porque toda la UI parte de `v_gui_personas`. Nueva pestaña "📅 Retiros por año" en el panel privado, con aviso en pantalla de que la base MR entregada no viene seccionada por año de origen (a diferencia de JC).
+
+**Gotchas nuevos:**
+- El MCP de Supabase se cayó a mitad de sesión; se resolvió reconectando el conector desde Configuración → Conectores (no es algo reparable desde el código).
+- `course_config.json` nunca hace match real (compara mayúsculas de config contra Title Case real sin bajar a minúsculas) — toda la clasificación de curso cae en `KEYWORDS_MR` + default 'jc'. Deuda anotada, no corregida (fuera de alcance).
+- Backticks en un mensaje de commit vía heredoc bash se interpretan como sustitución de comando — usar archivo + `git commit -F` para mensajes largos con backticks.
+
+**Pendiente:** lista de campos del Power BI del usuario para validar el target de enriquecimiento; pedir al equipo bases MR separadas por año de origen (igual que JC) si se quiere un desglose más fino que "año de retiro".
