@@ -66,7 +66,15 @@ MAPA_PERIODOS = {
     10: ("2024", None),  # Único Horario nivel 1  (sin año — asignado 2024, confirmar)
     12: ("2024", None),  # Único Horario nivel 2  (idem)
     14: ("2024", None),  # Único Horario nivel 3  (idem)
-    16: ("2025", "mr"),  # Unico 2025 = ruta Mujeres ROFÉ 2025 completa
+    # BUG FIJADO 2026-08-12 (018_fix_programa_2025): "mr" aquí forzaba TODO el periodo 16 a
+    # Mujeres ROFÉ, pero ese periodo Q10 mezcla las 4 rutas MR reales con 2 cursos JC
+    # ("Emprendimiento: Idea de Negocio JC" y "Fundamentos Lógica de Programación - 2026",
+    # ambos ya en tools/course_config.json bajo "jc"). El override "por periodo" pisaba esa
+    # clasificación y causó v_programa_stats MR 2025 = 1.016 en vez de 302 (714 personas
+    # dobles). Ahora es None: cada curso de este periodo se clasifica individualmente por
+    # clasificar_curso() (config + KEYWORDS_MR, ver normalize_q10_data.py) — "por curso, no
+    # por periodo". Ver docs/procesos/plan-consolidacion-datos-2026-07-27.md Bloque 1.
+    16: ("2025", None),   # Unico 2025 = ruta Mujeres ROFÉ 2025 completa + 2 cursos JC mezclados
     17: ("2025", None),  # Desarrollo-Nivel 3-2025
     18: ("2025", None),  # Logica-Nivel 2-2025
     19: ("2025", None),  # Habilidades-Nivel 1-2025

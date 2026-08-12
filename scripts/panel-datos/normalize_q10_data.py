@@ -72,7 +72,20 @@ RUTA_PAYLOAD      = os.path.join(PROYECTO_ROOT, "tools", "supabase_payload.json"
 
 # Clasificación de programa (misma lógica canónica de export_stats.py):
 # course_config.json tiene precedencia; si el curso no está, keywords → MR; resto → JC
-KEYWORDS_MR = ["emprendedoras", "idea a la acci"]
+#
+# GOTCHA (encontrado 2026-08-12, fix 018_fix_programa_2025): course_config.json guarda sus
+# nombres en MAYÚSCULAS, pero clasificar_curso() compara con norm_texto() (NO baja a
+# minúsculas) — el curso que llega de Q10 conserva su casing original (Title Case, igual
+# que queda en courses.nombre). Esa comparación NUNCA hace match hoy; toda la clasificación
+# real cae en KEYWORDS_MR (que sí compara en minúsculas) + default 'jc'. Por eso cada curso
+# MR real necesita su propio keyword aquí — confiar en course_config.json solo es una falsa
+# sensación de seguridad hasta que se arregle esa comparación (deuda anotada, no corregida
+# en este fix por alcance).
+KEYWORDS_MR = [
+    "emprendedoras", "idea a la acci",
+    "empoderamiento en ventas",  # "Empoderamiento en Ventas: Lleva tu Negocio al Siguiente Nivel!"
+    "transforma tu negocio",     # "Transforma tu negocio con estrategias digitales"
+]
 CONFIG_CURSOS = {"jc": [], "mr": [], "stand": []}  # se puebla en main()
 DIR_REPORTES      = os.path.join(PROYECTO_ROOT, "tools")
 
