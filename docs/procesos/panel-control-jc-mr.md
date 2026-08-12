@@ -972,6 +972,28 @@ salvo el bucket "no_cohorte" que es una categoría aparte).
 **No se tocó:** el panel público (Vercel) — esta pestaña es de gestión interna con PII a
 nivel-persona (motivo de retiro), no aplica al panel agregado público.
 
+## 7.23 Extensión 2026-08-12 — filtros Año + Ciudad en "Postulantes sin matrícula" (MR)
+
+Pedido del usuario: la sección de mujeres MR (universo grande de candidatas sin Q10) no se
+analiza por cohorte-curso como JC, sino por variables; quería filtrar p.ej. "Bogotá 2026" con
+dos filtros y sin demora. La pestaña "Postulantes sin matrícula" solo tenía la barra de
+búsqueda del componente `TablaFiltrable` (una columna a la vez). Se le agregó una **barra de
+filtros propios Año + Ciudad** que combinan con AND, con combos poblados dinámicamente de los
+datos reales de cada programa (`_refrescar_tabla_sin_matricula` + `_anio_postulante`).
+
+Decisiones:
+- **Año:** MR = año de `fecha_creacion` (Plataforma MR, ver §7.22 y plan-enriquecimiento-final);
+  JC = `promo_year` (Mongo). Extraído con `_extraer_anio` de panel_control_datos.py.
+- **Ciudad:** se filtra por `ciudad_norm` (columna ya normalizada), NO por `ciudad` cruda —
+  había ~10 variantes de "Bogotá" (BOGOTA, Bogotá D.C., Bogots…) que ciudad_norm colapsa a 2-3.
+- La sección MR muestra además la columna "Año" al frente + 7 columnas ricas (§7.22) y ordena
+  por año desc. El KPI muestra "Mostrando N de Total" cuando hay filtro activo.
+- Verificado headless: 2026+BOGOTA DC → 5, 2023+BOGOTA DC → 155, instantáneo.
+
+Todas las mujeres MR quedan accesibles en el panel de control: las ~588 con Q10 en «Explorar»
+(v_gui_personas, con los filtros de cohorte de siempre), las ~4.752 sin Q10 aquí con estos
+filtros propios. Los campos que aportaría Q10 quedan NULL para las que no lo tienen.
+
 ## 8. Conexiones
 
 [[plan-visualizacion-2026-07-30]] (Fase 2 pausada a favor de este documento — pendientes vivos
