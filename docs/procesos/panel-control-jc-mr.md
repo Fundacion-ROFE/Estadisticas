@@ -1055,6 +1055,24 @@ que ya estaban en `postulantes_mr` desde OTRAS pestañas del Sheet BD-Mujeres RO
 inactivas=30, general=24), no en el CSV de la plataforma. De esas 161, 156 son las "sin año"
 (vinieron de fuentes sin fecha de registro). `postulantes_mr` es la UNIÓN de todas las fuentes MR.
 
+## 7.26 Fix 2026-08-12 — falsa alarma "Q10 retiró de más" en reingresantes
+
+Caso real (56603709, Luca Fontana): aparecía en «Datos desactualizados Q10» como "Q10 marcó
+retiro (Seguimiento activo)" pese a que su fila era de 2024 y Seguimiento solo aplica a 2026.
+Causa raíz: es un **reingreso** — se retiró en 2024 (fila reconstruida desde `retiros`, sin
+matrícula real → avance/cursos NULL, parte de los 608 oficiales pero nunca capturado por Q10) y
+REINGRESÓ activo en 2026 (8 cursos, 99,6%). `en_seguimiento_jc` es un flag a nivel PERSONA (su
+estado 2026) que se pega a TODAS sus filas por cohorte, incluida la de 2024; el detector
+comparaba ese flag de 2026 contra el retiro de 2024 y lo marcaba como contradicción.
+
+Fix en `filtrar_desactualizados_q10` (panel_control_datos.py): una fila `retirado=True` SIN
+datos de matrícula (`cursos_matriculados IS NULL`) es un retiro histórico/reconstruido, no una
+disparidad de Seguimiento de la cohorte viva → se ignora. Verificado: la fila 2024 de 56603709
+deja de aparecer (1 fantasma eliminado); las disparidades reales de 2026 se conservan (0 casos
+reales de "retiró de más" con matrícula se perdieron); quedan 3 disparidades legítimas, todas
+2026, tipo "Q10 sin marcar retiro". No afecta la reconciliación del canon JC 2026 (los vivos sí
+tienen matrícula, no los toca el guard).
+
 ## 8. Conexiones
 
 [[plan-visualizacion-2026-07-30]] (Fase 2 pausada a favor de este documento — pendientes vivos
