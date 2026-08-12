@@ -115,6 +115,35 @@ Verificado en Supabase (2026-08-12):
    corregidos en datos (`UPDATE` + `recompute_aggregates()`) y en código
    (`importar_historico_q10.py` + `normalize_q10_data.py`). `v_programa_stats`/`cohorte_stats`
    MR 2025 ya dan 302 (antes 1.016).
+4. **JC 2019-2022 cargado a nivel-persona (2026-08-12, con OK del usuario tras ver "En la
+   base: 0" y CSV vacío).** Fuente: "Jóvenes Creativos única tabla.xlsx" (mismo consolidado
+   oficial que ancló `cohorte_historico`), filtrado a estado∈{SELECCIONADO,RETIRADO} (excluye
+   NO SELECCIONADO/REVOCADO a propósito, mismo criterio de privacidad). Script
+   `cargar_historico_2019_2022_jc.py`: SELECCIONADO → participant + enrollment en un "curso
+   sello" del año (mismo patrón ya aprobado 2026-08-04 en `cargar_bd2023_jc.py`); RETIRADO →
+   participant + fila en `retiros` (sin enrollment, recogido por la reconciliación de la
+   migración 043). **512 personas cargadas** (25/98/90/299 por año — 3 menos que el canon
+   515/25-100-90-300 por filas sin cédula en la fuente). Bug real encontrado y corregido en
+   caliente: `tipo_vivienda` es un ENUM en Supabase, se mandaba el texto crudo → 89 fallos en
+   la primera corrida (todos 2021), arreglado con mapeo explícito y reintentado (idempotente,
+   0 fallos en la segunda corrida). Verificado: `v_gui_personas` ya muestra 25/98/90/299 con
+   avance_promedio NULL para los retirados (correcto, ese dato nunca existió).
+5. **MR: contraste y carga de "BD-Mujeres ROFÉ 2026 - Plataforma MR.csv"** (aportado por el
+   usuario, 5.158 filas, año real 2022-2026 — cierra exactamente la limitante de "sin
+   seccionamiento por año" documentada arriba). Contraste: **5.157/5.157 ya estaban en
+   `postulantes_mr`** (99,8% de solape — confirma que es el mismo universo, con mejor fecha) —
+   solo 8 genuinamente nuevas. Estrategia NO destructiva (`cargar_plataforma_mr_completa.py`,
+   agrupando por conjunto-de-columnas antes de subir en lote, mismo patrón que
+   `sync_postulantes_mr.py`): inserta las 8 nuevas completas; para las existentes, SOLO
+   backfillea `fecha_creacion` donde estaba vacía (nunca toca otros campos). Resultado:
+   cobertura de fecha_creacion en `postulantes_mr` pasó de **1.934/5.310 (36%) a
+   5.162/5.318 (97%)**. Bug real encontrado y corregido: `INSERT ... ON CONFLICT DO UPDATE`
+   valida las columnas NOT NULL de la fila candidata ANTES de decidir si actualiza —
+   `fuente_pestana` (NOT NULL, sin default) reventaba en cualquier backfill que no la
+   incluyera, aunque la fila ya existiera y el UPDATE nunca la fuera a tocar; arreglado
+   mandando de vuelta su valor actual sin cambiarlo. Suite `test_integridad_supabase.py`
+   53/53 PASS tras ambas cargas (JC + MR); RLS intacto.
+
 3. **Retiros MR:** investigado a fondo — el diagnóstico de 2026-07-27 ("roto
    estructuralmente") NO reproduce. La columna correcta ("Año-retiro") ya se leía bien; el
    bajo cruce por cédula es porque 25/33 retiros MR son candidatas que se dieron de baja
