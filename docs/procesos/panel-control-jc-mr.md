@@ -994,6 +994,30 @@ Todas las mujeres MR quedan accesibles en el panel de control: las ~588 con Q10 
 (v_gui_personas, con los filtros de cohorte de siempre), las ~4.752 sin Q10 aquí con estos
 filtros propios. Los campos que aportaría Q10 quedan NULL para las que no lo tienen.
 
+## 7.24 Extensión 2026-08-12 — sección "Mujeres ROFÉ" propia (toggle Q10) en vez del split de JC
+
+Pedido del usuario: MR no tiene por qué copiar la estructura de dos pestañas de JC
+(Matriculados vs Postulantes). Quería UNA vista de mujeres donde: **toggle Q10 apagado** = las
+~5k del CSV "Plataforma MR" completas; **toggle Q10 encendido** = solo las pocas que sí tienen
+datos de Q10. Rediseño (estructura propia de MR, no copia de JC):
+
+- **Fuente nueva** `leer_mujeres_mr_todas()` (panel_control_datos.py): `postulantes_mr` COMPLETO
+  (con y sin `participant_id`), no el filtro `participant_id IS NULL` de
+  `leer_postulantes_sin_matricula` (que se mantiene para JC). El worker usa una u otra según
+  programa.
+- **La pestaña "Postulantes sin matrícula" se vuelve "👩 Mujeres ROFÉ" cuando el programa es
+  MR** (etiqueta del notebook + nota + KPI dinámicos). Para JC sigue igual.
+- **Toggle "Solo con Q10"** (checkbox, default OFF): OFF muestra las 5.318; ON filtra a
+  `participant_id IS NOT NULL` (566 con Q10). Solo habilitado para MR. Columna nueva "¿En Q10?"
+  (Sí/No) para verlo por fila. KPI "De ellas, con Q10: 566".
+- Combina con los filtros Año + Ciudad (§7.23) con AND. Verificado headless: Q10 OFF=5.318,
+  Q10 ON=566, Q10 ON+2026=182, Q10 OFF+2026=435.
+- Los datos de curso/avance de Q10 de las 566 siguen en «Explorar»/ficha 360 (v_gui_personas);
+  esta vista es el universo + variables (año/ciudad/sociodemografía/campos ricos), sin Q10.
+
+Las 566 con Q10 aparecen tanto aquí (con toggle) como en «Explorar» — solape intencional: esta
+pestaña es "todas las mujeres", «Explorar» es el detalle Q10.
+
 ## 8. Conexiones
 
 [[plan-visualizacion-2026-07-30]] (Fase 2 pausada a favor de este documento — pendientes vivos
