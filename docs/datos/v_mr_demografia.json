@@ -7,7 +7,7 @@
   {
     "dimension": "estado_civil",
     "categoria": "soltero",
-    "total": 373
+    "total": 375
   },
   {
     "dimension": "estado_civil",
@@ -22,7 +22,7 @@
   {
     "dimension": "estado_civil",
     "categoria": "divorciado",
-    "total": 22
+    "total": 23
   },
   {
     "dimension": "nivel_estudio",
@@ -32,7 +32,7 @@
   {
     "dimension": "nivel_estudio",
     "categoria": "secundaria",
-    "total": 852
+    "total": 218
   },
   {
     "dimension": "nivel_estudio",
@@ -42,42 +42,42 @@
   {
     "dimension": "nivel_estudio",
     "categoria": "técnico",
-    "total": 224
+    "total": 225
   },
   {
     "dimension": "nivel_estudio",
     "categoria": "profesional",
-    "total": 78
+    "total": 79
   },
   {
     "dimension": "tipo_vivienda",
     "categoria": "arrendado",
-    "total": 563
+    "total": 313
   },
   {
     "dimension": "tipo_vivienda",
     "categoria": "familiar",
-    "total": 340
+    "total": 191
   },
   {
     "dimension": "tipo_vivienda",
     "categoria": "propia",
-    "total": 189
+    "total": 68
   },
   {
     "dimension": "estrato",
     "categoria": "2",
-    "total": 370
+    "total": 165
   },
   {
     "dimension": "estrato",
     "categoria": "4",
-    "total": 18
+    "total": 2
   },
   {
     "dimension": "estrato",
     "categoria": "3",
-    "total": 173
+    "total": 61
   },
   {
     "dimension": "estrato",
@@ -87,17 +87,17 @@
   {
     "dimension": "estrato",
     "categoria": "5",
-    "total": 3
+    "total": 1
   },
   {
     "dimension": "estrato",
     "categoria": "1",
-    "total": 517
+    "total": 344
   },
   {
     "dimension": "edad_rango",
     "categoria": "18-25",
-    "total": 751
+    "total": 67
   },
   {
     "dimension": "edad_rango",
@@ -107,22 +107,22 @@
   {
     "dimension": "edad_rango",
     "categoria": "36-45",
-    "total": 197
+    "total": 198
   },
   {
     "dimension": "edad_rango",
     "categoria": "26-35",
-    "total": 210
+    "total": 191
   },
   {
     "dimension": "edad_rango",
     "categoria": "46-60",
-    "total": 104
+    "total": 105
   },
   {
     "dimension": "emprendimiento",
     "categoria": "sin_emprendimiento",
-    "total": 798
+    "total": 166
   },
   {
     "dimension": "emprendimiento",
