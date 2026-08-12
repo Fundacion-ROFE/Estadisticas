@@ -115,6 +115,23 @@ Verificado en Supabase (2026-08-12):
    corregidos en datos (`UPDATE` + `recompute_aggregates()`) y en código
    (`importar_historico_q10.py` + `normalize_q10_data.py`). `v_programa_stats`/`cohorte_stats`
    MR 2025 ya dan 302 (antes 1.016).
+3b. **Extensión del historial MR completo (2026-08-12, pedido explícito del usuario):** el
+   backfill de `fecha_creacion` (punto 5) fue solo el primer paso. El usuario pidió llenar
+   TODO el historial de esa fuente: "para las que tengan Q10 añádele la info y las que no
+   agrégalas en la DB, y pon en null los valores que no posean". Migración 046: 7 columnas
+   nuevas en `postulantes_mr` (direccion, presentacion_personal, personas_nucleo,
+   ingresos_familiares, canal_adquisicion, grupo_etnico, sostenimiento — TEXT, mismo
+   vocabulario que `enriquecimiento_mr_extendido`). `cargar_plataforma_mr_completa.py`
+   reescrito para 3 rutas simultáneas: (1) `postulantes_mr` completo — 5.157/5.157 filas
+   enviadas, backfill NO destructivo (solo si estaba NULL); cobertura dirección 97%
+   (5.148/5.318), sostenimiento 89% (4.724/5.318). (2) `participants.{estado_civil,
+   nivel_estudio,tipo_vivienda,estrato,edad}` — backfill NULL-only para las 569 mujeres con
+   `participant_id` real (solo 7 tenían algo vacío que llenar — la mayoría ya estaba
+   completa por `sync_sociodemograficos_mr.py`). (3) `enriquecimiento_mr_extendido` — 2.804
+   filas nuevas (los 7 campos que `participants` no tiene, para esas 569 mujeres). Suite
+   `test_integridad_supabase.py` 53/53 PASS; RLS de `postulantes_mr` intacto pese a las
+   columnas nuevas. GUI: "Postulantes sin matrícula" (MR) ganó 7 columnas nuevas.
+
 4. **JC 2019-2022 cargado a nivel-persona (2026-08-12, con OK del usuario tras ver "En la
    base: 0" y CSV vacío).** Fuente: "Jóvenes Creativos única tabla.xlsx" (mismo consolidado
    oficial que ancló `cohorte_historico`), filtrado a estado∈{SELECCIONADO,RETIRADO} (excluye

@@ -1,34 +1,28 @@
 # -*- coding: utf-8 -*-
 """
 cargar_plataforma_mr_completa.py — "BD-Mujeres ROFÉ 2026 - Plataforma MR.csv" (export
-completo de la plataforma, 5.158 filas, años 2022-2026) → contraste + carga en
-Supabase `postulantes_mr`.
+completo de la plataforma, 5.158 filas, años 2022-2026) → historial completo en Supabase.
 
-Contexto (2026-08-12): cerraba la limitante documentada en
-docs/procesos/plan-enriquecimiento-final-2026-08-12.md ("MR no viene seccionada por año
-de origen") — la pestaña "Plataforma MR" del Sheet que ya sincroniza sync_postulantes_mr.py
-solo tiene 49 cédulas (snapshot viejo/truncado); este CSV es el export real y completo de
-la plataforma, con año de registro casi 100% confiable (columna "Año").
-
-Estrategia NO DESTRUCTIVA (mismo patrón de agrupar por conjunto-de-claves que ya usa
-sync_postulantes_mr.py, para que un upsert en lote nunca ponga en NULL una columna que
-una fila del mismo lote no trae):
-  - Cédulas YA en `postulantes_mr`: SOLO se backfillea `fecha_creacion` si hoy está vacía/
-    "N/A" — nunca se sobreescribe un valor ya cargado por otra fuente (General/Inactivas).
-    Nada más se toca (nombre/ciudad/etc de esas filas se dejan como están).
-  - Cédulas NUEVAS: se insertan completas (nombre, email, celular, ciudad, fecha_creacion=
-    año, sociodemografía mapeada a los mismos enums que sync_postulantes_mr.py, genero=
-    "Femenino" constante, fuente_pestana="plataforma_mr_completa" para distinguirlas de la
-    pestaña vieja truncada).
+Pedido del usuario (2026-08-12): llenar el historial de TODAS las mujeres de esta fuente.
+- Con participant_id (ya tienen Q10/matrícula real): se backfillea `participants` (estado_
+  civil/nivel_estudio/tipo_vivienda/estrato/edad, SOLO si están NULL — nunca sobreescribe) +
+  se cargan los campos que `participants` no tiene a `enriquecimiento_mr_extendido` (mismo
+  vocabulario del cluster F: direccion/presentacion_personal/personas_nucleo/ingresos_
+  familiares/canal_adquisicion/grupo_etnico/sostenimiento).
+- Sin participant_id (candidatas que nunca matricularon): se agregan/actualizan en
+  `postulantes_mr` — universo completo de candidatas, con las mismas 7 columnas ricas
+  (migración 046) + fecha_creacion. Backfill SOLO donde está NULL, igual criterio.
+- Lo que la fuente no trae para una persona queda NULL — nunca se inventa un valor
+  (pedido explícito: "pon en null los valores que no posean").
 
 Reusa los mapas MAPA_NIVEL/MAPA_CIVIL/MAPA_VIVIENDA de sync_postulantes_mr.py — mismos
-enums, mismo criterio de substring, cero riesgo de inconsistencia con lo ya cargado.
+enums en participants Y postulantes_mr (verificado 2026-08-12), cero riesgo de inconsistencia.
 
 Modo por defecto: SOLO REPORTE (contraste, no escribe). Pasar --aplicar para cargar.
 
 Uso:
     python cargar_plataforma_mr_completa.py             # reporte/contraste
-    python cargar_plataforma_mr_completa.py --aplicar    # inserta nuevas + backfillea fecha_creacion
+    python cargar_plataforma_mr_completa.py --aplicar    # carga todo el historial
 """
 
 import argparse
@@ -52,22 +46,41 @@ DIRECTORIO_SCRIPT = os.path.dirname(os.path.abspath(__file__))
 PROYECTO_ROOT     = os.path.abspath(os.path.join(DIRECTORIO_SCRIPT, "..", ".."))
 RUTA_ENV          = os.path.join(PROYECTO_ROOT, ".env.local")
 RUTA_CSV = r"C:\Users\EstudiantesJC\Downloads\BD-Mujeres ROFÉ 2026 - Plataforma MR.csv"
+FUENTE_ARCHIVO = "BD-Mujeres ROFÉ 2026 - Plataforma MR.csv"
 
 sys.path.insert(0, DIRECTORIO_SCRIPT)
 from enriquecimiento_helper import cargar_hoja  # noqa: E402
+from cargar_supabase import Supa, cargar_env_local  # noqa: E402 — Supa.upsert() (batch + merge-duplicates)
 from sync_postulantes_mr import (  # noqa: E402 — reusar mapas/normalizadores tal cual
-    MAPA_CIVIL, MAPA_NIVEL, MAPA_VIVIENDA, Supa, cargar_env_local, mapear, norm_celular,
-    norm_id, texto,
+    MAPA_CIVIL, MAPA_NIVEL, MAPA_VIVIENDA, mapear, norm_celular, norm_id, texto,
 )
 
 USER_AGENT = "panel-datos-etl/1.0"
 LOTE = 500
 FUENTE_NUEVA = "plataforma_mr_completa"
 SIN_FECHA = {"", "n/a", "#n/a", "null", "na"}
+SIN_DATO = {"", "n/a", "#n/a", "null", "na", "-", "0"}
+
+# Campos ricos (mismo vocabulario que enriquecimiento_mr_extendido, cluster F 2026-08-12):
+# nombre_campo → columna del CSV
+CAMPOS_RICOS = {
+    "direccion": "address",
+    "presentacion_personal": "description",
+    "personas_nucleo": "familyCore",
+    "ingresos_familiares": "familyIncome",
+    "canal_adquisicion": "disclosure",
+    "grupo_etnico": "ethnicGroup[0].name",
+    "sostenimiento": "sustaining[0].name",
+}
 
 
 def log(msg: str) -> None:
     print(f"[plataforma-mr-completa] {msg}", flush=True)
+
+
+def _limpio(v):
+    s = texto(v)
+    return s if s.lower() not in SIN_DATO else ""
 
 
 def leer_csv():
@@ -79,27 +92,29 @@ def leer_csv():
             sin_cedula += 1
             continue
         if ced in vistos:
-            continue  # primera aparición gana (mismo criterio que sync_postulantes_mr.py)
+            continue  # primera aparición gana
         vistos.add(ced)
         nombre = " ".join(p for p in ((f.get("firstName") or "").strip(),
                                        (f.get("lastName") or "").strip()) if p) or None
-        limpias.append({
+        fila = {
             "cedula": ced,
             "anio": texto(f.get("Año")) or None,
             "nombre": nombre,
             "email": texto(f.get("email")).lower() or None,
             "celular": norm_celular(f.get("phoneNumber")) or None,
             "ciudad": texto(f.get("location.cityName")) or None,
-            "edad": (lambda v: int(v) if str(v).strip().isdigit() and 14 <= int(v) <= 90 else None)
+            "edad": (lambda v: str(int(v)) if str(v).strip().isdigit() and 14 <= int(v) <= 99 else None)
                     (f.get("age")),
             "nivel_estudio": mapear(f.get("education"), MAPA_NIVEL),
             "estado_civil": mapear(f.get("maritalStatus"), MAPA_CIVIL),
             "tipo_vivienda": mapear(f.get("housingType"), MAPA_VIVIENDA),
-            "estrato": (lambda v: int(v) if str(v).strip().isdigit() and 1 <= int(v) <= 6 else None)
+            "estrato": (lambda v: str(int(v)) if str(v).strip().isdigit() and 1 <= int(v) <= 6 else None)
                        (f.get("stratum")),
-        })
-    log(f"CSV: {len(filas)} filas → {len(limpias)} limpias (sin_cedula={sin_cedula}, "
-        f"duplicadas={len(filas) - sin_cedula - len(limpias)})")
+        }
+        for campo, col in CAMPOS_RICOS.items():
+            fila[campo] = _limpio(f.get(col)) or None
+        limpias.append(fila)
+    log(f"CSV: {len(filas)} filas → {len(limpias)} limpias (sin_cedula={sin_cedula})")
     return limpias
 
 
@@ -122,78 +137,106 @@ def main():
     log(f"Por año: {dict(sorted(Counter(f['anio'] for f in filas).items()))}")
 
     supa = Supa(url, key)
-    log("Descargando postulantes_mr existentes (cedula, fecha_creacion, fuente_pestana)...")
-    existentes = supa.get_todo("/postulantes_mr?select=cedula,fecha_creacion,fuente_pestana")
-    fecha_por_cedula = {p["cedula"]: p.get("fecha_creacion") for p in existentes}
-    # GOTCHA (encontrado 2026-08-12): `INSERT ... ON CONFLICT DO UPDATE` valida las columnas
-    # NOT NULL de la fila candidata del INSERT ANTES de decidir si actualiza — aunque la fila
-    # ya exista y el UPDATE nunca fuera a tocar esa columna. `fuente_pestana` es NOT NULL sin
-    # default, así que un backfill que solo manda {cedula, fecha_creacion} revienta. Fix: se
-    # manda de vuelta su valor actual (sin cambiarlo) para satisfacer la constraint.
-    fuente_por_cedula = {p["cedula"]: p.get("fuente_pestana") for p in existentes}
-    log(f"postulantes_mr hoy: {len(existentes)} filas")
+    log("Descargando postulantes_mr existentes...")
+    cols_pm = ("cedula,fecha_creacion,fuente_pestana,direccion,presentacion_personal,"
+               "personas_nucleo,ingresos_familiares,canal_adquisicion,grupo_etnico,sostenimiento")
+    existentes_pm = {p["cedula"]: p for p in supa.get_todo(f"/postulantes_mr?select={cols_pm}")}
+    log(f"postulantes_mr hoy: {len(existentes_pm)} filas")
 
-    nuevas = [f for f in filas if f["cedula"] not in fecha_por_cedula]
-    ya_existian = [f for f in filas if f["cedula"] in fecha_por_cedula]
-    backfill = [f for f in ya_existian
-                if (fecha_por_cedula.get(f["cedula"]) or "").strip().lower() in SIN_FECHA
-                and f["anio"]]
+    log("Descargando participants (para enlazar + backfill de sociodemografía)...")
+    cols_p = "id,q10_id,estado_civil,nivel_estudio,tipo_vivienda,estrato,edad"
+    participantes = {p["q10_id"]: p for p in supa.get_todo(f"/participants?select={cols_p}") if p.get("q10_id")}
 
-    log(f"CONTRASTE: {len(filas)} personas en el CSV · {len(nuevas)} NUEVAS (no están en "
-        f"postulantes_mr) · {len(ya_existian)} ya existían · de esas, {len(backfill)} sin "
-        f"fecha_creacion útil hoy (se les puede completar el año)")
+    con_participante = [f for f in filas if f["cedula"] in participantes]
+    sin_participante = [f for f in filas if f["cedula"] not in participantes]
+    nuevas_pm = [f for f in filas if f["cedula"] not in existentes_pm]
+    log(f"CONTRASTE: {len(filas)} personas · {len(con_participante)} CON participant_id "
+        f"(reciben enriquecimiento_mr_extendido + backfill de participants) · "
+        f"{len(sin_participante)} sin participant_id (solo postulantes_mr) · "
+        f"{len(nuevas_pm)} nuevas en postulantes_mr")
 
     if not args.aplicar:
         log("Modo reporte (sin --aplicar): no se escribió nada en Supabase.")
         return 0
 
-    log("Descargando participants (para enlazar participant_id si ya matricularon)...")
-    participantes = supa.get_todo("/participants?select=id,q10_id")
-    q10_a_participant = {p["q10_id"]: p["id"] for p in participantes if p.get("q10_id")}
-
-    payload = []
-    for f in nuevas:
-        fila = {"cedula": f["cedula"], "genero": "Femenino", "fuente_pestana": FUENTE_NUEVA,
+    # ── 1) postulantes_mr: TODAS, backfill solo-si-vacío (universo completo) ───────────
+    payload_pm = []
+    for f in filas:
+        existente = existentes_pm.get(f["cedula"])
+        fila = {"cedula": f["cedula"],
+                "fuente_pestana": (existente.get("fuente_pestana") if existente else None) or FUENTE_NUEVA,
                 "updated_at": datetime.now().isoformat(timespec="seconds")}
-        for campo in ("nombre", "email", "celular", "ciudad", "edad", "nivel_estudio",
-                      "estado_civil", "tipo_vivienda", "estrato"):
-            if f.get(campo) is not None:
-                fila[campo] = f[campo]
-        if f["anio"]:
-            fila["fecha_creacion"] = f["anio"]
-        pid = q10_a_participant.get(f["cedula"])
-        if pid:
-            fila["participant_id"] = pid
-        payload.append(fila)
-    for f in backfill:
-        payload.append({
-            "cedula": f["cedula"], "fecha_creacion": f["anio"],
-            "fuente_pestana": fuente_por_cedula.get(f["cedula"]) or FUENTE_NUEVA,
-            "updated_at": datetime.now().isoformat(timespec="seconds"),
-        })
+        if existente is None:  # nueva: fila completa
+            fila["genero"] = "Femenino"
+            for campo in ("nombre", "email", "celular", "ciudad", "edad", "nivel_estudio",
+                          "estado_civil", "tipo_vivienda", "estrato"):
+                if f.get(campo) is not None:
+                    fila[campo] = f[campo]
+            if f["anio"]:
+                fila["fecha_creacion"] = f["anio"]
+            for campo in CAMPOS_RICOS:
+                if f.get(campo) is not None:
+                    fila[campo] = f[campo]
+        else:  # ya existía: SOLO completar lo que está vacío
+            if (existente.get("fecha_creacion") or "").strip().lower() in SIN_FECHA and f["anio"]:
+                fila["fecha_creacion"] = f["anio"]
+            for campo in CAMPOS_RICOS:
+                if not (existente.get(campo) or "").strip() and f.get(campo):
+                    fila[campo] = f[campo]
+        payload_pm.append(fila)
 
-    # Agrupar por conjunto-de-claves EXACTO antes de subir en lote — si no, PostgREST usa la
-    # unión de columnas del lote y pone NULL en las filas que no traían esa clave (mismo
-    # gotcha ya resuelto en sync_postulantes_mr.py:main()).
     grupos: dict[frozenset, list] = {}
-    for fila in payload:
+    for fila in payload_pm:
         grupos.setdefault(frozenset(fila), []).append(fila)
-
-    total_enviadas = fallos_lotes = 0
+    enviadas_pm = fallos_pm = 0
     for claves, grupo in grupos.items():
         for i in range(0, len(grupo), LOTE):
             lote = grupo[i:i + LOTE]
             try:
                 supa._req("POST", "/postulantes_mr?on_conflict=cedula", lote,
                           prefer="resolution=merge-duplicates,return=minimal")
-                total_enviadas += len(lote)
+                enviadas_pm += len(lote)
             except RuntimeError as e:
-                fallos_lotes += 1
-                log(f"ERROR en lote de {len(lote)} filas (claves={sorted(claves)}): {e}")
-    log(f"RESUMEN --aplicar: nuevas_insertadas={len(nuevas)} backfill_fecha={len(backfill)} "
-        f"filas_enviadas={total_enviadas} fallos_lotes={fallos_lotes} en {len(grupos)} grupos "
-        f"de columnas · estado={'exito' if fallos_lotes == 0 else 'con_errores'}")
-    return 0 if fallos_lotes == 0 else 1
+                fallos_pm += 1
+                log(f"ERROR postulantes_mr lote de {len(lote)} (claves={sorted(claves)}): {e}")
+    log(f"postulantes_mr: {enviadas_pm} filas enviadas en {len(grupos)} grupos, "
+        f"{fallos_pm} lotes fallidos")
+
+    # ── 2) participants: backfill SOLO si NULL (nunca sobreescribe un valor real) ──────
+    actualizados_p = fallos_p = 0
+    for f in con_participante:
+        p = participantes[f["cedula"]]
+        cambios = {}
+        for campo in ("estado_civil", "nivel_estudio", "tipo_vivienda", "estrato", "edad"):
+            if p.get(campo) is None and f.get(campo):
+                cambios[campo] = f[campo]
+        if not cambios:
+            continue
+        try:
+            supa._req("PATCH", f"/participants?id=eq.{p['id']}", cambios)
+            actualizados_p += 1
+        except RuntimeError as e:
+            fallos_p += 1
+            log(f"ERROR participants cedula={f['cedula']}: {e}")
+    log(f"participants: {actualizados_p} backfilleados, {fallos_p} fallos")
+
+    # ── 3) enriquecimiento_mr_extendido: campos que participants no tiene ──────────────
+    payload_enr = []
+    for f in con_participante:
+        pid = participantes[f["cedula"]]["id"]
+        for campo in CAMPOS_RICOS:
+            valor = f.get(campo)
+            if valor:
+                payload_enr.append({"participant_id": pid, "campo": campo, "valor": valor[:2000],
+                                    "fuente_archivo": FUENTE_ARCHIVO, "metodo_match": "cedula"})
+    enviadas_enr = supa.upsert("enriquecimiento_mr_extendido", payload_enr,
+                               "participant_id,campo,fuente_archivo,valor") if payload_enr else 0
+    log(f"enriquecimiento_mr_extendido: {enviadas_enr} filas enviadas")
+
+    log(f"RESUMEN --aplicar: postulantes_mr={enviadas_pm} participants_backfill={actualizados_p} "
+        f"enriquecimiento={enviadas_enr} fallos_pm={fallos_pm} fallos_p={fallos_p} · "
+        f"estado={'exito' if fallos_pm == 0 and fallos_p == 0 else 'con_errores'}")
+    return 0 if fallos_pm == 0 and fallos_p == 0 else 1
 
 
 if __name__ == "__main__":
