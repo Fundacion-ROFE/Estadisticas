@@ -2134,28 +2134,6 @@
     "created_at": "2026-07-26T06:30:34.809165"
   },
   {
-    "id": 766,
-    "fecha": "2026-08-11",
-    "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
-    "programa": "jc",
-    "matriculados": 751,
-    "promedio_avance": 99.6,
-    "completados": 748,
-    "fuente": "sync-diario",
-    "created_at": "2026-08-11T06:30:35.618719"
-  },
-  {
-    "id": 767,
-    "fecha": "2026-08-11",
-    "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
-    "programa": "mr",
-    "matriculados": 136,
-    "promedio_avance": 41.9,
-    "completados": 47,
-    "fuente": "sync-diario",
-    "created_at": "2026-08-11T06:30:35.618719"
-  },
-  {
     "id": 705,
     "fecha": "2026-08-10",
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
@@ -2288,17 +2266,6 @@
     "created_at": "2026-07-26T06:30:34.809165"
   },
   {
-    "id": 768,
-    "fecha": "2026-08-11",
-    "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
-    "programa": "mr",
-    "matriculados": 244,
-    "promedio_avance": 32.1,
-    "completados": 73,
-    "fuente": "sync-diario",
-    "created_at": "2026-08-11T06:30:35.618719"
-  },
-  {
     "id": 667,
     "fecha": "2026-08-08",
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
@@ -2418,6 +2385,39 @@
     "completados": 753,
     "fuente": "sync-diario",
     "created_at": "2026-08-08T14:58:05.996713"
+  },
+  {
+    "id": 766,
+    "fecha": "2026-08-11",
+    "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
+    "programa": "jc",
+    "matriculados": 751,
+    "promedio_avance": 99.6,
+    "completados": 748,
+    "fuente": "sync-diario",
+    "created_at": "2026-08-11T06:30:35.618719"
+  },
+  {
+    "id": 767,
+    "fecha": "2026-08-11",
+    "curso": "DE LA IDEA A LA ACCIÓN, TU GUÍA PARA EMPRENDER CON ÉXITO",
+    "programa": "mr",
+    "matriculados": 136,
+    "promedio_avance": 41.9,
+    "completados": 47,
+    "fuente": "sync-diario",
+    "created_at": "2026-08-11T06:30:35.618719"
+  },
+  {
+    "id": 768,
+    "fecha": "2026-08-11",
+    "curso": "HABILIDADES DEL SER PARA EMPRENDEDORAS DEL SIGLO XXI",
+    "programa": "mr",
+    "matriculados": 244,
+    "promedio_avance": 32.1,
+    "completados": 73,
+    "fuente": "sync-diario",
+    "created_at": "2026-08-11T06:30:35.618719"
   },
   {
     "id": 769,
