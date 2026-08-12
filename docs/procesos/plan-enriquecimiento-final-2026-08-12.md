@@ -115,6 +115,26 @@ Verificado en Supabase (2026-08-12):
    corregidos en datos (`UPDATE` + `recompute_aggregates()`) y en código
    (`importar_historico_q10.py` + `normalize_q10_data.py`). `v_programa_stats`/`cohorte_stats`
    MR 2025 ya dan 302 (antes 1.016).
+3c. **Rastreo riguroso MR vs Q10 + todas las mujeres al panel de control (2026-08-12).** El
+   usuario dudó (con razón) del "sin Q10" hecho solo por cédula. `rastrear_mujeres_mr_q10.py`:
+   match multi-campo (cédula→correo→nombre) año por año + verificación cruzada con H1Test.
+   **Resultado: 588/5.158 (11,4%) están en Q10/participants** — el match multi-campo solo sumó
+   19 sobre las 569 por cédula (no era un bug de cédula). Tabla por año: 2022=4,7% · 2023=3,8%
+   · 2024=13,5% · 2025=28,6% · 2026=44,9% (sube hacia años recientes porque el seguimiento MR
+   en Q10 arrancó en 2025). **H1Test cruzado: 176 mujeres del CSV están ahí y las 176 YA están
+   en participants → 0 huecos de sync**, confirma que participants es espejo fiel de Q10. La
+   baja tasa es REAL: la "Plataforma MR" es el universo de TODAS las registradas (candidatas),
+   Q10 solo tiene a las que se matricularon (~600). Las 4.570 no encontradas → xlsx en
+   Downloads (`mujeres_mr_sin_q10_<fecha>.xlsx`). Se enlazaron las 18 por correo en
+   `postulantes_mr.participant_id` (la 1 por nombre se dejó afuera, riesgo de homónimo).
+   **Panel de control:** el equipo analiza a las mujeres por VARIABLES (emprendimiento/impacto
+   financiero/crédito), no por cohorte-curso como JC. Se puso a TODAS las mujeres en el panel
+   de control: las ~588 con Q10 en «Explorar» (v_gui_personas), las ~4.752 sin Q10 en
+   «Postulantes sin matrícula» — ahora con columna "Año" al frente, ordenadas por año desc, +
+   7 columnas ricas (dirección/ingresos/sostenimiento/etnia/canal/núcleo/presentación),
+   filtrables por la barra de búsqueda del componente. Los campos que Q10 aportaría quedan NULL
+   para las que no lo tienen (pedido explícito).
+
 3b. **Extensión del historial MR completo (2026-08-12, pedido explícito del usuario):** el
    backfill de `fecha_creacion` (punto 5) fue solo el primer paso. El usuario pidió llenar
    TODO el historial de esa fuente: "para las que tengan Q10 añádele la info y las que no
