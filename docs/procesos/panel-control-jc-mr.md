@@ -1105,6 +1105,19 @@ de cohorte cerrada (`_kpis_cohorte_cerrada`) la "Retención" ya existía (culmin
 pero estaba 4ª — se movió a 2ª para consistencia. Verificado: JC 2026 viva = 90,1% (750÷832);
 JC 2024 cerrada = 71,2% (433÷608).
 
+## 7.30 Ajuste 2026-08-13 — fusión de toggles en "Toda la información"
+
+Pedido del usuario: los dos toggles de análisis del estudiante —"Retiros + Emoflow + Asistencia"
+y "Postulantes históricos + Microcréditos MR"— aportan información complementaria del estudiante,
+así que se fusionan en una sola casilla **"Toda la información"** para prenderla toda con un clic.
+En `panel_control_gui.py`: `TOGGLE_RETIROS_EMOFLOW_ASISTENCIA` + `TOGGLE_POSTULANTES_MICROCREDITO`
+→ un único `TOGGLE_INFO_COMPLETA` (10 columnas). `GRUPOS_TOGGLE` pasa de 3 a 2 entradas y
+`GRUPOS_TOGGLE_CLAVES` fusiona sus dos listas de claves (6 y 11). **BD Seguimiento se deja aparte**
+(índice 0, conserva su lógica de filtrado de filas por `en_seguimiento_jc`). Todo lo demás
+(`_columnas_activas`, `_on_cambio_toggle`, `_actualizar_disponibilidad_filtros`) es index-based
+vía `zip`, no requirió más cambios. Verificado: 2 toggles ("BD Seguimiento" 6 col · "Toda la
+información" 10 col), compila OK.
+
 ## 8. Conexiones
 
 [[plan-visualizacion-2026-07-30]] (Fase 2 pausada a favor de este documento — pendientes vivos
