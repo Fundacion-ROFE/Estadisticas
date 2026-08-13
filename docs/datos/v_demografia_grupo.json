@@ -8,22 +8,6 @@
     "otros_genero": null
   },
   {
-    "grupo_ciudad": "BOG",
-    "total": 387,
-    "edad_promedio": 18.3,
-    "mujeres": 163,
-    "hombres": 195,
-    "otros_genero": null
-  },
-  {
-    "grupo_ciudad": "CAL",
-    "total": 405,
-    "edad_promedio": 18.8,
-    "mujeres": 171,
-    "hombres": 206,
-    "otros_genero": 9
-  },
-  {
     "grupo_ciudad": "CTG",
     "total": 337,
     "edad_promedio": 18.8,
@@ -32,11 +16,19 @@
     "otros_genero": null
   },
   {
-    "grupo_ciudad": "GYL",
-    "total": 173,
-    "edad_promedio": 18.7,
-    "mujeres": 90,
-    "hombres": 83,
+    "grupo_ciudad": "PAN",
+    "total": 36,
+    "edad_promedio": 18.3,
+    "mujeres": 24,
+    "hombres": 11,
+    "otros_genero": null
+  },
+  {
+    "grupo_ciudad": "BOG",
+    "total": 387,
+    "edad_promedio": 18.3,
+    "mujeres": 163,
+    "hombres": 195,
     "otros_genero": null
   },
   {
@@ -46,14 +38,6 @@
     "mujeres": 253,
     "hombres": 376,
     "otros_genero": 5
-  },
-  {
-    "grupo_ciudad": "PAN",
-    "total": 36,
-    "edad_promedio": 18.3,
-    "mujeres": 24,
-    "hombres": 11,
-    "otros_genero": null
   },
   {
     "grupo_ciudad": "QTO",
@@ -69,6 +53,22 @@
     "edad_promedio": 21.5,
     "mujeres": 103,
     "hombres": 140,
+    "otros_genero": null
+  },
+  {
+    "grupo_ciudad": "CAL",
+    "total": 405,
+    "edad_promedio": 18.8,
+    "mujeres": 171,
+    "hombres": 206,
+    "otros_genero": 9
+  },
+  {
+    "grupo_ciudad": "GYL",
+    "total": 173,
+    "edad_promedio": 18.7,
+    "mujeres": 90,
+    "hombres": 83,
     "otros_genero": null
   }
 ]
