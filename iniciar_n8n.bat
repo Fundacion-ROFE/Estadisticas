@@ -51,6 +51,29 @@ set "GENERIC_TIMEZONE=America/Bogota"
 set "GCM_INTERACTIVE=never"
 set "GIT_TERMINAL_PROMPT=0"
 
+:: Limite de heap V8 del proceso n8n (Node.js). Cubre SOLO la memoria retenida por n8n
+:: entre nodos de una ejecucion (ej. los 8 nodos encadenados de q10-sync-supabase) --
+:: NO acota los procesos python.exe hijos de executeCommand (esos se acotan aparte,
+:: ver optimizaciones en scripts/panel-datos y scripts/q10-consolidacion).
+:: Valor conservador: PC con 16GB totales pero ~2GB libres en uso normal (verificado
+:: 2026-08-05). Sin limite, V8/Node22 puede crecer a ~4GB por defecto -- mas del doble
+:: de lo libre. Ajustar tras observar `Get-Process node | Select WorkingSet` una semana;
+:: recalcular al migrar a DigitalOcean (RAM dedicada, sin otras apps compitiendo).
+set "NODE_OPTIONS=--max-old-space-size=2048"
+
+:: Pruning de datos de ejecucion -- ya son los defaults de n8n 2.8.4, se dejan explicitos
+:: aqui para no depender de un default implicito que cambie en una version futura.
+set "EXECUTIONS_DATA_PRUNE=true"
+set "EXECUTIONS_DATA_MAX_AGE=168"
+
+:: Red de seguridad global de concurrencia (nativo de n8n). Serializa ejecuciones
+:: "production" (Schedule/Webhook/Telegram) de TODOS los workflows -- si dos triggers
+:: pesados disparan casi juntos, el segundo espera en cola en vez de correr en paralelo.
+:: OJO: NO cubre ejecuciones manuales desde el editor -- por eso el guard de lock de
+:: scripts/common/lock_cli.py (ver docs/convenciones.md) sigue siendo obligatorio para
+:: workflows pesados.
+set "N8N_CONCURRENCY_PRODUCTION_LIMIT=2"
+
 echo [1/4] Iniciando tunel ngrok (dominio fijo)...
 tasklist /FI "IMAGENAME eq ngrok.exe" /NH 2>nul | findstr /i "ngrok" >nul 2>&1
 if %errorlevel% EQU 0 (
@@ -106,9 +129,13 @@ timeout /t 60 /nobreak >nul
 
 curl -s http://localhost:5678/healthz >nul 2>&1
 if %errorlevel% NEQ 0 (
-    echo [%time%] AVISO: n8n no responde. Reinicia el script.
-    pause
-    exit /b 1
+    echo [%time%] n8n no responde. Reiniciando AUTOMATICAMENTE ^(auto-heal del watchdog^)...
+    powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"name='node.exe'\" | Where-Object { $_.CommandLine -like '*n8n*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
+    timeout /t 3 /nobreak >nul
+    start /B "" "C:\nvm4w\nodejs\n8n.cmd" start
+    timeout /t 70 /nobreak >nul
+    curl -s -X POST "http://localhost:5678/api/v1/workflows/Rblg81qifVshsRae/activate" -H "X-N8N-API-KEY: %N8N_API_KEY%" -H "Content-Type: application/json" -d "{}" >nul 2>&1
+    echo [%time%] Reinicio automatico completado. El watchdog sigue vigilando.
 )
 
 :: Vigilar el tunel. Al ser dominio fijo, basta con relanzarlo: la URL no cambia,

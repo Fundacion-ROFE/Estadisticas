@@ -855,15 +855,23 @@ la mañana siguiente. Forense: el evento `Microsoft-Windows-Power-Troubleshooter
 
 **Mitigación aplicada:** tarea programada de Windows que dispara `iniciar_n8n.bat` (ruta
 absoluta del repo) cada vez que el sistema se reanuda de suspensión. El `.bat` ya mata la
-instancia vieja de `n8n.cmd` antes de arrancar una nueva (líneas 67-69), así que el trigger es
-idempotente aunque n8n ya estuviera corriendo.
+instancia vieja de `n8n.cmd` antes de arrancar una nueva, así que el trigger es idempotente
+aunque n8n ya estuviera corriendo.
+
+**⚠ FIX 2026-08-13 (auditoría de resiliencia):** la tarea corría `iniciar_n8n.bat` **directo**, y
+como el `.bat` termina en un loop infinito de watchdog, la tarea se colgaba/mataba (`LastTaskResult=1`,
+el auto-heal nunca sanaba de verdad). Hay que lanzarlo **fire-and-forget** con `start /min` (igual
+que el task de logon `Iniciar n8n ROFE`), para que la tarea complete limpio y el `.bat` quede
+corriendo en background:
 
 ```
 schtasks /Create /TN "n8n-auto-heal-resume" ^
-  /TR "C:\Users\EstudiantesJC\downloads\admin-usable\iniciar_n8n.bat" ^
+  /TR "cmd.exe /c start /min \"n8n ROFE heal\" \"C:\Users\EstudiantesJC\downloads\admin-usable\iniciar_n8n.bat\"" ^
   /SC ONEVENT /EC System ^
   /MO "*[System[Provider[@Name='Microsoft-Windows-Power-Troubleshooter'] and EventID=1]]" /F
 ```
+
+(La versión vieja `/TR "...iniciar_n8n.bat"` directo es la que quedó rota — no recrear así.)
 
 **Gotcha — `/RL HIGHEST` da "Acceso denegado":** requiere una sesión elevada (token de
 Administrador sin filtrar por UAC); en una sesión normal `schtasks /Create` con `/SC ONEVENT`
