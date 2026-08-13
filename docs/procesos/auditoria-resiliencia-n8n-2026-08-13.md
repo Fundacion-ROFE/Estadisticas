@@ -102,9 +102,13 @@ reactivación explícita; solo los webhook (Telegram/Zoom) se re-registran al ar
 
 ## 5. Recomendaciones pendientes (requieren decisión/acción)
 
-- **[Crítico, dolor B] Confirmar la rutina en la nube `frescura-pipeline-rofe`** (Claude cloud,
-  8:30 COT): que siga activa y que su Telegram llegue a Samuel. Es la ÚNICA red de seguridad cuando
-  el portátil está apagado. Idealmente subir su frecuencia (ej. cada 6h) durante este mes local.
+- **[Crítico, dolor B] — ✅ REFORZADO con GitHub Actions.** Se agregó
+  `.github/workflows/alerta-frescura-nube.yml`: corre en la infra de GitHub (NO en el portátil ni
+  en una sesión de Claude) cada 4h, lee `v_frescura` con la anon key pública y avisa por Telegram
+  si hay vencidos o si Supabase no responde. Verificado end-to-end 2026-08-13: lectura anon OK +
+  envío Telegram OK (mensaje de prueba recibido). **Falta 1 paso del usuario:** agregar los secrets
+  `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` en el repo (Settings → Secrets → Actions). La rutina
+  Claude `frescura-pipeline-rofe` (8:30 COT) queda como red redundante — confirmar que siga viva.
 - **[Alto] Cargador de noche = requisito #1** (ya documentado en [[project_n8n_suspend_resume]]): la
   mayoría de incidentes son "portátil apagado/sin batería". Ningún auto-heal funciona con el equipo
   apagado.
