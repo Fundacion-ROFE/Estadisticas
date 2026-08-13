@@ -7570,3 +7570,8 @@ Doc completo: `docs/procesos/auditoria-resiliencia-n8n-2026-08-13.md`. Verificad
 - **Hallazgos abiertos:** H1 (crítico) todas las alertas son locales → si el portátil se apaga nadie se entera salvo la rutina en la nube `frescura-pipeline-rofe` (confirmar que sigue viva). H2 healthz miente en "vivo pero conexiones muertas" (cubierto por watchdog de colgadas, ~35min). H4 `sync_supabase_to_sheets` (último nodo de q10-sync) falla transitorio por Google Sheets y marca toda la cadena error. H5 Zoom "Reenviar a Grabaciones" → "Invalid JSON", recurrente (~11 el 08-12).
 - **Testing:** no se dispararon manualmente todos los nodos (causaría envíos/escrituras reales); se auditó el LOG de ejecuciones con error (señal real de qué se rompe) + healthz + dispatcher ping.
 - **Veredicto:** sólido para ~1 mes local con los 2 fixes + confirmar la alerta en la nube; el punto irresoluble en local es el portátil apagado (solo la nube avisa, solo un cargador permanente lo previene). No sustituye la migración, la hace menos urgente.
+
+### 2026-08-13 (cont.) — Arreglados los 2 fallos reales de la auditoría (H4 + H5)
+
+- **H4** `sync_supabase_to_sheets.py`: `con_reintento()` (backoff ante 429/5xx/red) en `open_by_key` + escritura → el fallo transitorio de Google ya no marca error toda la cadena q10-sync. Verificado: 826 filas, `estado=exito`.
+- **H5** nodo "Reenviar a Grabaciones" (workflow Zoom): `responseFormat=text` + `retryOnFail` → se acaba el "Invalid JSON in response body" (el POST sí se enviaba, solo fallaba al parsear la respuesta). Workflow activo, JSON re-exportado (`n8n-workflows/zoom-asistencia.json`). Commit a4cb78d.
