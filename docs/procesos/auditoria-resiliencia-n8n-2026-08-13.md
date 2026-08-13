@@ -120,6 +120,19 @@ reactivación explícita; solo los webhook (Telegram/Zoom) se re-registran al ar
 
 ---
 
+## 5.b Hallazgo H7 (surgido al verificar, 2026-08-13) — ✅ ARREGLADO: `git push` de los export se rompe si origin se adelanta
+
+Al subir el workflow por la web de GitHub, origin/main quedó 1 commit adelante del repo local. A
+partir de ahí, **`export_stats.py` falló en CADA corrida** (`git push → ! [rejected] (fetch first)`)
+y disparó la alerta de Telegram "Bot Q10 falló" — no era el script ni la conexión, era el push
+rechazado por non-fast-forward. Mismo riesgo en `export_supabase_json.py`. Pasa siempre que origin
+se adelante (edición web, GitHub Actions, otra máquina).
+
+**Fix:** ambos `git_commit_y_push()` ahora, ante un push rechazado, hacen `git pull --rebase
+--autostash origin main` y **reintentan** una vez. Resuelto el conflicto en vivo (rebase + push) y
+`export_stats.py` re-corrido → `estado=exito`. Además explica por qué mis propios push de la sesión
+podían chocar con ediciones web concurrentes.
+
 ## 6. Veredicto de solidez
 
 **Para ~1 mes de hosting local: sólido CON las 2 correcciones aplicadas + confirmar la alerta en la

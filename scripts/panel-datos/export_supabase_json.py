@@ -162,29 +162,46 @@ def git_commit_y_push(timestamp: str, output_dir: str) -> bool:
         log("  git: sin cambios, no hay nada que publicar.")
         return True
 
-    pasos = [
-        ["git", "add", rel_dir],
-        ["git", "commit", "-m", f"chore: actualizar export supabase->json [{timestamp}]", "--", rel_dir],
-        ["git", "push", "origin", "main"],
-    ]
-    for cmd in pasos:
+    def _git(cmd):
         try:
-            resultado = subprocess.run(
-                cmd,
-                cwd=PROYECTO_ROOT,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                timeout=180,
-            )
+            return subprocess.run(cmd, cwd=PROYECTO_ROOT, capture_output=True,
+                                  text=True, encoding="utf-8", timeout=180)
         except subprocess.TimeoutExpired:
             log(f"ERROR git ({' '.join(cmd)}): timeout tras 180s")
+            return None
+
+    for cmd in (["git", "add", rel_dir],
+                ["git", "commit", "-m", f"chore: actualizar export supabase->json [{timestamp}]", "--", rel_dir]):
+        r = _git(cmd)
+        if r is None:
             return False
-        if resultado.returncode != 0:
-            stderr = resultado.stderr.strip() or resultado.stdout.strip()
-            log(f"ERROR git ({' '.join(cmd)}): {stderr}")
+        if r.returncode != 0:
+            log(f"ERROR git ({cmd[1]}): {r.stderr.strip() or r.stdout.strip()}")
             return False
         log(f"  git {cmd[1]}: OK")
+
+    # Push con AUTO-RECUPERACIÓN ante origin adelantado (edición web/GitHub Actions/otra máquina):
+    # non-fast-forward → pull --rebase --autostash + 1 reintento. Ver export_stats.py (mismo fix,
+    # incidente 2026-08-13).
+    r = _git(["git", "push", "origin", "main"])
+    if r is None:
+        return False
+    if r.returncode != 0:
+        err = (r.stderr or "") + (r.stdout or "")
+        if any(s in err for s in ("fetch first", "rejected", "non-fast-forward", "behind")):
+            log("  git push rechazado (origin adelante); pull --rebase --autostash + reintento...")
+            pr = _git(["git", "pull", "--rebase", "--autostash", "origin", "main"])
+            if pr is None or pr.returncode != 0:
+                det = ((pr.stderr or pr.stdout).strip()[:300]) if pr else "timeout"
+                log(f"ERROR git (pull --rebase): {det}")
+                return False
+            r = _git(["git", "push", "origin", "main"])
+            if r is None:
+                return False
+        if r.returncode != 0:
+            log(f"ERROR git (push): {(r.stderr.strip() or r.stdout.strip())[:300]}")
+            return False
+    log("  git push: OK")
     return True
 
 
