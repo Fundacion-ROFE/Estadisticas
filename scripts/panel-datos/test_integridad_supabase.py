@@ -44,6 +44,11 @@ CIUDADES = {"BAQ", "BOG", "CAL", "CTG", "MED", "GYL", "QTO", "PAN", "UY"}
 TOL_CUADRE_EMOFLOW_PCT = 2.0   # discrepancia conocida 0,7% por parámetros de descarga distintos
 TOL_ROSTER_VS_USUARIOS = 25    # roster semanal (scope=all) ≥ usuarios filtrados; margen absoluto
 TOL_CUADRE_RETIROS_JC  = 3     # 007:51 — retiros individual vs agregado cohorte_ingresos
+TOL_SEG_VS_CANON_JC    = 5     # Seguimiento (verdad operativa) LIDERA el canon Q10 por un lag de
+                               # días: el equipo saca del Sheet antes que Q10 marque el retiro.
+                               # No es error a corregir — es la naturaleza de dos fuentes con
+                               # velocidades distintas (misma clase que TOL_CUADRE_RETIROS_JC).
+                               # Ver plan-coherencia-cohortes-2026-08-11.md (P1/P7).
 DIAS_FRESCURA          = 2     # un sync diario puede llevar hasta 2 días si el PC estuvo apagado
 
 resultados = []
@@ -244,7 +249,9 @@ def main() -> int:
     # significado (ej. deja de excluir false, o el sync deja de refrescarla), los conteos por
     # curso se mueven en silencio y ningún otro test lo detecta hoy. Cruza dos caminos
     # independientes: cohorte_ingresos.activos (derivado de Q10) contra un conteo recalculado
-    # desde participants×enrollments filtrado por en_seguimiento_jc — deben coincidir exacto.
+    # desde participants×enrollments filtrado por en_seguimiento_jc. NO deben coincidir EXACTO:
+    # Seguimiento lidera el canon Q10 por un lag de días (TOL_SEG_VS_CANON_JC). Un Δ que crece por
+    # encima de la tolerancia = el sync de en_seguimiento se congeló o cambió de significado.
     seg_jc_2026 = supa.get_todo(
         "/participants?select=id,en_seguimiento_jc,enrollments!inner(courses!inner(programa,cohorte))"
         "&enrollments.courses.programa=eq.jc&enrollments.courses.cohorte=eq.2026"
@@ -252,10 +259,11 @@ def main() -> int:
     seg_por_id = {p["id"]: p["en_seguimiento_jc"] for p in seg_jc_2026}  # dedupe (1 fila por matrícula)
     activos_calc_jc_2026 = sum(1 for v in seg_por_id.values() if v is not False)
     activos_coh_jc_2026_v2 = next((c["activos"] for c in coh if c["cohorte"] == "2026" and c["programa"] == "jc"), None)
-    test(f"JC 2026 activos vía en_seguimiento_jc cuadra con cohorte_ingresos.activos ({activos_coh_jc_2026_v2})",
-         activos_coh_jc_2026_v2 is not None and activos_calc_jc_2026 == activos_coh_jc_2026_v2,
+    delta_seg = abs(activos_calc_jc_2026 - activos_coh_jc_2026_v2) if activos_coh_jc_2026_v2 is not None else None
+    test(f"JC 2026 activos vía en_seguimiento_jc cuadra con cohorte_ingresos.activos ({activos_coh_jc_2026_v2}, tol {TOL_SEG_VS_CANON_JC})",
+         delta_seg is not None and delta_seg <= TOL_SEG_VS_CANON_JC,
          f"conteo independiente (participants×enrollments, en_seguimiento_jc≠false)={activos_calc_jc_2026} "
-         f"vs cohorte_ingresos.activos={activos_coh_jc_2026_v2}")
+         f"vs cohorte_ingresos.activos={activos_coh_jc_2026_v2} (Δ={delta_seg}; Seguimiento lidera por lag)")
 
     # v_retiro_probable_jc debe cuadrar exacto con count(en_seguimiento_jc=false) — no es
     # tolerancia, son la misma cosa contada dos veces por dos caminos independientes.
@@ -330,6 +338,28 @@ def main() -> int:
     else:
         test("anon key disponible para test de seguridad", False,
              "falta SUPABASE_ANON_KEY en .env.local — sección F no ejecutada")
+
+    # ---------- G. Coherencia retiros <-> v_gui_personas (JC) ----------
+    # REGRESIÓN del bug grave 2026-08-13 (migración 049): una persona con retiro registrado en su
+    # cohorte NUNCA puede aparecer retirado=False en v_gui_personas para esa MISMA cohorte. Antes,
+    # v_gui_personas prefería el flag de la lista canon `cohorte_2026_ceds` (que queda desactualizado
+    # cuando alguien se retira después de cargarla) sobre la tabla `retiros`, así que 4 retiradas de
+    # JC 2026 salían como activas y contaminaban la pestaña "Datos desactualizados Q10" del GUI.
+    # Se compara por (cédula, cohorte) para NO marcar el caso de reingreso (retiro en otra cohorte).
+    print("\n== G. Coherencia retiros <-> v_gui_personas (JC) ==")
+    gui = supa.get_todo("/v_gui_personas?programa=eq.jc&select=cedula,cohorte,retirado")
+    gui_idx = {(str(g["cedula"]), str(g["cohorte"])): g["retirado"] for g in gui}
+    ret_jc = supa.get_todo("/retiros?programa=eq.jc&select=cedula,cohorte")
+    viol = []
+    for r in ret_jc:
+        clave = (str(r["cedula"]), str(r["cohorte"]))
+        if clave in gui_idx and gui_idx[clave] is not True:
+            viol.append(clave)
+    ejemplos = ", ".join(f"{c}/{co}" for c, co in viol[:5])
+    test("retiros JC reflejados como retirado=True en v_gui_personas (misma cohorte)",
+         len(viol) == 0,
+         f"{len(viol)} con retiro en su cohorte pero retirado=False"
+         + (f" (ej: {ejemplos})" if viol else ""))
 
     # ---------- Resumen ----------
     total = len(resultados)
