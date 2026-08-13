@@ -145,9 +145,9 @@
     "programa": "jc",
     "grupo_ciudad": "MED",
     "matriculados": 93,
-    "completados": 86,
-    "promedio_avance": 94.9,
-    "pct_completados": 92.5
+    "completados": 87,
+    "promedio_avance": 95.2,
+    "pct_completados": 93.5
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -186,7 +186,7 @@
     "grupo_ciudad": "BAQ",
     "matriculados": 50,
     "completados": 28,
-    "promedio_avance": 75.6,
+    "promedio_avance": 76.0,
     "pct_completados": 56.0
   },
   {
@@ -195,9 +195,9 @@
     "programa": "jc",
     "grupo_ciudad": "BOG",
     "matriculados": 40,
-    "completados": 19,
-    "promedio_avance": 69.1,
-    "pct_completados": 47.5
+    "completados": 20,
+    "promedio_avance": 71.5,
+    "pct_completados": 50.0
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
@@ -236,7 +236,7 @@
     "grupo_ciudad": "MED",
     "matriculados": 49,
     "completados": 19,
-    "promedio_avance": 51.3,
+    "promedio_avance": 51.6,
     "pct_completados": 38.8
   },
   {
@@ -256,7 +256,7 @@
     "grupo_ciudad": "QTO",
     "matriculados": 12,
     "completados": 5,
-    "promedio_avance": 60.9,
+    "promedio_avance": 61.8,
     "pct_completados": 41.7
   },
   {
