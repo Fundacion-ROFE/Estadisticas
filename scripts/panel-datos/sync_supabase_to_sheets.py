@@ -77,6 +77,31 @@ def log(msg: str) -> None:
     print(f"[sync-supabase-sheets] {msg}", flush=True)
 
 
+def con_reintento(fn, *, intentos: int = 4, espera_base: int = 5, que: str = "operación Google Sheets"):
+    """Reintenta fn() ante errores TRANSITORIOS de la API de Google (429/5xx, red). Este es el
+    ÚLTIMO nodo de q10-sync; su fallo transitorio (ej. open_by_key con HTTP 5xx) marcaba TODA la
+    cadena como error aunque Supabase ya estuviera actualizado (auditoría 2026-08-13, H4). Los
+    errores NO transitorios (permiso, hoja inexistente) se relanzan de una — no se enmascaran."""
+    import time
+    import gspread.exceptions as gse
+    for i in range(1, intentos + 1):
+        try:
+            return fn()
+        except gse.APIError as e:
+            code = getattr(getattr(e, "response", None), "status_code", None)
+            if code not in (429, 500, 502, 503, 504) or i == intentos:
+                raise
+            espera = espera_base * i
+            log(f"aviso: {que} falló (HTTP {code}); reintento {i}/{intentos - 1} en {espera}s...")
+            time.sleep(espera)
+        except (ConnectionError, TimeoutError, OSError) as e:
+            if i == intentos:
+                raise
+            espera = espera_base * i
+            log(f"aviso: {que} error de red ({type(e).__name__}); reintento {i}/{intentos - 1} en {espera}s...")
+            time.sleep(espera)
+
+
 def cargar_env_local() -> None:
     if not os.path.isfile(RUTA_ENV):
         return
@@ -298,7 +323,8 @@ def main() -> int:
         RUTA_CREDENCIALES,
         scopes=["https://www.googleapis.com/auth/spreadsheets"],
     )
-    sh = gspread.authorize(creds).open_by_key(args.sheet_id)
+    sh = con_reintento(lambda: gspread.authorize(creds).open_by_key(args.sheet_id),
+                       que="abrir la hoja del equipo")
 
     # Guardarraíl: destinos de ESCRITURA prohibidos — abortar antes de tocar nada.
     #  - h2test (1q4VNn…): un clear()/add ahí destruiría la entrada del pipeline.
@@ -323,7 +349,8 @@ def main() -> int:
             log(f"La pestaña '{TAB_EMOFLOW}' no existe — creándola...")
             ws = sh.add_worksheet(title=TAB_EMOFLOW, rows="1000", cols="10")
 
-        n = sincronizar_emoflow(supa, ws)
+        n = con_reintento(lambda: sincronizar_emoflow(supa, ws),
+                          que="escribir la pestaña AUTO_Emoflow_Uso")
 
         log("OK")
         print(f"RESUMEN: filas={n} estado=exito")

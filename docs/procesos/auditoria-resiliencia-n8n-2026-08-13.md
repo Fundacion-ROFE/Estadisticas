@@ -63,13 +63,13 @@ infinito → la tarea se colgaba/mataba → result=1). La de logon sí usa `star
 (§4). Además, el evento Power-Troubleshooter Id=1 **no siempre se dispara** (documentado: la noche
 del 24-jul no saltó) — por eso el watchdog de colgadas (H2) es el respaldo real.
 
-### 🟡 H4 — `q10-sync-supabase` marca "error" por su ÚLTIMO nodo aunque Supabase sí se actualizó
+### 🟡 H4 — `q10-sync-supabase` marca "error" por su ÚLTIMO nodo aunque Supabase sí se actualizó — ✅ ARREGLADO
 El fallo del 06:30 fue en `sync_supabase_to_sheets.py` (push a la hoja del equipo, último nodo), un
 traceback probablemente transitorio de Google Sheets. Como es el último nodo, **no** afecta la
 frescura de Supabase (los nodos previos ya escribieron), pero **sí** dispara `alerta-fallo-workflow`
 (ruido) y, si el push a Sheets es crónico, conviene aislarlo en su propio workflow con reintento.
 
-### 🟡 H5 — `Zoom - Asistencia` falla recurrente en "Reenviar a Grabaciones" ("Invalid JSON in response body")
+### 🟡 H5 — `Zoom - Asistencia` falla recurrente en "Reenviar a Grabaciones" ("Invalid JSON in response body") — ✅ ARREGLADO
 ~11 errores el 08-12 (webhook). El nodo recibe una respuesta no-JSON. No afecta datos del panel,
 pero ensucia el log de errores y puede estar perdiendo reenvíos de grabaciones. Revisar el endpoint
 destino / agregar manejo de respuesta no-JSON.
@@ -89,6 +89,14 @@ reactivación explícita; solo los webhook (Telegram/Zoom) se re-registran al ar
    loop, hacía `pause; exit /b 1` (se rendía y moría el watchdog). Ahora **reinicia n8n solo**
    (kill node → `n8n start` → espera 70s → reactiva bot) y sigue vigilando. Ya no hay que reiniciar
    el script a mano si n8n muere.
+3. **H4 arreglado** — `sync_supabase_to_sheets.py` gana `con_reintento()`: reintenta `open_by_key`
+   y la escritura de la pestaña ante errores TRANSITORIOS de Google (429/5xx, red) con backoff
+   (4 intentos, 5/10/15s). Antes `open_by_key` estaba fuera del try/except → traceback → toda la
+   cadena q10-sync marcada error. Verificado: corrida limpia (826 filas, `estado=exito`).
+4. **H5 arreglado** — nodo "Reenviar a Grabaciones" (workflow Zoom): `responseFormat: "text"` (ya
+   no parsea la respuesta como JSON — el POST se envía igual, solo se leía mal el body) +
+   `retryOnFail` (3 intentos, 3s). El "Invalid JSON in response body" era al LEER la respuesta, no
+   al enviar. Workflow sigue activo; JSON re-exportado a `n8n-workflows/zoom-asistencia.json`.
 
 ---
 
