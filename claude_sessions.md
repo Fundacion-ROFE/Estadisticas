@@ -7507,3 +7507,10 @@ Pedido: que el panel público muestre un diagnóstico claro y rápido con cifras
 - **Headers KPI de diagnóstico (`app/page.tsx`):** Cursos → Aprobación = aprobados÷cursaron POOLED (no promedio de tasas, que oculta el curso colapsado) + Matrículas + Curso más crítico; Emprendimiento → % ya emprende + % potencial (idea/interesado) + diagnosticados; Asistencia → añadido "Ciudad más baja" (el promedio nacional escondía la ciudad crítica).
 
 **Pendiente (iteración 2, diferido por el economista):** header KPI de Emoflow (adopción sobre alcance canónico/todos, declarando el universo) e Historial (delta vs periodo). Demografía se deja sin header a propósito (k-anonimato). Extraer derivaciones de KPI a un helper si page.tsx sigue creciendo.
+
+### 2026-08-13 (cont.) — Iteración 2 del diagnóstico Vercel: Historial + Emoflow
+
+panel-datos-rofe commit `cec8eea` (push a Netlify + Vercel; tsc + build OK).
+- **Historial** ganó header de diagnóstico: "Matriculados hoy" y "Avance promedio hoy" con **delta y dirección ↑/↓** vs el inicio de la serie + "Periodo medido". El escéptico había advertido que un "último valor" sin tendencia no diagnostica; por eso el delta, no el valor pelado.
+- **Emoflow** ya tenía header fuerte (participantes/activos 7d %/en riesgo 30d %/correlación uso→aprobación); solo se cerró la ambigüedad del **doble universo**: las cifras de % ahora **declaran su denominador** en el detalle ("N de 742 vigentes" vs "N del histórico 827"). Sus gráficos ya recibieron etiquetas en iteración 1.
+- **Demografía sigue sin header a propósito** (k-anonimato falsearía cualquier total). Iteración 2 cerrada.
