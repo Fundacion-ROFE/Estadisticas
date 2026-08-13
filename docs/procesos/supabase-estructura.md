@@ -4,9 +4,24 @@
 datos corregido en pipeline, limpieza en migración propuesta). Higiene ETL + `retiros` poblada
 en la Ola 1 (2026-07-24, ver secciones fechadas abajo). Suite corrida al cierre de la Ola 1
 (2026-07-24, tras Track B+C): **`RESUMEN: total=47 pass=47 fail=0 estado=exito`**.
-**Última actualización:** 2026-07-29 (loop de coherencia — gotcha de rename de curso; suite
-completa re-corrida el mismo día: 47/47 PASS)
-**Procesos relacionados:** [[panel-datos-etl]] · [[postulantes-mr-supabase]] · [[mapa-codigo]]
+**Última actualización:** 2026-08-11 (coherencia de cohortes — tabla `cohorte_historico` + reescritura
+de `v_pub_cohorte` para leer canon en años cerrados y Seguimiento en 2026; suite 53/53 PASS. Ver
+[[plan-coherencia-cohortes-2026-08-11]]).
+**Procesos relacionados:** [[panel-datos-etl]] · [[postulantes-mr-supabase]] · [[mapa-codigo]] ·
+[[plan-coherencia-cohortes-2026-08-11]]
+
+## `cohorte_historico` 🟢 — 7 filas (2026-08-11)
+Canon de cohortes CERRADAS (agregados sin PII) desde el consolidado oficial JC (`Downloads/Consolidado
+JC - Por años...csv`). Columnas: `programa,cohorte,ambito('nacional'|'ciudad'),ciudad(''=nacional),
+seleccionados,culminantes,retirados`. **retirados = seleccionados − culminantes (por descarte)** —
+CHECK lo garantiza. Hoy: JC nacional 2019–2025. RLS + REVOKE anon (solo service_role; el panel la lee
+vía la vista, que corre con privilegios del owner). Pendiente: desglose por ciudad + MR cerradas.
+
+**`v_pub_cohorte` reescrita (2026-08-11):** años cerrados (2019–2025) desde `cohorte_historico`;
+cohorte en curso (2026) desde Seguimiento (`en_seguimiento_jc=true` → JC activos=751; retirados =
+ingresados − activos = 81). Antes era `SELECT * FROM cohorte_ingresos` (daba 754, incoherente con la
+demografía). `cohorte_ingresos` se mantiene como canon interno Q10 (754/78) para los tests; el guard
+`en_seguimiento vs canon` pasó de igualdad exacta a `TOL_SEG_VS_CANON_JC=5` (Seguimiento lidera por lag).
 
 > Proyecto `kbxptoowtnteflhrfwid` (us-east-1). **25 tablas** en `public` (24 + `retiros`,
 > corregido 2026-07-24 — el conteo de 24 no la incluía) + ~20 vistas de agregados.
@@ -226,6 +241,7 @@ matrícula Q10). Fuente casi estática (el Mongo se actualiza ~4 veces/año).
 | `email_optout` (0) / `email_bounces` (392) | 🟢 | pipeline correos MR; REVOKE anon endurecido 2026-07-23 |
 | `campanas_enviadas` (14) / `alertas_datos` (2) | 🟢 | logs agregados sin PII |
 | `historial_cursos` (138) / `historial_cursos_ciudad` (378) | 🟢 | series de agregados del sync diario |
+| `correo_alias` (0, tabla nueva 2026-08-06) | 🟡 | PII (vincula un correo alterno a `participant_id`) — RLS sin policy, solo `service_role`, igual que `email_bounces`. Mismo patrón que `ciudad_alias` pero para correos: `normalizar_correo()`/`correo_a_participante()`. Se llena via [[panel-clase-vivo]] "Plan: correos alternos" (Forms de caso → `sync_correo_alias.py`); 0 filas hasta que el Forms reciba el primer caso real. Ver `docs/migrations/041_correo_alias_APLICADA.sql`. |
 
 ---
 
@@ -497,7 +513,7 @@ tratar igual a los dos workflows**, y ambos números terminaron aplicando:
 | Workflow | Qué hace | Duración real medida | Cadencia nueva |
 |---|---|---|---|
 | `Bot Q10 - Actualizar Grupos` | **Scrapea Q10** (browser headless) → Sheets → `export_aprobacion.py` → `docs/aprobacion/data.json` | **2,8 min a 309 min (5 h)**, muy variable | **cada 4 h**: `0 17,21,1,5 * * *` |
-| `q10-sync-supabase` | Lee Sheets + Supabase (NO toca Q10) → panel | 0,2–4,3 min, estable | **cada 2 h**: `30 17,19,21,23,1,3,5,7 * * *` |
+| `q10-sync-supabase` | Lee Sheets + Supabase (NO toca Q10) → panel | 0,2–4,3 min, estable | **cada 4 h**: `30 17,21,1,5 * * *` (hueco diurno 12h) |
 
 **Por qué el scraper no puede ir cada 2 h:** una corrida llegó a 309 min. A 2 h de cadencia se
 solaparían varias sesiones de browser headless contra Q10 simultáneamente. A 4 h se mantiene la
@@ -667,12 +683,13 @@ Ya no es propuesta: `panel-verificacion-diaria` (Schedule 8:00 COT → `test_int
 en producción. Ambos capturan el stdout del script vía `> log 2>&1` + `powershell Get-Content`
 para no perder el detalle en la expresión de n8n (ver gotcha de escapes en `convenciones.md`).
 
-**Umbral de `v_frescura` ajustado 6h → 12h (migración 029, 2026-07-30)** para
-`cohorte_ingresos`/`aprobacion_cursos`/`retiros`: `q10-sync-supabase` corre en ventana nocturna
-(`30 17,19,21,23,1,3,5,7 * * *`) con un hueco de diseño de 10h entre las 07:30 y las 17:30; un
-umbral de 6h disparaba falsa alarma todas las tardes (8 mensajes/día). Regla general agregada a
-`convenciones.md`: el umbral tiene que ser mayor al hueco máximo del cron que alimenta el
-proceso. Verificado tras el cambio: 0 procesos vencidos a media tarde, y un proceso simulado a
+**Umbral de `v_frescura` ajustado 6h → 12h (migración 029) → 16h (migración 048, 2026-08-13)** para
+`cohorte_ingresos`/`aprobacion_cursos`/`retiros`. La 029 asumía el cron viejo (`30 17,19,21,23,1,3,5,7`,
+cada 2h, hueco 10h). El cron REAL cambió a `30 17,21,1,5` (cada 4h, para reducir egress) → hueco diurno
+**12h** (05:30→17:30). Regla (`umbral > hueco_máximo + una_corrida`): 12h + 4h = **16h**. Además el fix
+del 2026-08-13 hace que `updated_at` se escriba en UTC (antes la frescura salía inflada +5h y disparaba
+la alerta prematuramente). Regla general en `convenciones.md`: el umbral tiene que ser mayor al hueco
+máximo del cron que alimenta el proceso. Verificado tras el cambio: 0 procesos vencidos a media tarde, y un proceso simulado a
 13h de antigüedad sigue disparando `vencido=true` (detecta una corrida real perdida en ~2h).
 
 **Gotcha nuevo (2026-07-30) — `Get-Content -Encoding UTF8` no basta.** PowerShell 5.1 lee el log
@@ -819,3 +836,49 @@ Supabase directo.
 - `anon` bloqueado en `v_gui_personas` (nueva, PII) y `anon` puede leer las 4 vistas públicas
   nuevas — chequeo espejo: un REVOKE de más rompería el panel tan silenciosamente como un GRANT
   de más rompería la privacidad.
+
+### `retiro_registrado()` + `v_pub_demografia` / `v_pub_emprendimiento` / `v_pub_asistencia` / Emoflow `_retirado` 🟢 — públicas (`anon`: solo SELECT)
+Fase 1 de `plan-rediseno-panel-datos-2026-07-30.md` (migración `037`, aplicada 2026-08-03).
+Backend del filtro global "Estado" (Activos/Todos/Retirados) del rediseño del panel público.
+`test_integridad_supabase.py` completo: 53/53 PASS antes y después, cero regresiones.
+
+- **`retiro_registrado(participant_id, cedula, programa)`** — función SQL nueva, SECURITY
+  DEFINER (mismo patrón que `participa_en()`: `retiros` tiene REVOKE ALL de anon, sin DEFINER ni
+  siquiera una vista owner-privilege podría evaluar el EXISTS). Fuente única de "estado" para
+  todo el rediseño — **no** usa `en_seguimiento_jc` (esa es la alerta operativa JC-only, ver
+  arriba). Match por `participant_id`, o por `cedula` si `retiros.participant_id` viene NULL; sin
+  exigir cohorte igual (mismo motivo que `v_gui_personas`/033: `retiros.cohorte` en MR no es
+  confiable).
+- **`v_pub_demografia`** — formato **largo** `programa, cohorte, estado, grupo_ciudad, dimension,
+  categoria → total` (supresión n<5), no la fila ancha (una columna por dimensión) que
+  describía la spec original del plan: cruzar género×edad×estrato×civil×estudio×vivienda por
+  persona explota en celdas de tamaño 1 y rompe el criterio de k-anonimato que ya usa
+  `v_demografia_grupo`/`v_pub_geografia`. `dimension ∈ {genero, edad_rango, estrato,
+  estado_civil, nivel_estudio, tipo_vivienda}`; las 4 últimas solo tienen filas para `mr` — su
+  ausencia total para `jc` ES el "no aplica" (§2.3 del plan), sin columna NULL que mantener.
+  Mismo patrón "largo" que `v_mr_demografia` (ya en producción).
+- **`v_pub_emprendimiento`** — `programa, cohorte, estado, grupo_ciudad, situacion → total,
+  prom_cursos_completados, prom_avance` (supresión n<5). Solo JC tiene filas
+  (`situacion_emprendimiento` es NULL en MR).
+- **`v_pub_asistencia`** — primera exposición pública de `asistencia_promedio` (antes solo
+  `panel_riesgo_gui.py`, con PII). `programa, cohorte, estado, grupo_ciudad → promedio,
+  n_estudiantes` (supresión n<5). Cruce por email, mismo patrón que `v_persona_360`.
+- **Emoflow, 3er estado del toggle:** `v_emoflow_resumen_retirado` /
+  `_por_ciudad_retirado` / `_bandas_retirado` / `_bandas_ciudad_retirado` — mirrors exactos de
+  los `_canonico` (011) con el criterio invertido (`retiro_registrado()=true`, programa `jc`).
+  Decisión tomada en esta fase: **no** calcular "Retirados" como `original − canonico` en el
+  frontend — la resta no alinea de forma confiable el desglose por ciudad/banda (series
+  independientes; una ciudad ausente en un lado rompe el join). Completa el trío
+  Activos(`_canonico`)/Todos(original, sin sufijo)/Retirados(`_retirado`).
+
+Cuadre verificado (`SET ROLE anon`): `v_pub_demografia` jc/2026/activo/género suma 749 vs
+`cohorte_ingresos.activos`=754 (gap por supresión n<5 en categorías chicas, mismo orden de
+magnitud que los gaps ya documentados en `v_demografia_grupo`, 759 vs 760); `mr/2026/activo`
+suma 340 vs `cohorte_ingresos.activos`=338 (diferencia esperada: universo de `enrollments` vs.
+cifra oficial, mismo patrón que H7 arriba — JC 777 vs 765). `v_emoflow_resumen_retirado`: 23
+participantes retirados JC con match en Emoflow. `get_advisors` marca las 7 vistas + la función
+con los mismos warnings `security_definer_view` ya aceptados/documentados para el resto de
+vistas `v_*` del proyecto (H1) — ninguna categoría de hallazgo nueva.
+
+**Pendiente (Fase 2 del plan):** `lib/api.ts` en `panel-datos-rofe` — tipos + llamadas para estas
+4 vistas nuevas. Ninguna vista existente ni el frontend actual se tocaron en esta fase.

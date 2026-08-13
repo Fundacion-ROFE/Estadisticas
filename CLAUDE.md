@@ -111,7 +111,8 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 | `extraer_mongo_mr_historico.py` / `cargar_mongo_mr_historico.py` | [[panel-datos-etl]] · [[postulantes-mr-supabase]] | — | — (Mongo Atlas mujeres-rofe-db, solo lectura → postulantes_mr; investigación cerrada 2026-07-22, 99.9% redundante) |
 | `extraer_mongo_jc_historico.py` / `cargar_mongo_jc_historico.py` | [[panel-datos-etl]] | — | — (Mongo Atlas jovenes-creativos, solo lectura → `postulantes_jc`; 2.556 filas, 464 exclusivas, cargado 2026-07-22) |
 | n8n workflow | [[q10-consolidacion]] | [[q10-actualizar]] | — |
-| n8n `q10-sync-supabase` | [[panel-datos-etl]] | — | — (sync cada 2h, `30 17,19,21,23,1,3,5,7 * * *` → Supabase) |
+| n8n `q10-sync-supabase` | [[panel-datos-etl]] | — | — (sync cada 4h, `30 17,21,1,5 * * *` → Supabase; hueco diurno de diseño 05:30→17:30 = 12h) |
+| `sync_plan_cronograma.py` (skill `/plan-sync`) | [[plan-trabajo-cronograma]] · [[zoom-asistencia]] · [[zoom-youtube]] | — | — (Cronograma del Plan de Trabajo: sesiones pasadas de Samuel → `Completado` + Asistencia/Grabación desde fuentes reales) |
 
 Ver [[mapa-codigo]] para firma completa de cada script.
 
@@ -129,6 +130,7 @@ Ver [[mapa-codigo]] para firma completa de cada script.
 | consejo-ligero | `/consejo-ligero <idea>` | Evaluar una idea/decisión de bajo riesgo — 4 personajes (optimista/escéptico/economista/juez) simulados en un turno, sin subagentes |
 | consejo-medio | `/consejo-medio <idea>` | Igual, pero el escéptico corre aislado en 1 subagente real (ataca sin contaminarse del resto) |
 | consejo-profundo | `/consejo-profundo <idea>` | Decisiones de alto riesgo o difíciles de revertir — los 3 analistas corren como subagentes paralelos totalmente aislados |
+| plan-sync | `/plan-sync` | Marca en el Cronograma del Plan de Trabajo las sesiones pasadas de Samuel como `Completado` + Asistencia/Grabación reales (preview antes de escribir). Ver [[plan-trabajo-cronograma]] |
 
 ---
 
