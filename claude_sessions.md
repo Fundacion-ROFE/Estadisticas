@@ -7529,3 +7529,12 @@ panel-datos-rofe commit `74b4d1a` (push Netlify + Vercel; tsc + build OK). Anali
 panel-datos-rofe commits `07861e8` (Emprendimiento+Retirados → "estamos trabajando", componente `EnConstruccion` reutilizable, Demografía refactorizada a él) y `f1d6ef1` (Retención/Deserción). Push Netlify+Vercel; tsc+build OK.
 - **Retención (verde) y Deserción (rojo)** ahora SIEMPRE visibles en Resumen (viva y cerrada), calculadas del canon: Retención=activos÷ingresados, Deserción=retirados÷ingresados (complementos exactos, suman 100%). Verificado 2019-2026 (2026=90%/10%; 2025=77%/23%). `Kpi` ganó prop `acento` para colorear el valor.
 - Dato de sexo/género: viene de la columna "Género" de la BD de Seguimiento → participants.genero. El "faltan 6" del panel = 744 (gráfico) vs 750 (activos): 1 realmente sin dato (Angeles Isabella Navas Rodriguez, PAN, cédula 63851795) + 5 ocultos por k-anonimato (LGBTIQ+ 2, No binario 1, No sé 1, 1 M/F en ciudad chica). Solo 1 hay que recoger.
+
+### 2026-08-13 (cont.) — Pestaña "Retención" (ranking de ciudades) + quitar "Retiro probable"
+
+panel-datos-rofe commit `88b8fea` (push Netlify+Vercel; tsc+build OK). Migración `047_v_pub_retencion_ciudad.sql` (admin `cb18d3f`, **PENDIENTE de aplicar** — sin MCP/psql en la sesión).
+- **Quitado** el panel "Retiro probable" del Resumen (info no requerida). Memo `retiroProbable` eliminado.
+- **Nueva pestaña "Retención"**: distribuye la retención/deserción del canon por ciudad y las rankea (KPIs mejor/peor ciudad + retención/deserción de cohorte + barras ordenadas + tabla). Solo cohorte vigente (el canon de cerradas no tiene desglose por ciudad → NoAplica). Lee en vivo.
+- **Fuente = vista nueva `v_pub_retencion_ciudad`** (activos por ciudad vía en_seguimiento + retiro_registrado; retirados vía retiros→participants.grupo_ciudad; k-anon n<5). Verificado vs canon: JC 2026 Σ=750/82/832=90.1%, peor UY 77.9%, mejor GYL 98.8%.
+- **Frontend resiliente**: `leerSeguro()` en lib/api.ts → si la vista no existe la pestaña muestra "🚧 en construcción"; al aplicar la migración se enciende sola (lee en vivo, sin redeploy).
+- **Gotcha**: sin MCP Supabase ni psql ni connection string en esta sesión → las migraciones DDL las tiene que aplicar el usuario en el editor SQL de Supabase.
