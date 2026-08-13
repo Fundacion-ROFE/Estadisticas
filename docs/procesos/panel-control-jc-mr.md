@@ -1096,6 +1096,15 @@ dropdown `_frame_pm_anio` queda oculto siempre. Verificado: JC postulantes 2022�
 2026→84; el título muestra "— 2022" al filtrar y "Mostrando N de Total". Explorar JC sin cambios
 (2019→25, Todos→3164). El `_filtro_pm_anio`/dropdown quedan como código muerto inofensivo.
 
+## 7.29 Ajuste 2026-08-13 — KPI "Retención" de segundas en Explorar
+
+Pedido del usuario: casilla "Retención" en Explorar, en segunda posición, con el % de matrículas
+que siguen activas. Añadida en `_actualizar_kpis` (path per-persona/viva): **Retención = activos
+÷ matriculados** (complemento del % de retiro), como 2ª tarjeta tras "Matriculados". En el path
+de cohorte cerrada (`_kpis_cohorte_cerrada`) la "Retención" ya existía (culminantes ÷ ingresados)
+pero estaba 4ª — se movió a 2ª para consistencia. Verificado: JC 2026 viva = 90,1% (750÷832);
+JC 2024 cerrada = 71,2% (433÷608).
+
 ## 8. Conexiones
 
 [[plan-visualizacion-2026-07-30]] (Fase 2 pausada a favor de este documento — pendientes vivos
