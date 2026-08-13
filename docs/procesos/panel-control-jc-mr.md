@@ -1073,6 +1073,14 @@ reales de "retiró de más" con matrícula se perdieron); quedan 3 disparidades 
 2026, tipo "Q10 sin marcar retiro". No afecta la reconciliación del canon JC 2026 (los vivos sí
 tienen matrícula, no los toca el guard).
 
+## 7.27 Ajuste 2026-08-13 — ocultar barra de años en «Datos desactualizados Q10»
+
+Esa pestaña es program-wide (todas las cohortes, disparidad Seguimiento vs Q10), los botones de
+año no filtran nada ahí. `_on_tab_change` ahora oculta el contenedor de la barra
+(`_barra_cohorte_container.pack_forget()`, con bandera `_barra_cohorte_visible`) cuando la
+pestaña activa es «Datos desactualizados Q10», y la restaura (`pack(before=notebook)`) al salir.
+Verificado: Explorar=visible, Datos desactualizados=oculta, volver a Explorar=visible.
+
 ## 8. Conexiones
 
 [[plan-visualizacion-2026-07-30]] (Fase 2 pausada a favor de este documento — pendientes vivos
