@@ -1081,6 +1081,11 @@ año no filtran nada ahí. `_on_tab_change` ahora oculta el contenedor de la bar
 pestaña activa es «Datos desactualizados Q10», y la restaura (`pack(before=notebook)`) al salir.
 Verificado: Explorar=visible, Datos desactualizados=oculta, volver a Explorar=visible.
 
+**Ajuste 2026-08-13 (v2):** también se oculta la barra en «Por año» (mismo motivo: es un
+desglose por año propio, los botones de arriba no aplican). Y en `_refrescar_tab_retiros_anio`
+se quita del render la fila **`no_cohorte`** (retiros sin año asignable, ej. JC 25) — no aporta
+al desglose por año; el dato crudo se conserva en la tabla `retiros`, solo se filtra en la vista.
+
 ## 8. Conexiones
 
 [[plan-visualizacion-2026-07-30]] (Fase 2 pausada a favor de este documento — pendientes vivos
