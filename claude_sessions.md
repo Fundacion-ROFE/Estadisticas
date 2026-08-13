@@ -7545,3 +7545,11 @@ Vista `v_pub_retencion_ciudad` APLICADA por el usuario en Supabase (versión sim
 - Se afinó la vista: `activos` = mismo criterio que v_pub_geografia (sin el guard NOT retiro_registrado que restaba 1) → cuadra 750 exacto.
 - Frontend commit `f42570e`: cada botón de ciudad del selector del Resumen muestra su **% de retención coloreado** (verde≥90/ámbar≥80/rojo<80) junto a personas activas; "Todas" muestra la retención global. Solo cohorte vigente. Pestaña Retención scope a esActual (`677c19a`).
 - Gotcha: sin MCP/psql, las migraciones DDL las aplica el usuario en el SQL Editor; los bloques largos con `::bigint`/`::numeric` se corrompen al pegar → dar versiones cortas en minúsculas y ofrecer copiar desde el archivo en disco.
+
+### 2026-08-13 (cont.) — Alerta de frescura resuelta + bug de +5h (timezone) corregido
+
+Usuario preguntó por la alerta "⚠ Datos actualizados hace 12.4h — puede que el sync nocturno no haya corrido".
+- **Diagnóstico:** los 3 procesos del Resumen (cohorte_ingresos/aprobacion_cursos/retiros) vencidos. Causa = portátil suspendido de madrugada (patrón conocido: n8n queda vivo pero con conexiones muertas). n8n arriba ahora.
+- **Resolución (runbook recuperacion-frescura.md, Caso A):** disparado el pipeline vía dispatcher (`{"target":"q10-sync"}`, x-rerun-key de .env.local); ping OK, cadena `estado=exito`. Vencidos 3→0.
+- **BUG secundario encontrado y corregido:** la frescura salía inflada +5h (mostraba "5.0h" cuando el dato tenía 3 min). Causa: los scripts escribían `updated_at = datetime.now()` (hora local COT) pero `v_frescura` compara con `now()` UTC vía `updated_at AT TIME ZONE 'UTC'`. Fix: `cargar_supabase.py` + `sync_aprobacion_supabase.py` + `sync_retiros.py` ahora escriben `datetime.now(timezone.utc)` (commit 3cd9358). Verificado: los 3 pasaron de 5.0h→0.0h reales tras re-sync. `hoy_snapshot` sigue en fecha LOCAL a propósito.
+- **Por qué fix en scripts y no en la vista:** es a prueba de futuro — tras migrar n8n a host cloud (UTC), un `AT TIME ZONE 'America/Bogota'` en la vista se rompería; UTC explícito en los scripts es correcto en ambos. asistencia (utcnow, timestamptz) y emoflow_diario (default UTC) ya estaban bien, no se tocaron.
