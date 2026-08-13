@@ -7523,3 +7523,9 @@ panel-datos-rofe commit `74b4d1a` (push Netlify + Vercel; tsc + build OK). Anali
 - **Retirados por año:** ahora la cifra canónica de retirados es visible en TODAS las cohortes (2025=163), no solo 2026.
 - **Demografía por Retirados:** aviso "🚧 en validación" (el equipo juzga la fuente parcial para el segmento de retirados) — matiz del escéptico: se dice "en validación", no "no existe" (las filas existen pero no representan al total).
 - **es_staff NO es columna de participants** (el GUI lo calcula en su capa de datos); por eso el frontend se apoya en el canon ya limpio en vez de replicar la detección de staff.
+
+### 2026-08-13 (cont.) — Retención y Deserción visibles (métricas clave) + avisos "en construcción"
+
+panel-datos-rofe commits `07861e8` (Emprendimiento+Retirados → "estamos trabajando", componente `EnConstruccion` reutilizable, Demografía refactorizada a él) y `f1d6ef1` (Retención/Deserción). Push Netlify+Vercel; tsc+build OK.
+- **Retención (verde) y Deserción (rojo)** ahora SIEMPRE visibles en Resumen (viva y cerrada), calculadas del canon: Retención=activos÷ingresados, Deserción=retirados÷ingresados (complementos exactos, suman 100%). Verificado 2019-2026 (2026=90%/10%; 2025=77%/23%). `Kpi` ganó prop `acento` para colorear el valor.
+- Dato de sexo/género: viene de la columna "Género" de la BD de Seguimiento → participants.genero. El "faltan 6" del panel = 744 (gráfico) vs 750 (activos): 1 realmente sin dato (Angeles Isabella Navas Rodriguez, PAN, cédula 63851795) + 5 ocultos por k-anonimato (LGBTIQ+ 2, No binario 1, No sé 1, 1 M/F en ciudad chica). Solo 1 hay que recoger.
