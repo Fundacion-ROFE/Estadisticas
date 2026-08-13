@@ -136,7 +136,7 @@
     "grupo_ciudad": "GYL",
     "matriculados": 79,
     "completados": 71,
-    "promedio_avance": 90.5,
+    "promedio_avance": 90.7,
     "pct_completados": 89.9
   },
   {
@@ -145,9 +145,9 @@
     "programa": "jc",
     "grupo_ciudad": "MED",
     "matriculados": 93,
-    "completados": 85,
-    "promedio_avance": 94.5,
-    "pct_completados": 91.4
+    "completados": 86,
+    "promedio_avance": 94.9,
+    "pct_completados": 92.5
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -186,7 +186,7 @@
     "grupo_ciudad": "BAQ",
     "matriculados": 50,
     "completados": 28,
-    "promedio_avance": 75.2,
+    "promedio_avance": 75.6,
     "pct_completados": 56.0
   },
   {
@@ -196,7 +196,7 @@
     "grupo_ciudad": "BOG",
     "matriculados": 40,
     "completados": 19,
-    "promedio_avance": 68.3,
+    "promedio_avance": 69.1,
     "pct_completados": 47.5
   },
   {
@@ -236,7 +236,7 @@
     "grupo_ciudad": "MED",
     "matriculados": 49,
     "completados": 19,
-    "promedio_avance": 50.7,
+    "promedio_avance": 51.3,
     "pct_completados": 38.8
   },
   {
