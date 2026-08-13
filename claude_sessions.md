@@ -7538,3 +7538,10 @@ panel-datos-rofe commit `88b8fea` (push Netlify+Vercel; tsc+build OK). Migració
 - **Fuente = vista nueva `v_pub_retencion_ciudad`** (activos por ciudad vía en_seguimiento + retiro_registrado; retirados vía retiros→participants.grupo_ciudad; k-anon n<5). Verificado vs canon: JC 2026 Σ=750/82/832=90.1%, peor UY 77.9%, mejor GYL 98.8%.
 - **Frontend resiliente**: `leerSeguro()` en lib/api.ts → si la vista no existe la pestaña muestra "🚧 en construcción"; al aplicar la migración se enciende sola (lee en vivo, sin redeploy).
 - **Gotcha**: sin MCP Supabase ni psql ni connection string en esta sesión → las migraciones DDL las tiene que aplicar el usuario en el editor SQL de Supabase.
+
+### 2026-08-13 (cont.) — Retención por ciudad: vista aplicada + visible en el selector del Resumen
+
+Vista `v_pub_retencion_ciudad` APLICADA por el usuario en Supabase (versión simple sin castes/CASE, tras 2 corridas fallidas por corrupción al copiar). Verificada por anon: JC 2026 = 750/82/832 = 90.1% EXACTO vs canon; peor UY 77.9%, mejor GYL 98.8%.
+- Se afinó la vista: `activos` = mismo criterio que v_pub_geografia (sin el guard NOT retiro_registrado que restaba 1) → cuadra 750 exacto.
+- Frontend commit `f42570e`: cada botón de ciudad del selector del Resumen muestra su **% de retención coloreado** (verde≥90/ámbar≥80/rojo<80) junto a personas activas; "Todas" muestra la retención global. Solo cohorte vigente. Pestaña Retención scope a esActual (`677c19a`).
+- Gotcha: sin MCP/psql, las migraciones DDL las aplica el usuario en el SQL Editor; los bloques largos con `::bigint`/`::numeric` se corrompen al pegar → dar versiones cortas en minúsculas y ofrecer copiar desde el archivo en disco.
