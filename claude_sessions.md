@@ -7494,3 +7494,16 @@ Sesión larga en 3 hilos encadenados, todos con verificación en vivo antes de a
 - Backticks en un mensaje de commit vía heredoc bash se interpretan como sustitución de comando — usar archivo + `git commit -F` para mensajes largos con backticks.
 
 **Pendiente:** lista de campos del Power BI del usuario para validar el target de enriquecimiento; pedir al equipo bases MR separadas por año de origen (igual que JC) si se quiere un desglose más fino que "año de retiro".
+
+## 2026-08-13 — [Panel Vercel: diagnóstico rápido] etiquetas de valor en gráficos + headers KPI por vista (consejo-profundo)
+
+**Estado:** panel-datos-rofe commit `de82f73` pusheado a `comunicaciones/main` (Netlify) y `samuel_oficial/main` (Vercel); tsc + npm run build OK. Cero cambios en Supabase.
+**Proceso relacionado:** [[panel-datos-etl]] · [[plan-rediseno-panel-datos-2026-07-30]] · [[panel-control-jc-mr]]
+
+Pedido: que el panel público muestre un diagnóstico claro y rápido con cifras objetivas (no texto), y que los gráficos enseñen sus valores sin necesidad de hover; usar `/consejo-profundo` por vista.
+
+- **Consejo (3 subagentes aislados, cada uno diagnosticó las 7 vistas — no 21 spawns).** Veredicto sintetizado como juez: (a) etiquetas de valor = "no-regret", hacerlas completas; (b) headers KPI en orden Emoflow/Asistencia/Emprendimiento/Cursos; (c) **evitar KPIs falsos**: k-anonimato (n<5 suprimido) hace mentir cualquier KPI de "total" en Demografía → NO se le puso header; doble universo Emoflow (742 vs 827) exige declarar el universo en la cifra.
+- **Etiquetas de valor (`components/graficos.tsx`, LabelList siempre visible):** barras apiladas (Cursos/Aprobación/Género) = conteo por segmento, oculta 0; barras simples = valor arriba con sufijo % opcional; dona (Emprendimiento) = conteo Y % (nunca uno solo, regla del escéptico); líneas (Historial) = etiqueta SOLO en el punto final de cada serie (etiquetar todos los puntos de 7 líneas satura y tapa la tendencia).
+- **Headers KPI de diagnóstico (`app/page.tsx`):** Cursos → Aprobación = aprobados÷cursaron POOLED (no promedio de tasas, que oculta el curso colapsado) + Matrículas + Curso más crítico; Emprendimiento → % ya emprende + % potencial (idea/interesado) + diagnosticados; Asistencia → añadido "Ciudad más baja" (el promedio nacional escondía la ciudad crítica).
+
+**Pendiente (iteración 2, diferido por el economista):** header KPI de Emoflow (adopción sobre alcance canónico/todos, declarando el universo) e Historial (delta vs periodo). Demografía se deja sin header a propósito (k-anonimato). Extraer derivaciones de KPI a un helper si page.tsx sigue creciendo.
