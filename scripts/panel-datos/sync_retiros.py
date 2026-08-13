@@ -52,7 +52,7 @@ import json
 import os
 import re
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 try:
     import truststore
@@ -417,7 +417,9 @@ def main() -> int:
     log(f"Participantes en Supabase (para enlazar): {len(q10_a_participant)}")
 
     con_match = 0
-    ahora = datetime.now().isoformat(timespec="seconds")
+    # UTC (no hora local): v_frescura compara updated_at contra now() en UTC. Hora local (COT)
+    # inflaba la frescura +5h. Ver runbooks/recuperacion-frescura.md / sync_aprobacion_supabase.py.
+    ahora = datetime.now(timezone.utc).replace(tzinfo=None).isoformat(timespec="seconds")
     for fila in filas:
         pid = q10_a_participant.get(fila["cedula"])
         if pid:

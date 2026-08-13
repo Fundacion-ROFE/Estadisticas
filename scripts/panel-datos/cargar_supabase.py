@@ -33,7 +33,7 @@ import os
 import sys
 import urllib.error
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timezone
 
 try:
     import truststore
@@ -109,6 +109,22 @@ class Supa:
                 return filas
             offset += page
 
+    def get_todo_paginas(self, ruta: str, page: int = 1000):
+        """Igual que get_todo() pero yield por página en vez de acumular todo en
+        memoria — usar solo para tablas con filas muy pesadas (ej. blobs jsonb
+        grandes en participants_snapshots), donde escribir a disco incrementalmente
+        evita tener la tabla completa duplicada en RAM."""
+        offset = 0
+        sep = "&" if "?" in ruta else "?"
+        while True:
+            _, lote = self._req("GET", f"{ruta}{sep}limit={page}&offset={offset}")
+            if not lote:
+                return
+            yield lote
+            if len(lote) < page:
+                return
+            offset += page
+
     def upsert(self, tabla: str, filas: list, conflicto: str) -> int:
         """Upsert por lotes. Retorna filas enviadas."""
         for i in range(0, len(filas), LOTE):
@@ -144,20 +160,75 @@ def main() -> int:
         return 0
 
     supa = Supa(url, key)
-    ahora = datetime.now().isoformat(timespec="seconds")
+    # UTC (no hora local): coherente con v_frescura, que compara updated_at contra now() en UTC.
+    # Hora local (COT) inflaba la frescura +5h. `hoy_snapshot` (más abajo) SÍ usa la fecha local a
+    # propósito (día calendario del operador). Ver runbooks/recuperacion-frescura.md.
+    ahora = datetime.now(timezone.utc).replace(tzinfo=None).isoformat(timespec="seconds")
 
-    # 1. Snapshot del estado ANTERIOR (Decisión 2: rollback + auditoría)
-    previos = supa.get_todo("/participants?select=*")
+    # 0. Absorber renombres de curso ya confirmados (tabla cursos_alias, migración 026).
+    #    Q10 permite renombrar un curso sin aviso previo (pasó el 2026-07-24 con
+    #    "DESARROLLO WEB FRONT-END - HTML - 2026" → "... - HTML Y CSS - 2026"). Como el
+    #    export h2test NO trae código de curso, `courses` se identifica por nombre+cohorte:
+    #    sin este remapeo un renombre crea un curso NUEVO y duplica la cohorte entera en
+    #    courses/enrollments/aprobacion_cursos/historial_cursos. Remapear ANTES de todo
+    #    upsert. El detector de renombres nuevos es v_choques_cursos (migración 027); esta
+    #    tabla solo contiene los que ya confirmó una persona.
+    filas_alias = supa.get_todo("/cursos_alias?select=cohorte,nombre_viejo,nombre_nuevo")
+    remap = {a["nombre_viejo"].strip().upper(): a["nombre_nuevo"]
+             for a in filas_alias if a["cohorte"] == payload["cohorte"]}
+    if remap:
+        n_c = 0
+        for c in courses:
+            nuevo = remap.get(c["nombre"].strip().upper())
+            if nuevo and nuevo != c["nombre"]:
+                c["nombre"] = nuevo
+                n_c += 1
+        n_e = 0
+        for e in enrolls:
+            nuevo = remap.get(e["curso"].strip().upper())
+            if nuevo and nuevo != e["curso"]:
+                e["curso"] = nuevo
+                n_e += 1
+        # Un renombre puede colapsar dos entradas en una sola clave. Hay que deduplicar
+        # ANTES del upsert: PostgREST falla con "ON CONFLICT DO UPDATE command cannot
+        # affect row a second time" si el mismo lote trae la clave repetida.
+        dedup_c = {(c["nombre"], c["cohorte"]): c for c in courses}
+        courses = list(dedup_c.values())
+        dedup_e = {}
+        for e in enrolls:
+            clave = (e["q10_id"], e["curso"])
+            previo = dedup_e.get(clave)
+            # keepMax: mismo criterio que normalize_q10_data.py para matrículas duplicadas.
+            if previo is None or e["porcentaje_avance"] > previo["porcentaje_avance"]:
+                dedup_e[clave] = e
+        if len(dedup_e) != len(enrolls):
+            log(f"Renombre colapsó {len(enrolls) - len(dedup_e)} matrículas duplicadas (keepMax)")
+        enrolls = list(dedup_e.values())
+        log(f"Renombres absorbidos desde cursos_alias: {n_c} cursos, {n_e} matrículas")
+
+    # 1. Snapshot del estado ANTERIOR (Decisión 2: rollback + auditoría) — una vez al día.
+    #    Este script corre varias veces al día (sync incremental); on_conflict=snapshot_date
+    #    hace que las corridas 2ª+ del mismo día pisen la misma fila sin aportar nada, pero
+    #    igual pagaban el costo de un SELECT * completo de participants en cada corrida
+    #    (principal fuente de egress de Supabase, 2026-08-05). Se evita ese SELECT * redundante
+    #    consultando antes si ya existe snapshot de hoy (query de 1 fila, no la tabla entera).
+    hoy_snapshot = datetime.now().date().isoformat()
+    ya_snapshot = supa.get_todo(
+        f"/participants_snapshots?select=snapshot_date&snapshot_date=eq.{hoy_snapshot}")
     snapshot_n = 0
-    if previos:
-        supa.upsert("participants_snapshots",
-                    [{"snapshot_date": datetime.now().date().isoformat(),
-                      "row_count": len(previos), "data": previos}],
-                    conflicto="snapshot_date")
-        snapshot_n = len(previos)
-        log(f"Snapshot previo: {snapshot_n} filas → participants_snapshots")
+    if ya_snapshot:
+        log(f"Snapshot de hoy ({hoy_snapshot}) ya existe — se omite el SELECT * de participants")
     else:
-        log("BD vacía — sin snapshot previo (primera carga)")
+        previos = supa.get_todo("/participants?select=*")
+        if previos:
+            supa.upsert("participants_snapshots",
+                        [{"snapshot_date": hoy_snapshot,
+                          "row_count": len(previos), "data": previos}],
+                        conflicto="snapshot_date")
+            snapshot_n = len(previos)
+            log(f"Snapshot previo: {snapshot_n} filas → participants_snapshots")
+        else:
+            log("BD vacía — sin snapshot previo (primera carga)")
 
     # 2. Participants (upsert por q10_id)
     filas_p = [{**p, "updated_at": ahora} for p in parts]
@@ -165,8 +236,18 @@ def main() -> int:
     log(f"Participants upsert: {len(filas_p)}")
 
     # 3. Courses (upsert por nombre+cohorte — constraint courses_nombre_cohorte_unique)
-    supa.upsert("courses", courses, conflicto="nombre,cohorte")
-    log(f"Courses upsert: {len(courses)}")
+    #    visto_en_fuente_at sella "la fuente confirmó este curso en esta corrida"
+    #    (migración 026). Es lo que permite distinguir un curso que dejó de dar clases de un
+    #    pipeline roto, SIN inventar una fecha de cierre que Q10 no tiene.
+    #    ⚠ Los cursos que NO vienen en el payload conservan su sello viejo a propósito: no se
+    #    borran ni se marcan cerrados, porque Q10 permite retomar actividad en cursos pasados
+    #    y en ese caso reviven solos en la siguiente corrida, sin intervención humana.
+    #    ⚠ `estado` viene hardcodeado como "activo" desde normalize_q10_data.py y NO es un
+    #    ciclo de vida real (el curso MR que cerró clases en julio 2026 sigue en "activo").
+    #    Para saber si un curso está vigente usar visto_en_fuente_at, nunca estado.
+    filas_c = [{**c, "visto_en_fuente_at": ahora} for c in courses]
+    supa.upsert("courses", filas_c, conflicto="nombre,cohorte")
+    log(f"Courses upsert: {len(filas_c)}")
 
     # 4. Enrollments — resolver FKs y upsert
     mapa_p = {r["q10_id"]: r["id"] for r in supa.get_todo("/participants?select=id,q10_id")}

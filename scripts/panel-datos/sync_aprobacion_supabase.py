@@ -31,7 +31,7 @@ import os
 import sys
 import urllib.error
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timezone
 
 try:
     import truststore
@@ -112,7 +112,10 @@ def main() -> int:
     if not cohorte:
         log("ERROR: el JSON no trae campo 'anio'")
         return 1
-    ahora = datetime.now().isoformat(timespec="seconds")
+    # UTC (no hora local): v_frescura compara updated_at contra now() en UTC. Escribir hora local
+    # (COT) inflaba la frescura en +5h y disparaba la alerta ~5h antes de tiempo. UTC explícito es
+    # correcto aquí y tras la migración de n8n a un host cloud. Ver runbooks/recuperacion-frescura.md.
+    ahora = datetime.now(timezone.utc).replace(tzinfo=None).isoformat(timespec="seconds")
 
     filas_prog = []
     for p in d.get("por_programa", []):
@@ -120,11 +123,37 @@ def main() -> int:
         if not enum:
             log(f"ADVERTENCIA: programa sin mapeo, se omite: {p.get('programa')!r}")
             continue
+        ingresados = p["estudiantes_cohorte"]
+        activos = p["habilitados_unicos"]
+        retirados = p["retirados_unicos"]
+
+        # ⚠ MR: "habilitado" en Q10 NO significa "sigue en el programa" (2026-07-29).
+        # Q10 marca inhabilitada a toda mujer cuyo curso cerró, y el scraper de aprobación
+        # lo lee como retiro. Caso real: al cerrar 2 de los 3 cursos MR de 2026, la cifra
+        # pasó de 322 activas / 24 retiradas a 179 / 167 sin que UNA SOLA mujer se retirara.
+        # Definición confirmada por Lina (2026-07-29): en MR se consideran habilitadas TODAS
+        # las mujeres de la cohorte; la única baja real es la que aparece en la pestaña
+        # Inactivas (fuente `inactivas_mr` de la tabla `retiros`, cuyos motivos son de
+        # microcrédito — "No pago Icredit/Microcredito", "Pidió retiro" — no de abandono de
+        # curso). Por eso para MR se ignora `habilitados_unicos` y se deriva de la tabla
+        # individual. Ver v_choques_cohorte (migración 028), que vigila exactamente esto.
+        # JC NO se toca: ahí el habilitados de Q10 sí coincide con la pestaña Seguimiento
+        # que mantiene el equipo (760, verificado por 3 fuentes independientes).
+        if enum == "mr":
+            _, filas_r = req(url, key, "GET",
+                             f"/retiros?select=cedula&programa=eq.mr&cohorte=eq.{cohorte}")
+            bajas = len({r["cedula"] for r in (filas_r or [])})
+            activos_mr = ingresados - bajas
+            log(f"  MR: activos {activos} (Q10 habilitados) → {activos_mr} "
+                f"(cohorte {ingresados} − {bajas} bajas confirmadas en Inactivas); "
+                f"retirados {retirados} → {bajas}")
+            activos, retirados = activos_mr, bajas
+
         filas_prog.append({
             "cohorte": cohorte, "programa": enum,
-            "ingresados": p["estudiantes_cohorte"],
-            "activos": p["habilitados_unicos"],
-            "retirados": p["retirados_unicos"],
+            "ingresados": ingresados,
+            "activos": activos,
+            "retirados": retirados,
             "updated_at": ahora,
         })
 
@@ -140,6 +169,41 @@ def main() -> int:
             "promedio": c.get("promedio"), "pct_aprobados": c.get("pct_aprobados"),
             "finalizado": c.get("finalizado"), "updated_at": ahora,
         })
+
+    # Absorber renombres de curso ya confirmados (tabla cursos_alias, migración 026).
+    # Q10 permite renombrar un curso sin aviso previo; el panel de aprobación entonces
+    # reporta el mismo curso dos veces (nombre viejo congelado + nombre nuevo vivo), y como
+    # la clave de aprobacion_cursos es (cohorte, curso) EN TEXTO, el upsert crea dos filas y
+    # contamina el rango de % de aprobación. Pasó el 2026-07-24 con el curso HTML: la fila
+    # vieja quedó en 66.8% y ese número llegó a documentarse en diccionario-metricas.md como
+    # el piso real del rango JC (el piso verdadero era 81.1%).
+    # ⚠ Casing: acá los nombres vienen en Title Case y en cursos_alias vienen como los da
+    # h2test (MAYÚSCULAS) — comparar siempre normalizado, nunca crudo.
+    _, alias_rows = req(url, key, "GET",
+                        "/cursos_alias?select=cohorte,nombre_viejo,nombre_nuevo")
+    remap = {a["nombre_viejo"].strip().upper(): a["nombre_nuevo"].strip().upper()
+             for a in (alias_rows or []) if a["cohorte"] == cohorte}
+    if remap:
+        presentes = {f["curso"].strip().upper() for f in filas_curso}
+        conservadas, descartadas, renombradas = [], 0, 0
+        for f in filas_curso:
+            nuevo = remap.get(f["curso"].strip().upper())
+            if not nuevo:
+                conservadas.append(f)
+            elif nuevo in presentes:
+                # El nombre nuevo ya viene en este mismo payload con su casing correcto:
+                # descartar la fila vieja es lo correcto; renombrarla duplicaría la clave.
+                descartadas += 1
+            else:
+                # Solo llegó el nombre viejo (el curso volvió a aparecer con el nombre
+                # anterior): renombrar para no perder la fila.
+                f["curso"] = nuevo
+                conservadas.append(f)
+                renombradas += 1
+        if descartadas or renombradas:
+            log(f"Renombres absorbidos desde cursos_alias: {descartadas} filas viejas "
+                f"descartadas, {renombradas} renombradas")
+        filas_curso = conservadas
 
     log(f"Cohorte {cohorte}: {len(filas_prog)} programas · {len(filas_curso)} cursos "
         f"(JSON del {d.get('ultima_actualizacion', '?')[:16]})")
