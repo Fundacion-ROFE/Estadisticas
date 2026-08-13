@@ -1145,6 +1145,26 @@ Retención, Al día, Retirados y Avance promedio (números fáciles de leer ráp
 (Matriculados, Activos, En Seguimiento) siguen en 18pt. Verificado headless: 13/18pt correctos,
 sin label inline, tooltip bindeado.
 
+## 7.32 Backfill 2026-08-13 — ubicación de 64 JC desde un snapshot viejo de Seguimiento
+
+64 participantes JC tenían `grupo_ciudad` NULL ("sin ubicación") porque el equipo los borró del
+Sheet de Seguimiento al retirarse, y `sync_sociodemograficos.py` solo lee el Sheet vivo — no puede
+recuperar su ciudad. Samuel encontró un export anterior de la BD de Seguimiento (CSV JC2026, 832
+filas) que sí los tiene. Nuevo script `scripts/panel-datos/backfill_ciudad_seguimiento_historico.py`:
+
+- Cruza por cédula (ID) → los 64 matchean por cédula (0 por correo). Los 119 restantes sin
+  ubicación son MR/históricos que no están en este CSV JC → se dejan intactos.
+- Escribe **solo** `grupo_ciudad` + `ciudad`, y **solo donde estaban vacíos** (guardas `is.null`
+  en el PATCH → idempotente, nunca sobrescribe).
+- **NO toca `en_seguimiento_jc`**: el CSV es un snapshot VIEJO; estar en él no significa vigencia.
+  Verificado: en_seguimiento_jc=True siguió en 750 tras el backfill.
+- `ciudad_norm` es columna generada → se recalculó sola. `ciudad_alias` ya colapsa las variantes
+  introducidas (BOGOTA DC→BOGOTA, CIUDAD DE PANAMA→PANAMA); sin ciudades huérfanas.
+- Resultado: sin `grupo_ciudad` 161→97. Reparto: MED 14, UY 12, BOG 12, CAL 10, CTG 7, BAQ 6,
+  PAN 2, GYL 1. recompute_aggregates corrido al final (HTTP 200).
+
+Reproducible: `python backfill_ciudad_seguimiento_historico.py --dry-run` (preview) / sin flag (aplica).
+
 ## 8. Conexiones
 
 [[plan-visualizacion-2026-07-30]] (Fase 2 pausada a favor de este documento — pendientes vivos
