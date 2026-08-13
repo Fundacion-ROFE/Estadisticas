@@ -1,0 +1,65 @@
+name: alerta-frescura-nube
+
+# Red de seguridad INDEPENDIENTE del portátil (auditoría 2026-08-13, hallazgo H1): todas las
+# alertas de n8n viven en el portátil, así que si se apaga nadie se entera. Este workflow corre
+# en la infraestructura de GitHub (no en el portátil ni en una sesión de Claude): lee v_frescura
+# en Supabase con la anon key PÚBLICA y avisa por Telegram si algún proceso está vencido o si
+# Supabase no responde. Complementa a alerta-frescura-vencida (local) y frescura-pipeline-rofe (nube).
+
+on:
+  schedule:
+    - cron: '13 */4 * * *'   # cada 4h (UTC), minuto off-peak
+  workflow_dispatch: {}       # permite dispararlo a mano desde la pestaña Actions
+
+concurrency:
+  group: alerta-frescura-nube
+  cancel-in-progress: false
+
+jobs:
+  frescura:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Chequear frescura y avisar
+        env:
+          SUPABASE_URL: https://kbxptoowtnteflhrfwid.supabase.co
+          # anon key PÚBLICA (la misma del frontend Vercel/Netlify; RLS solo deja leer agregados)
+          ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtieHB0b293dG50ZWZsaHJmd2lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MzU4MDUsImV4cCI6MjA5OTIxMTgwNX0.xfj_GJYdRgPHUCpyxReKm7G7SMGTVn4oscDhakV6DSo
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python3 - <<'PY'
+          import os, json, urllib.request, urllib.parse
+          URL=os.environ["SUPABASE_URL"]; ANON=os.environ["ANON_KEY"]
+          TOKEN=os.environ.get("TG_TOKEN",""); CHAT=os.environ.get("TG_CHAT","")
+
+          def tg(text):
+              if not TOKEN or not CHAT:
+                  print("AVISO: faltan secrets TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID — no se pudo avisar")
+                  return
+              data=urllib.parse.urlencode({"chat_id":CHAT,"text":text}).encode()
+              try:
+                  urllib.request.urlopen(urllib.request.Request(
+                      f"https://api.telegram.org/bot{TOKEN}/sendMessage", data=data), timeout=30)
+              except Exception as e:
+                  print("ERROR enviando Telegram:", e)
+
+          try:
+              req=urllib.request.Request(
+                  f"{URL}/rest/v1/v_frescura?select=proceso,horas_desde_ultimo,vencido",
+                  headers={"apikey":ANON,"Authorization":f"Bearer {ANON}"})
+              rows=json.loads(urllib.request.urlopen(req, timeout=30).read())
+          except Exception as e:
+              tg(f"⚠️ No pude leer v_frescura desde la nube ({type(e).__name__}). "
+                 f"Supabase o red caídos — revisar. (chequeo GitHub Actions, independiente del portátil)")
+              print("Supabase no respondió:", e); raise SystemExit(0)
+
+          venc=[r for r in rows if r.get("vencido")]
+          if venc:
+              lista="\n".join(f"• {r['proceso']}: {r['horas_desde_ultimo']}h" for r in venc[:20])
+              tg(f"⚠️ FRESCURA VENCIDA ({len(venc)} proceso[s]) — posible portátil apagado o sync caído:\n"
+                 f"{lista}\n\n(chequeo independiente del portátil · GitHub Actions cada 4h)")
+              print(f"ALERTA enviada: {len(venc)} vencidos")
+          else:
+              print(f"OK: 0 vencidos de {len(rows)} procesos")
+          PY
