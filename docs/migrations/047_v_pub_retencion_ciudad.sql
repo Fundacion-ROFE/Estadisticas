@@ -4,9 +4,10 @@
 -- canon a lo largo de las ciudades y las rankea, para dar seguimiento a cuáles retienen mejor.
 --
 -- Por (programa, cohorte, grupo_ciudad):
---   * activos   = personas activas por ciudad. Mismo criterio que v_pub_geografia (matrícula con
---                 en_seguimiento_jc IS DISTINCT FROM false) + guarda NOT retiro_registrado para
---                 que en cohortes cerradas no cuente a los retirados.
+--   * activos   = personas activas por ciudad. MISMO criterio EXACTO que v_pub_geografia (matrícula
+--                 con en_seguimiento_jc IS DISTINCT FROM false) para que sume igual al canon en la
+--                 cohorte viva (750 en JC 2026). Solo la cohorte VIGENTE es canon-exacta (el
+--                 frontend restringe la pestaña a esActual); en cerradas el canon no tiene ciudad.
 --   * retirados = retiros de esa (programa, cohorte) cuyo participante tiene esa grupo_ciudad.
 --   * ingresados = activos + retirados; retencion_pct = 100*activos/ingresados (1 decimal).
 --   * k-anon: si (activos+retirados) < 5 se suprime toda la fila (NULL), como el resto de vistas
@@ -34,7 +35,6 @@ CREATE OR REPLACE VIEW public.v_pub_retencion_ciudad AS
            JOIN courses c ON c.id = e.course_id
           WHERE p.grupo_ciudad IS NOT NULL
             AND p.en_seguimiento_jc IS DISTINCT FROM false
-            AND NOT retiro_registrado(p.id, p.q10_id, c.programa)
           GROUP BY c.programa, c.cohorte, p.grupo_ciudad
         ), retirados AS (
          SELECT r.programa,
