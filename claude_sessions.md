@@ -7581,3 +7581,10 @@ Doc completo: `docs/procesos/auditoria-resiliencia-n8n-2026-08-13.md`. Verificad
 El Telegram "Bot Q10 - Actualizar Grupos falló" (nodo Sched: export_stats) NO era el script ni la conexión: `export_stats.py` leía h2test y generaba data.json bien, pero el `git push` se rechazaba (`! [rejected] fetch first`) porque **origin/main quedó 1 commit adelante** (el usuario subió el workflow alerta-frescura-nube.yml por la web de GitHub → commit directo en origin `f06f192`) y el repo local tenía 2 commits de data.json sin pushear. Resuelto: `git pull --rebase --autostash` + push (local↔origin 0/0), export_stats re-corrido `estado=exito`.
 **Hardening:** `export_stats.py` y `export_supabase_json.py` — `git_commit_y_push()` ahora, ante push rechazado (non-fast-forward), hace `pull --rebase --autostash` + 1 reintento (antes marcaba error en cada corrida hasta sincronizar a mano). Pasa siempre que origin se adelante (web/Actions/otra máquina). Documentado como H7 en la auditoría.
 **Bonus:** el workflow GitHub Actions `alerta-frescura-nube.yml` YA quedó en el repo (el usuario lo subió por web, commit f06f192) + secrets agregados.
+
+### 2026-08-13 (cont.) — Backfill edad/género/estrato de participants (JC 2026)
+
+Script nuevo `scripts/panel-datos/backfill_edad_genero_estrato.py` (solo rellena NULL, cruza cédula→correo contra participants):
+- **Género + edad** ← "BD Seguimiento de Monitorias - JC2026 - Seguimiento (4).csv" (edad CALCULADA de Fecha Nacimiento DD/MM/YYYY, el CSV no trae Edad).
+- **Estrato** ← "Convocatoria Fase 1 - Respuestas Colombia.csv" (11k postulantes, población mixta; se cruza contra participants → los no-JC no matchean). Estrato col 34, cédula col 8, correo col 2.
+- **Resultado:** 60 participantes enriquecidos (género=56, edad=55, estrato=48). JC 2026 ahora: género 100%, edad 99.6% (faltan 3), estrato 71.2% — pero los 224 faltantes son casi todos NO colombianos (GYL 80, UY 68, QTO 39, PAN 36, BAQ 1); estrato es concepto colombiano, así que está completo donde aplica (solo 1 colombiano faltante). recompute_aggregates corrido.
