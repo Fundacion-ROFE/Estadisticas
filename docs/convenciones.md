@@ -488,8 +488,22 @@ Patrón establecido en `q10-consolidacion`, reutilizable en cualquier proceso:
 
 - **Schedule Trigger** (`n8n-nodes-base.scheduleTrigger`, typeVersion 1.2): actualización automática silenciosa. Los errores quedan en el log de ejecuciones de n8n.
 - **Telegram Trigger**: actualización on-demand con respuesta confirmando el resultado.
-- Los dos caminos son **paralelos e independientes** en el workflow — comparten los mismos scripts pero no se cruzan. Evita referencias a `$('Parsear Comando').json.chat_id` que fallarían en ejecuciones sin chat.
+- Los dos caminos son **paralelos e independientes** en el grafo del workflow — comparten los mismos scripts pero no se cruzan como nodos. Evita referencias a `$('Parsear Comando').json.chat_id` que fallarían en ejecuciones sin chat.
 - Si se quiere notificación Telegram también en el schedule: añadir un chat_id de admin fijo en un nodo Set al inicio del camino schedule.
+- **"No se cruzan en el grafo" no significa que no puedan correr en tiempo real al mismo
+  tiempo.** Si el Schedule dispara justo cuando alguien manda el comando de Telegram, n8n
+  ejecuta ambos caminos en paralelo — dos pipelines pesados de Python+pandas compitiendo
+  por la misma RAM del PC. Esto causó `WorkflowCrashedError` (posible OOM) en
+  "Bot Q10 - Actualizar Grupos" (detectado 2026-08-05/06, logs con crashes repetidos de
+  ese workflow y de `datos-respaldo-diario`/`q10-sync-supabase`/`sociodemograficos-semanal`
+  corriendo en el mismo PC de 16GB con solo ~2GB libres en uso normal). Todo workflow que
+  siga este patrón dual (o cualquier workflow "pesado", ver definición en
+  [[n8n-standards]] · `.claude/skills/n8n-standards/SKILL.md`) **debe** adquirir el guard de
+  `scripts/common/lock_cli.py` (lock propio del workflow + lock compartido
+  `heavy-pipeline`) en el primer nodo de cada camino y liberarlo en cada nodo terminal.
+  El límite nativo `N8N_CONCURRENCY_PRODUCTION_LIMIT` (fijado en `iniciar_n8n.bat`) es
+  solo una red de seguridad global de instancia — no reemplaza el lock porque no es por
+  workflow y no cubre ejecuciones manuales desde el editor.
 
 ## Editar workflows n8n por API (sin abrir la UI)
 
@@ -700,6 +714,30 @@ llevaba desde las 9:45 sin resincronizar contra una corrida más fresca de las 1
 de primera clase que Q10 (sync programado, monitoreo de frescura, alertas si deja de
 actualizarse). Ver [[supabase-estructura]] para el detalle completo de `en_seguimiento_jc`,
 `v_retiro_probable_jc` y el hallazgo del 2026-07-23.
+
+### Regla de consulta: "activo JC" = Seguimiento, no "habilitado en Q10" (2026-08-11)
+
+Al responder cualquier consulta (humano ↔ Claude, panel, informe) sobre estudiantes **activos de
+JC**, no confundir dos definiciones distintas:
+
+- **Universo de matrícula (Q10):** `cohorte_2026_ceds` no retirado → los "habilitados". Es el
+  denominador de ingreso (832 ingresaron, 754 no retirados por Q10 en 2026).
+- **Roster operativo real (Seguimiento):** `en_seguimiento_jc = true` → los ~751 que el equipo
+  mantiene a mano. **Esta es la fuente de verdad de "activo/fijo" en JC.**
+
+Siempre hay un desfase pequeño (Δ≈3 al 2026-08-11, 0,4%) porque **el equipo borra de Seguimiento
+antes de que Q10 lo refleje**: un "activo en Q10 pero fuera de Seguimiento" es un retiro que el
+Sheet ya registró y Q10 todavía no. Reglas:
+
+1. Para "activo JC", usar Seguimiento (`en_seguimiento_jc`), no el flag de Q10.
+2. Cuando ambas cifras difieran, **reportar las dos + el Δ; nunca elegir una en silencio.**
+3. Esto aplica **solo a JC**. En MR "inhabilitada" ≠ retiro (decisión de Lina 2026-07-29), así que
+   allí no existe esta dualidad.
+
+Mantener ambos medios (Sheet + Supabase) **no es doble mantenimiento**: el equipo opera una sola
+fuente (la hoja) y Supabase la ingesta automáticamente (`sync_sociodemograficos.py`). El Δ entre
+Seguimiento y Q10 es un **mecanismo de reconciliación** (lo vigila `test_integridad_supabase.py`),
+no una carga — colapsar a una sola fuente destruiría ese chequeo.
 
 ## Heurística de etapa con el ledger de avances
 
@@ -1055,3 +1093,116 @@ propósito el patrón owner-privilege (sin `security_invoker`), ya aceptado y do
 `v_demografia_grupo` y hermanas. **Probarlo siempre con `SET ROLE anon` antes de dar por buena
 una vista nueva** — `information_schema.role_table_grants` solo confirma el GRANT sobre la
 vista misma, no si la consulta real revienta más abajo.
+
+## Enriquecimiento demográfico por cruce de múltiples fuentes (solo llenar `NULL`, nunca sobreescribir)
+
+Patrón usado repetidamente en [[demografia-historica-jc]] (2026-08-05/06, ~15 scripts):
+cerrar huecos de campos sociodemográficos (`estrato`, `edad`, `genero`, `tipo_vivienda`,
+`nivel_estudio`) cruzando varias fuentes crudas distintas (Mongo, exports maestros, formularios
+Fase 1 de postulación) contra el mismo roster de Supabase, una fuente a la vez.
+
+**Reglas fijas en todos los scripts de esta familia:**
+1. Cruzar por cédula (`q10_id`) contra el roster REAL ya matriculado (`courses` → `enrollments`
+   → `participants`), nunca contra la fuente cruda sola — así se descarta automáticamente a
+   quien no fue aceptado, sin necesitar cruzar antes contra listas de aprobados/retirados.
+2. **Solo escribir el campo si hoy está `NULL`** — si dos fuentes distintas traen el mismo dato
+   para la misma persona, gana la que se cargó primero; nunca se sobreescribe. Esto hace que el
+   orden de aplicación entre scripts no importe y que sean 100% idempotentes (re-correr no hace
+   nada si ya no quedan `NULL`s que llenar).
+3. Reporte primero (sin `--aplicar`), mostrar cuántos campos nuevos se llenarían por cohorte
+   antes de escribir — mismo patrón que la validación de cohortes.
+4. Cuando una fuente trae un valor en escala/idioma distinto al enum de Supabase (ej. género
+   "M"/"F" de Mongo, tipo de vivienda "ARRENDADA"/"Propia"/"Familiar" de varios formularios),
+   mapear con un diccionario explícito y **reportar (no cargar) cualquier valor no reconocido**
+   — nunca adivinar ni forzar un mapeo dudoso.
+5. Dedupe cuando la misma cédula aparece varias veces en una fuente (re-postulaciones, exports
+   con filas repetidas): gana la fila con MÁS campos relevantes llenos, no la primera ni la
+   última — evita perder datos por quedarnos con una fila menos completa por casualidad de
+   orden.
+
+**Gotcha real (ver [[demografia-historica-jc#Gotchas]]):** al derivar `nivel_estudio` desde
+"grado escolar", el número de grado es relativo a la escala de CADA país (Colombia 1-11,
+Ecuador BGU 1°-3°, Uruguay Liceo 1-6) — un umbral tipo "grado ≤ 5 = primaria" que tenga sentido
+para Colombia genera falsos positivos en fuentes de otros países, porque su escala parcial ya
+representa bachillerato. Se detectó en modo reporte (18 casos) antes de escribir nada en
+Supabase — otra razón más para nunca aplicar directo sin pasar por el reporte primero.
+
+## Filtro por rango (dos punteros) en `TablaFiltrable` — columnas numéricas
+
+`tools/panel_riesgo_gui.py` define `TablaFiltrable` (Treeview + búsqueda + filtro por
+columna + orden + export CSV), reusada tal cual por `panel_control_gui.py`. Al elegir en
+"en:" una columna numérica (`_es_columna_numerica`: **todo** valor no vacío/"sin dato" de
+esa columna se parsea como número — así "Nombre"/"Email" nunca activan esto por
+casualidad), aparece una barra de rango con un slider de dos punteros (`_RangeSlider`,
+Canvas arrastrable) + dos `Entry` editables para el mínimo/máximo exacto.
+
+- El rango y la búsqueda de texto de siempre se combinan con **AND**, nunca se
+  reemplazan — se puede acotar 40-90% Y buscar "80" al mismo tiempo dentro de esa columna.
+- Los límites del slider se recalculan del propio dataset cargado (`min`/`max` reales)
+  cada vez que cambian los datos (`set_datos` llama `_actualizar_modo_columna`) — nunca
+  hardcodeados, para no quedar desalineados si cambia la cohorte/toggle.
+- Filas con valor no numérico para esa columna ("sin dato") quedan **excluidas** cuando el
+  rango está activo — no tiene sentido incluir un vacío dentro de un rango numérico.
+- Extender esta lógica a una tabla nueva no requiere nada extra: es parte del componente
+  compartido, no de cada GUI.
+- **Columnas excluidas a propósito:** "Cédula" (`_COLUMNAS_EXCLUIDAS_RANGO`) — son dígitos,
+  no una magnitud; acotar un rango ahí no tiene sentido de negocio aunque técnicamente
+  parseen como número. Para excluir otra columna identificadora similar en el futuro,
+  agregar su nombre (minúsculas, sin tilde) a ese set.
+- **Los dos punteros (banderita verde=mínimo, roja=máximo) nunca se superponen** — se
+  mantiene siempre una separación mínima en píxeles (`_RangeSlider.MIN_PX_GAP`) convertida
+  a valor según el ancho real del canvas. Gotcha real encontrado por un test headless: esa
+  conversión depende de `winfo_width()`, que puede devolver 1px en un widget sin geometría
+  real todavía (recién creado, antes del primer `<Configure>`) — sin un ancho de reserva
+  (`ANCHO_RESERVA`) para ese caso, el "gap" se dispara y anula el rango completo. Cualquier
+  cálculo de posición/gap en un Canvas recién creado necesita ese mismo resguardo.
+
+## Búsqueda masiva por lista de cédulas (CSV) en `TablaFiltrable`
+
+Mismo componente compartido de la entrada anterior. Botón "📂 Buscar por CSV" en la barra
+de búsqueda: abre un CSV cualquiera (con o sin encabezado, cualquier número de columnas),
+extrae de **todas las celdas** los números de ≥5 dígitos (`_normalizar_cedula` + filtro de
+longitud) y filtra la tabla a solo esas cédulas — se combina con AND con la búsqueda de
+texto y el rango, igual que el resto de filtros de este componente.
+
+- **No exige un formato de CSV específico** a propósito (sin encabezado obligatorio, sin
+  columna fija) — barrer todas las celdas y quedarse con lo que parece cédula es más
+  tolerante para un usuario no técnico que pedirle una plantilla exacta. El costo es
+  aceptar algo de "ruido" (un teléfono de 10 dígitos en otra columna, por ejemplo) que
+  simplemente no va a encontrar match en la tabla — nunca genera un falso positivo.
+- **Reusa `_normalizar_cedula`**, que aplica el gotcha ya documentado arriba
+  (cédula float → ".0" espurio) ANTES de barrer separadores tipo "1.234.567" — necesario
+  porque un CSV exportado desde Excel puede traer la columna en cualquiera de los dos
+  formatos.
+- El botón muestra la cuenta de cédulas cargadas (`📂 CSV (N)`) y la barra de resultados
+  indica cuántas de esas N aparecieron en la vista actual (`s de n · N cédulas en la
+  lista`) — señal rápida de si faltan (típicamente: cohorte equivocada seleccionada, o la
+  cédula no está en este programa).
+- **Gotcha de testing, no de la lógica:** un test headless que dispare el path de "sin
+  cédulas encontradas" cuelga el proceso — `messagebox.showwarning` es modal y bloquea
+  esperando un clic que nunca llega sin ventana real. Al probar esta función sin UI,
+  monkeypatchear `filedialog.askopenfilename` está bien, pero hay que garantizar que el
+  CSV de prueba SÍ tenga números que superen el umbral de longitud, o el test se cuelga en
+  vez de fallar con un assert.
+
+## Timestamps de sync (`updated_at`) siempre en UTC, no hora local
+
+`v_frescura` compara `updated_at` contra `now()` (UTC) vía `AT TIME ZONE 'UTC'`. Si un script de
+sync escribe `datetime.now()` (hora LOCAL del portátil, COT = UTC−5), la frescura sale inflada
+**+5h** y la alerta se dispara ~5h antes de tiempo. **Regla:** todo `updated_at` que alimente
+`v_frescura` (o cualquier cálculo de "hace cuánto") se escribe con
+`datetime.now(timezone.utc).replace(tzinfo=None)`, no `datetime.now()`. Es correcto en el portátil
+y tras migrar n8n a un host cloud (que corre en UTC). Excepción a propósito: fechas de "día
+calendario del operador" (ej. `hoy_snapshot`) sí usan la fecha LOCAL. Bug real 2026-08-13
+(commit 3cd9358); `asistencia_promedio` ya usaba `utcnow()` bien. Ver [[reference_frescura_cron_umbral]].
+
+## Retiro: validar contra `retiros` por la MISMA cohorte, no confiar en un flag de lista canon
+
+Un flag de retiro tomado de una lista canon cargada una vez (ej. `cohorte_2026_ceds.retirado`)
+**queda desactualizado** cuando alguien se retira después. La fuente viva del retiro es la tabla
+`retiros` (la alimenta `sync_retiros` desde el Sheet de retirados). **Regla:** para "¿está retirado
+en la cohorte X?" nunca preferir el flag de la lista canon sobre `retiros`; usar
+`flag_canon OR EXISTS(retiro de la MISMA programa+cohorte)`. La condición **misma cohorte** es
+obligatoria: sin ella se marca como retirado a un reingresante (retiro en un año, activo en otro).
+Bug grave 2026-08-13 (migración 049), blindado con test de regresión en `test_integridad_supabase.py`
+(sección G). Ver [[project_retirado_por_cohorte_canon_stale]].

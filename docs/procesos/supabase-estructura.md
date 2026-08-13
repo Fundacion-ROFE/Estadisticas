@@ -795,6 +795,15 @@ sigue consultando `enrollments`/`courses` directo (sin cambios). `v_gui_personas
 para la Fase 2 paso 4 (ficha 360 al doble clic), que sí necesita exactamente su grano
 (retiro/empresa patrocinadora/Emoflow/sociodemográficos/microcrédito en una sola fila).
 
+**Fix `retirado` por cohorte (migración 049, 2026-08-13):** la columna `retirado` (JC) pasó de
+`COALESCE(cq.retirado, retiros)` a `COALESCE(cq.retirado,false) OR EXISTS(retiro de la MISMA
+programa+cohorte)`. El flag `cq.retirado` viene de `cohorte_2026_ceds` (lista canon que queda
+**stale** cuando alguien se retira después de cargarla), y el COALESCE lo prefería → 4 retiradas
+de JC 2026 salían `retirado=False` (falsos "en Q10 no en Seguimiento" + inconsistencia con el
+canon). La condición **misma cohorte** es crítica: evita reintroducir el falso positivo de
+reingreso (retiro 2024 + reingreso activo 2026). Blindado con test de regresión (sección G de
+`test_integridad_supabase.py`).
+
 ### `v_pub_cohorte` / `v_pub_geografia` / `v_pub_avance` 🟢 — públicas (`anon`: solo SELECT)
 Para el panel Netlify (Fase 3, bloqueada — repo no montado). Owner-privilege (**sin**
 `security_invoker`) — mismo patrón que `v_demografia_grupo` y hermanas: con
@@ -812,6 +821,13 @@ anon` antes de aplicar el fix — ver el gotcha completo en
   real de municipio (toda la conurbación cae en "Bogotá D.C." u otras variantes) — el frontend
   debe aclararlo.
 - **`v_pub_avance`** — programa×cohorte×cursos_aprobados → personas.
+- **`v_pub_retencion_ciudad`** (migración 047, 2026-08-13) — programa×cohorte×`grupo_ciudad` →
+  activos/retirados/ingresados/retencion_pct, con k-anon (`activos+retirados < 5` se omite).
+  `activos` = mismo criterio que `v_pub_geografia` (`en_seguimiento_jc IS DISTINCT FROM false`);
+  `retirados` = `retiros`→`participants.grupo_ciudad`. **Solo es canon-exacta en la cohorte
+  VIGENTE** (Σ=750/82/832 en JC 2026); en años cerrados sobrecuenta porque Q10 purgó
+  inconsistente el detalle por ciudad — el frontend la restringe a `esActual` y para el historial
+  usa `v_pub_cohorte` (canon por cohorte). Habilita la pestaña "Retención" del panel.
 
 Cuadre verificado: `v_pub_cohorte.activos` (jc/2026) = Σ`v_pub_geografia.personas` (jc/2026) =
 Σ`v_pub_avance.personas` (jc/2026) = **760**, exacto en los tres.
