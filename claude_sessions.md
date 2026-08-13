@@ -7514,3 +7514,12 @@ panel-datos-rofe commit `cec8eea` (push a Netlify + Vercel; tsc + build OK).
 - **Historial** ganó header de diagnóstico: "Matriculados hoy" y "Avance promedio hoy" con **delta y dirección ↑/↓** vs el inicio de la serie + "Periodo medido". El escéptico había advertido que un "último valor" sin tendencia no diagnostica; por eso el delta, no el valor pelado.
 - **Emoflow** ya tenía header fuerte (participantes/activos 7d %/en riesgo 30d %/correlación uso→aprobación); solo se cerró la ambigüedad del **doble universo**: las cifras de % ahora **declaran su denominador** en el detalle ("N de 742 vigentes" vs "N del histórico 827"). Sus gráficos ya recibieron etiquetas en iteración 1.
 - **Demografía sigue sin header a propósito** (k-anonimato falsearía cualquier total). Iteración 2 cerrada.
+
+### 2026-08-13 (cont.) — Alinear panel Vercel con el GUI (canon), sin contaminación de v_programa_stats
+
+panel-datos-rofe commit `74b4d1a` (push Netlify + Vercel; tsc + build OK). Analizado con `/consejo-medio` (escéptico aislado) antes de tocar código.
+- **Hallazgo raíz:** el Vercel mezclaba dos fuentes. `v_pub_cohorte` (canon, limpio, = GUI) da 2025=722/559/163; `v_programa_stats` da 737 (incluye 14 staff + 1 prueba), matrículas infladas (7.890) y cifras viejas sin reconciliar (2024=470 vs 608). El header de cohortes cerradas tomaba de la sucia.
+- **Consejo-medio (veredicto: adelante con ajustes):** el escéptico advirtió que una migración PARCIAL (solo el tamaño) crea "dos verdades" y que titular retirados con gráficos huecos debajo es peor. → Se hizo la migración COMPLETA del header de cohortes cerradas: 100% canon (Ingresados/Retención/Culminantes/Retirados/Cursos), cero `v_programa_stats`. Mata 737/7.890/470 de una.
+- **Retirados por año:** ahora la cifra canónica de retirados es visible en TODAS las cohortes (2025=163), no solo 2026.
+- **Demografía por Retirados:** aviso "🚧 en validación" (el equipo juzga la fuente parcial para el segmento de retirados) — matiz del escéptico: se dice "en validación", no "no existe" (las filas existen pero no representan al total).
+- **es_staff NO es columna de participants** (el GUI lo calcula en su capa de datos); por eso el frontend se apoya en el canon ya limpio en vez de replicar la detección de staff.
