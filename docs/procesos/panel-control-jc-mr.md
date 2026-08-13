@@ -1086,6 +1086,16 @@ desglose por año propio, los botones de arriba no aplican). Y en `_refrescar_ta
 se quita del render la fila **`no_cohorte`** (retiros sin año asignable, ej. JC 25) — no aporta
 al desglose por año; el dato crudo se conserva en la tabla `retiros`, solo se filtra en la vista.
 
+## 7.28 Ajuste 2026-08-13 — «Postulantes sin matrícula» (JC) también usa los botones de año
+
+Igual que MR (§7.25), la pestaña de postulantes JC ahora se filtra por los botones de año de
+arriba (por `promo_year`) en vez de un dropdown propio. Cambios: (1) el selector JC gana un
+botón "Todos" al frente (default sigue siendo la cohorte más reciente para no cambiar Explorar);
+(2) `_refrescar_tabla_sin_matricula` toma el año de `self._cohorte` en AMBOS programas; (3) el
+dropdown `_frame_pm_anio` queda oculto siempre. Verificado: JC postulantes 2022→202, Todos→445,
+2026→84; el título muestra "— 2022" al filtrar y "Mostrando N de Total". Explorar JC sin cambios
+(2019→25, Todos→3164). El `_filtro_pm_anio`/dropdown quedan como código muerto inofensivo.
+
 ## 8. Conexiones
 
 [[plan-visualizacion-2026-07-30]] (Fase 2 pausada a favor de este documento — pendientes vivos
