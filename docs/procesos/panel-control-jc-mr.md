@@ -1118,6 +1118,33 @@ En `panel_control_gui.py`: `TOGGLE_RETIROS_EMOFLOW_ASISTENCIA` + `TOGGLE_POSTULA
 vía `zip`, no requirió más cambios. Verificado: 2 toggles ("BD Seguimiento" 6 col · "Toda la
 información" 10 col), compila OK.
 
+## 7.31 Ajuste 2026-08-13 — KPIs por Estado + subtítulo a tooltip + % más chico
+
+Pedido del usuario, tres cambios sobre las tarjetas KPI de Explorar (`_actualizar_kpis`):
+
+**1. Las tarjetas dependen del filtro Estado** (antes eran fijas). Dentro de "Activos"/"Retirados"
+varias eran redundantes o daban 0%. Set por estado:
+
+| Estado | Tarjetas mostradas |
+|---|---|
+| Todos | Matriculados · Retención · Activos · En Seguimiento · Al día · Retirados · Avance promedio |
+| Activos | Matriculados · En Seguimiento · Al día · Avance promedio (se quitan Retención=100%, Activos=Matriculados, Retirados=0%) |
+| Retirados | Matriculados · Avance promedio (se quitan Retención, Activos, En Seguimiento, Al día) |
+
+En Seguimiento nunca aparece en Retirados (no hay retirados en el Sheet de Seguimiento). "Avance
+promedio" en Retirados = % de cursos que alcanzaron a completar antes de irse. Cohorte cerrada
+NO cambia (usa el canon agregado de `v_pub_cohorte`, no el estado por persona).
+
+**2. Subtítulo → tooltip.** El texto de definición debajo de cada tarjeta la ensanchaba; ahora
+aparece solo al pasar el mouse (`_attach_tooltip`, se oculta cuando el puntero sale de verdad de
+la tarjeta vía `winfo_containing`). **Revierte** la decisión previa de "no tooltips" (§rediseño
+2026-08-11) — a pedido explícito del usuario.
+
+**3. Valores con % en fuente más chica.** `_kpi(..., pequeno=True)` → 13pt en vez de 18pt para
+Retención, Al día, Retirados y Avance promedio (números fáciles de leer rápido). Conteos
+(Matriculados, Activos, En Seguimiento) siguen en 18pt. Verificado headless: 13/18pt correctos,
+sin label inline, tooltip bindeado.
+
 ## 8. Conexiones
 
 [[plan-visualizacion-2026-07-30]] (Fase 2 pausada a favor de este documento — pendientes vivos
