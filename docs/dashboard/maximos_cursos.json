@@ -66,21 +66,21 @@
     "inscritos": 179,
     "inscritos_fecha": "2026-07-28",
     "promedio_en_pico": 5.63,
-    "finalizados": 26,
-    "finalizados_fecha": "2026-08-13"
+    "finalizados": 28,
+    "finalizados_fecha": "2026-08-15"
   },
   "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026": {
     "inscritos": 760,
     "inscritos_fecha": "2026-07-24",
     "promedio_en_pico": 84.33,
-    "finalizados": 694,
-    "finalizados_fecha": "2026-08-13"
+    "finalizados": 696,
+    "finalizados_fecha": "2026-08-15"
   },
   "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026": {
     "inscritos": 272,
     "inscritos_fecha": "2026-08-01",
     "promedio_en_pico": 18.99,
-    "finalizados": 27,
-    "finalizados_fecha": "2026-08-13"
+    "finalizados": 29,
+    "finalizados_fecha": "2026-08-15"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-08-13T17:06:27.644328-05:00",
+  "ultima_actualizacion": "2026-08-15T01:01:11.260627-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -15,8 +15,8 @@
     {
       "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
       "estudiantes": 750,
-      "finalizados": 694,
-      "promedio": 96.29,
+      "finalizados": 696,
+      "promedio": 96.37,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 760,
@@ -26,8 +26,8 @@
     {
       "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
       "estudiantes": 272,
-      "finalizados": 27,
-      "promedio": 63.74,
+      "finalizados": 29,
+      "promedio": 67.78,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 272,
@@ -38,7 +38,7 @@
       "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
       "estudiantes": 750,
       "finalizados": 731,
-      "promedio": 99.63,
+      "promedio": 99.64,
       "min": 0.0,
       "max": 101.0,
       "inscritos": 830,
@@ -82,7 +82,7 @@
       "curso": "INTRODUCCIÓN A LA IA GENERATIVA - 2026",
       "estudiantes": 750,
       "finalizados": 751,
-      "promedio": 99.66,
+      "promedio": 99.76,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 809,
@@ -97,7 +97,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 44
+      "cantidad": 39
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -115,8 +115,8 @@
       {
         "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
         "estudiantes": 179,
-        "finalizados": 26,
-        "promedio": 22.32,
+        "finalizados": 28,
+        "promedio": 23.22,
         "min": 0.0,
         "max": 100.0,
         "inscritos": 179,
@@ -127,7 +127,7 @@
     "anomalias": [
       {
         "categoria": "AVANCE 0%",
-        "cantidad": 126
+        "cantidad": 123
       },
       {
         "categoria": "AVANCE IRREGULAR",
