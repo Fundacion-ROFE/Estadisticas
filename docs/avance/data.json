@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-08-13T01:02:34.221836-05:00",
+  "ultima_actualizacion": "2026-08-15T01:02:06.039901-05:00",
   "segmento": "Logica-Nivel 2-2026",
   "por_curso": [
     {
@@ -22,8 +22,8 @@
     },
     {
       "nombre": "Habilidades Esenciales",
-      "estudiantes": 753,
-      "aprobados": 737,
+      "estudiantes": 752,
+      "aprobados": 736,
       "pct_aprobados": 97.9,
       "promedio": 99.52,
       "min": 0.0,
@@ -31,8 +31,8 @@
     },
     {
       "nombre": "Emprendimiento",
-      "estudiantes": 752,
-      "aprobados": 728,
+      "estudiantes": 751,
+      "aprobados": 727,
       "pct_aprobados": 96.8,
       "promedio": 99.54,
       "min": 0.0,
@@ -40,8 +40,8 @@
     },
     {
       "nombre": "IA",
-      "estudiantes": 751,
-      "aprobados": 740,
+      "estudiantes": 750,
+      "aprobados": 739,
       "pct_aprobados": 98.5,
       "promedio": 99.66,
       "min": 0.0,
@@ -59,9 +59,9 @@
     {
       "nombre": "HTML",
       "estudiantes": 750,
-      "aprobados": 692,
-      "pct_aprobados": 92.3,
-      "promedio": 96.19,
+      "aprobados": 695,
+      "pct_aprobados": 92.7,
+      "promedio": 96.35,
       "min": 0.0,
       "max": 100.0
     },
@@ -70,16 +70,16 @@
       "estudiantes": 272,
       "aprobados": 27,
       "pct_aprobados": 9.9,
-      "promedio": 63.0,
+      "promedio": 66.46,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "HTML - AUT",
       "estudiantes": 777,
-      "aprobados": 27,
-      "pct_aprobados": 3.5,
-      "promedio": 22.14,
+      "aprobados": 29,
+      "pct_aprobados": 3.7,
+      "promedio": 23.73,
       "min": 0.0,
       "max": 100.0
     },
@@ -104,10 +104,10 @@
   ],
   "totales": {
     "total_cursos": 11,
-    "total_registros": 7892,
+    "total_registros": 7889,
     "estudiantes_unicos_id": 780,
-    "promedio_general": 76.2,
-    "total_aprobados": 5460
+    "promedio_general": 76.48,
+    "total_aprobados": 5462
   },
   "anomalias": [
     {
@@ -116,7 +116,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 1506
+      "cantidad": 1494
     },
     {
       "categoria": "AVANCE IRREGULAR",
