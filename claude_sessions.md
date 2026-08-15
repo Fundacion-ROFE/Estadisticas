@@ -7588,3 +7588,11 @@ Script nuevo `scripts/panel-datos/backfill_edad_genero_estrato.py` (solo rellena
 - **Género + edad** ← "BD Seguimiento de Monitorias - JC2026 - Seguimiento (4).csv" (edad CALCULADA de Fecha Nacimiento DD/MM/YYYY, el CSV no trae Edad).
 - **Estrato** ← "Convocatoria Fase 1 - Respuestas Colombia.csv" (11k postulantes, población mixta; se cruza contra participants → los no-JC no matchean). Estrato col 34, cédula col 8, correo col 2.
 - **Resultado:** 60 participantes enriquecidos (género=56, edad=55, estrato=48). JC 2026 ahora: género 100%, edad 99.6% (faltan 3), estrato 71.2% — pero los 224 faltantes son casi todos NO colombianos (GYL 80, UY 68, QTO 39, PAN 36, BAQ 1); estrato es concepto colombiano, así que está completo donde aplica (solo 1 colombiano faltante). recompute_aggregates corrido.
+
+### 2026-08-14 — Incidente real: 3 instancias de iniciar_n8n.bat compitiendo (H8) + candado anti-duplicado + pipeline puesto al día
+
+Usuario apagó y volvió a encender el portátil ("restaurar el correcto flujo de todos"). Diagnóstico: `healthz` 200 pero puerto 5678 sin bind (node.exe vivo, "conexiones muertas"). Al investigar: **3 instancias de `iniciar_n8n.bat` vivas a la vez** — una de logon de hoy, otra de un arranque de las 11:34am, y **una de hace 2 días (2026-08-12) nunca cerrada**. Cada watchdog intentaba auto-sanar (mi propio fix de H2) a la vez → competían por puerto/SQLite → 8 ventanas `cmd /K` zombis con n8n crasheado adentro, ninguna instancia lograba levantar.
+- **Recuperación:** barrido completo del árbol de procesos (4 `.bat` padre + 8 hijos), arranque único limpio (`healthz` 200 en ~30s), verificado 20/20 workflows activos, 0 colgadas.
+- **Fix estructural (H8):** `iniciar_n8n.bat` gana un lock anti-duplicado (heartbeat en archivo, <90s, refrescado cada vuelta del watchdog). Si ya hay una instancia viva, la nueva sale sin tocar nada. Probado aislado (sin/con lock) antes de aplicar.
+- **Pipeline puesto al día:** dispatcher `q10-sync` + `emoflow-diario` + `zoom-asistencia` (los 3 targets) → `v_frescura` pasó de 8/8 vencidos (29-53h caído) a **0/8 vencidos**.
+- Nota irónica documentada: el auto-heal que agregué el día anterior (H2) fue el mecanismo que amplificó este incidente al no tener protección anti-duplicado — corregido ahora con H8.

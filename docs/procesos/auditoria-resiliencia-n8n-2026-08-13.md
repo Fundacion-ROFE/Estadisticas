@@ -133,6 +133,30 @@ se adelante (edición web, GitHub Actions, otra máquina).
 `export_stats.py` re-corrido → `estado=exito`. Además explica por qué mis propios push de la sesión
 podían chocar con ediciones web concurrentes.
 
+## 5.c Hallazgo H8 (incidente real 2026-08-14) — ✅ ARREGLADO: mi propio auto-heal (H2) causó una tormenta de instancias
+
+**Lo que pasó:** el usuario apagó y volvió a encender el portátil. Al revisar, `healthz` daba
+200 pero el puerto 5678 no escuchaba (node.exe vivo, sin bind). Al investigar aparecieron
+**3 instancias de `iniciar_n8n.bat` corriendo a la vez** (una de logon de HOY, otra de un
+arranque de las 11:34am, y una **de hace 2 días, 2026-08-12, nunca cerrada**), cada una con su
+propio watchdog. Cada watchdog, al ver `healthz` fallando, intentaba "sanar" matando y
+relanzando `n8n.cmd` — pero las 3 lo hacían a la vez, así que competían por el puerto 5678 y la
+base SQLite local; ninguna lograba levantar limpio (8 ventanas `cmd /K` zombis con n8n
+crasheado adentro). **Ironía:** el propio auto-heal que agregué en H2 (2026-08-13) fue el
+mecanismo que amplificó el problema al no haber protección contra instancias duplicadas.
+
+**Fix:** `iniciar_n8n.bat` gana un **lock anti-duplicado** (heartbeat en archivo,
+`%TEMP%\n8n_rofe_watchdog.lock`, refrescado cada vuelta del loop de 60s). Si al arrancar ya
+hay un lock de <90s de antigüedad, la instancia nueva **sale de inmediato sin tocar nada**
+(no mata procesos, no relanza). Un lock de una instancia realmente muerta queda obsoleto en
+<90s y la siguiente instancia puede tomar el control con seguridad. Probado de forma aislada
+(sin/con lock fresco) antes de aplicar.
+
+**Recuperación manual aplicada:** barrido completo del árbol de procesos (los 4 `.bat` padre +
+sus 8 hijos zombis), arranque único y limpio, verificado (`healthz` 200 en ~30s, 20/20
+workflows activos, 0 ejecuciones colgadas). Pipeline puesto al día con los 3 targets del
+dispatcher (`q10-sync`, `emoflow-diario`, `zoom-asistencia`) → **`v_frescura` 8/8 sin vencidos**.
+
 ## 6. Veredicto de solidez
 
 **Para ~1 mes de hosting local: sólido CON las 2 correcciones aplicadas + confirmar la alerta en la

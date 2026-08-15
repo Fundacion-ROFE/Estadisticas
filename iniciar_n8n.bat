@@ -74,6 +74,23 @@ set "EXECUTIONS_DATA_MAX_AGE=168"
 :: workflows pesados.
 set "N8N_CONCURRENCY_PRODUCTION_LIMIT=2"
 
+:: ---------------------------------------------------------------------------
+:: LOCK anti-duplicado (incidente 2026-08-14): 3 instancias de este .bat quedaron vivas a
+:: la vez (logon + auto-heal-resume + un arranque manual, ninguna se cerro entre sesiones) y
+:: cada watchdog "sanaba" matando y relanzando n8n al mismo tiempo que las otras -> choque de
+:: puerto 5678 / base SQLite en cascada, n8n nunca lograba levantar. El lock es un heartbeat
+:: en archivo: si ya hay uno de <90s de antiguedad, YA hay un watchdog vivo -> esta instancia
+:: nueva sale sin tocar nada (ni mata procesos ni relanza). Si esta esta instancia toma el
+:: lock, lo refresca en cada vuelta del loop de abajo -- un lock de una instancia muerta
+:: queda obsoleto solo en <90s y la siguiente instancia puede tomar el control.
+set "LOCKFILE=%TEMP%\n8n_rofe_watchdog.lock"
+for /f "usebackq delims=" %%A in (`powershell -NoProfile -Command "if (Test-Path '%LOCKFILE%') { $age=(Get-Date)-(Get-Item '%LOCKFILE%').LastWriteTime; if ($age.TotalSeconds -lt 90) {'ACTIVO'} else {'LIBRE'} } else {'LIBRE'}"`) do set "LOCKSTATE=%%A"
+if "%LOCKSTATE%"=="ACTIVO" (
+    echo Ya hay otra instancia de iniciar_n8n.bat vigilando n8n ^(lock activo, ^<90s^). Saliendo sin duplicar.
+    exit /b 0
+)
+echo lock > "%LOCKFILE%"
+
 echo [1/4] Iniciando tunel ngrok (dominio fijo)...
 tasklist /FI "IMAGENAME eq ngrok.exe" /NH 2>nul | findstr /i "ngrok" >nul 2>&1
 if %errorlevel% EQU 0 (
@@ -126,6 +143,7 @@ echo.
 
 :loop
 timeout /t 60 /nobreak >nul
+echo lock > "%LOCKFILE%"
 
 curl -s http://localhost:5678/healthz >nul 2>&1
 if %errorlevel% NEQ 0 (
