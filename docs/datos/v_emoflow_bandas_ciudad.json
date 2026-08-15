@@ -32,8 +32,8 @@
     "orden": 4,
     "participantes": 21,
     "ingresos_promedio": 42.4,
-    "avance_promedio": 99.1,
-    "pct_aprobacion": 98.1
+    "avance_promedio": 99.3,
+    "pct_aprobacion": 98.7
   },
   {
     "grupo_ciudad": "BAQ",
@@ -50,8 +50,8 @@
     "orden": 3,
     "participantes": 30,
     "ingresos_promedio": 24.0,
-    "avance_promedio": 97.4,
-    "pct_aprobacion": 95.5
+    "avance_promedio": 97.5,
+    "pct_aprobacion": 96.0
   },
   {
     "grupo_ciudad": "PAN",
@@ -59,7 +59,7 @@
     "orden": 5,
     "participantes": 6,
     "ingresos_promedio": 520.7,
-    "avance_promedio": 97.9,
+    "avance_promedio": 98.7,
     "pct_aprobacion": 97.7
   },
   {
@@ -95,7 +95,7 @@
     "orden": 2,
     "participantes": 23,
     "ingresos_promedio": 12.3,
-    "avance_promedio": 98.4,
+    "avance_promedio": 98.5,
     "pct_aprobacion": 97.9
   },
   {
@@ -113,8 +113,8 @@
     "orden": 4,
     "participantes": 23,
     "ingresos_promedio": 44.9,
-    "avance_promedio": 97.6,
-    "pct_aprobacion": 95.9
+    "avance_promedio": 98.1,
+    "pct_aprobacion": 96.5
   },
   {
     "grupo_ciudad": "PAN",
@@ -131,7 +131,7 @@
     "orden": 5,
     "participantes": 9,
     "ingresos_promedio": 83.7,
-    "avance_promedio": 97.9,
+    "avance_promedio": 98.5,
     "pct_aprobacion": 96.9
   },
   {
@@ -140,7 +140,7 @@
     "orden": 1,
     "participantes": 10,
     "ingresos_promedio": 2.8,
-    "avance_promedio": 84.2,
+    "avance_promedio": 84.6,
     "pct_aprobacion": 81.7
   },
   {
@@ -175,7 +175,7 @@
     "banda": "61+",
     "orden": 5,
     "participantes": 21,
-    "ingresos_promedio": 83.0,
+    "ingresos_promedio": 83.2,
     "avance_promedio": 99.6,
     "pct_aprobacion": 99.3
   },
@@ -185,8 +185,8 @@
     "orden": 2,
     "participantes": 15,
     "ingresos_promedio": 10.3,
-    "avance_promedio": 96.8,
-    "pct_aprobacion": 95.0
+    "avance_promedio": 97.3,
+    "pct_aprobacion": 96.0
   },
   {
     "grupo_ciudad": "CTG",
@@ -194,7 +194,7 @@
     "orden": 4,
     "participantes": 31,
     "ingresos_promedio": 46.2,
-    "avance_promedio": 97.3,
+    "avance_promedio": 97.8,
     "pct_aprobacion": 96.8
   },
   {
@@ -203,7 +203,7 @@
     "orden": 5,
     "participantes": 12,
     "ingresos_promedio": 77.2,
-    "avance_promedio": 99.2,
+    "avance_promedio": 99.3,
     "pct_aprobacion": 98.7
   },
   {
@@ -221,8 +221,8 @@
     "orden": 5,
     "participantes": 30,
     "ingresos_promedio": 129.6,
-    "avance_promedio": 98.8,
-    "pct_aprobacion": 97.3
+    "avance_promedio": 99.0,
+    "pct_aprobacion": 97.8
   },
   {
     "grupo_ciudad": "BOG",
@@ -230,7 +230,7 @@
     "orden": 2,
     "participantes": 21,
     "ingresos_promedio": 9.6,
-    "avance_promedio": 91.4,
+    "avance_promedio": 91.5,
     "pct_aprobacion": 89.0
   },
   {
@@ -239,8 +239,8 @@
     "orden": 3,
     "participantes": 30,
     "ingresos_promedio": 22.8,
-    "avance_promedio": 98.1,
-    "pct_aprobacion": 96.1
+    "avance_promedio": 98.4,
+    "pct_aprobacion": 96.6
   },
   {
     "grupo_ciudad": "BOG",
@@ -248,15 +248,15 @@
     "orden": 4,
     "participantes": 45,
     "ingresos_promedio": 43.7,
-    "avance_promedio": 99.4,
-    "pct_aprobacion": 98.8
+    "avance_promedio": 99.5,
+    "pct_aprobacion": 99.1
   },
   {
     "grupo_ciudad": "BOG",
     "banda": "61+",
     "orden": 5,
     "participantes": 22,
-    "ingresos_promedio": 91.5,
+    "ingresos_promedio": 91.6,
     "avance_promedio": 99.5,
     "pct_aprobacion": 98.7
   },
@@ -275,8 +275,8 @@
     "orden": 2,
     "participantes": 10,
     "ingresos_promedio": 9.8,
-    "avance_promedio": 86.3,
-    "pct_aprobacion": 85.9
+    "avance_promedio": 87.4,
+    "pct_aprobacion": 87.3
   },
   {
     "grupo_ciudad": "CAL",
@@ -293,7 +293,7 @@
     "orden": 5,
     "participantes": 8,
     "ingresos_promedio": 123.3,
-    "avance_promedio": 98.6,
+    "avance_promedio": 98.8,
     "pct_aprobacion": 98.3
   },
   {
@@ -311,7 +311,7 @@
     "orden": 3,
     "participantes": 11,
     "ingresos_promedio": 24.8,
-    "avance_promedio": 95.2,
+    "avance_promedio": 95.6,
     "pct_aprobacion": 92.8
   },
   {
@@ -329,8 +329,8 @@
     "orden": 4,
     "participantes": 17,
     "ingresos_promedio": 45.4,
-    "avance_promedio": 95.3,
-    "pct_aprobacion": 91.6
+    "avance_promedio": 96.3,
+    "pct_aprobacion": 92.4
   },
   {
     "grupo_ciudad": "CAL",
@@ -338,8 +338,8 @@
     "orden": 4,
     "participantes": 40,
     "ingresos_promedio": 42.8,
-    "avance_promedio": 98.2,
-    "pct_aprobacion": 97.3
+    "avance_promedio": 98.4,
+    "pct_aprobacion": 97.6
   },
   {
     "grupo_ciudad": "MED",
@@ -347,8 +347,8 @@
     "orden": 2,
     "participantes": 26,
     "ingresos_promedio": 10.1,
-    "avance_promedio": 97.4,
-    "pct_aprobacion": 95.7
+    "avance_promedio": 97.9,
+    "pct_aprobacion": 97.0
   },
   {
     "grupo_ciudad": "GYL",
@@ -383,7 +383,7 @@
     "orden": 3,
     "participantes": 32,
     "ingresos_promedio": 21.6,
-    "avance_promedio": 95.8,
-    "pct_aprobacion": 95.2
+    "avance_promedio": 96.7,
+    "pct_aprobacion": 96.1
   }
 ]
