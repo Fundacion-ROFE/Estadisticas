@@ -7596,3 +7596,9 @@ Usuario apagó y volvió a encender el portátil ("restaurar el correcto flujo d
 - **Fix estructural (H8):** `iniciar_n8n.bat` gana un lock anti-duplicado (heartbeat en archivo, <90s, refrescado cada vuelta del watchdog). Si ya hay una instancia viva, la nueva sale sin tocar nada. Probado aislado (sin/con lock) antes de aplicar.
 - **Pipeline puesto al día:** dispatcher `q10-sync` + `emoflow-diario` + `zoom-asistencia` (los 3 targets) → `v_frescura` pasó de 8/8 vencidos (29-53h caído) a **0/8 vencidos**.
 - Nota irónica documentada: el auto-heal que agregué el día anterior (H2) fue el mecanismo que amplificó este incidente al no tener protección anti-duplicado — corregido ahora con H8.
+
+### 2026-08-14 (cont.) — Verificada la rutina nube: activa pero su Telegram lleva ≥2 días roto (H9)
+
+Usuario pidió confirmar que `frescura-pipeline-rofe` sigue activa. Verificado con `RemoteTrigger` (no `CronList`, que es solo de la sesión actual): `enabled:true`, corre puntual 5/5 días desde su creación (10 al 14 de agosto, sin huecos).
+**Pero el log real de las últimas 2 corridas mostró un problema serio:** el proxy de egress del entorno sandboxed de la rutina bloquea (403) tanto Supabase REST como `api.telegram.org`. El 13-ago se salvó leyendo por el conector MCP de Supabase (0 vencidos) pero el Telegram falló igual → terminó en push al celular. El 14-ago (justo durante el incidente H8 de 8/8 vencidos) ambos fallaron sin fallback → solo push, nada por Telegram. Si el vencido hubiera sido real, no se habría enterado por el canal esperado.
+Causa: config de red del entorno de la rutina, fuera del alcance para arreglar desde una sesión normal. Decisión del usuario: registrar y dejarlo así — el **GitHub Actions (`alerta-frescura-nube.yml`, ya activo y verificado) pasa a ser la red de seguridad PRINCIPAL**; la rutina Claude queda como respaldo best-effort. Documentado como H9 en la auditoría + memoria actualizada.

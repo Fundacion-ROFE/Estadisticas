@@ -157,6 +157,26 @@ sus 8 hijos zombis), arranque único y limpio, verificado (`healthz` 200 en ~30s
 workflows activos, 0 ejecuciones colgadas). Pipeline puesto al día con los 3 targets del
 dispatcher (`q10-sync`, `emoflow-diario`, `zoom-asistencia`) → **`v_frescura` 8/8 sin vencidos**.
 
+## 5.d Hallazgo H9 (verificado 2026-08-14) — Telegram de la rutina nube `frescura-pipeline-rofe` roto ≥2 días
+
+Verificado con `RemoteTrigger` (get + list_runs + get_run_log del trigger `trig_019fdLrZbvUUKwnjTgcvQ9tv`).
+La rutina SÍ está activa y corre puntual a diario (5/5 días desde que se creó) — pero su **envío
+de Telegram lleva ≥2 días fallando**:
+- 13-ago: Supabase REST bloqueado 403 por el proxy de egress del entorno sandboxed de la rutina
+  (se salvó leyendo por el conector MCP de Supabase, 0 vencidos, OK) — pero `api.telegram.org`
+  **también dio 403**. Terminó en push al celular, no en Telegram.
+- 14-ago (durante el incidente H8 de 8/8 vencidos): Supabase Y Telegram bloqueados, sin fallback
+  exitoso — solo push al celular. **Si el vencido hubiera sido real ese día, no habría llegado
+  nada por Telegram.**
+
+Causa: política de red del entorno donde corre la rutina (fuera del alcance de una sesión normal
+de Claude Code o del usuario para arreglar). **No se investiga ni se corrige más** — decisión
+2026-08-14 del usuario: registrar y dejarlo así.
+
+**Impacto en la recomendación de H1:** el **GitHub Actions (`alerta-frescura-nube.yml`) pasa a ser
+la red de seguridad PRINCIPAL** (ya activo, sin este problema — egress normal de GitHub, Telegram
+verificado real end-to-end). La rutina Claude queda como respaldo best-effort únicamente.
+
 ## 6. Veredicto de solidez
 
 **Para ~1 mes de hosting local: sólido CON las 2 correcciones aplicadas + confirmar la alerta en la
