@@ -2,7 +2,7 @@
   {
     "dimension": "estado_civil",
     "categoria": "casado",
-    "total": 56
+    "total": 57
   },
   {
     "dimension": "estado_civil",
@@ -42,7 +42,7 @@
   {
     "dimension": "nivel_estudio",
     "categoria": "técnico",
-    "total": 225
+    "total": 226
   },
   {
     "dimension": "nivel_estudio",
@@ -57,7 +57,7 @@
   {
     "dimension": "tipo_vivienda",
     "categoria": "familiar",
-    "total": 191
+    "total": 192
   },
   {
     "dimension": "tipo_vivienda",
@@ -67,7 +67,7 @@
   {
     "dimension": "estrato",
     "categoria": "2",
-    "total": 165
+    "total": 166
   },
   {
     "dimension": "estrato",
@@ -107,7 +107,7 @@
   {
     "dimension": "edad_rango",
     "categoria": "36-45",
-    "total": 198
+    "total": 199
   },
   {
     "dimension": "edad_rango",
@@ -122,11 +122,11 @@
   {
     "dimension": "emprendimiento",
     "categoria": "sin_emprendimiento",
-    "total": 166
+    "total": 164
   },
   {
     "dimension": "emprendimiento",
     "categoria": "con_emprendimiento",
-    "total": 412
+    "total": 415
   }
 ]

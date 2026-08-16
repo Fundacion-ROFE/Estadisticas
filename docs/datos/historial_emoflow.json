@@ -252,6 +252,18 @@
     "fuente": "emoflow-api"
   },
   {
+    "fecha": "2026-08-16",
+    "participantes": 826,
+    "con_match_supabase": 759,
+    "ingresos_promedio": 42.4,
+    "ingresos_mediana": 31,
+    "ingresos_max": 1261,
+    "activos_7d": 446,
+    "activos_14d": 560,
+    "inactivos_30d": 177,
+    "fuente": "emoflow-api"
+  },
+  {
     "fecha": "2026-07-24",
     "participantes": 826,
     "con_match_supabase": 759,
