@@ -328,7 +328,7 @@ def main() -> int:
 
         # Espejo del chequeo anterior: las vistas públicas nuevas (Fase 1.2 de
         # plan-visualizacion-2026-07-30.md) tienen que seguir siendo legibles por anon — un
-        # REVOKE de más aquí rompería el panel Netlify tan silenciosamente como un GRANT de
+        # REVOKE de más aquí rompería el panel (Vercel) tan silenciosamente como un GRANT de
         # más rompería la privacidad arriba.
         PUBLICAS = ["v_pub_cohorte", "v_pub_geografia", "v_pub_avance",
                     "v_aprobacion_cursos_vigencia"]

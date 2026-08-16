@@ -64,7 +64,7 @@ quedaron expuestos temporalmente roles/restricciones/notas de incidente de cada 
 eliminaron de este repo público.
 
 - La `anon key` de Supabase embebida en cada `CLAUDE.md` nunca fue un riesgo nuevo — es
-  pública por diseño (RLS la protege, solo expone agregados, y ya vive en el frontend Netlify).
+  pública por diseño (RLS la protege, solo expone agregados, y ya vive en el frontend Vercel).
 - El acceso a `comunicaciones-ai/Contexts` es por colaborador explícito en GitHub (cuenta
   `soportejunior-codeJR` con permiso `push`, confirmado 2026-08-04).
 - **Gotcha del proceso de migración:** al configurar el remoto del repo nuevo, un comando

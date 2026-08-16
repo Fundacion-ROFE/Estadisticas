@@ -5,7 +5,7 @@ backfill_historial_emoflow.py — Backfill de historial_emoflow con datos histó
 Objetivo: crear snapshots históricos diarios en historial_emoflow basados en
 emoflow_participacion_semanal (que tiene datos desde semana 1).
 
-La serie histórica permite visualizar tendencias de ingresos en el panel Netlify.
+La serie histórica permite visualizar tendencias de ingresos en el panel (Vercel).
 
 Uso:
     python backfill_historial_emoflow.py [--dry-run]

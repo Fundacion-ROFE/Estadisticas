@@ -2,8 +2,10 @@
 """
 export_supabase_json.py — Exporta TODAS las vistas y tablas públicas de Supabase a JSON.
 
-Objetivo: generar archivos JSON con toda la información de Supabase para que
-el panel de Netlify (venerable-truffle-331f3c.netlify.app) los consuma directamente.
+Objetivo: generar archivos JSON con toda la información de Supabase para que el panel
+(hoy Vercel, panel-de-datos.vercel.app — Netlify dado de baja 2026-08-11) los consuma
+directamente. Sin consumidor confirmado al 2026-08-15: el frontend real lee Supabase
+client-side (lib/api.ts), no estos JSON — ver docs/procesos/panel-datos-etl.md.
 
 Salida: docs/datos/ con archivos JSON por tema (emoflow.json, participantes.json, cursos.json, etc)
 
@@ -206,7 +208,7 @@ def git_commit_y_push(timestamp: str, output_dir: str) -> bool:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Exporta Supabase → JSON (panel Netlify)")
+    ap = argparse.ArgumentParser(description="Exporta Supabase → JSON (panel Vercel)")
     ap.add_argument("--output-dir", default=DIRECTORIO_DATOS_DEFAULT, help="Directorio de salida")
     ap.add_argument("--sin-push", action="store_true",
                     help="Genera el JSON sin git commit/push (pruebas)")

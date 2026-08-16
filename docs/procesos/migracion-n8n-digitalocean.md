@@ -5,7 +5,7 @@ decide intentar **Oracle Cloud Free Tier** (con mitigaciones) en lugar de Digita
 2026-08-10 al final — el "descartado" de Oracle del 2026-08-04 queda revertido por el cambio de
 prioridad (costo ahora sí es restricción). Sin fecha de ejecución.
 **Última actualización:** 2026-08-10
-**Procesos relacionados:** [[mr-website]] (ya tiene droplet DigitalOcean + `rofe-composal`, candidato a reutilizar) · [[panel-datos-etl]] (su propia migración pendiente Netlify→DO es una decisión separada) · [[q10-consolidacion]] · todos los procesos con workflow n8n (ver tabla de abajo)
+**Procesos relacionados:** [[mr-website]] (ya tiene droplet DigitalOcean + `rofe-composal`, candidato a reutilizar) · [[panel-datos-etl]] (su idea de migración Netlify→DO quedó SUPERADA 2026-08-11: se dio de baja Netlify y se quedó solo con Vercel, sin necesitar droplet — esta migración de n8n es un proceso completamente distinto) · [[q10-consolidacion]] · todos los procesos con workflow n8n (ver tabla de abajo)
 
 **Disparador 2026-08-04:** el portátil de Samuel se va a transportar físicamente varias veces
 (riesgo de continuidad de los schedules) y se autorizó investigar proveedores alternativos a

@@ -60,7 +60,7 @@ producción (2026-07-10):
 - ETL diario automatizado (n8n 9:45) con normalización que corrige los filtros
   insuficientes de Q10 en origen.
 - Cuadre verificado 9/9 exacto contra el dashboard canónico.
-- Vistas públicas de solo-agregados (sin PII) que ya alimentan un frontend en Netlify.
+- Vistas públicas de solo-agregados (sin PII) que ya alimentan un frontend en Vercel.
 
 **Lo que falta para que sea LA fuente única:**
 
@@ -82,7 +82,7 @@ La de mayor retorno inmediato porque **más de la mitad ya está operando**:
 | Organización por cohortes/ciudades/programas | ✅ Hecho — Supabase modela cohorte, programa JC/MR, curso; Power BI puede leerlo ya |
 | Seguimiento de asistencia | 🔶 Parcial — [[zoom-asistencia]] funcional en cuenta comunicaciones; bloqueado por Dashboard API de Zoom y cuenta soporte sin cubrir |
 | Consolidación en tiempo real | ✅ Hecho — pipeline Q10 cada 4 h + ETL Supabase diario |
-| Estadísticas e indicadores automáticos | ✅ Hecho — dashboard público + panel Netlify + vistas de agregados |
+| Estadísticas e indicadores automáticos | ✅ Hecho — dashboard público + panel (Vercel) + vistas de agregados |
 | Alertas de deserción/inactividad | 🔶 Parcial — `panel_riesgo` local cruza Avance × Q10; falta convertirlo en alerta automática (correo/Telegram) sobre la BD central |
 | Actualización automática de bases | ✅ Hecho para Q10 y BD-Mujeres ROFÉ ([[mr-actualizacion-datos]]) |
 | Seguimientos y recordatorios | ❌ Pendiente — depende de tener contacto + estado del participante en un solo lugar (BD) |
@@ -96,7 +96,7 @@ la alerta es una consulta + un workflow n8n.
 
 ## P3 — Analítica y toma de decisiones (área 8)
 
-- Dashboards automáticos: ✅ ya existen dos (GitHub Pages y Netlify) — se consolidan, no se crean.
+- Dashboards automáticos: ✅ ya existen dos (GitHub Pages y Vercel) — se consolidan, no se crean.
 - Reportes para financiadores: se generan desde las vistas de agregados de Supabase
   (mismo patrón sin-PII que ya está validado).
 - **Análisis predictivo de permanencia:** imposible sin historial limpio. El modelo

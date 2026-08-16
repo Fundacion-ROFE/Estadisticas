@@ -11,8 +11,8 @@ Supabase (backend de verdad, única fuente)
 ├─ Google Sheets (H1Test, H2Test, H3Test) — equipo
 │  Lectura + edición manual por operadores
 │
-└─ GitHub (docs/datos/*.json) — panel Netlify
-   Visualización pública en venerable-truffle-331f3c.netlify.app
+└─ GitHub (docs/datos/*.json) — panel (Vercel)
+   Visualización pública en panel-de-datos.vercel.app
 ```
 
 ---
@@ -27,7 +27,7 @@ Ya TODO está automático. Los datos fluyen así:
    ```
    - Exporta 16 tablas/vistas públicas de Supabase a JSON
    - Genera `docs/datos/*.json` (aprobacion, emoflow, cursos, historial, etc)
-   - Listo para GitHub Pages / Netlify
+   - Listo para GitHub Pages / Vercel
 
 2. **`sync_supabase_to_sheets.py`** (ejecutar diario):
    ```bash
@@ -84,7 +84,7 @@ Agregá estos 2 nodos a n8n (en el workflow `q10-sync-supabase`, después de `sy
 
 1. **Ejecutar `export_supabase_json.py`:**
    - Exporta Supabase → docs/datos/*.json
-   - GitHub Push automático (para panel Netlify)
+   - GitHub Push automático (para panel (Vercel))
    - Tiempo: ~3-5 minutos
 
 2. **Ejecutar `sync_supabase_to_sheets.py`:**
@@ -104,7 +104,7 @@ Agregá estos 2 nodos a n8n (en el workflow `q10-sync-supabase`, después de `sy
    ↓↓
    ├─→ export_supabase_json.py → docs/datos/*.json → git push → GitHub
    │   ↓
-   │   Panel Netlify (venerable-truffle-331f3c.netlify.app)
+   │   Panel (Vercel) (panel-de-datos.vercel.app)
    │
    └─→ sync_supabase_to_sheets.py → Google Sheets (H1Test/H2Test/H3Test)
        ↓
@@ -132,9 +132,9 @@ Agregá estos 2 nodos a n8n (en el workflow `q10-sync-supabase`, después de `sy
 → Verifica que la Service Account tenga acceso.
   Comparte el Sheet con `q10-automatizacion@n8n-automatizacion-q10.iam.gserviceaccount.com` (role: Editor).
 
-**"No ve JSON en GitHub / Panel Netlify"**
+**"No ve JSON en GitHub / Panel (Vercel)"**
 → Ejecuta `python export_supabase_json.py` y espera a que haga push.
-  Netlify puede tardarse 1-2 minutos en actualizar tras el push.
+  Vercel puede tardarse 1-2 minutos en actualizar tras el push.
 
 **"Datos no se actualizan en Sheets"**
 → Ejecuta `python sync_supabase_to_sheets.py` manualmente.

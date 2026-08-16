@@ -1,7 +1,9 @@
 # Panel de Datos Supabase (ETL + Dashboard)
 
-**Estado:** ✅ MVP completo (Fases 0-4) — en producción: https://venerable-truffle-331f3c.netlify.app
-**Última actualización:** 2026-08-05 (optimización de egress Supabase — ver sección al final)
+**Estado:** ✅ MVP completo (Fases 0-4) — en producción: https://panel-de-datos.vercel.app
+**Última actualización:** 2026-08-15 (Netlify dado de baja 2026-08-11 — deploy único Vercel,
+`git push samuel_oficial HEAD:main`; menciones de Netlify más abajo en este doc son historial
+de cuando sí era el hosting real, no se reescriben)
 
 > **Ampliación planeada (2026-08-10):** ver [[plan-ampliacion-panel-datos-2026-08-10]] — nuevos
 > espacios inspirados en un Power BI externo (impacto financiero MR, resultados JC por
@@ -20,7 +22,7 @@ disponer la información "al segundo" cuando se necesite.
   `{"target":"q10-sync"}` con header `x-rerun-key`. `q10-sync` = los 8 scripts del pipeline
   (normalize → sociodemográficos → cargar_supabase → aprobación → emoflow → retiros → export json →
   sheets). ~1-3 min; la respuesta HTTP llega al terminar y el panel re-lee los datos (`onDone`).
-- **CORS (gotcha clave):** el panel (origen Netlify/Vercel) llama al webhook (origen ngrok) → es
+- **CORS (gotcha clave):** el panel (origen Vercel) llama al webhook (origen ngrok) → es
   cross-origin con header custom → el navegador hace **preflight OPTIONS**. Se agregó al workflow:
   `options.allowedOrigins = "*"` en el nodo Webhook (n8n auto-responde el preflight, 204, reflejando
   `Access-Control-Allow-Headers`) + header `Access-Control-Allow-Origin: *` en los dos nodos
@@ -43,11 +45,14 @@ disponer la información "al segundo" cuando se necesite.
   inmediato (respondToWebhook antes del executeCommand) solo para la rama `q10-sync`.
 
 ## Frontend (Fase 3) — EN PRODUCCIÓN
-**URL vigente (2026-07-16, migración de hosting):** https://venerable-truffle-331f3c.netlify.app
-— reemplaza a `classy-pasca-eecdd6.netlify.app` (repo viejo dejó de reflejar commits; se movió el
-mismo historial a **github.com/comunicaciones-ai/Panel-De-Datos**, colaborador `soportejunior-codeJR`
-con Write). Esta sección tenía la URL vieja desactualizada — corregido 2026-07-21 al auditar
-centralización de fuentes (ver [[panel-datos-etl#Fuentes de datos aún no centralizadas]]).
+**URL vigente (2026-08-11, Netlify dado de baja — deploy único Vercel):**
+https://panel-de-datos.vercel.app — remote de deploy real: `samuel_oficial`
+(`github.com/Samuel-Rojas-Monroy-Official-Repository/panel_de_datos`), push con
+`git push samuel_oficial HEAD:main`. El `upstream` local de `main` sigue apuntando a
+`comunicaciones` (Netlify, de baja) — un `git push` pelado NO actualiza Vercel, hay que usar
+el remote explícito. Historial de URLs previas (ya no vigentes, solo contexto): pasó por
+`classy-pasca-eecdd6.netlify.app` (2026-07-16) y luego `venerable-truffle-331f3c.netlify.app`
+(hasta el 2026-08-11).
 Deploy automático on push. Repo dedicado local: `C:\Users\EstudiantesJC\downloads\panel-datos-rofe`.
 
 ## Sección por programa + Historial (2026-07-10, pedido de stakeholders)
@@ -553,8 +558,9 @@ de `panel_riesgo.py`).
 de corridas distintas, los cursos ACTIVOS derivan (+4/+9 aprobados en 12 h de avance real de
 estudiantes) — es frescura, no bug; el sync diario acota la deriva a ≤24 h vs las 4 h del
 pipeline GitHub Pages.
-Next.js 14 **export estático** (`output:'export'` → carpeta `out/`, sin SSR ni plugin Netlify —
-decisión que elimina el netlify.toml problemático del plan original). 4 tabs: Resumen / Cursos /
+Next.js 14 **export estático** (`output:'export'` → carpeta `out/`, sin SSR ni plugins de hosting —
+decisión que elimina el netlify.toml problemático del plan original; hosting real hoy es Vercel,
+Netlify dado de baja 2026-08-11). 4 tabs: Resumen / Cursos /
 Emprendimiento / Demografía, consumiendo las vistas `v_*` + `cohorte_stats` con anon key.
 Identidad ROFÉ (paleta Manual 2025, Century Gothic, logo Aplicación 2). First Load JS 195 kB.
 Preview local: `python -m http.server` sobre `out/`.
@@ -562,7 +568,7 @@ Preview local: `python -m http.server` sobre `out/`.
 
 ## Qué hace
 Reemplaza Power BI por un panel de visualización alimentado por Supabase (PostgreSQL) como
-fuente única de verdad, con ETL diario vía n8n y frontend Next.js en Netlify. Convive en
+fuente única de verdad, con ETL diario vía n8n y frontend Next.js en Vercel. Convive en
 paralelo con el dashboard GitHub Pages existente hasta validar cuadre de cifras.
 
 Plan maestro histórico (archivado en `docs/archivo/`, fase de planeación 2026-07-09):
@@ -589,7 +595,7 @@ Plan maestro histórico (archivado en `docs/archivo/`, fase de planeación 2026-
    participants (`q10_id`) → courses (`nombre,cohorte`) → enrollments (FKs resueltas,
    `participant_id,course_id`). Idempotente (verificado con doble corrida).
 3. (Fase 1b, pendiente) n8n orquesta 1→2 diario + recompute de agregados
-4. Supabase REST (anon key, solo agregados vía RLS) → dashboard Next.js en Netlify
+4. Supabase REST (anon key, solo agregados vía RLS) → dashboard Next.js en Vercel
 
 **Primera carga real (2026-07-09):** 1.059 participants (≈ 775 activos JC + 283 MR — cuadra
 con la identidad canónica), 9 courses, 5.818 enrollments (4.983 completados > 80 · 528 en
@@ -761,11 +767,12 @@ encadenarlos igual, así que se revirtió esa decisión:
 - `export_supabase_json.py`: exporta TODAS las tablas/vistas públicas a `docs/datos/*.json`.
 
 **⚠️ Consumidor no confirmado — vigente, no se resolvió con el encadenado.** El docstring del
-script apunta al sitio `venerable-truffle-331f3c.netlify.app` (sitio de producción vigente, ver
-corrección de URL arriba), pero el frontend real de ese repo consulta Supabase **client-side con
-la anon key** (`lib/api.ts`), no lee `docs/datos/*.json`. Es decir: el script se encadenó porque
-así se pidió, pero hoy nadie consume su salida. Reconsiderar si en el futuro el frontend migra a
-JSON estático, o eliminar el paso si se confirma que nunca se va a usar.
+script apuntaba al sitio Netlify de esa época (de baja 2026-08-11, actualizado a la URL Vercel
+vigente el mismo día que se limpiaron las referencias a Netlify), pero el frontend real de ese
+repo consulta Supabase **client-side con la anon key** (`lib/api.ts`), no lee `docs/datos/*.json`.
+Es decir: el script se encadenó porque así se pidió, pero hoy nadie consume su salida.
+Reconsiderar si en el futuro el frontend migra a JSON estático, o eliminar el paso si se
+confirma que nunca se va a usar.
 
 **Encadenado al final de `q10-sync-supabase` (2026-07-21):** tras `¿Emoflow OK?` (rama true),
 ahora sigue `Ejecutar export_supabase_json` → `Export JSON OK?` → `Ejecutar sync_supabase_to_sheets`
@@ -820,13 +827,17 @@ un tab de "Decisiones" con botones de consulta (estudiantes en riesgo, sin Emofl
 asistencia baja, etc.). Decisión tomada: se mantiene como GUI de escritorio Tkinter (no se
 construye un panel web nuevo), por privacidad (PII) y simplicidad.
 
-### Contexto — próxima migración Netlify → DigitalOcean
-Confirmado con Samuel: la convivencia GitHub Pages / Netlify es efectivamente una fase de
-transición. El siguiente paso grande después de terminar esta migración a Supabase es mover
-el frontend de `panel-datos-rofe` de Netlify a un droplet de DigitalOcean — Netlify tiene
-límites (free tier) que se van a quedar cortos. No se ha planeado en detalle todavía; queda
-como la "próxima gran decisión" de infraestructura, después de cerrar los puntos de esta
-sección.
+### Contexto — próxima migración Netlify → DigitalOcean ⚠️ SUPERADA (2026-08-11)
+Plan original (histórico): confirmado con Samuel que la convivencia GitHub Pages / Netlify era
+una fase de transición, y que el siguiente paso grande sería mover el frontend de
+`panel-datos-rofe` de Netlify a un droplet de DigitalOcean — Netlify tenía límites (free tier,
+consumo de tokens/build minutes) que se iban a quedar cortos.
+
+**Lo que pasó en la práctica (2026-08-11):** en vez de migrar a DigitalOcean, Samuel dio de baja
+Netlify directamente y se quedó solo con **Vercel** (que ya convivía como 2º deploy desde antes)
+— resolvió el mismo problema (límites de Netlify) sin necesitar la migración a DigitalOcean. Esa
+migración de infraestructura sigue viva pero para **n8n**, no para este frontend — ver
+[[migracion-n8n-digitalocean]] (proceso completamente distinto, no confundir).
 
 ## Exploración de MongoDB (backend histórico de las apps ROFÉ) — investigación cerrada 2026-07-22
 Samuel confirmó acceso a una base MongoDB Atlas que alimentaba un panel Power BI de un tercero
@@ -1029,10 +1040,12 @@ acumulados al mismo corte; el uso puede ser marcador de compromiso). Detalle y p
       manuales de xlsx. Diseño completo en [[hoja-maestra-participantes]] (en espera,
       otras prioridades — 2026-07-10)
 - [ ] Verificar la primera corrida automática (hoy 9:45) en ejecuciones de n8n
-- [x] ~~Renombrar sitio Netlify~~ — superado: el sitio se migró de repo (2026-07-16, ver
-      corrección de URL arriba), no solo se renombró. URL vigente: `venerable-truffle-331f3c`.
+- [x] ~~Renombrar sitio Netlify~~ — superado dos veces: primero migró de repo (2026-07-16), y
+      Netlify se dio de baja del todo el 2026-08-11 (deploy único Vercel). URL vigente:
+      `panel-de-datos.vercel.app`.
 - [ ] Fase 2: materialized views (retirados con definición canónica) + decidir campo `programa`
-- [ ] Fase 3: Next.js + Netlify
+- [x] Fase 3: Next.js + Vercel (checklist vieja sin marcar — esto lleva semanas en producción,
+      ver "Frontend (Fase 3) — EN PRODUCCIÓN" arriba; Netlify de baja 2026-08-11)
 - [ ] Fase 4: test de cuadre contra `docs/dashboard|aprobacion|retirados/data.json` antes de reemplazar nada
 
 ## Corrección de documentación desactualizada — nodos y cadencia reales (2026-07-24)
@@ -1136,8 +1149,8 @@ vez al día.
    tocaron** — confirmado que su egress es insignificante pese a la frecuencia; tocarlos no
    habría movido la aguja.
 
-**No cuantificado (fuera de alcance de esta sesión):** el frontend Next.js en Netlify
-(`venerable-truffle-331f3c.netlify.app`) lee Supabase directo desde el navegador de cada
+**No cuantificado (fuera de alcance de esta sesión):** el frontend Next.js en Vercel
+(`panel-de-datos.vercel.app`) lee Supabase directo desde el navegador de cada
 visitante — ese tráfico es real uso del dashboard, no un job de n8n, y esta auditoría no lo
 midió. Si el egress sigue subiendo tras estos cambios, revisar el desglose por tabla/endpoint
 en el dashboard de Supabase antes de seguir ajustando cron jobs.

@@ -1,8 +1,9 @@
 # WordPress — tocaunavida.org (Fundación ROFÉ)
 
 **Estado:** En progreso (rediseño standalone construido; pendiente pegar en Elementor)
-**Última actualización:** 2026-07-21
-**Procesos relacionados:** [[mr-website]] (sitio distinto — Angular/Express en mujeresrofe.com) · [[panel-datos-etl]] (el panel Netlify se embebe aquí) · [[mujeres-rofe-inventario-contenido]] (insumo para rediseño standalone)
+**Última actualización:** 2026-08-15 (verificado en vivo vía API: el iframe de la página
+"Panel De Datos" ya apunta a Vercel, no a Netlify — ver nota abajo)
+**Procesos relacionados:** [[mr-website]] (sitio distinto — Angular/Express en mujeresrofe.com) · [[panel-datos-etl]] (el panel se embebe aquí) · [[mujeres-rofe-inventario-contenido]] (insumo para rediseño standalone)
 
 ## Qué es
 
@@ -40,10 +41,16 @@ siteurl histórico en algunos assets).
 2. **Réplica local en Docker** (`Downloads\wordpress\wp-local\docker-compose.yml`): WordPress + MariaDB,
    BD real importada, search-replace IP→localhost:8080. Sin plugins se ve rota — útil solo para
    inspeccionar BD/temas, no para previsualizar diseño.
-3. **Página "Panel De Datos"** (id 18705, `/panel-de-datos/`, publicada) con iframe del panel Netlify.
-4. **Migración del panel Netlify:** repo nuevo `comunicaciones-ai/Panel-De-Datos` (antes
-   soportejunior-codeJR/PowerBi que dejó de desplegar) → URL nueva
-   `https://venerable-truffle-331f3c.netlify.app` (ver [[panel-datos-etl]]).
+3. **Página "Panel De Datos"** (id 18705, `/panel-de-datos/`, publicada) con iframe del panel.
+   **Estado 2026-08-15 (verificado en vivo vía `GET /wp-json/wp/v2/pages/18705?context=edit`,
+   `_elementor_data`):** el `<iframe src="...">` ya apunta a `https://panel-de-datos.vercel.app`
+   — no depende de Netlify (dado de baja 2026-08-11), no hace falta tocarlo. Quedó actualizado
+   en algún momento entre el 2026-07-16 (nota de abajo, histórica) y hoy, sin que este doc se
+   actualizara — verificar en vivo, no confiar solo en el doc (ver [[feedback_verificar_n8n_en_vivo]]
+   para la lección general, aunque ahí es sobre n8n, aplica igual acá).
+4. **Migración del panel (histórico, 2026-07-16):** repo nuevo `comunicaciones-ai/Panel-De-Datos`
+   (antes soportejunior-codeJR/PowerBi que dejó de desplegar) → URL Netlify de ese momento
+   `venerable-truffle-331f3c.netlify.app` (ver [[panel-datos-etl]]). Superada por el punto 3.
 5. **Refresco visual global (Kit 6):** sombra nativa de imágenes + `custom_css` sitewide (hover con
    elevación en botones/iconos, barrido de brillo en botones, subrayado degradado `#F93548→#FF9714`
    en headings). Respaldo del estado previo: `kit6_original_settings.json` (scratchpad de la sesión).
@@ -444,14 +451,52 @@ documentada/consensuada para el bug descrito. `build_wordpress_embed.py` actuali
 también `href="img/NAME"` (nuevo, usado por los `<image>` dentro de las máscaras) — verificado: las 8
 referencias (4 bombillos × `href` + `xlink:href`) quedaron con URL absoluta en el deliverable.
 
+## Fix: bombillos con ambas caras visibles en iPhone (2026-08-04)
+
+Lina reportó que en iPhone las tarjetas de "Cuatro frentes de apoyo" (`.mr-flip`) mostraban el
+bombillo de adelante y el texto de atrás mezclados/superpuestos en vez de voltear limpio. Causa: el
+CSS de `backface-visibility`, `transform-style` y `perspective` no tenía prefijo `-webkit-` — Safari/iOS
+sigue requiriéndolo para que el flip 3D oculte la cara trasera correctamente (gotcha clásico, distinto
+del bug de `mask-image` ya resuelto el 2026-07-21 quitando la máscara). Se agregaron los prefijos en
+`.mr-flip`, `.mr-flip-in`, `.mr-face` y `.mr-face--b` en `index.html`, y se regeneró
+`wordpress-embed.html` con `build_wordpress_embed.py`. Sin acceso a Safari real en esta sesión — pendiente
+confirmar en un iPhone antes de publicar.
+
+También se aclaró el velo oscuro del hero (`.mr-hero-veil`) SOLO en el breakpoint móvil (`max-width:760px`):
+en desktop el velo solo oscurece el lado izquierdo (donde va el texto) y se aclara hacia la derecha, pero
+en móvil el texto ocupa el ancho completo y el mismo velo tapaba casi toda la foto. Se cambió a un
+gradiente vertical que aclara mucho más rápido hacia abajo, y se redujo la intensidad del resplandor rojo
+detrás del texto (`.mr-hero-text::before`) en ese mismo breakpoint.
+
+## Fix: previsualizador de testimonios con tamaños distintos (2026-08-04)
+
+Lina reportó que en la sección de testimonios las tarjetas de Linda Cogollo y Carmen Alicia Herrera se
+veían con un tamaño distinto (más angosto/alto) al de Anatilde Arias Cadena. Causa: sus videos son
+YouTube Shorts (verticales, 9:16) y la tarjeta tenía una clase `.mr-testi--vertical` que forzaba
+`aspect-ratio:9/16` en la miniatura solo para esas dos, mientras Anatilde (video normal) quedaba en
+`16/9` — un fix intencional de 2026-07-24 para evitar barras negras del reproductor de YouTube al
+reproducir un Short dentro de una caja 16:9. Pedido explícito: unificar todas al tamaño de Anatilde
+(el "ideal"). Se quitó la regla `aspect-ratio:9/16` y la clase `mr-testi--vertical` de las 3 tarjetas
+en `index.html`, y se regeneró `wordpress-embed.html` con `build_wordpress_embed.py`. Trade-off
+aceptado: la miniatura (imagen `object-fit:cover`) ahora se ve uniforme, pero al reproducir los 2
+Shorts dentro del iframe 16:9 puede volver a aparecer la barra negra lateral que el fix anterior evitaba.
+Sin acceso a navegador en esta sesión (extensión de Chrome desconectada) — verificado solo por lectura
+de HTML/CSS, pendiente confirmar visualmente. Pendiente además re-pegar `wordpress-embed.html` en
+Elementor para que el cambio llegue al sitio en vivo.
+
 ## Pendiente
 
+- [ ] **Confirmar en iPhone real** el fix de prefijos `-webkit-` del flip de bombillos (2026-08-04) y el
+  aclarado del velo del hero en móvil — ambos sin poder probarse en esta sesión.
+- [ ] **Confirmar visualmente** el fix de tamaño uniforme de testimonios (2026-08-04, sin navegador
+  disponible en esa sesión) y revisar si los 2 Shorts muestran barra negra al reproducirse en la caja 16:9.
 - [ ] Conseguir feedback de la dueña sobre el hero v3 optimizado (portal orgánico, 4 imágenes, sin
   animaciones costosas) — recién ajustado, sin aprobar todavía.
 - [ ] Confirmar con el jefe si el tamaño/protagonismo de los bombillos y el nuevo efecto de "voltear
   dentro del bombillo" en "Cuatro frentes de apoyo" son los esperados.
 - [ ] **Probar en Safari real** (Mac/iPhone) el fix de `mask-type="alpha"` — no se pudo verificar en
-  esta sesión (sin acceso a Safari), solo confirmado que no rompió nada en Chrome.
+  esta sesión (sin acceso a Safari), solo confirmado que no rompió nada en Chrome. (Nota: el flip actual
+  ya no usa `mask-image`, ver arriba — este ítem puede estar obsoleto, revisar antes de invertir tiempo.)
 - [x] ~~Construir el HTML/CSS/JS standalone del rediseño~~ → hecho 2026-07-21
 - [ ] **Subir las 6 imágenes nuevas** a Media (`2026/07/`) y **pegar `wordpress-embed.html`** en Elementor
 - [ ] Confirmar carpeta/nombres reales de las 6 imágenes si WordPress las renombra (asumido `2026/07/`)

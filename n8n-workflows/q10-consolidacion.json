@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-24T16:54:54.956Z",
+  "updatedAt": "2026-08-06T14:50:59.185Z",
   "createdAt": "2026-06-22T15:18:02.327Z",
   "id": "Rblg81qifVshsRae",
   "name": "Bot Q10 - Actualizar Grupos",
@@ -36,7 +36,7 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "0 17,21,1,5 * * *"
+              "expression": "0 17,1 * * *"
             }
           ]
         }
@@ -99,7 +99,7 @@
     {
       "parameters": {
         "chatId": "={{ $json.chat_id }}",
-        "text": "No entiendo ese comando.\n\nComandos disponibles:\n/actualizar q10 — Q10 → Sheets + Dashboard\n/actualizar panel — Pipeline Panel de Datos (Supabase/Netlify)\n/actualizar asistencia — Asistencia Zoom → Supabase\n/actualizar mr — Form MR2024 → BD Mujeres ROFÉ\n/actualizar rebotes — Captura rebotes de correo\n/actualizar alerta — Alerta de deserción\n/actualizar backfill — Grabaciones Zoom → YouTube/Drive",
+        "text": "No entiendo ese comando.\n\nComandos disponibles:\n/actualizar q10 — Q10 → Sheets + Dashboard\n/actualizar panel — Pipeline Panel de Datos (Supabase/Vercel)\n/actualizar asistencia — Asistencia Zoom → Supabase\n/actualizar mr — Form MR2024 → BD Mujeres ROFÉ\n/actualizar rebotes — Captura rebotes de correo\n/actualizar alerta — Alerta de deserción\n/actualizar backfill — Grabaciones Zoom → YouTube/Drive",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.telegram",
@@ -569,6 +569,144 @@
           "name": "Telegram Q10 Bot"
         }
       }
+    },
+    {
+      "parameters": {
+        "command": "=cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/common && python lock_cli.py acquire q10-actualizar-grupos heavy-pipeline --execution-id {{ $execution.id }} --workflow-id {{ $workflow.id }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        448,
+        750
+      ],
+      "id": "lock-node-tg-0001",
+      "name": "Adquirir Lock Q10"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-lock-tg-001",
+              "leftValue": "={{ JSON.parse($json.stdout).acquired }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "rightType": "any"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        672,
+        750
+      ],
+      "id": "lock-node-tg-0002",
+      "name": "Lock Q10 adquirido?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
+        "text": "=⏳ Ya hay una actualización de Q10 en curso (otra ejecución sigue corriendo). Se omite este disparo para no sobrecargar el servidor.\n\nIntenta de nuevo en unos minutos.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        896,
+        900
+      ],
+      "id": "lock-node-tg-0003",
+      "name": "Aviso Lock Ocupado",
+      "webhookId": "4fba0bd4-c4f5-42b9-b8f0-0b5ef969e567",
+      "credentials": {
+        "telegramApi": {
+          "id": "kGTAfWTTp4FATF66",
+          "name": "Telegram Q10 Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "=cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/common && python lock_cli.py acquire q10-actualizar-grupos heavy-pipeline --execution-id {{ $execution.id }} --workflow-id {{ $workflow.id }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -80
+      ],
+      "id": "lock-node-sched-0001",
+      "name": "Adquirir Lock Q10 (Sched)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-lock-sched-001",
+              "leftValue": "={{ JSON.parse($json.stdout).acquired }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "rightType": "any"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        224,
+        -80
+      ],
+      "id": "lock-node-sched-0002",
+      "name": "Lock Q10 (Sched) adquirido?"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        224,
+        60
+      ],
+      "id": "lock-node-sched-0003",
+      "name": "Sched: Lock ocupado (omitido)"
+    },
+    {
+      "parameters": {
+        "command": "=cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/common && python lock_cli.py release q10-actualizar-grupos heavy-pipeline --execution-id {{ $execution.id }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3260,
+        300
+      ],
+      "id": "lock-node-release-0001",
+      "name": "Liberar Lock Q10"
     }
   ],
   "connections": {
@@ -598,7 +736,7 @@
       "main": [
         [
           {
-            "node": "¿Es q10?",
+            "node": "Adquirir Lock Q10",
             "type": "main",
             "index": 0
           }
@@ -729,7 +867,7 @@
       "main": [
         [
           {
-            "node": "Sched: q10_to_sheets",
+            "node": "Adquirir Lock Q10 (Sched)",
             "type": "main",
             "index": 0
           }
@@ -885,6 +1023,119 @@
           }
         ]
       ]
+    },
+    "Adquirir Lock Q10": {
+      "main": [
+        [
+          {
+            "node": "Lock Q10 adquirido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lock Q10 adquirido?": {
+      "main": [
+        [
+          {
+            "node": "¿Es q10?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aviso Lock Ocupado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Adquirir Lock Q10 (Sched)": {
+      "main": [
+        [
+          {
+            "node": "Lock Q10 (Sched) adquirido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lock Q10 (Sched) adquirido?": {
+      "main": [
+        [
+          {
+            "node": "Sched: q10_to_sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sched: Lock ocupado (omitido)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder OK": {
+      "main": [
+        [
+          {
+            "node": "Liberar Lock Q10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder Error Q10": {
+      "main": [
+        [
+          {
+            "node": "Liberar Lock Q10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder Error Organizador": {
+      "main": [
+        [
+          {
+            "node": "Liberar Lock Q10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sched: export_sin_completar": {
+      "main": [
+        [
+          {
+            "node": "Liberar Lock Q10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder resultado manual": {
+      "main": [
+        [
+          {
+            "node": "Liberar Lock Q10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -903,9 +1154,9 @@
   },
   "meta": null,
   "pinData": {},
-  "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
-  "activeVersionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
-  "versionCounter": 2491,
+  "versionId": "97157736-341c-4340-a6d9-16a4b380ec81",
+  "activeVersionId": "97157736-341c-4340-a6d9-16a4b380ec81",
+  "versionCounter": 3263,
   "triggerCount": 2,
   "shared": [
     {
@@ -928,9 +1179,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-07-23T21:36:21.041Z",
-    "createdAt": "2026-07-23T21:36:21.041Z",
-    "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
+    "updatedAt": "2026-08-06T14:50:59.184Z",
+    "createdAt": "2026-08-06T14:50:59.184Z",
+    "versionId": "97157736-341c-4340-a6d9-16a4b380ec81",
     "workflowId": "Rblg81qifVshsRae",
     "nodes": [
       {
@@ -962,7 +1213,7 @@
             "interval": [
               {
                 "field": "cronExpression",
-                "expression": "0 17,21,1,5 * * *"
+                "expression": "0 17,1 * * *"
               }
             ]
           }
@@ -1025,7 +1276,7 @@
       {
         "parameters": {
           "chatId": "={{ $json.chat_id }}",
-          "text": "No entiendo ese comando.\n\nComandos disponibles:\n/actualizar q10 — Q10 → Sheets + Dashboard\n/actualizar panel — Pipeline Panel de Datos (Supabase/Netlify)\n/actualizar asistencia — Asistencia Zoom → Supabase\n/actualizar mr — Form MR2024 → BD Mujeres ROFÉ\n/actualizar rebotes — Captura rebotes de correo\n/actualizar alerta — Alerta de deserción\n/actualizar backfill — Grabaciones Zoom → YouTube/Drive",
+          "text": "No entiendo ese comando.\n\nComandos disponibles:\n/actualizar q10 — Q10 → Sheets + Dashboard\n/actualizar panel — Pipeline Panel de Datos (Supabase/Vercel)\n/actualizar asistencia — Asistencia Zoom → Supabase\n/actualizar mr — Form MR2024 → BD Mujeres ROFÉ\n/actualizar rebotes — Captura rebotes de correo\n/actualizar alerta — Alerta de deserción\n/actualizar backfill — Grabaciones Zoom → YouTube/Drive",
           "additionalFields": {}
         },
         "type": "n8n-nodes-base.telegram",
@@ -1495,6 +1746,144 @@
             "name": "Telegram Q10 Bot"
           }
         }
+      },
+      {
+        "parameters": {
+          "command": "=cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/common && python lock_cli.py acquire q10-actualizar-grupos heavy-pipeline --execution-id {{ $execution.id }} --workflow-id {{ $workflow.id }}"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          448,
+          750
+        ],
+        "id": "lock-node-tg-0001",
+        "name": "Adquirir Lock Q10"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "cond-lock-tg-001",
+                "leftValue": "={{ JSON.parse($json.stdout).acquired }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals",
+                  "rightType": "any"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          672,
+          750
+        ],
+        "id": "lock-node-tg-0002",
+        "name": "Lock Q10 adquirido?"
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $('Parsear Comando').first().json.chat_id }}",
+          "text": "=⏳ Ya hay una actualización de Q10 en curso (otra ejecución sigue corriendo). Se omite este disparo para no sobrecargar el servidor.\n\nIntenta de nuevo en unos minutos.",
+          "additionalFields": {}
+        },
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          896,
+          900
+        ],
+        "id": "lock-node-tg-0003",
+        "name": "Aviso Lock Ocupado",
+        "webhookId": "4fba0bd4-c4f5-42b9-b8f0-0b5ef969e567",
+        "credentials": {
+          "telegramApi": {
+            "id": "kGTAfWTTp4FATF66",
+            "name": "Telegram Q10 Bot"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "command": "=cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/common && python lock_cli.py acquire q10-actualizar-grupos heavy-pipeline --execution-id {{ $execution.id }} --workflow-id {{ $workflow.id }}"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          0,
+          -80
+        ],
+        "id": "lock-node-sched-0001",
+        "name": "Adquirir Lock Q10 (Sched)"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "cond-lock-sched-001",
+                "leftValue": "={{ JSON.parse($json.stdout).acquired }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals",
+                  "rightType": "any"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          224,
+          -80
+        ],
+        "id": "lock-node-sched-0002",
+        "name": "Lock Q10 (Sched) adquirido?"
+      },
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          224,
+          60
+        ],
+        "id": "lock-node-sched-0003",
+        "name": "Sched: Lock ocupado (omitido)"
+      },
+      {
+        "parameters": {
+          "command": "=cd C:/Users/EstudiantesJC/Downloads/Admin-usable/scripts/common && python lock_cli.py release q10-actualizar-grupos heavy-pipeline --execution-id {{ $execution.id }}"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          3260,
+          300
+        ],
+        "id": "lock-node-release-0001",
+        "name": "Liberar Lock Q10"
       }
     ],
     "connections": {
@@ -1524,7 +1913,7 @@
         "main": [
           [
             {
-              "node": "¿Es q10?",
+              "node": "Adquirir Lock Q10",
               "type": "main",
               "index": 0
             }
@@ -1655,7 +2044,7 @@
         "main": [
           [
             {
-              "node": "Sched: q10_to_sheets",
+              "node": "Adquirir Lock Q10 (Sched)",
               "type": "main",
               "index": 0
             }
@@ -1811,6 +2200,119 @@
             }
           ]
         ]
+      },
+      "Adquirir Lock Q10": {
+        "main": [
+          [
+            {
+              "node": "Lock Q10 adquirido?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Lock Q10 adquirido?": {
+        "main": [
+          [
+            {
+              "node": "¿Es q10?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Aviso Lock Ocupado",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Adquirir Lock Q10 (Sched)": {
+        "main": [
+          [
+            {
+              "node": "Lock Q10 (Sched) adquirido?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Lock Q10 (Sched) adquirido?": {
+        "main": [
+          [
+            {
+              "node": "Sched: q10_to_sheets",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Sched: Lock ocupado (omitido)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Responder OK": {
+        "main": [
+          [
+            {
+              "node": "Liberar Lock Q10",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Responder Error Q10": {
+        "main": [
+          [
+            {
+              "node": "Liberar Lock Q10",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Responder Error Organizador": {
+        "main": [
+          [
+            {
+              "node": "Liberar Lock Q10",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sched: export_sin_completar": {
+        "main": [
+          [
+            {
+              "node": "Liberar Lock Q10",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Responder resultado manual": {
+        "main": [
+          [
+            {
+              "node": "Liberar Lock Q10",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "authors": "Samuel Rojas",
@@ -1819,66 +2321,18 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-07-23T21:36:23.399Z",
-        "id": 2108,
+        "createdAt": "2026-08-06T14:51:01.025Z",
+        "id": 3046,
         "workflowId": "Rblg81qifVshsRae",
-        "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
+        "versionId": "97157736-341c-4340-a6d9-16a4b380ec81",
         "event": "activated",
         "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
       },
       {
-        "createdAt": "2026-07-24T15:22:28.221Z",
-        "id": 2110,
+        "createdAt": "2026-08-06T14:50:59.863Z",
+        "id": 3045,
         "workflowId": "Rblg81qifVshsRae",
-        "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
-        "event": "activated",
-        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
-      },
-      {
-        "createdAt": "2026-07-24T15:23:33.629Z",
-        "id": 2112,
-        "workflowId": "Rblg81qifVshsRae",
-        "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
-        "event": "activated",
-        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
-      },
-      {
-        "createdAt": "2026-07-24T16:54:56.990Z",
-        "id": 2121,
-        "workflowId": "Rblg81qifVshsRae",
-        "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
-        "event": "activated",
-        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
-      },
-      {
-        "createdAt": "2026-07-23T21:36:22.243Z",
-        "id": 2107,
-        "workflowId": "Rblg81qifVshsRae",
-        "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
-        "event": "deactivated",
-        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
-      },
-      {
-        "createdAt": "2026-07-24T15:22:27.002Z",
-        "id": 2109,
-        "workflowId": "Rblg81qifVshsRae",
-        "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
-        "event": "deactivated",
-        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
-      },
-      {
-        "createdAt": "2026-07-24T15:23:32.510Z",
-        "id": 2111,
-        "workflowId": "Rblg81qifVshsRae",
-        "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
-        "event": "deactivated",
-        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
-      },
-      {
-        "createdAt": "2026-07-24T16:54:55.722Z",
-        "id": 2120,
-        "workflowId": "Rblg81qifVshsRae",
-        "versionId": "3b2ae268-54ca-4ed8-8d46-40713eb8897c",
+        "versionId": "97157736-341c-4340-a6d9-16a4b380ec81",
         "event": "deactivated",
         "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
       }

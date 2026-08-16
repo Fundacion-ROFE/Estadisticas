@@ -104,7 +104,7 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 | `sync_supabase_to_sheets.py` | [[panel-datos-etl]] | — | — (Supabase → hoja `AUTO_Emoflow_Uso` en Google Sheets para equipo; SA con permiso Editor) |
 | `respaldo_supabase.py` | [[panel-datos-etl]] | — | — (todas las tablas base → `tools/backups/`, retención 14 días) |
 | `test_cuadre_dashboard.py` | [[panel-datos-etl]] | — | — (Fase 4: cuadre vs aprobación) |
-| Frontend Next.js (repo `panel-datos-rofe`) | [[panel-datos-etl]] | — | https://classy-pasca-eecdd6.netlify.app |
+| Frontend Next.js (repo `panel-datos-rofe`) | [[panel-datos-etl]] | — | https://panel-de-datos.vercel.app (Netlify dado de baja 2026-08-11) |
 | `test_conexion_supabase.py` | [[panel-datos-etl]] | — | — (verifica RLS de Supabase con anon key) |
 | `test_integridad_supabase.py` | [[panel-datos-etl]] · [[supabase-estructura]] | — | — (suite QA completa; candidata a chequeo diario n8n) |
 | Vista `v_persona_360` (Supabase) | [[postulantes-mr-supabase]] · [[supabase-estructura]] · [[panel-control-jc-mr]] | — | — (trazabilidad total por cédula, solo service_role; primer consumidor real será la ficha del [[panel-control-jc-mr]]) |

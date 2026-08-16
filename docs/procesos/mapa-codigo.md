@@ -175,7 +175,35 @@ Desde 2026-07-07 cada curso lleva además `aprobados` (avance ≥ 100) y `pct_ap
 | Consolidado Estudiantes Matriculados — modo **Detallado** (por periodo) | Cohorte completa del periodo, **incluye inhabilitados** (Programa, Jornada, Nivel, Estudiante, Identificación) |
 | Estudiantes cancelados (histórico) | Confirma que inhabilitado = retirado |
 
-**Lógica:** `inhabilitados = cohorte_matriculados − activos_virtual`. **Aprobado = avance > 80** (cambio 2026-07-09; antes ≥ 100 — `UMBRAL_APROBADO=80.0` con operador `>`). Los retirados del periodo se atribuyen a cada asignatura del periodo. Asignaturas con el mismo nombre en varios periodos se fusionan (Desarrollo Web: periodos 20+24).
+**Lógica:** `inhabilitados = cohorte_matriculados − activos_virtual` — **corregido 2026-08-06,
+ver gotcha abajo: ahora `activos_virtual` es la unión de activos de TODOS los periodos del
+año, no solo el periodo que se está agregando en esa vuelta del loop.** **Aprobado = avance >
+80** (cambio 2026-07-09; antes ≥ 100 — `UMBRAL_APROBADO=80.0` con operador `>`). Los retirados
+del periodo se atribuyen a cada asignatura del periodo. Asignaturas con el mismo nombre en
+varios periodos se fusionan (Desarrollo Web: periodos 20+24).
+
+**Gotcha real encontrado y corregido (2026-08-06) — falsos positivos de "inhabilitado" para
+estudiantes que avanzan rápido:** Q10 pre-matricula a cada estudiante en TODOS los niveles de
+su ruta desde el inicio (ej. Desarrollo Web: Nivel 3 = periodo 20, Avanzado = periodo 24 — los
+mismos "periodos homónimos" ya mencionados arriba), aunque todavía no haya llegado a cursar el
+nivel siguiente. La lógica original comparaba el roster de UN periodo contra los activos de
+ESE MISMO periodo — así que alguien ya activo en OTRO periodo (nivel siguiente, por ir
+adelantado) pero todavía sin actividad registrada en el nivel futuro donde Q10 ya lo
+pre-matriculó, se contaba como "inhabilitado" sin estarlo. **5 casos reales confirmados
+2026-08-06** (avisado por Samuel al ver a un estudiante con 100% de avance en H1Test aparecer
+como retirado en el panel): las 5 personas tenían 100% de avance en 6-8 cursos cada una, cero
+relación con un retiro real. Diagnóstico verificado período por período contra Q10 en vivo
+(`_diagnostico_inhabilitados_falsos.py`, script de investigación puntual, no parte del
+pipeline) — cada uno se caía en un solo periodo específico (el nivel al que aún no llegaban),
+estando activo en todos los demás. **Fix:** `activos_global` = unión de `ids_activos_periodo`
+de todos los periodos del año, calculada ANTES del loop; `inhabilitados = info["ids"] -
+activos_global` en vez de restar solo los activos del periodo en curso. **Validado:** JC pasó
+de 83 a 78 retirados (exactamente -5, ningún otro caso cambió) — sincronizado a Supabase vía
+`sync_cohorte_2026.py` + `sync_aprobacion_supabase.py`; `754 activos + 78 retirados = 832`
+cuadra exacto (antes 754+83=837, un descuadre de 5 ya visible en
+`test_integridad_supabase.py` como "reingresos"). Suite completa: 50/50 PASS tras el fix. Ver
+[[panel-control-jc-mr#7.9]] (la pestaña "Datos desactualizados Q10" fue justo lo que hizo
+saltar el hallazgo) y `claude_sessions.md` (2026-08-06) para el relato completo.
 
 **Bandas de progreso (2026-07-09):** cada curso lleva `banda_0_25` / `banda_26_80` / `banda_81_100` — conteo de los **activos** por rango de avance (suman exacto a `activos`; `banda_81_100` == `aprobados`). Las consumen las barras de los frontends: en cursos **en curso** (`!finalizado`) la barra apilada muestra estas 3 bandas (naranja `--orange` riesgo 0-25 · ámbar 26-80 · verde >80 en meta) + aprobó-y-retiró + retirado, para ver el riesgo respecto al avance esperado; en cursos **finalizados** se mantiene el formato de 4 segmentos. Paleta validada con el validador CVD de dataviz. El mismo render está en `docs/aprobacion/index.html` (`cursoRow`) y `docs/dashboard/index.html` (`stackRow`); los cursos MR (sin bandas) caen al formato viejo.
 
@@ -568,7 +596,9 @@ ID `jkNaE51PKQ4TQzNq`). Ver [[zoom-asistencia]] para detalle completo de nodos y
 |---|---|
 | `.env` | Credenciales Zoom S2S OAuth (`ZOOM_ACCOUNT_ID`, `ZOOM_CLIENT_ID`, `ZOOM_CLIENT_SECRET`, `ZOOM_WEBHOOK_SECRET_TOKEN`) — gitignoreado. Cargado como env vars del proceso n8n por `iniciar_n8n.bat`. |
 | `nodo-calcular-momentos-dorados.js` | Código del nodo Code `Calcular Momentos Dorados` en el workflow — calcula si cada participante estuvo conectado en los 3 "momentos dorados" (min 10, mitad, 10 min antes del fin) a partir de `join_time`/`leave_time` de `past_meetings/{uuid}/participants`. Copia de referencia — la fuente de verdad real es `n8n-workflows/zoom-asistencia.json`. |
-| `setup_zoom_asistance.py` | Setup (idempotente) de las pestañas `ZOOM-ASISTANCE` (destino del workflow, formato condicional <70% rojo / >=70% verde), `CUPOS` (inscritos por clase desde `tools/cupos_clases.json` + `Día`/`Hora` parseados con `parsear_horario()` + tabla `Palabra clave → Área`; columna `Alias Zoom` editable que se preserva al regenerar) y `ZOOM-STATS` (estadísticas por sesión y por semana ISO, solo fórmulas; cupo resuelto en cascada: nombre exacto → alias → área+día+hora del evento con tolerancia ±45 min). Constantes clave: `SHEET_ID`, `UMBRAL=70`, `FILAS_ASIST=20000`, `KEYWORDS_AREA`. **Gotcha:** el spreadsheet es locale `es_ES` — helper `loc()` convierte `,`→`;` en fórmulas; los arrays `{...}` usan `\` como separador de columnas; evitar decimales literales en fórmulas (usar `3/4`, no `0.75`). |
+| `nodo-calcular-espera-anclada.js` | Código del nodo Code `Calcular Espera Anclada` (rama `meeting.started`, 2026-07-30, v2) — lee el horario real de `CUPOS!A:F` + `CUPOS!H:I` (vía los nodos `Leer CUPOS Clases`/`Leer CUPOS Keywords`, mismo criterio área+día+hora ±45min que la fórmula de cupo de `ZOOM-STATS`) para anclar el corte de "presentes @10min" a la hora oficial de clase en vez de a la apertura anticipada de la sala (20-30 min antes). Fallback a redondeo si el topic no matchea ningún área. Alimenta el nodo Wait `Esperar 10 min` (`resume: specificTime`). Copia de referencia. |
+| `validar_asistencia.py` | **Validación de identidad del asistente — FUNCIONAL en producción (cierre 2026-07-30).** Lee `ZOOM-ASISTANCE` + `ASISTENCIA-10MIN` completas, las combina y ordena **cronológicamente** (`clave_fecha()`, parsea `datetime` real — el campo `Fecha` no trae cero a la izquierda en la hora, ordenar por texto crudo rompía el orden dentro del mismo día), resuelve cada fila contra la base canónica (Supabase `v_gui_personas` + `courses`/`enrollments`, cohorte 2026) y escribe la pestaña **`ASISTENCIA-VALIDADA`** (19 columnas: dato como vino · dato correcto en verde · `Estado` · `Tipo de match` · `Que paso` · `Universo consultado`). Automatiza la regla manual del equipo: si el correo **o** la cédula coinciden, la asistencia cuenta y se resuelve el otro dato; si ninguno coincide → revisión manual. Chequeo previo a toda la cascada: `staff_o_bot` (dominio `tocaunavida.org` o bot de notas) y `mentor_sofka` (correo en la hoja externa "Programación monitores e instructores 2026", leída en vivo cada corrida vía `cargar_mentores_sofka()` — corre antes que el match por nombre a propósito, para que un mentor no le robe la asistencia a un estudiante homónimo). Cascada: `correo_e_id_exactos` → `conflicto_correo_vs_id` → `id_exacto_corrige_correo` → `correo_exacto` → `correo_con_typo` (similitud ≥ `SIM_TYPO` 0.85 + margen 0.06 sobre el 2° candidato + apoyo de nombre o dominio) → `typo_ambiguo` → `nombre_exacto`/`nombre_ambiguo` (nombre + primer apellido contenidos en el nombre completo de algún candidato de **toda la cohorte activa**, sin exigir coincidencia exacta de nombres/apellidos intermedios — 1 candidato → REVISAR, 2+ → `EXAMINAR` naranja) → `fuera_del_curso` → `otra_cohorte` → `sin_match`. Universo acotado por cohorte + curso (tema Zoom → curso vía `KEYWORDS_CURSO`, mismo criterio de palabras clave que `CUPOS!H:I`); temas de `NO_CLASE` (prueba/test/entrevista/monitores) → `reunion_no_clase`. **Los 3 tipos con estado `EXCLUIR`** (`staff_o_bot`/`mentor_sofka`/`reunion_no_clase`) **NO se escriben en la hoja** (solo cuentan en el resumen de consola) — no son estudiantes, no aportan nada que revisar. Filas agrupadas visualmente por sesión: una **fila divisoria** (curso/fecha/host/conteo por Estado) antes de cada clase, con las filas de detalle debajo colapsables (`+`/`-` del margen izquierdo de Sheets). En las pestañas de origen **tacha en rojo** la celda del dato malo (nunca sobreescribe el crudo) y limpia el formato antes de repintar, así una corrección manual desaparece en la corrida siguiente. Sin colores grises en la hoja (pedido explícito). `python scripts/zoom-asistencia/validar_asistencia.py [--dry-run] [--solo TAB] [--sin-tachado]` |
+| `setup_zoom_asistance.py` | Setup (idempotente) de las pestañas `ZOOM-ASISTANCE` (destino del workflow, formato condicional <70% rojo / >=70% verde), `CUPOS` (inscritos por clase desde `tools/cupos_clases.json` + `Día`/`Hora` parseados con `parsear_horario()` + tabla `Palabra clave → Área`; columna `Alias Zoom` editable que se preserva al regenerar), `ZOOM-STATS` (estadísticas por sesión y por semana ISO, solo fórmulas; cupo resuelto en cascada: nombre exacto → alias → área+día+hora del evento con tolerancia ±45 min) y **`ZOOM-STATS-VALIDADO`** (2026-08-03, `construir_zoom_stats_validado()`, flag `--solo-validado`) — mismas tablas pero calculadas sobre `ASISTENCIA-VALIDADA` en vez de `ZOOM-ASISTANCE` crudo: sin staff/mentores Sofka/reuniones no-clase (ya excluidos aguas arriba por `validar_asistencia.py`), sin duplicados por typo de correo, más una columna "Identidad por confirmar" (REVISAR+EXAMINAR+MANUAL de la sesión, sin restar de "Conectados"). Corre en paralelo a `ZOOM-STATS`, no la reemplaza — ver [[panel-clase-vivo]]. `--solo-validado` no toca `ZOOM-ASISTANCE`/`CUPOS`/`ZOOM-STATS` (esas 3 se recrean desde cero en una corrida normal — no re-ejecutar sin ese flag contra el Sheet de producción). Constantes clave: `SHEET_ID`, `UMBRAL=70`, `FILAS_ASIST=20000`, `KEYWORDS_AREA`. **Gotcha:** el spreadsheet es locale `es_ES` — helper `loc()` convierte `,`→`;` en fórmulas; los arrays `{...}` usan `\` como separador de columnas; evitar decimales literales en fórmulas (usar `3/4`, no `0.75`). **Panel en vivo (2026-08-03, ver [[panel-clase-vivo]] Fase 2):** `construir_matriculados_vivo()` (flag `--solo-matriculados-vivo`) escribe `MATRICULADOS-VIVO` (Horario · Nombre · Correo) desde la clave `roster_por_horario` de `tools/cupos_clases.json`; `construir_reuniones_activas()` crea `REUNIONES-ACTIVAS` vacía (UUID · Topic · Host · Apertura · Activo, la llenan los nodos n8n); `construir_panel_en_vivo()` (flag `--solo-panel-vivo`) escribe `PANEL-EN-VIVO` con 2 bloques (Sala A/B) que leen `REUNIONES-ACTIVAS` + `MATRICULADOS-VIVO` + `LIVE-LOG` vía `FILTER`/`INDEX`/`COUNTIFS`, mismo criterio de presencia que `nodo-presentes-10min.js`. |
 
 ## `tools/corroborar_asistencia_h3test.py` (local, gitignoreado)
 
@@ -577,6 +607,31 @@ ID `jkNaE51PKQ4TQzNq`). Ver [[zoom-asistencia]] para detalle completo de nodos y
 ## `tools/analizar_cupos_bd.py` (local, gitignoreado)
 
 **Propósito:** Análisis de la BD Seguimiento de Monitorias (xlsx pseudonimizado en Downloads) — cuenta estudiantes asignados por clase en las columnas `Horario *` de la pestaña `Seguimiento` → escribe `tools/cupos_clases.json` (89 clases, sin PII: nombre de clase + conteo). Re-ejecutar cuando cambie la BD y luego correr `setup_zoom_asistance.py` para refrescar `CUPOS`.
+
+### `scripts/zoom-asistencia/limpiar_live_log.py` (nuevo 2026-08-04)
+
+**Propósito:** Vacía `LIVE-LOG` (deja solo encabezado) — ese buffer crece sin límite con
+el tráfico real de clases (801 filas de una sola reunión de 1.5h). No toca
+`MATRICULADOS-VIVO` (ese es un snapshot estático, no un log). Agendado a diario (`Schedule
+Trigger` cron `0 21 * * *` + `Execute Command`) en el workflow `Zoom - Asistencia`, mismo
+patrón que `asistencia-zoom-diario`. Corrido manualmente y agendado el 2026-08-04. Ver
+[[panel-clase-vivo]].
+
+**Extendido 2026-08-03 (ver [[panel-clase-vivo]] Fase 2):** por cada columna `Horario *` ahora también captura `Nombres`/`Apellidos`/`E-mail` de la fila y las guarda en la clave `roster_por_horario` de `tools/cupos_clases.json` (`{horario: [{nombre, correo}, ...]}`) — sigue siendo el mismo archivo/lectura, PII local únicamente. Corrida real: 5.319 asignaciones horario-estudiante, 89 horarios distintos. Consume esta clave `construir_matriculados_vivo()` en `setup_zoom_asistance.py`.
+
+### `scripts/zoom-asistencia/cerrar_reuniones_inactivas.py` (nuevo 2026-08-05)
+
+**Propósito:** Marca `Activo=FALSE` en `REUNIONES-ACTIVAS` para cualquier reunión sin
+ningún evento nuevo en `LIVE-LOG` (columna `HoraMs`) por más de `--umbral-horas` (default
+3h) — resuelve de raíz el "zombie" de `meeting.ended` que no llega (mismo gotcha de
+`meeting.ended`, ver [[zoom-asistencia]]): sin esto, esa fila se queda `Activo=TRUE` para
+siempre y, si es la única reunión activa de su cuenta, tapa el bloque de esa cuenta en
+`PANEL-EN-VIVO` con datos viejos en vez de vacío. Respaldo por `Apertura` si `LIVE-LOG` ya
+no tiene historial de esa reunión (p.ej. lo borró `limpiar_live_log.py`). Soporta
+`--dry-run`. Agendado **cada hora** (`Schedule Trigger` cron `0 * * * *` + `Execute
+Command`) en el workflow `Zoom - Asistencia` — a diferencia de `limpiar_live_log.py`
+(solo de noche), este corre durante el día porque el problema afecta el panel en vivo
+mientras hay clases reales. Ver [[panel-clase-vivo]].
 
 ## `tools/exportar_sin_completar.py` (local, gitignoreado)
 
@@ -1236,7 +1291,7 @@ retorna 0 si los 0 errores fueron reales.
 
 **Propósito:** Exporta TODAS las tablas/vistas públicas de Supabase a JSON individuales en
 `docs/datos/*.json` (uno por tabla, más `manifest.json` con fecha y conteos). Pensado para que el
-panel Netlify pudiera consumir JSON pre-generado en vez de Supabase client-side.
+panel (hoy Vercel) pudiera consumir JSON pre-generado en vez de Supabase client-side.
 
 **Servicios:** Supabase REST (anon key — solo agregados vía RLS)
 
@@ -1284,9 +1339,9 @@ de git, detecta "sin cambios" con `git status --porcelain` (retorna `True`, no e
 retorna `False` si `add`/`commit`/`push` fallan o expiran — `main()` convierte un `False` en
 `estado=error` + `sys.exit(1)` en vez de la ADVERTENCIA silenciosa de antes.
 
-**⚠️ Sin consumidor confirmado (2026-07-21, sigue así al 2026-07-24):** el frontend real de
-producción (`venerable-truffle-331f3c.netlify.app`) consulta Supabase directo desde el
-cliente (`lib/api.ts`, anon key) — NO lee estos JSON. El script sigue encadenado en
+**⚠️ Sin consumidor confirmado (2026-07-21, sigue así al 2026-08-15):** el frontend real de
+producción (`panel-de-datos.vercel.app` — Netlify de baja 2026-08-11) consulta Supabase directo
+desde el cliente (`lib/api.ts`, anon key) — NO lee estos JSON. El script sigue encadenado en
 `q10-sync-supabase` (pedido expreso de Samuel) pese a esto; ver [[panel-datos-etl#`sync_supabase_to_sheets.py` / `export_supabase_json.py` — continuidad analizada, ENCADENADOS (2026-07-21)]]
 para la decisión completa y motivo de mantenerlo así. 🙋 Pendiente decisión de Samuel: mantener
 sin fecha de retiro, o ponerle una.
@@ -1488,6 +1543,386 @@ script Python — misma idea, sin duplicar lógica de cruce.
 
 **Uso:** `GET /rest/v1/v_persona_360?cedula=eq.<cedula>` — **solo `service_role`** (RLS+REVOKE
 estricto, verificado 401 a anon). Nunca exponer al frontend público.
+
+---
+
+## `scripts/panel-datos/cargar_bd2023_jc.py`
+
+**Propósito:** primer script de la validación cohorte-por-cohorte de años anteriores (arrancó
+2026-08-04, ver [[plan-maestro-2026-07-29]] y la decisión de ir año por año en vez de todo de
+una vez). Fuente: CSV manual `BD Monitorias seguimiento Jóvenes creaTIvos 2023 - Base Global`
+(roster de personas APROBADAS de esa cohorte, entregado por Samuel, con demografía de ciudad
+pero sin agrupación por área metropolitana).
+
+**Qué resolvió:**
+1. Los 336 participantes de cohorte=2023/programa=jc que ya existían en Supabase (cargados
+   antes por `importar_historico_q10.py`, con enrollments/avance reales) tenían
+   `ciudad`/`grupo_ciudad` en NULL — no se podían segmentar por zona en los paneles. Cruce por
+   cédula + agrupación por metro (mismo criterio que el resto de la BD: Envigado/Sabaneta/
+   Itagüí → `MED`, Paysandú/Guichón/Fray Bentos/Quebracho → `UY`, etc.) → 331/336 actualizados
+   (`--aplicar`); 6 quedan sin ciudad porque su cédula no está en este CSV.
+2. 158 cédulas del CSV no tenían NINGÚN registro en Supabase (141 totalmente nuevas + 17 que
+   sí estaban en `postulantes_jc` — universo Mongo, promo_year=2023/EGRESADO — pero sin
+   `participant_id` enlazado). Decisión confirmada con Samuel: como el CSV no trae curso ni
+   avance individual, no se inventa a qué materia puntual pertenecen (ensuciaría
+   `aprobacion_cursos`) — se crean bajo un curso "sello" único, **"Aprobados 2023 (BD
+   Monitorias, sin curso específico)"** (cohorte=2023/programa=jc, avance=100/completado), solo
+   para que cuenten en los agregados por cohorte/ciudad (`--crear-nuevos`).
+
+**Gotcha de encoding:** el CSV se ve con caracteres rotos (`Medell�n`) al imprimirlo en la
+terminal de Windows, pero el archivo en sí es UTF-8 válido (verificado byte a byte) — es un
+problema de renderizado de la consola, no del dato. Leer siempre con `encoding="utf-8"`, nunca
+"arreglar" reconvirtiendo a latin-1 (eso sí corrompe el dato de verdad).
+
+**Idempotente:** ambos modos (`--aplicar`, `--crear-nuevos`) se pueden re-correr sin duplicar
+(chequea `ciudad` no-NULL / `q10_id` existente / enrollment ya creado antes de escribir).
+
+**Comando:**
+```bash
+python scripts/panel-datos/cargar_bd2023_jc.py                 # reporte, no escribe
+python scripts/panel-datos/cargar_bd2023_jc.py --aplicar        # UPDATE ciudad/grupo_ciudad (330)
+python scripts/panel-datos/cargar_bd2023_jc.py --crear-nuevos   # crea los 158 sin match previo
+```
+
+No toca `cohorte_ingresos`/`aprobacion_cursos` (tablas agregadas atadas al pipeline de la
+cohorte viva vía `sync_aprobacion_supabase.py`) — deliberado, para no chocar con esa
+automatización. Las vistas por ciudad/cohorte (`v_programa_stats_por_ciudad`,
+`historial_cursos_ciudad`, `v_demografia_grupo`) sí reflejan el cambio porque leen directo de
+`participants`/`enrollments`/`courses`.
+
+---
+
+## `scripts/panel-datos/marcar_culminados_2023_jc.py`
+
+**Propósito:** corrige `cargar_bd2023_jc.py` con la lista OFICIAL de aprobados de la cohorte
+JC 2023 (345 cédulas, entregada por Samuel el mismo día 2026-08-04) — de las 494 personas
+cargadas, solo 345 están confirmadas. Fuente: `tools/cohorte-2023-jc/oficial_345_pasaron.csv`
+(PII, gitignoreado).
+
+**Qué hizo (2 correcciones el mismo día, misma corrida final):**
+1. Con la lista de aprobados: de los 149 sin confirmación, 141 eran del curso "sello"
+   (`cargar_bd2023_jc.py --crear-nuevos`) — enrollment corregido de `100/completado` a
+   `0/abandonado`.
+2. Con la lista de retirados (143 cédulas, entregada después): resolvió 143 de esos 149 —
+   exactamente las mismas 141 del sello + 2 de las 336 con datos reales de Q10. Las 143 se
+   insertaron en la tabla ya existente `retiros` (`on_conflict=cedula,cohorte,programa`, sin
+   duplicar contra 4 que ya estaban ahí por otra fuente). Quedan 6 sin dato en ninguna lista
+   (de las 336, no se les asume nada). **Resultado final: 345 aprobados + 143 retirados + 6 sin
+   dato = 494.**
+
+**Pendiente:** migración `docs/migrations/040_cohorte_2023_jc_ceds.sql` (tabla
+`cohorte_2023_ceds`, mismo patrón que `cohorte_2026_ceds` migración 038 pero con `culminado` en
+vez de `retirado`) sin aplicar — el MCP de Supabase se desconectó a mitad de sesión y no ha
+reconectado. El script ya detecta si la tabla no existe y no falla, solo avisa; re-correr
+`--aplicar` después de aplicar la migración para poblarla (345 `culminado=true` + 149 `false`).
+
+**Comando:**
+```bash
+python scripts/panel-datos/marcar_culminados_2023_jc.py             # reporte
+python scripts/panel-datos/marcar_culminados_2023_jc.py --aplicar   # corrige + retiros + puebla ceds
+```
+
+---
+
+## `scripts/panel-datos/fusionar_duplicados_2023_jc.py`
+
+**Propósito:** tercera corrección de JC 2023 el mismo día (2026-08-04). Los "6 sin dato" que
+dejó `marcar_culminados_2023_jc.py` resultaron ser **duplicados**, no gente nueva: cada uno ya
+existía dos veces en `participants` — un registro de Q10 (cédula con typo de 1 dígito, pero
+con matrículas/avance REALES de 3-5 cursos) y otro creado por `cargar_bd2023_jc.py` bajo el
+curso "sello" (cédula oficial correcta, ya contada en los 345 aprobados, pero sin datos de
+curso reales). Mismo nombre y email exacto en ambos — se detectó cruzando por email contra el
+CSV original en vez de solo por cédula.
+
+**Qué hizo:** repuntó las matrículas reales de Q10 al `participant_id` con la cédula oficial,
+archivó y borró el enrollment "sello" (ya redundante) y el `participants`/`participant_metrics`
+duplicado de Q10 (a `datos_archivados`, reversible), y recalculó agregados. Verificado antes de
+borrar: sin referencias en `retiros`/`emoflow_ingresos`/`postulantes_mr`/`postulantes_jc`.
+
+**Resultado: 345 aprobados + 143 retirados = 488 (0 sin dato, 0 huérfanas)** — el roster bajó
+de 494 a 488 porque los 6 nunca fueron personas nuevas.
+
+**Comando:**
+```bash
+python scripts/panel-datos/fusionar_duplicados_2023_jc.py             # reporte
+python scripts/panel-datos/fusionar_duplicados_2023_jc.py --aplicar   # fusiona los 6 pares
+```
+
+---
+
+## `scripts/panel-datos/marcar_aprobados_2024_jc.py`
+
+**Propósito:** mismo ejercicio de validación que JC 2023, aplicado a JC 2024 (2026-08-04).
+Diferencia clave: Samuel indicó que **2024 careció de rigor** en la toma del dato de
+aprobación, así que no hay lista separada de retirados — el criterio es binario: en la lista
+oficial de 433 aprobados = aprobado; fuera de ella = "no confirmado" (sinónimo de reprobado/ya
+no habilitado). Fuente: `tools/cohorte-2024-jc/oficial_433_aprobados.csv` (PII, gitignoreado).
+
+**Qué hizo:** de las 433 oficiales, 432 emparejaron directo por cédula contra las 470 personas
+ya cargadas (`importar_historico_q10.py`); 1 (José Luis Erazo Tutivén) emparejó por EMAIL —
+cédula con 1 dígito de typo en Q10, mismo patrón que 2023 — corregida sin conflicto. Las 37 del
+roster que no están en la lista oficial se insertaron en `retiros` (espacio ya existente, mismo
+patrón que 2023) con motivo explícito de "no confirmado, no es retiro formal". No se tocan los
+enrollments reales de Q10 de nadie.
+
+**Gotcha:** la primera corrida clasificó mal a la persona de la cédula con typo (usó la cédula
+vieja antes de que la corrección surtiera efecto en la comparación) — quedó un retiro fantasma
+que se archivó en `datos_archivados` y se borró. Corregido en el script: incluir ambas
+variantes de cualquier corrección conocida en el set de "oficiales" antes de clasificar.
+
+**Resultado: 433 aprobados + 37 no confirmados = 470, 0 sin dato** — luego se descubrió que el
+universo real era 608, ver `completar_universo_2024_jc.py` abajo.
+
+**Comando:**
+```bash
+python scripts/panel-datos/marcar_aprobados_2024_jc.py             # reporte
+python scripts/panel-datos/marcar_aprobados_2024_jc.py --aplicar   # corrige cédula + retiros
+```
+
+---
+
+## `scripts/panel-datos/completar_universo_2024_jc.py`
+
+**Propósito:** cierra el gap 608 (universo oficial confirmado por Samuel) vs 470 (lo que
+`importar_historico_q10.py` había cargado) para JC 2024. Causa raíz — ya documentada en el
+propio `importar_historico_q10.py` desde antes de esta sesión: el Consolidado histórico de Q10
+solo trae a quienes seguían habilitados al momento de la consulta; retirados históricos nunca
+aparecen ahí. Se descartó Mongo (`postulantes_jc` promo_year=2024 = 434 filas, casi la misma
+población que los 433 aprobados, no el universo completo).
+
+**Fuente:** `BD Seguimiento de Monitorias JC2024 - ACTUALIZADA - Seleccionados.csv` (608 filas
+con Ciudad/Barrio/Género, entregado por Samuel) → `tools/cohorte-2024-jc/universo_608.json`
+(PII, gitignoreado).
+
+**Qué hizo:** de las 470 ya cargadas, 469 emparejaron directo por cédula (la 470ª es un perfil
+de prueba, "Prueba Carlitos" `123456780`, sin relación con el universo real). Se enriqueció
+ciudad/grupo_ciudad de esas 469 (estaban NULL). Las 139 del universo que nunca habían generado
+NINGÚN registro en Q10 se crearon en `participants` con su demografía real (sin inventar
+enrollments/avance — no hay premisa de aprobación que sostener, a diferencia del curso "sello"
+de 2023) y se insertaron en `retiros` (espacio ya existente) con motivo explícito.
+
+**Resultado: 433 aprobados + 176 retirados (37+139) = 609** — 608 del universo oficial + 1
+perfil de prueba pendiente de purgar (quedó colado en `retiros` en el paso anterior).
+
+**Comando:**
+```bash
+python scripts/panel-datos/completar_universo_2024_jc.py             # reporte
+python scripts/panel-datos/completar_universo_2024_jc.py --aplicar   # enriquece + crea + retiros
+```
+
+---
+
+## `scripts/panel-datos/marcar_aprobados_2025_jc.py`
+
+**Propósito:** mismo ejercicio de validación que 2023/2024, aplicado a JC 2025 (2026-08-05).
+Fuente: `tools/cohorte-2025-jc/oficial_559_aprobados.csv` (PII, gitignoreado). A diferencia de
+2023/2024, la cohorte 2025 ya tiene cursos granulares reales en Supabase (no un curso "sello").
+
+**Qué hace:** cruza el roster de 733 personas (`courses.programa='jc' cohorte='2025'`) contra
+la lista oficial por cédula; los que no aparecen se insertarían en `retiros` como "no
+confirmado". Cruce en frío: 559/559 aprobados cruzan (100%), 174 no confirmados. **Nunca se
+corrió `--aplicar`** — ver [[validacion-cohortes#Detalle: JC 2025]] para el motivo (se
+descubrieron 14 cuentas de staff que hay que excluir antes de aplicar). **Actualizado
+2026-08-06:** las 14 cédulas ya NO están hardcodeadas en este script (violaba la regla de PII
+del proyecto — este archivo sí se sube a git) — se leen de
+`tools/cohorte-2025-jc/staff_excluidos.json` (gitignoreado, mismo archivo que usa
+`panel_control_datos.py` para el toggle "Mostrar staff" del panel, ver [[panel-control-jc-mr]]).
+
+**Aplicado 2026-08-06: 559 aprobados + 160 insertados en `retiros`, 0 fallos** — `retiros` para
+cohorte=2025/programa=jc quedó en 163 (160 nuevos + 3 preexistentes de otra fuente). **JC 2025
+sellada**, ver [[validacion-cohortes]].
+
+**Comando:**
+```bash
+python scripts/panel-datos/marcar_aprobados_2025_jc.py             # reporte
+python scripts/panel-datos/marcar_aprobados_2025_jc.py --aplicar   # corrige + inserta retiros
+```
+
+---
+
+## `scripts/panel-datos/cruce_universo_2025_jc.py`
+
+**Propósito:** cruce de 3 vías (aprobados/retirados/sobrantes) para JC 2025 — confirma si el
+roster de Supabase coincide con el universo oficial (aprobados + retirados) y exporta a Excel
+cualquier sobrante. Solo lectura, no escribe en Supabase.
+
+**Qué hizo:** de 733 en el roster, 559 aprobados + 160 retirados cruzan, 14 quedan sin
+clasificar → exportados a `Downloads/sobrantes_cohorte_2025_jc.xlsx`. Ver diagnóstico completo
+en `diagnostico_sobrantes_2025_jc.py`.
+
+**Comando:** `python scripts/panel-datos/cruce_universo_2025_jc.py`
+
+---
+
+## `scripts/panel-datos/diagnostico_sobrantes_2025_jc.py`
+
+**Propósito:** antes de asumir que los "sobrantes" de `cruce_universo_2025_jc.py` son un hueco
+real, descarta duplicados por typo de cédula cruzando por EMAIL y NOMBRE normalizado (mismo
+patrón que resolvió los "6 sin dato" de 2023) contra las listas oficiales; para los que
+sobreviven ambos cruces, trae su historial completo de Supabase (`source_system`, `created_at`,
+enrollments, si ya tiene retiro) para diagnosticar el origen.
+
+**Resultado:** 0 de los 14 sobrantes eran duplicados — los 14 son casos reales, identificados
+como staff (ver [[validacion-cohortes#Detalle: JC 2025]]).
+
+**Comando:** `python scripts/panel-datos/diagnostico_sobrantes_2025_jc.py`
+
+---
+
+## `scripts/panel-datos/verificar_existencia_general_mr.py`
+
+**Propósito:** verifica que las cédulas de un export de la pestaña `General` de BD-Mujeres ROFÉ
+ya existan en `postulantes_mr` — solo existencia, MR no tiene distinción retirado/no-retirado
+como JC. Solo lectura contra Supabase, no escribe.
+
+**Resultado (2026-08-05):** 4.727/4.736 (99.8%) ya existían; 9 faltantes exportadas a
+`Downloads/faltantes_general_mr.xlsx`.
+
+**Comando:** `python scripts/panel-datos/verificar_existencia_general_mr.py "<ruta al csv>"`
+
+---
+
+## `scripts/panel-datos/extraer_mongo_jc_demografia.py`
+
+**Propósito:** rescata `profile.birthDate` + el subdocumento `firstPhase` completo de
+`jovenes-creativos.User`/`Applicant` en Mongo — campos que `extraer_mongo_jc_historico.py`
+nunca pidió (proyectaba solo `profile`+`creationDate`). `firstPhase` trae estrato, tipo de
+vivienda, núcleo familiar, identidad de género, grupo poblacional, etc. Solo lectura en Mongo,
+guarda payload local (`tools/mongo_jc_demografia_payload.json`, PII).
+
+**Hallazgo clave:** medido por año de promoción, **estrato/vivienda en Mongo SOLO existen para
+promoYear=2023** (91.6-98% ahí) — 2019-2022/2024-2026 están 100% vacíos en `firstPhase`, no es
+limitación de la extracción, ese formulario nunca se usó fuera de 2023. `birthDate` sí está
+100% completo en los 8 años → permite derivar `edad` para todo el histórico.
+
+**Comando:** `python scripts/panel-datos/extraer_mongo_jc_demografia.py`
+
+---
+
+## `scripts/panel-datos/cargar_demografia_mongo_jc.py`
+
+**Propósito:** cruza el payload de `extraer_mongo_jc_demografia.py` contra el roster real de
+`participants` (cualquier cohorte JC con enrollment) y llena SOLO edad/estrato/tipo_vivienda/
+genero donde hoy están `NULL` — aditivo, idempotente, nunca sobreescribe. Mapea `houseType`
+(ARRENDADA/PROPIA/FAMILIAR→arrendado/propia/familiar) e `identity` (M/F/LGBTIQ+/No
+binario/Prefiere no decir→enum de género del proyecto).
+
+**Resultado (2026-08-05): 1.344 actualizados, 0 fallos** — 344 en 2023, 433 en 2024, 557 en
+2025, 10 en 2026 (mayormente edad, ya que estrato/vivienda solo vienen de 2023 en Mongo).
+
+**Comando:**
+```bash
+python scripts/panel-datos/cargar_demografia_mongo_jc.py             # reporte
+python scripts/panel-datos/cargar_demografia_mongo_jc.py --aplicar   # aplica los PATCH
+```
+
+---
+
+## `scripts/panel-datos/cargar_demografia_master_jc.py`
+
+**Propósito:** cruza un export maestro de JC (30.050 filas, 2019-2026, universo COMPLETO de
+postulantes incl. NO SELECCIONADO) contra `participants` y llena estrato/edad/genero/
+tipo_vivienda vacíos. Dedupe por cédula: gana la fila con más campos demográficos llenos.
+
+**Resultado (2026-08-05): 1.745 actualizados, 0 fallos** — aporte grande en 2024 (género
+464), 2025 (estrato 519 + edad 341 + género 714) y 2026 (estrato 551).
+
+**Comando:**
+```bash
+python scripts/panel-datos/cargar_demografia_master_jc.py "<ruta al csv>"             # reporte
+python scripts/panel-datos/cargar_demografia_master_jc.py "<ruta al csv>" --aplicar
+```
+
+---
+
+## `scripts/panel-datos/cargar_demografia_fase1_2024_jc.py` · `..._fase1_2025_jc.py` ·
+## `..._fase1_2026_jc.py` · `..._fase2_2026_jc.py`
+
+**Propósito común:** cruzan los formularios "Fase 1" de postulación (sociodemográfico completo:
+fecha de nacimiento, estrato, tipo de vivienda, núcleo familiar, género) contra el roster real
+matriculado de cada cohorte, llenando solo `NULL`s. El de 2025 combina 3 archivos por país
+(COL/ECU/UY, cada uno con columnas en índices distintos). El de Fase 2 2026 (prueba
+psicotécnica) se corrió por completitud pero **no aporta nada** — esa fuente no trae
+sociodemografía, solo confirma que género ya estaba en 99.9%.
+
+**Resultados (2026-08-05/06):**
+| Script | Cohorte | Actualizados | Aporta |
+|---|---|---|---|
+| `..._fase1_2024_jc.py` | 2024 | 368 | estrato 358, vivienda 362 |
+| `..._fase1_2025_jc.py` (COL+ECU+UY) | 2025 | 531 | vivienda (única faltante) |
+| `..._fase1_2026_jc.py` | 2026 | 518 | vivienda (0%→66.7%) |
+| `..._fase2_2026_jc.py` | 2026 | 0 | ninguno — documentado para no reinvestigar |
+
+**Comando (patrón común):**
+```bash
+python scripts/panel-datos/cargar_demografia_fase1_2024_jc.py "<ruta al csv>"             # reporte
+python scripts/panel-datos/cargar_demografia_fase1_2024_jc.py "<ruta al csv>" --aplicar
+# fase1_2025_jc.py recibe 3 rutas: <col.csv> <ecu.csv> <uy.csv> [--aplicar]
+```
+
+---
+
+## `scripts/panel-datos/cargar_nivel_estudio_2023_jc.py` · `..._2024_jc.py` ·
+## `..._fase1_2025_jc.py` · `..._2026_jc.py`
+
+**Propósito común:** derivan `nivel_estudio` (enum `primaria/secundaria/técnico/profesional/
+postgrado`) a partir de la columna "grado que cursa" de cada fuente Fase 1, con años de ajuste
+según cuánto tiempo pasó desde que se llenó el formulario (2023→+3, 2024→+2, 2025→+1,
+2026→+0). Regla completa (incl. el gotcha de escalas por país ECU/UY) documentada en
+[[demografia-historica-jc#Regla de negocio: derivar nivel_estudio desde grado escolar]].
+
+**Resultados (2026-08-06):**
+| Script | Cohorte | Actualizados | % final |
+|---|---|---|---|
+| `..._2023_jc.py` | 2023 | 448 | 91.8% |
+| `..._2024_jc.py` | 2024 | 451 | 96.0% |
+| `..._fase1_2025_jc.py` (COL+ECU+UY) | 2025 | 647 | 88.3% |
+| `..._2026_jc.py` | 2026 | 552 | 71.0% |
+
+**Comando (patrón común):**
+```bash
+python scripts/panel-datos/cargar_nivel_estudio_2024_jc.py "<ruta al csv>"             # reporte
+python scripts/panel-datos/cargar_nivel_estudio_2024_jc.py "<ruta al csv>" --aplicar
+```
+
+---
+
+## `scripts/panel-datos/cargar_ciudad_2025_jc.py`
+
+**Propósito:** llena `ciudad`/`grupo_ciudad` para JC 2025 (hueco 732/733 sin dato detectado
+auditando el Panel de Control, 2026-08-06). Fuente: `oficial_559_aprobados.csv` +
+`oficial_163_retirados.csv` (ya usadas para sellar la cohorte) — traen `ciudad_codigo` ya
+limpio (BAQ/BOG/CTG/CAL/MED/GYL/QTO/UY), más simple que parsear texto libre de los
+formularios Fase 1. Solo llena `NULL`s.
+
+**Resultado: 373+346=719 actualizados, 0 fallos** (un timeout SSL transitorio partió la
+corrida en dos, resuelto re-corriendo — idempotente). `grupo_ciudad` 0.1%→98.2%,
+`municipio`→95.2%.
+
+**Comando:**
+```bash
+python scripts/panel-datos/cargar_ciudad_2025_jc.py             # reporte
+python scripts/panel-datos/cargar_ciudad_2025_jc.py --aplicar
+```
+
+---
+
+## `tools/panel_control_datos.py` + `tools/panel_control_gui.py`
+
+**Propósito:** Panel de Control JC/MR — GUI Tkinter, histórico completo (todas las cohortes),
+fuentes togglables, reemplaza a `panel_riesgo_gui.py`. Documentado a fondo en
+[[panel-control-jc-mr]] (arquitectura, las 3 fases originales del 2026-07-30, universo
+canónico 832 del 2026-08-03). Reusa `v_gui_personas`/`v_persona_360` sin duplicar lógica de
+cruce, y la paleta/`TablaFiltrable` de `panel_riesgo_gui.py`.
+
+**Extensión 2026-08-06** (ver [[panel-control-jc-mr#7.6]]/[[panel-control-jc-mr#7.7]] para el
+detalle completo): toggle "Mostrar staff" (off por defecto, excluye 14 cuentas de JC 2025 de
+tabla + KPIs; lee `tools/cohorte-2025-jc/staff_excluidos.json`) + corrección de privacidad
+(esa lista ya no vive hardcodeada en un script tracked por git) + **caché en disco 24h**
+(`tools/cache/panel_control_<programa>.json`, gitignoreado) con botón "🔄 Forzar
+actualización" que lo salta a propósito.
+
+**Comando:** `python tools/panel_control_gui.py`
 
 ---
 

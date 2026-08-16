@@ -629,9 +629,9 @@ escritorio real con datos reales antes de darlo por cerrado del todo.
 ## 7.14 Extensión 2026-08-10 — llevar "En Seguimiento" al panel público (Vercel/Netlify), solo como KPI agregado
 
 Pedido de Samuel: tras sacar a 3 personas de la pestaña Seguimiento, quería ver ese cambio
-reflejado también en el panel web público (`comunicaciones-ai/Panel-De-Datos`, deploy en
-Netlify **y** Vercel — el README del repo del frontend documenta el segundo deploy desde
-~2026-08, todavía no sincronizado con `panel-datos-etl.md` en este repo).
+reflejado también en el panel web público (`comunicaciones-ai/Panel-De-Datos`, en ese momento
+deploy en Netlify **y** Vercel en paralelo — **Netlify dado de baja 2026-08-11, hoy es solo
+Vercel** `panel-de-datos.vercel.app`, ver [[panel-datos-etl]]).
 
 **Corrección importante encontrada en el camino:** `en_seguimiento_jc` (líneas 248-321 de
 `sync_sociodemograficos.py`) **NO es upsert parcial** como el resto de columnas demográficas —

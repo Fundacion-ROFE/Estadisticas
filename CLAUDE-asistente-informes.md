@@ -23,6 +23,32 @@
 
 ---
 
+## ⚠️ Estado de los datos históricos (en revisión activa)
+
+La cohorte **2026 es la más confiable** — se audita seguido y tiene un suite de pruebas
+automáticas corriendo sobre ella. Los **años anteriores se están validando cohorte por cohorte**
+(iniciado 2026-08-04), así que si preguntas por un año viejo, Claude debe avisarte si ese año
+todavía no está sellado como validado, en vez de darte el número como si fuera definitivo.
+Estado detallado (para Claude): `docs/procesos/validacion-cohortes.md`.
+
+- ✅ **Jóvenes creaTIvos 2023 — sellada y cuadrada (2026-08-04).** La cohorte tiene **488**
+  personas: **345 aprobaron/culminaron oficialmente** y **143 se retiraron oficialmente**
+  (0 sin dato, 0 huérfanas — cuadre exacto contra las listas oficiales de Samuel). Si preguntan
+  "¿cuántos aprobaron 2023?" la respuesta es **345**, no 488/494 — esos son el universo
+  matriculado/roster.
+- ✅ **Jóvenes creaTIvos 2024 — sellada y cuadrada (2026-08-04).** El universo oficial son
+  **608** personas (confirmado por Samuel — Q10 solo capturaba 470 porque su reporte histórico
+  no muestra a quien se retiró y quedó inhabilitado antes de la consulta). De esas 608:
+  **433 aprobaron oficialmente**, **175 quedan como retiradas/no confirmadas** (2024 careció de
+  rigor en la toma de este dato — no hay causa específica reconstruida como en 2023). Si
+  preguntan "¿cuántos aprobaron 2024?" la respuesta es **433**, no 608.
+- ⚪ JC 2025 — todavía sin auditar a fondo (probablemente correcta, no verificada aún).
+- ⚠️ **Mujeres ROFÉ solo tiene cursos/matrículas cargados de 2025 y 2026** — 2023/2024 no están
+  en `courses`/`enrollments` todavía. Si preguntan por esos años en MR, dilo explícitamente en
+  vez de mostrar un 0 o un total incompleto sin aclarar.
+
+---
+
 ## 💬 Cómo pedirle cosas (ejemplos que puedes copiar)
 
 Solo escríbele en lenguaje natural. Ejemplos reales que este asistente puede resolver:
@@ -70,7 +96,7 @@ La **Fundación ROFÉ** tiene dos programas:
   | BAQ | Barranquilla | | |
 
 - **Paneles públicos ya existentes** (por si quieres enlazarlos o comparar):
-  - Panel principal (Netlify): https://classy-pasca-eecdd6.netlify.app
+  - Panel principal (Vercel): https://panel-de-datos.vercel.app
 
 ---
 

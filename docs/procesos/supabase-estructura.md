@@ -805,7 +805,7 @@ reingreso (retiro 2024 + reingreso activo 2026). Blindado con test de regresión
 `test_integridad_supabase.py`).
 
 ### `v_pub_cohorte` / `v_pub_geografia` / `v_pub_avance` 🟢 — públicas (`anon`: solo SELECT)
-Para el panel Netlify (Fase 3, bloqueada — repo no montado). Owner-privilege (**sin**
+Para el panel público (hoy Vercel; en producción, ya no bloqueado). Owner-privilege (**sin**
 `security_invoker`) — mismo patrón que `v_demografia_grupo` y hermanas: con
 `security_invoker=on` estas vistas le exigirían a `anon` un GRANT directo sobre `participants`/
 `ciudad_alias`, que está deliberadamente revocado por PII. Se probó y se rompió con `SET ROLE
