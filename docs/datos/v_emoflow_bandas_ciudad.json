@@ -48,17 +48,17 @@
     "grupo_ciudad": "CAL",
     "banda": "16-30",
     "orden": 3,
-    "participantes": 27,
-    "ingresos_promedio": 24.0,
-    "avance_promedio": 97.3,
-    "pct_aprobacion": 95.6
+    "participantes": 28,
+    "ingresos_promedio": 23.7,
+    "avance_promedio": 97.4,
+    "pct_aprobacion": 95.7
   },
   {
     "grupo_ciudad": "PAN",
     "banda": "61+",
     "orden": 5,
     "participantes": 6,
-    "ingresos_promedio": 521.2,
+    "ingresos_promedio": 521.5,
     "avance_promedio": 98.7,
     "pct_aprobacion": 97.7
   },
@@ -220,7 +220,7 @@
     "banda": "61+",
     "orden": 5,
     "participantes": 30,
-    "ingresos_promedio": 130.6,
+    "ingresos_promedio": 130.7,
     "avance_promedio": 99.0,
     "pct_aprobacion": 97.8
   },
@@ -282,10 +282,10 @@
     "grupo_ciudad": "CAL",
     "banda": "6-15",
     "orden": 2,
-    "participantes": 8,
-    "ingresos_promedio": 10.1,
-    "avance_promedio": 91.2,
-    "pct_aprobacion": 90.5
+    "participantes": 7,
+    "ingresos_promedio": 9.4,
+    "avance_promedio": 86.8,
+    "pct_aprobacion": 85.7
   },
   {
     "grupo_ciudad": "MED",
