@@ -99,17 +99,6 @@
     "visto_en_fuente_at": "2026-07-10T09:42:09"
   },
   {
-    "id": "4686d3e3-86ff-499c-8a51-95a5b247dc16",
-    "nombre": "BIENVENIDOS A JÓVENES CREATIVOS",
-    "cohorte": "2026",
-    "fecha_inicio": null,
-    "fecha_fin": null,
-    "estado": "activo",
-    "created_at": "2026-07-10T01:30:06.620938",
-    "programa": "jc",
-    "visto_en_fuente_at": "2026-08-16T22:30:16"
-  },
-  {
     "id": "8eb6b785-3917-48ca-8ccc-993bd14d4c99",
     "nombre": "Desarrollo Web Front-End - CSS - 2026",
     "cohorte": "2025",
@@ -176,6 +165,17 @@
     "visto_en_fuente_at": "2026-07-10T09:42:09"
   },
   {
+    "id": "4686d3e3-86ff-499c-8a51-95a5b247dc16",
+    "nombre": "BIENVENIDOS A JÓVENES CREATIVOS",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc",
+    "visto_en_fuente_at": "2026-08-17T02:31:27"
+  },
+  {
     "id": "ffd44d77-40d6-48bf-ac39-50176a3898a8",
     "nombre": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
     "cohorte": "2026",
@@ -184,40 +184,7 @@
     "estado": "activo",
     "created_at": "2026-07-10T01:30:06.620938",
     "programa": "jc",
-    "visto_en_fuente_at": "2026-08-16T22:30:16"
-  },
-  {
-    "id": "3eb4d761-51de-4bcd-b2e2-8a7c8f143b2d",
-    "nombre": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
-    "cohorte": "2026",
-    "fecha_inicio": null,
-    "fecha_fin": null,
-    "estado": "activo",
-    "created_at": "2026-07-10T01:30:06.620938",
-    "programa": "jc",
-    "visto_en_fuente_at": "2026-08-16T22:30:16"
-  },
-  {
-    "id": "287d579f-56f1-47ba-8c69-06ce8756f723",
-    "nombre": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
-    "cohorte": "2026",
-    "fecha_inicio": null,
-    "fecha_fin": null,
-    "estado": "activo",
-    "created_at": "2026-07-10T01:30:06.620938",
-    "programa": "jc",
-    "visto_en_fuente_at": "2026-08-16T22:30:16"
-  },
-  {
-    "id": "c2b84241-8c73-4b84-a09d-2df274a81fbe",
-    "nombre": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
-    "cohorte": "2026",
-    "fecha_inicio": null,
-    "fecha_fin": null,
-    "estado": "activo",
-    "created_at": "2026-07-10T01:30:06.620938",
-    "programa": "jc",
-    "visto_en_fuente_at": "2026-08-16T22:30:16"
+    "visto_en_fuente_at": "2026-08-17T02:31:27"
   },
   {
     "id": "3da648a5-a676-4be8-9967-7254c5cb0ab5",
@@ -264,6 +231,17 @@
     "visto_en_fuente_at": "2026-07-10T09:42:09"
   },
   {
+    "id": "3eb4d761-51de-4bcd-b2e2-8a7c8f143b2d",
+    "nombre": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc",
+    "visto_en_fuente_at": "2026-08-17T02:31:27"
+  },
+  {
     "id": "e8c10fef-8b56-4011-9690-629281bc9743",
     "nombre": "Empoderamiento en Ventas: Lleva tu Negocio al Siguiente Nivel!",
     "cohorte": "2025",
@@ -273,6 +251,28 @@
     "created_at": "2026-07-10T14:42:08.052523",
     "programa": "mr",
     "visto_en_fuente_at": "2026-07-10T09:42:09"
+  },
+  {
+    "id": "287d579f-56f1-47ba-8c69-06ce8756f723",
+    "nombre": "HABILIDADES ESENCIALES PARA SER UN EMPRENDEDOR EXITOSO",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc",
+    "visto_en_fuente_at": "2026-08-17T02:31:27"
+  },
+  {
+    "id": "c2b84241-8c73-4b84-a09d-2df274a81fbe",
+    "nombre": "HACKEA TU CEREBRO: APRENDE EN MENOS TIEMPO Y SIN SUFRIR",
+    "cohorte": "2026",
+    "fecha_inicio": null,
+    "fecha_fin": null,
+    "estado": "activo",
+    "created_at": "2026-07-10T01:30:06.620938",
+    "programa": "jc",
+    "visto_en_fuente_at": "2026-08-17T02:31:27"
   },
   {
     "id": "53921b65-b970-49d5-9fbf-967d120add3b",
@@ -305,7 +305,7 @@
     "estado": "activo",
     "created_at": "2026-07-24T22:30:18.833662",
     "programa": "jc",
-    "visto_en_fuente_at": "2026-08-16T22:30:16"
+    "visto_en_fuente_at": "2026-08-17T02:31:27"
   },
   {
     "id": "7b55a71f-152f-4694-88dd-adddf71db740",
@@ -316,7 +316,7 @@
     "estado": "activo",
     "created_at": "2026-07-30T02:30:54.802871",
     "programa": "jc",
-    "visto_en_fuente_at": "2026-08-16T22:30:16"
+    "visto_en_fuente_at": "2026-08-17T02:31:27"
   },
   {
     "id": "37dfdf2e-4529-4ea0-9566-6b4671e81ddc",
@@ -327,7 +327,7 @@
     "estado": "activo",
     "created_at": "2026-07-23T14:45:15.712024",
     "programa": "mr",
-    "visto_en_fuente_at": "2026-08-16T22:30:16"
+    "visto_en_fuente_at": "2026-08-17T02:31:27"
   },
   {
     "id": "ae1c5761-e352-4e0f-a18c-d7321e6f7a37",
@@ -338,7 +338,7 @@
     "estado": "activo",
     "created_at": "2026-07-10T01:30:06.620938",
     "programa": "jc",
-    "visto_en_fuente_at": "2026-08-16T22:30:16"
+    "visto_en_fuente_at": "2026-08-17T02:31:27"
   },
   {
     "id": "c5286b4e-3d0f-4d33-a971-605fd8c35107",
