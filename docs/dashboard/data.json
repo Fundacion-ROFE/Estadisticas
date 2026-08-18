@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-08-17T17:01:42.626132-05:00",
+  "ultima_actualizacion": "2026-08-18T01:01:07.262524-05:00",
   "por_curso": [
     {
       "curso": "BIENVENIDOS A JÓVENES CREATIVOS",
@@ -27,7 +27,7 @@
       "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
       "estudiantes": 717,
       "finalizados": 34,
-      "promedio": 28.31,
+      "promedio": 29.12,
       "min": 0.0,
       "max": 100.0,
       "inscritos": 717,
@@ -97,7 +97,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 436
+      "cantidad": 423
     },
     {
       "categoria": "AVANCE IRREGULAR",
@@ -116,7 +116,7 @@
         "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
         "estudiantes": 179,
         "finalizados": 29,
-        "promedio": 23.69,
+        "promedio": 23.79,
         "min": 0.0,
         "max": 100.0,
         "inscritos": 179,
