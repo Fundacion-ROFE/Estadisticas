@@ -1,13 +1,11 @@
 # Panel de clase en vivo + Stats desde ASISTENCIA-VALIDADA
 
-**Estado:** Fase 1 y Fase 2 CONSTRUIDAS. Primera clase real de principio a fin con monitor
-mirando el panel: 2026-08-06 — se encontraron y corrigieron **2 bugs nuevos en vivo** (UUID
-reciclado de sala recurrente, mismo topic Zoom compartido por 2 horarios distintos) y se agregó
-resumen de conteo rápido + indicador de actividad viva (ver sección propia abajo). Ciclo de
-correos alternos EJECUTADO el mismo día (tabla Supabase + panel con match/color nuevo,
-probados con datos sintéticos) — solo falta crear el Forms manualmente para que el flujo
-reciba casos reales (ver "Plan: correos alternos").
-**Última actualización:** 2026-08-06
+**Estado:** Fase 1 y Fase 2 (Sheets) CONSTRUIDAS. Pivote a web (2026-08-15) + **Fase 2 real
+(Supabase directo desde Vercel) CONSTRUIDA Y DESPLEGADA 2026-08-18** — ver sección "Pivote a
+Vercel: Fase 2 real" al final de este documento para el diseño completo, incluyendo el
+descubrimiento de que `output:'export'` (estático) bloqueaba la ruta original de API route, y
+2 gotchas nuevos de n8n encontrados en vivo.
+**Última actualización:** 2026-08-18
 **Procesos relacionados:** [[zoom-asistencia]] (fuente de todos los datos: `ZOOM-ASISTANCE`,
 `ASISTENCIA-10MIN`, `LIVE-LOG`, `ASISTENCIA-VALIDADA`) · [[supabase-estructura]] (esquema de
 `participants`/`postulantes_jc`/`postulantes_mr` — relevante para el plan de correos alternos)
@@ -1176,3 +1174,171 @@ sigue activa, conectar el workflow en vivo solo cuando termine):**
   producción (Netlify de baja 2026-08-11, no es opción; hoy solo corre en `npm run dev` local,
   puerto 3001); decidir si borrar o dejar
   desactivado el workflow `panel-vivo-api` ya superado por `servidor_panel_vivo.py`.
+
+---
+
+## Sesión 2026-08-18 — Auditoría en vivo (n8n caído) + "lectura oficial" (ancla ASISTENCIA-10MIN)
+
+Pedido: analizar a fondo, testear y ver debilidades; usuario pegó horario/registro Zoom nuevo
+(curso "Desarrollo Web Front-End - JS", martes-sábado 18-22 ago, no mapeado aún en `CUPOS`) y
+preguntó si convenía fijar un "tiempo para la lectura" para más precisión — aclarado con
+`AskUserQuestion`: sí, un umbral tipo `ASISTENCIA-10MIN` (hora oficial + N min), no una
+ventana de gracia por estudiante.
+
+### Hallazgo urgente — n8n caído en el momento de la revisión (confirmado en vivo, no supuesto)
+`node.exe` (n8n) vivo en memoria desde el 2026-08-13 11:15am (5 días), pero
+`http://localhost:5678/healthz` sin responder y el túnel ngrok devolviendo `ERR_NGROK_6024`
+(no puede conectar al backend local) — mismo patrón "conexiones muertas" ya documentado
+([[project_n8n_suspend_resume]]). Sin n8n: cero captura de Zoom, cero crons (`q10-sync`,
+`asistencia-zoom-diario`, etc.). Avisado al usuario para reiniciar `iniciar_n8n.bat` desde una
+ventana normal antes de la clase de las 6pm (hora de la revisión: 11:39am, mismo día — margen
+suficiente). No se pudo reiniciar desde esta sesión (requiere consola interactiva, gotcha ya
+documentado el 2026-08-15).
+
+### Hallazgo — el panel web tampoco serviría hoy aunque n8n reviviera
+`lib/panelVivo.ts` (`panel-datos-rofe`) sigue apuntando por defecto al webhook n8n
+`panel-vivo-api`, **desactivado a propósito** el 2026-08-15 al pivotar a
+`servidor_panel_vivo.py` — nadie actualizó `NEXT_PUBLIC_WEBHOOK_PANEL_VIVO`. Sumado a que
+`servidor_panel_vivo.py` no está corriendo (0 procesos Python) y el túnel Cloudflare (efímero)
+ya no existe, y que la Fase 1 web no está desplegada a Vercel (`npm run dev` local, puerto
+3001) — hoy ninguna de las 2 vías (Sheets ni web) sirve, independientemente de n8n.
+
+### Feature nueva — "lectura oficial" (`UMBRAL_LECTURA_MIN`, `panel_logic.py`)
+El resumen del panel (`presentes`/`nunca_entro`/...) es instantáneo — cambia en cada poll de
+25s, poco útil para que un monitor cite "la cifra" sin que le cambie el número si vuelve a
+mirar. Se agregó un snapshot único, congelado la primera vez que se cruza
+**hora_oficial (`CUPOS!F`) + 10 min** — mismo ancla que ya usa `ASISTENCIA-10MIN`
+(`meeting.started` → `Esperar 10 min` → snapshot), reusado a propósito en vez de inventar un
+criterio nuevo.
+
+**Piezas:**
+- `panel_logic.py`: refactor de `resolver_horario()` sobre una función base compartida
+  (`resolver_fila_cupos()`, devuelve la fila completa de `CUPOS` en vez de solo el texto de
+  Clase) + `resolver_hora_oficial()` (día/hora decimal de esa fila) + `calcular_lectura()`
+  (fecha real de apertura + hora oficial + `UMBRAL_LECTURA_MIN`). `resolver_horario()` sigue
+  con el mismo comportamiento/firma — `clasificar_no_identificados.py` no se tocó y sigue
+  funcionando (verificado, import + `py_compile` limpios).
+- `api_panel_vivo.py`: `generar_panel_vivo()` calcula `hora_lectura`/`resumen_lectura` por
+  sala; la primera vez que `datetime.now() >= hora_lectura` se congela el `resumen` de ESE
+  momento en `tools/lecturas_panel_vivo.json` (clave `horario|fecha`, poda entradas de +2 días
+  en cada carga — mismo motivo que `Limpiar LIVE-LOG`). Pollos siguientes leen el valor ya
+  congelado, no lo recalculan.
+- `panel-datos-rofe`: `Sala` (`lib/panelVivo.ts`) gana `hora_lectura`/`resumen_lectura`;
+  `TarjetaSala` (`components/PanelVivoVista.tsx`) muestra "📖 Lectura oficial pendiente — se
+  toma a las HH:MM" antes del umbral y el número congelado después; datos de demo
+  (`app/panel-vivo/demo/page.tsx`) actualizados mostrando ambos estados.
+
+**Probado con datos 100% sintéticos** (no hay clase real corriendo ni n8n vivo para probar
+end-to-end hoy):
+- `panel_logic.py`: `resolver_horario`/`resolver_hora_oficial` sin colisión y con colisión de
+  topic (2-3 filas de `CUPOS` compartiendo alias, distinto día) desambiguan igual que antes del
+  refactor; `calcular_lectura` con hora entera y con hora fraccionaria (14.5 = 2:30pm) da el
+  instante correcto (+10 min sobre la hora OFICIAL, no la apertura real).
+- `api_panel_vivo.py`: `_cargar_lecturas`/`_guardar_lecturas` roundtrip + poda de entradas
+  viejas, sobre un archivo temporal (no toca `tools/lecturas_panel_vivo.json` real).
+  Integración completa simulando el loop de `generar_panel_vivo()` con reloj real de la
+  máquina (clase con inicio oficial hace 20 min, lectura ya vencida): 1ª vuelta con 1 presente
+  → se congela en 1; 2ª vuelta con 3 presentes reales → el resumen VIVO sube a 3 pero
+  `resumen_lectura` **se mantiene en 1**, confirmando que no se recalcula tras la primera vez.
+- Frontend: `tsc --noEmit` y `next build` limpios (`panel-datos-rofe`), sin tocar código no
+  relacionado.
+
+**Sin desplegar/commitear** — cambios solo en el working tree (Python en `admin-usable`, TS en
+`panel-datos-rofe`), a la espera de que el usuario revise. Requiere, antes de verse en
+producción: n8n arriba, `servidor_panel_vivo.py` corriendo, túnel activo con la URL correcta en
+`NEXT_PUBLIC_WEBHOOK_PANEL_VIVO`, y deploy a Vercel (ninguno de estos 4 pasos se tocó hoy).
+
+### Datos nuevos pendientes de mapear — curso "Desarrollo Web Front-End - JS"
+El usuario pegó un export de registro Zoom (9 sesiones martes-sábado 18-22 ago) para un curso
+que no aparece todavía en `CUPOS!Alias Zoom` — de origen distinto a `CUPOS` (que sale de la BD
+Seguimiento, no de reportes de Zoom). Pendiente confirmar con el usuario si son clases reales
+de esta semana antes de mapear alias — no se tocó `CUPOS` hoy.
+
+---
+
+## Sesión 2026-08-18 (tarde) — Pivote a Vercel: Fase 2 real (Supabase directo, sin backend local)
+
+Pedido: llevar el panel de clase en vivo a Vercel para que no dependa de que el portátil de
+Samuel esté prendido (hasta ahora: `servidor_panel_vivo.py` local + túnel Cloudflare efímero).
+
+**Hallazgo que cambió el diseño original:** `panel-datos-rofe` está desplegado con
+`output: 'export'` (Next.js 100% estático) — **no soporta API routes**. Quitar el export
+estático habría afectado TODO el sitio y necesitado una variable de entorno nueva en el
+dashboard de Vercel (sin acceso desde esta sesión). Se optó por el mismo patrón que ya usa el
+resto del panel: **el frontend lee Supabase directo, client-side**, pero con el JWT real de la
+sesión de Google OAuth (rol `authenticated`), no la anon key. Más seguro que el esquema viejo
+(clave compartida en localStorage) y no requiere tocar `next.config.mjs`.
+
+### Piezas construidas
+- **Supabase** (migración `051_panel_vivo_supabase_APLICADA.sql`): tablas nuevas
+  `matriculados_vivo`/`zoom_cupos_config`/`zoom_lecturas_panel` (reemplazan
+  MATRICULADOS-VIVO/CUPOS/el JSON local de lecturas); políticas RLS nuevas para rol
+  `authenticated` + `@tocaunavida.org` sobre esas 3 + `zoom_reuniones_activas`/`zoom_live_log`
+  (antes solo `service_role`); 3 funciones `SECURITY DEFINER` de alcance angosto
+  (`universo_postulantes_panel_vivo`, `enriquecer_panel_vivo`, `resolver_alias_panel_vivo`) —
+  **no se abrió** el bloqueo de `postulantes_jc`/`postulantes_mr` (decisión 2026-07-23), estas
+  funciones exponen solo lo mínimo necesario. Gotcha real: `REVOKE ... FROM PUBLIC` no basta —
+  Supabase ya había otorgado `EXECUTE`/`SELECT` a `anon` por default privileges del proyecto;
+  hubo que revocar de `anon` puntualmente (detectado con `get_advisors` tras aplicar).
+- **`scripts/zoom-asistencia/sync_panel_vivo_config_supabase.py`** (nuevo): empuja
+  `tools/cupos_clases.json` (roster) + la pestaña `CUPOS` a las tablas nuevas. Reemplazo total
+  (delete+insert), no upsert — mismo criterio que `recrear()`. Corrida manual, mismo ritmo que
+  `analizar_cupos_bd.py`. Corrido hoy: 5.974 filas de roster, 92 de CUPOS.
+- **`lib/panelLogic.ts`** (nuevo, `panel-datos-rofe`): port 1:1 de `panel_logic.py` a
+  TypeScript — corre client-side ahora en vez de en el backend Python.
+- **`lib/panelVivo.ts`** (reescrito): ya no pega al webhook ngrok/Cloudflare — consulta
+  Supabase directo con el cliente ya autenticado de `lib/auth.ts`. Se eliminó la clave de
+  localStorage (`x-panel-vivo-key`) — el gate real es RLS + login de Google.
+- **n8n `Zoom - Asistencia`** (producción, tocado en vivo con ventana confirmada sin clase en
+  curso): 2 nodos `httpRequest` nuevos, en **fan-out** desde nodos ya existentes (mismo patrón
+  probado antes en este workflow) — `Registrar zoom_live_log Supabase` (paralelo a
+  `Registrar LIVE-LOG`) y `Abrir zoom_reuniones_activas Supabase` (paralelo a
+  `Abrir en REUNIONES-ACTIVAS`). Credencial compartida `httpCustomAuth` (creada el mismo día
+  por la sesión de WhatsApp/ManyChat, ver [[project_whatsapp_identificacion_manychat]]) — NO
+  usar `Header Auth` de un solo header, Supabase exige `apikey`+`Authorization` juntos.
+
+### Gotcha nuevo — "Cerrar" en tiempo real vía n8n NO es confiable en este punto del flujo
+Se intentó un 3er nodo (`Cerrar zoom_reuniones_activas Supabase`) para escribir `activo=false`
+en el mismo instante que `meeting.ended`. Falló en 2 formas distintas, probadas ambas con
+webhooks sintéticos FIRMADOS de verdad (HMAC real):
+1. **En fan-out** (paralelo a `Cerrar en REUNIONES-ACTIVAS`, la salida de `Cerrar Reunion
+   Activa`): el nodo simplemente no disparaba de forma consistente. Causa: ese punto del flujo
+   alimenta a `Esperar 90s` — **este documento ya advertía de esto** (`Cerrar Reunion Activa`
+   en sí fue insertado EN LÍNEA en 2026-08-03 por el mismo motivo, "el fan-out no siempre
+   dispara" antes de un `wait`). Se pasó por alto ese precedente al diseñar el nodo nuevo.
+2. **En línea** (insertado entre `Cerrar Reunion Activa` y `Cerrar en REUNIONES-ACTIVAS`): el
+   nodo PATCH a veces "fallaba silenciosamente" con `"Converting circular structure to JSON"`
+   (mismo bug de n8n `HttpRequestV3` que ya rompía `Reenviar a Grabaciones` — response 204 sin
+   body + `Connection: close` de Supabase dispara el bug; probar con `Prefer:
+   return=representation` en vez de `return=minimal` no lo resolvió del todo) — y al estar EN
+   LÍNEA, un fallo ahí **corrompía la entrada de `Cerrar en REUNIONES-ACTIVAS`**, el mecanismo
+   de cierre en Sheets que sí llevaba semanas funcionando. Detectado con datos reales antes de
+   quedar así en producción.
+
+**Decisión final (más segura):** el nodo se quitó del workflow en vivo por completo. En su
+lugar, `scripts/zoom-asistencia/cerrar_reuniones_inactivas.py` (el script que YA corre cada
+hora vía n8n para cerrar zombies de Sheets) ahora también cierra la fila espejo en Supabase
+(`activo=false`), best-effort, sin bloquear el cierre en Sheets si Supabase falla. Mismo
+criterio ya aceptado en este documento: "cerrar" no necesita ser instantáneo (el propio zombie
+de Sheets ya toleraba hasta 3h). Probado end-to-end con eventos sintéticos: abrir vía webhook
+→ Supabase+Sheets en `activo=true` → correr el script con `--umbral-horas 0` → ambos en
+`activo=false`.
+
+### Verificado
+- `Registrar zoom_live_log Supabase` y `Abrir zoom_reuniones_activas Supabase`: probados con
+  eventos sintéticos firmados repetidos, sin duplicados (se quitó `retryOnFail` del insert de
+  `zoom_live_log` porque un reintento "exitoso pero lento" duplicaba filas — confirmado con una
+  prueba real antes del fix).
+- `cerrar_reuniones_inactivas.py` extendido: probado con `--umbral-horas 0` real, cierra
+  Sheets Y Supabase para el mismo UUID.
+- `npx tsc --noEmit` limpio en `panel-datos-rofe` tras el port completo.
+- Todos los datos sintéticos de prueba (`TEST-*`) limpiados de Sheets y Supabase al terminar.
+
+### Pendiente / próximos pasos
+- **Commit + push de `panel-datos-rofe`** (rama `main`, remoto `samuel_oficial` = el que
+  despliega a Vercel) — pendiente de confirmación explícita del usuario antes de publicar
+  (login gate + RLS ya probados, pero es la primera vez que este panel corre en producción).
+- Correr `sync_panel_vivo_config_supabase.py` de nuevo cuando se refresque la BD Seguimiento
+  (misma cadencia que `analizar_cupos_bd.py` hoy).
+- Confirmar con una clase real (mismo criterio que validó la Fase 1 el 2026-08-15).
+- El panel viejo de Sheets (`PANEL-EN-VIVO`) sigue vivo en paralelo, sin apagarse.

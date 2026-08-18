@@ -1,5 +1,11 @@
 {
+  "updatedAt": "2026-08-18T19:53:57.059Z",
+  "createdAt": "2026-07-01T19:54:39.991Z",
+  "id": "jkNaE51PKQ4TQzNq",
   "name": "Zoom - Asistencia",
+  "description": null,
+  "active": true,
+  "isArchived": false,
   "nodes": [
     {
       "parameters": {
@@ -920,6 +926,100 @@
       ],
       "id": "exec-cerrar-reuniones-inactivas",
       "name": "Cerrar reuniones inactivas"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://kbxptoowtnteflhrfwid.supabase.co/rest/v1/zoom_live_log",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ uuid: $json.UUID, evento: $json.Evento, nombre: $json.Nombre, correo: $json.Correo, hora_ms: $json.HoraMs, hora_bogota: $json['Hora Bogota'], curso: $json.Curso }) }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1232,
+        780
+      ],
+      "id": "za-node-supabase-live-log-0001",
+      "name": "Registrar zoom_live_log Supabase",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "BFfZVyAav1xgYn62",
+          "name": "Supabase Service Role - panel-datos-rofe (headers)"
+        }
+      },
+      "retryOnFail": false,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://kbxptoowtnteflhrfwid.supabase.co/rest/v1/zoom_reuniones_activas?on_conflict=uuid",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ uuid: $json.UUID, topic: $json.Topic, host: $json.Host, apertura: $json.Apertura + ':00-05:00', activo: $json.Activo }) }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1648,
+        780
+      ],
+      "id": "za-node-supabase-abrir-0001",
+      "name": "Abrir zoom_reuniones_activas Supabase",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "BFfZVyAav1xgYn62",
+          "name": "Supabase Service Role - panel-datos-rofe (headers)"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     }
   ],
   "connections": {
@@ -1113,6 +1213,11 @@
             "node": "Registrar LIVE-LOG",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Registrar zoom_live_log Supabase",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -1179,6 +1284,11 @@
             "node": "Abrir en REUNIONES-ACTIVAS",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Abrir zoom_reuniones_activas Supabase",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -1233,5 +1343,1438 @@
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false,
     "timezone": "America/Bogota"
+  },
+  "staticData": {
+    "global": {
+      "reunionesAbiertas": {
+        "u/nbqRyiQJGEkJRGdWgcYw==": true,
+        "iby/B5LdTiaeB0PfNli9LQ==": true,
+        "tDuA0enERTO7otAVMQelOA==": true,
+        "cOiPdj1VQo+Y0VjjbU3NOA==": true,
+        "ZNAAzcRtSC+YfZAN6sRbsQ==": true,
+        "lzZwQVdFScqD3ObHrKigeA==": true,
+        "L+no5O6ZTPORMnIjA8cmZQ==": true,
+        "iQebDeQzQP6R9BjGweIQXQ==": true,
+        "I+9mX3VgSMat9heAKNhJsw==": true,
+        "OFyvaPUrTs2YVcfX1eqAxA==": true,
+        "TEST-BUG1-FIX-1786555069==:2026-08-12": true,
+        "ua9HHpxQRCONoFEYwkiDXA==:2026-08-12": true,
+        "2npJoNcXRVy5nyW34RlnrA==:2026-08-15": true,
+        "SPvDPTg6Q5+aDBbKY68Aog==:2026-08-15": true,
+        "v3fDlWC9QkmbWgvO9fJmpg==:2026-08-15": true,
+        "f20DcJ1SR5GIaYViTf/FFA==:2026-08-15": true,
+        "fPTTjy78S52iKPviS54fbg==:2026-08-15": true,
+        "eafGoUSqR2eKllCeESjD2A==:2026-08-17": true,
+        "TEST-CIERRE-HORARIO-1787083015:2026-08-18": true
+      }
+    },
+    "node:Diario 21:00 -- Limpiar LIVE-LOG": {
+      "recurrenceRules": []
+    },
+    "node:Cada hora -- Cerrar reuniones inactivas": {
+      "recurrenceRules": []
+    }
+  },
+  "meta": null,
+  "pinData": {},
+  "versionId": "1e8ad513-adf0-4420-8763-5045ef1f749e",
+  "activeVersionId": "1e8ad513-adf0-4420-8763-5045ef1f749e",
+  "versionCounter": 365,
+  "triggerCount": 3,
+  "shared": [
+    {
+      "updatedAt": "2026-07-01T19:54:40.007Z",
+      "createdAt": "2026-07-01T19:54:40.007Z",
+      "role": "workflow:owner",
+      "workflowId": "jkNaE51PKQ4TQzNq",
+      "projectId": "sCDSlnWeaXfVGSdx",
+      "project": {
+        "updatedAt": "2026-06-18T19:33:43.567Z",
+        "createdAt": "2026-06-18T17:26:43.451Z",
+        "id": "sCDSlnWeaXfVGSdx",
+        "name": "Samuel Rojas <soportejunior@tocaunavida.org>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-08-18T19:53:57.064Z",
+    "createdAt": "2026-08-18T19:53:57.064Z",
+    "versionId": "1e8ad513-adf0-4420-8763-5045ef1f749e",
+    "workflowId": "jkNaE51PKQ4TQzNq",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "zoom-asistencia",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          0,
+          0
+        ],
+        "id": "3c2011cd-bb36-47c6-bd94-0a01e54d9055",
+        "name": "Webhook Trigger",
+        "webhookId": "6ef94ad4-8f3c-420d-9b8a-c7a7e610703f"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "cond-crc-001",
+                "leftValue": "={{ $json.body.event }}",
+                "rightValue": "endpoint.url_validation",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          224,
+          0
+        ],
+        "id": "332a5f63-826b-475a-a6c1-663096c419e4",
+        "name": "Es validacion CRC?"
+      },
+      {
+        "parameters": {
+          "action": "hmac",
+          "value": "={{ $json.body.payload.plainToken }}"
+        },
+        "type": "n8n-nodes-base.crypto",
+        "typeVersion": 2,
+        "position": [
+          448,
+          -160
+        ],
+        "id": "5689c848-7652-4425-a41c-29c527d5559a",
+        "name": "Hash CRC",
+        "credentials": {
+          "crypto": {
+            "id": "J6gwIBkpDxHfEU92",
+            "name": "Zoom Webhook HMAC Secret (real)"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ { \"plainToken\": $('Webhook Trigger').item.json.body.payload.plainToken, \"encryptedToken\": $json.data } }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [
+          672,
+          -160
+        ],
+        "id": "2b3dfb74-1a6f-4339-9d0a-86754cc30d85",
+        "name": "Responder CRC"
+      },
+      {
+        "parameters": {
+          "action": "hmac",
+          "value": "={{ 'v0:' + $json.headers['x-zm-request-timestamp'] + ':' + JSON.stringify($json.body) }}"
+        },
+        "type": "n8n-nodes-base.crypto",
+        "typeVersion": 2,
+        "position": [
+          448,
+          160
+        ],
+        "id": "0b4e7e08-4266-4d39-ab27-785e319321c4",
+        "name": "Hash Firma Zoom",
+        "credentials": {
+          "crypto": {
+            "id": "J6gwIBkpDxHfEU92",
+            "name": "Zoom Webhook HMAC Secret (real)"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "cond-firma-001",
+                "leftValue": "={{ 'v0=' + $json.data }}",
+                "rightValue": "={{ $('Webhook Trigger').item.json.headers['x-zm-signature'] }}",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          672,
+          160
+        ],
+        "id": "c95ee6cb-622b-4fbc-abe1-07ce6b087123",
+        "name": "Firma valida?"
+      },
+      {
+        "parameters": {
+          "respondWith": "noData",
+          "options": {
+            "responseCode": 200
+          }
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [
+          928,
+          -144
+        ],
+        "id": "90273f85-48c1-4174-9855-f4490167a282",
+        "name": "Responder OK"
+      },
+      {
+        "parameters": {
+          "respondWith": "text",
+          "responseBody": "Firma invalida",
+          "options": {
+            "responseCode": 401
+          }
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [
+          1072,
+          320
+        ],
+        "id": "cbada773-cfa3-4d64-a3b3-181576129905",
+        "name": "Responder Firma Invalida"
+      },
+      {
+        "parameters": {
+          "amount": 90
+        },
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          1152,
+          -32
+        ],
+        "id": "2ffb977e-f33c-4631-8654-323924f2396a",
+        "name": "Esperar 90s",
+        "webhookId": "54346f09-baea-41c9-871c-ae93cd976d2a"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://zoom.us/oauth/token",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpBasicAuth",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "grant_type",
+                "value": "account_credentials"
+              },
+              {
+                "name": "account_id",
+                "value": "u08qlWbRTR2VBSs0bRwZPQ"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1120,
+          160
+        ],
+        "id": "5a8d1398-1100-43e8-99a6-6b79db018c34",
+        "name": "Obtener Token Zoom",
+        "credentials": {
+          "httpBasicAuth": {
+            "id": "QbO1Pa1R0lo6YdGK",
+            "name": "Zoom S2S Basic Auth v2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "url": "={{ 'https://api.zoom.us/v2/past_meetings/' + encodeURIComponent(encodeURIComponent($('Webhook Trigger').item.json.body.payload.object.uuid)) }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "={{ 'Bearer ' + $json.access_token }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1344,
+          160
+        ],
+        "id": "46ffe6a6-6910-47f6-8095-df7f6d84bb9e",
+        "name": "Info Reunion"
+      },
+      {
+        "parameters": {
+          "url": "={{ 'https://api.zoom.us/v2/past_meetings/' + encodeURIComponent(encodeURIComponent($('Webhook Trigger').item.json.body.payload.object.uuid)) + '/participants' }}",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "page_size",
+                "value": "300"
+              }
+            ]
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "={{ 'Bearer ' + $('Obtener Token Zoom').item.json.access_token }}"
+              }
+            ]
+          },
+          "options": {
+            "pagination": {
+              "pagination": {
+                "parameters": {
+                  "parameters": [
+                    {
+                      "name": "next_page_token",
+                      "value": "={{ $response.body.next_page_token }}"
+                    }
+                  ]
+                },
+                "paginationCompleteWhen": "other",
+                "completeExpression": "={{ !$response.body.next_page_token }}"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1568,
+          160
+        ],
+        "id": "4eb66901-1ca4-496b-869b-7f1cddf5d62c",
+        "name": "Participantes"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Nodo: Calcular Momentos Dorados\n// Requiere: nodo \"Info Reunion\" con { start_time, duration } reales (no programados)\n// Entrada: items de \"Participantes\" — cada item.json puede traer un array \"participants\"\n//\n// Copia de referencia del jsCode del nodo \"Calcular Momentos Dorados\" del workflow\n// \"Zoom - Asistencia\" (ID jkNaE51PKQ4TQzNq). Todo cambio va en AMBOS lados:\n// editar aquí → PUT /api/v1/workflows/jkNaE51PKQ4TQzNq → re-exportar a n8n-workflows/.\n\nconst MARGEN_MIN = 10;\nconst RE_EMAIL = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/;\nconst RE_CEDULA = /\\b\\d{6,10}\\b/;\n\n// Host real de la reunión (2026-07-29): jovenescreativos@ confirmado como 2do usuario\n// dentro de la misma cuenta Zoom que comunicaciones@ — mapear por host_id (estable,\n// no depende de que el payload traiga el email) para etiquetar/colorear en el Sheet\n// (columna \"Host\", con formato condicional amarillo/azul en ZOOM-ASISTANCE).\nconst HOST_LABELS = {\n  '5Ehn8O03Q6y4lRRGpV8c9w': 'comunicaciones',\n  'UUQqk6BdSYuNzHL0YFOqfg': 'jovenescreativos',\n};\n\n// 1. Metadata real de la reunión\nconst info = $('Info Reunion').first().json;\nconst inicio = new Date(info.start_time);\nconst duracionMin = info.duration;\nconst hostId = info.host_id || $('Webhook Trigger').first().json.body.payload.object.host_id || '';\nconst host = HOST_LABELS[hostId] || 'desconocido';\n\n// Curso = tema de la reunión (las clases se programan una a una con nombre del curso).\n// Fecha en hora Colombia (UTC-5 fijo, sin DST) para coordinar filas con la clase.\nconst curso = (info.topic || $('Webhook Trigger').first().json.body.payload.object.topic || '').trim();\nfunction fechaBogota(d) {\n  return new Date(d.getTime() - 5 * 3600000).toISOString().slice(0, 16).replace('T', ' ');\n}\n\nif (isNaN(inicio.getTime())) {\n  throw new Error('start_time inválido en \"Info Reunion\" — revisar respuesta de Zoom');\n}\nconst finReal = new Date(inicio.getTime() + duracionMin * 60000);\n\n// 2. Los 3 momentos dorados (instantes exactos)\nconst checkpoints = {\n  min10:   new Date(inicio.getTime() + MARGEN_MIN * 60000),\n  mitad:   new Date(inicio.getTime() + (duracionMin / 2) * 60000),\n  final10: new Date(inicio.getTime() + (duracionMin - MARGEN_MIN) * 60000),\n};\n\n// 3. Aplanar todas las sesiones join/leave (soporta 1 array grande o varias páginas)\nconst sesiones = [];\nfor (const item of $input.all()) {\n  const participantes = Array.isArray(item.json.participants) ? item.json.participants : [item.json];\n  for (const p of participantes) {\n    if (!p.join_time) continue;\n    sesiones.push({\n      nombreCrudo: (p.name || '').trim(),\n      emailCrudo: (p.user_email || '').trim(),\n      join: new Date(p.join_time),\n      leave: p.leave_time ? new Date(p.leave_time) : finReal, // sin leave_time → sigue conectado hasta el fin\n    });\n  }\n}\n\n// 4. Extraer email/identificación reales desde \"name\" (texto libre manual — ver gotcha conocido)\nfunction extraerContacto(nombreCrudo, emailCrudo) {\n  const email = RE_EMAIL.test(emailCrudo)\n    ? emailCrudo.toLowerCase()\n    : (nombreCrudo.match(RE_EMAIL) || [''])[0].toLowerCase();\n  const cedula = (nombreCrudo.match(RE_CEDULA) || [''])[0];\n  const nombreLimpio = nombreCrudo.split(/[-|/]/)[0].trim();\n  return { email, cedula, nombreLimpio };\n}\n\n// 5. Agrupar sesiones por participante — clave = email si existe, si no nombre normalizado\nconst grupos = new Map();\nfor (const s of sesiones) {\n  const { email, cedula, nombreLimpio } = extraerContacto(s.nombreCrudo, s.emailCrudo);\n  const clave = email || nombreLimpio.toLowerCase().replace(/\\s+/g, ' ');\n  if (!grupos.has(clave)) {\n    grupos.set(clave, { nombreLimpio, email, cedula, intervalos: [] });\n  }\n  const g = grupos.get(clave);\n  g.intervalos.push([s.join, s.leave]);\n  if (!g.email && email) g.email = email;\n  if (!g.cedula && cedula) g.cedula = cedula;\n}\n\n// 6. ¿Un instante cae dentro de alguna sesión join→leave del participante?\nfunction estuvoConectado(instante, intervalos) {\n  return intervalos.some(([join, leave]) => instante >= join && instante <= leave);\n}\n\n// 6b. % de la clase que estuvo conectado: fusionar intervalos solapados/contiguos\n// (las sesiones de reconexión pueden solaparse — no sumar doble), recortar a\n// [inicio, finReal] y dividir por la duración real de la reunión.\nfunction porcentajeAsistencia(intervalos) {\n  const ordenados = [...intervalos].sort((a, b) => a[0] - b[0]);\n  const fusionados = [];\n  for (const [join, leave] of ordenados) {\n    const ultimo = fusionados[fusionados.length - 1];\n    if (ultimo && join <= ultimo[1]) {\n      if (leave > ultimo[1]) ultimo[1] = leave;\n    } else {\n      fusionados.push([join, leave]);\n    }\n  }\n  let msConectado = 0;\n  for (const [join, leave] of fusionados) {\n    const desde = Math.max(join.getTime(), inicio.getTime());\n    const hasta = Math.min(leave.getTime(), finReal.getTime());\n    if (hasta > desde) msConectado += hasta - desde;\n  }\n  const totalMs = duracionMin * 60000;\n  if (totalMs <= 0) return '0%';\n  return `${Math.round((msConectado / totalMs) * 100)}%`;\n}\n\n// 7. Nombre/Apellido: primer espacio separa, todo el resto va a Apellido\nfunction partirNombre(nombreCompleto) {\n  const idx = nombreCompleto.indexOf(' ');\n  if (idx === -1) return { nombre: nombreCompleto, apellido: '' };\n  return { nombre: nombreCompleto.slice(0, idx), apellido: nombreCompleto.slice(idx + 1) };\n}\n\n// 8. Evaluar los 3 momentos dorados por participante — SIN filtrar a nadie\nconst resultado = [];\nfor (const [, g] of grupos) {\n  const min10 = estuvoConectado(checkpoints.min10, g.intervalos);\n  const mitad = estuvoConectado(checkpoints.mitad, g.intervalos);\n  const final10 = estuvoConectado(checkpoints.final10, g.intervalos);\n  const totalInstancias = [min10, mitad, final10].filter(Boolean).length;\n  const { nombre, apellido } = partirNombre(g.nombreLimpio);\n\n  resultado.push({\n    json: {\n      Nombre: nombre,\n      Apellido: apellido,\n      'Correo electrónico': g.email,\n      Identificacion: g.cedula,\n      Instancias: `${totalInstancias}/3`,\n      Curso: curso,\n      Fecha: fechaBogota(inicio),\n      '% Asistencia': porcentajeAsistencia(g.intervalos),\n      Host: host,\n    },\n  });\n}\n\nreturn resultado;\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1792,
+          160
+        ],
+        "id": "4210c749-e596-40b2-bf6a-1a441e6524f5",
+        "name": "Calcular Momentos Dorados"
+      },
+      {
+        "parameters": {
+          "authentication": "serviceAccount",
+          "operation": "append",
+          "documentId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "1VyXOYsnpD9ksKcJFHiiRR6fr4UUCea4WmGG96NV0WP0"
+          },
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "ZOOM-ASISTANCE"
+          },
+          "columns": {
+            "mappingMode": "autoMapInputData",
+            "value": null,
+            "matchingColumns": [],
+            "schema": []
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          2016,
+          160
+        ],
+        "id": "c17117c6-bfb8-47dc-a32a-a9983d1de4e7",
+        "name": "Escribir Asistencia ZOOM-ASISTANCE",
+        "credentials": {
+          "googleApi": {
+            "id": "tlUqDZU4DbSd9bzU",
+            "name": "Q10 Automatizacion Service Account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "resume": "specificTime",
+          "dateTime": "={{ $json.targetISO }}"
+        },
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          1472,
+          336
+        ],
+        "id": "0c22e25a-d7bb-4da5-861e-3fa565000c5a",
+        "name": "Esperar 10 min",
+        "webhookId": "a61c5f37-cda8-4fb2-8370-0927ab28e67c"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Nodo: Presentes @10min  — control temprano de asistencia (rediseño 2026-07-07)\n// Rama `meeting.started` del workflow \"Zoom - Asistencia\" (ID jkNaE51PKQ4TQzNq).\n// Copia de referencia del jsCode del nodo. Todo cambio va en AMBOS lados:\n// editar aquí → PUT /api/v1/workflows/jkNaE51PKQ4TQzNq → re-exportar a n8n-workflows/.\n//\n// Entrada: filas de LIVE-LOG filtradas por UUID (nodo \"Leer LIVE-LOG\"):\n//   { UUID, Evento: 'joined'|'left', Nombre, Correo, HoraMs, ... }\n// acumuladas por la rama meeting.participant_joined/_left. Ya NO usa la Dashboard\n// API (GET /metrics/...?type=live) — bloqueada por el feature flag de cuenta que\n// Zoom se negó a habilitar (ticket cerrado 2026-07-07).\n//\n// Presente al minuto ~10 = misma persona con más 'joined' que 'left' en el log\n// (tolera reconexiones: 2 joins + 1 left = sigue adentro). NO calcula % ni\n// momentos dorados — eso lo hace la rama completa al meeting.ended.\n// El curso y la fecha salen del payload del webhook meeting.started.\n\nconst RE_EMAIL = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/;\nconst RE_CEDULA = /\\b\\d{6,10}\\b/;\n\nconst obj = $('Webhook Trigger').first().json.body.payload.object;\nconst curso = (obj.topic || '').trim();\nconst inicio = new Date(obj.start_time);\n\n// Host real de la reunión (2026-07-29) — ver mismo mapeo en nodo-calcular-momentos-dorados.js.\nconst HOST_LABELS = {\n  '5Ehn8O03Q6y4lRRGpV8c9w': 'comunicaciones',\n  'UUQqk6BdSYuNzHL0YFOqfg': 'jovenescreativos',\n};\nconst host = HOST_LABELS[obj.host_id || ''] || 'desconocido';\n\n// Hora Colombia (UTC-5 fijo, sin DST) — igual que el nodo de la toma completa.\nfunction fechaBogota(d) {\n  return new Date(d.getTime() - 5 * 3600000).toISOString().slice(0, 16).replace('T', ' ');\n}\nfunction horaBogota(d) {\n  return new Date(d.getTime() - 5 * 3600000).toISOString().slice(11, 16);\n}\n\n// Extraer email/cédula desde el \"name\" de texto libre manual (mismo gotcha del proceso).\nfunction extraerContacto(nombreCrudo, emailCrudo) {\n  const email = RE_EMAIL.test(emailCrudo)\n    ? emailCrudo.toLowerCase()\n    : (nombreCrudo.match(RE_EMAIL) || [''])[0].toLowerCase();\n  const cedula = (nombreCrudo.match(RE_CEDULA) || [''])[0];\n  const nombreLimpio = nombreCrudo.split(/[-|/]/)[0].trim();\n  return { email, cedula, nombreLimpio };\n}\nfunction partirNombre(nombreCompleto) {\n  const idx = nombreCompleto.indexOf(' ');\n  if (idx === -1) return { nombre: nombreCompleto, apellido: '' };\n  return { nombre: nombreCompleto.slice(0, idx), apellido: nombreCompleto.slice(idx + 1) };\n}\n\n// Agrupar eventos del log por persona (clave = email o nombre normalizado, igual\n// que la rama completa) y contar joins vs lefts.\nconst grupos = new Map();\nfor (const item of $input.all()) {\n  const r = item.json;\n  const nombreCrudo = (r.Nombre || '').toString().trim();\n  const emailCrudo = (r.Correo || '').toString().trim();\n  if (!nombreCrudo && !emailCrudo) continue;\n  const { email, cedula, nombreLimpio } = extraerContacto(nombreCrudo, emailCrudo);\n  const clave = email || nombreLimpio.toLowerCase().replace(/\\s+/g, ' ');\n  if (!grupos.has(clave)) {\n    grupos.set(clave, { nombreLimpio, email, cedula, joins: 0, lefts: 0, primerJoinMs: null });\n  }\n  const g = grupos.get(clave);\n  if ((r.Evento || '').toString().trim() === 'left') {\n    g.lefts++;\n  } else {\n    g.joins++;\n    const ms = Number(r.HoraMs);\n    if (Number.isFinite(ms) && (g.primerJoinMs === null || ms < g.primerJoinMs)) {\n      g.primerJoinMs = ms;\n    }\n  }\n  if (!g.email && email) g.email = email;\n  if (!g.cedula && cedula) g.cedula = cedula;\n}\n\n// Una fila por persona que sigue conectada al momento de leer el log (~minuto 10).\nconst filas = [];\nfor (const [, g] of grupos) {\n  if (g.joins <= g.lefts) continue; // ya salió de la reunión\n  const { nombre, apellido } = partirNombre(g.nombreLimpio);\n  filas.push({\n    json: {\n      Nombre: nombre,\n      Apellido: apellido,\n      'Correo electrónico': g.email,\n      Identificacion: g.cedula,\n      Curso: curso,\n      Fecha: fechaBogota(inicio),\n      'Hora ingreso': g.primerJoinMs !== null ? horaBogota(new Date(g.primerJoinMs)) : '',\n      Host: host,\n    },\n  });\n}\n\nreturn filas;\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1632,
+          432
+        ],
+        "id": "1b7a62a7-bb97-4fd4-ba2b-1022be661854",
+        "name": "Presentes @10min"
+      },
+      {
+        "parameters": {
+          "authentication": "serviceAccount",
+          "operation": "append",
+          "documentId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "1VyXOYsnpD9ksKcJFHiiRR6fr4UUCea4WmGG96NV0WP0"
+          },
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "ASISTENCIA-10MIN"
+          },
+          "columns": {
+            "mappingMode": "autoMapInputData",
+            "value": null,
+            "matchingColumns": [],
+            "schema": []
+          },
+          "options": {
+            "useAppend": true
+          }
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          1824,
+          432
+        ],
+        "id": "8fe5b5ac-698e-482a-983b-6dd9b853f846",
+        "name": "Escribir ASISTENCIA-10MIN",
+        "credentials": {
+          "googleApi": {
+            "id": "tlUqDZU4DbSd9bzU",
+            "name": "Q10 Automatizacion Service Account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "rt-ended",
+                      "leftValue": "={{ $('Webhook Trigger').item.json.body.event }}",
+                      "rightValue": "meeting.ended",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "ended"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "rt-started",
+                      "leftValue": "={{ $('Webhook Trigger').item.json.body.event }}",
+                      "rightValue": "meeting.started",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "started"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "rt-participant",
+                      "leftValue": "={{ $('Webhook Trigger').item.json.body.event }}",
+                      "rightValue": "meeting.participant_",
+                      "operator": {
+                        "type": "string",
+                        "operation": "startsWith"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "joined/left"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "rt-recording",
+                      "leftValue": "={{ $('Webhook Trigger').item.json.body.event }}",
+                      "rightValue": "recording.",
+                      "operator": {
+                        "type": "string",
+                        "operation": "startsWith"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "recording"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.2,
+        "position": [
+          832,
+          432
+        ],
+        "id": "a1b2c3d4-0001-4aaa-8aaa-111111111111",
+        "name": "Ruteo Evento Zoom"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Nodo: Normalizar Evento Live — rama meeting.participant_joined / meeting.participant_left\n// Workflow \"Zoom - Asistencia\" (ID jkNaE51PKQ4TQzNq).\n// Copia de referencia del jsCode del nodo. Todo cambio va en AMBOS lados:\n// editar aquí → PUT /api/v1/workflows/jkNaE51PKQ4TQzNq → re-exportar a n8n-workflows/.\n//\n// Zoom manda un webhook por CADA entrada/salida de participante. Este nodo lo\n// convierte en una fila del log LIVE-LOG (append en Sheets). Al minuto 10 la rama\n// meeting.started lee ese log y calcula presentes = joined − left. Reemplaza a la\n// Dashboard API (GET /metrics/...?type=live), bloqueada por un feature flag de\n// cuenta que Zoom se negó a habilitar (ticket cerrado 2026-07-07).\n\nconst body = $('Webhook Trigger').first().json.body;\nconst obj = body.payload.object;\nconst p = obj.participant || {};\nconst esJoin = body.event === 'meeting.participant_joined';\n\n// join_time/leave_time del payload; fallback a event_ts si faltara\nconst horaIso = esJoin ? p.join_time : p.leave_time;\nlet hora = horaIso ? new Date(horaIso) : null;\nif (!hora || isNaN(hora.getTime())) hora = new Date(body.event_ts || Date.now());\n\n// Hora Colombia (UTC-5 fijo, sin DST) — columna legible para humanos.\n// La lógica del minuto 10 usa HoraMs (epoch ms), inmune al locale del Sheet.\nfunction fechaBogotaSeg(d) {\n  return new Date(d.getTime() - 5 * 3600000).toISOString().slice(0, 19).replace('T', ' ');\n}\n\nreturn [{\n  json: {\n    UUID: obj.uuid,\n    Evento: esJoin ? 'joined' : 'left',\n    Nombre: (p.user_name || '').trim(),\n    Correo: (p.email || '').trim().toLowerCase(),\n    HoraMs: hora.getTime(),\n    'Hora Bogota': fechaBogotaSeg(hora),\n    Curso: (obj.topic || '').trim(),\n  },\n}];\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1024,
+          640
+        ],
+        "id": "a1b2c3d4-0002-4aaa-8aaa-222222222222",
+        "name": "Normalizar Evento Live"
+      },
+      {
+        "parameters": {
+          "authentication": "serviceAccount",
+          "operation": "append",
+          "documentId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "1VyXOYsnpD9ksKcJFHiiRR6fr4UUCea4WmGG96NV0WP0"
+          },
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "LIVE-LOG"
+          },
+          "columns": {
+            "mappingMode": "autoMapInputData",
+            "value": null,
+            "matchingColumns": [],
+            "schema": []
+          },
+          "options": {
+            "useAppend": true
+          }
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          1232,
+          640
+        ],
+        "id": "a1b2c3d4-0003-4aaa-8aaa-333333333333",
+        "name": "Registrar LIVE-LOG",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 5000,
+        "credentials": {
+          "googleApi": {
+            "id": "tlUqDZU4DbSd9bzU",
+            "name": "Q10 Automatizacion Service Account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "serviceAccount",
+          "documentId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "1VyXOYsnpD9ksKcJFHiiRR6fr4UUCea4WmGG96NV0WP0"
+          },
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "LIVE-LOG"
+          },
+          "filtersUI": {
+            "values": [
+              {
+                "lookupColumn": "UUID",
+                "lookupValue": "={{ $('Webhook Trigger').item.json.body.payload.object.uuid }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          1232,
+          432
+        ],
+        "id": "a1b2c3d4-0004-4aaa-8aaa-444444444444",
+        "name": "Leer LIVE-LOG",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 5000,
+        "credentials": {
+          "googleApi": {
+            "id": "tlUqDZU4DbSd9bzU",
+            "name": "Q10 Automatizacion Service Account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://localhost:5678/webhook/zoom-grabaciones",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "x-zm-signature",
+                "value": "={{ $('Webhook Trigger').item.json.headers['x-zm-signature'] }}"
+              },
+              {
+                "name": "x-zm-request-timestamp",
+                "value": "={{ $('Webhook Trigger').item.json.headers['x-zm-request-timestamp'] }}"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "raw",
+          "rawContentType": "application/json",
+          "body": "={{ JSON.stringify($('Webhook Trigger').item.json.body) }}",
+          "options": {
+            "timeout": 30000,
+            "response": {
+              "response": {
+                "responseFormat": "text"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1440,
+          128
+        ],
+        "id": "za-node-reenvio-0001-000000000001",
+        "name": "Reenviar a Grabaciones",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 3000
+      },
+      {
+        "parameters": {
+          "jsCode": "// Nodo: Calcular Espera Anclada a Horario Oficial (v2 - lee el horario real de CUPOS)\n// Rama meeting.started del workflow \"Zoom - Asistencia\" (ID jkNaE51PKQ4TQzNq).\n// Copia de referencia. Todo cambio va en AMBOS lados:\n// editar aqui -> PUT /api/v1/workflows/jkNaE51PKQ4TQzNq -> re-exportar a n8n-workflows/.\n//\n// Problema (detectado 2026-07-30): el host abre la sala de Zoom 20-30 min antes de la\n// hora oficial de clase. \"Esperar 10 min\" contaba desde meeting.started (= apertura real),\n// asi que el corte de \"presentes @10min\" caia dentro de ese colchon, con casi nadie real\n// conectado todavia.\n//\n// v1 (descartada) redondeaba la apertura real a la hora en punto mas cercana -> se rompe\n// si algun dia hay una clase a la media hora (ej. 6:30) y la sala abre justo a las 6:00\n// (30 min antes): 6:00 cae exacto en una marca de hora, el redondeo la confunde con la\n// hora oficial y calcula el corte a las 6:10 en vez de 6:40. Cambiado por decision del\n// equipo (2026-07-30): mejor leer como esta programada la clase de verdad que inferir por\n// aproximacion, porque en la operacion real los horarios cambian sin aviso previo.\n//\n// v2: lee el horario real de CUPOS!A:F (Area/Clase/Inscritos/Alias/Dia/Hora) y CUPOS!H:I\n// (palabra clave -> area), exactamente el mismo dato y el mismo criterio de match\n// (area por palabra clave en el topic + dia y hora con tolerancia +-45min) que ya usa la\n// formula de cupo por horario en ZOOM-STATS (columnas P:Q) -> mismo criterio en dos\n// lugares, sin duplicar logica de negocio, solo la fuente de \"que hora es la clase\".\n// GET /meetings/{id} confirmo que Zoom no guarda hora programada para estas reuniones\n// (type 8, recurrente sin hora fija, start_time/duration null) -> no hay forma de pedirle\n// la hora oficial a la API de Zoom, tiene que salir de CUPOS.\n//\n// Requiere en el workflow, antes de este nodo: \"Leer CUPOS Clases\" (rango A1:F400) y\n// \"Leer CUPOS Keywords\" (rango H1:I40) -- rangos separados para evitar el choque de\n// nombres duplicados (\"Area\" aparece en la columna A y en la I).\n\nconst BUFFER_MIN = 10;         // minutos despues de la hora oficial para el corte de presentes\nconst TOLERANCIA_HORAS = 0.75; // 45 min, mismo criterio que la formula Q de ZOOM-STATS\nconst MAX_DESFASE_MIN = 90;    // fallback: desfase maximo para confiar en el redondeo a la\n                                // hora en punto cuando no hay match en CUPOS\n\nconst obj = $('Webhook Trigger').first().json.body.payload.object;\nconst aperturaReal = new Date(obj.start_time);\nconst topic = (obj.topic || '').toLowerCase();\n\n// 1. Area inferida por palabra clave en el topic (mismo orden en que aparecen las filas\n//    de CUPOS!H:I -- igual que MATCH(TRUE,...) de la formula de ZOOM-STATS: la primera\n//    palabra clave que matchea gana).\nconst keywordRows = $('Leer CUPOS Keywords').all();\nlet area = '';\nfor (const row of keywordRows) {\n  const kw = (row.json['Palabra clave (en el topic, minúsculas)'] || '').toString().toLowerCase().trim();\n  if (kw && topic.includes(kw)) {\n    area = (row.json['Área'] || '').toString().trim();\n    break;\n  }\n}\n\n// 2. Dia y hora decimal (24h) de la apertura real, en horario de Bogota (UTC-5 fijo).\nconst DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];\nconst bogota = new Date(aperturaReal.getTime() - 5 * 3600000);\nconst diaEvento = DIAS[bogota.getUTCDay()];\nconst horaAperturaDecimal = bogota.getUTCHours() + bogota.getUTCMinutes() / 60;\n\n// 3. Buscar en CUPOS!A:F la clase de esa area+dia con hora mas cercana a la apertura real\n//    (tolerancia +-45min -- separa clases del mismo area/dia en franjas distintas).\nconst claseRows = area ? $('Leer CUPOS Clases').all() : [];\nlet horaOficial = null;\nlet mejorDif = Infinity;\nfor (const row of claseRows) {\n  const j = row.json;\n  if ((j['Área'] || '').toString().trim() !== area) continue;\n  if ((j['Día'] || '').toString().trim().toLowerCase() !== diaEvento) continue;\n  const hora = Number(j['Hora (24h COL)']);\n  if (!Number.isFinite(hora)) continue;\n  const dif = Math.abs(hora - horaAperturaDecimal);\n  if (dif <= TOLERANCIA_HORAS && dif < mejorDif) {\n    mejorDif = dif;\n    horaOficial = hora;\n  }\n}\n\nlet objetivo;\nlet anclado;\nif (horaOficial !== null) {\n  // Fecha calendario de la apertura (dia en Bogota) + hora oficial encontrada en CUPOS.\n  const horas = Math.floor(horaOficial);\n  const minutos = Math.round((horaOficial - horas) * 60);\n  const inicioOficialUTC = new Date(Date.UTC(\n    bogota.getUTCFullYear(), bogota.getUTCMonth(), bogota.getUTCDate(),\n    horas + 5, minutos, // +5 para volver de hora Bogota a UTC\n  ));\n  objetivo = new Date(inicioOficialUTC.getTime() + BUFFER_MIN * 60000);\n  anclado = true;\n} else {\n  // Sin match en CUPOS (reunion de prueba/monitores, o clase nueva que aun no esta en el\n  // ultimo analisis de la BD) -> fallback: redondear la apertura real a la hora en punto\n  // mas cercana. Sigue sujeto al mismo limite que motivo la v2 (ver comentario arriba) si\n  // algun dia esta reunion resulta ser una clase real a la media hora -- por eso es\n  // fallback y no el criterio principal.\n  const MS_HORA = 3600000;\n  const horaRedondeada = new Date(Math.round(aperturaReal.getTime() / MS_HORA) * MS_HORA);\n  const desfaseMin = Math.abs(aperturaReal.getTime() - horaRedondeada.getTime()) / 60000;\n  if (desfaseMin <= MAX_DESFASE_MIN) {\n    objetivo = new Date(horaRedondeada.getTime() + BUFFER_MIN * 60000);\n  } else {\n    objetivo = new Date(aperturaReal.getTime() + BUFFER_MIN * 60000);\n  }\n  anclado = false;\n}\n\n// Si el objetivo ya quedo en el pasado (host abrio tarde, despues de hora oficial+buffer),\n// no esperar hacia atras -> margen minimo desde ahora.\nconst ahora = new Date();\nif (objetivo.getTime() < ahora.getTime()) {\n  objetivo = new Date(ahora.getTime() + 2 * 60000);\n}\n\nreturn [{\n  json: {\n    ...$input.first().json,\n    targetISO: objetivo.toISOString(),\n    _debugArea: area,\n    _debugDia: diaEvento,\n    _debugHoraOficial: horaOficial,\n    _debugAnclado: anclado,\n  },\n}];\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1312,
+          216
+        ],
+        "id": "b7e1a2c3-1111-4bbb-9ccc-222222222222",
+        "name": "Calcular Espera Anclada"
+      },
+      {
+        "parameters": {
+          "authentication": "serviceAccount",
+          "documentId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "1VyXOYsnpD9ksKcJFHiiRR6fr4UUCea4WmGG96NV0WP0"
+          },
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "CUPOS"
+          },
+          "options": {
+            "dataLocationOnSheet": {
+              "values": {
+                "rangeDefinition": "specifyRangeA1",
+                "range": "A1:F400"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          1152,
+          256
+        ],
+        "id": "c1d2e3f4-2222-4ccc-9ddd-333333333333",
+        "name": "Leer CUPOS Clases",
+        "credentials": {
+          "googleApi": {
+            "id": "tlUqDZU4DbSd9bzU",
+            "name": "Q10 Automatizacion Service Account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "serviceAccount",
+          "documentId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "1VyXOYsnpD9ksKcJFHiiRR6fr4UUCea4WmGG96NV0WP0"
+          },
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "CUPOS"
+          },
+          "options": {
+            "dataLocationOnSheet": {
+              "values": {
+                "rangeDefinition": "specifyRangeA1",
+                "range": "H1:I40"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          1152,
+          176
+        ],
+        "id": "d1e2f3a4-3333-4eee-9fff-444444444444",
+        "name": "Leer CUPOS Keywords",
+        "credentials": {
+          "googleApi": {
+            "id": "tlUqDZU4DbSd9bzU",
+            "name": "Q10 Automatizacion Service Account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// Nodo: Detectar Apertura Reunion -- rama meeting.participant_joined/_left\n// Workflow \"Zoom - Asistencia\" (ID jkNaE51PKQ4TQzNq).\n// Copia de referencia del jsCode del nodo. Todo cambio va en AMBOS lados:\n// editar aquí → PUT /api/v1/workflows/jkNaE51PKQ4TQzNq → re-exportar a n8n-workflows/.\n//\n// Marca en REUNIONES-ACTIVAS la primera vez que se ve un UUID nuevo -- usa static data\n// para NO leer/escribir Sheets en cada evento (una clase genera decenas de eventos\n// participant_joined/_left por minuto).\n//\n// FIX 2026-08-12 (Bug 1, documentado desde 2026-08-06, causa real de \"no toma la llegada\n// de los estudiantes\" reportada por el usuario): la clave del flag static-data era SOLO el\n// uuid, para siempre. Zoom REUTILIZA el mismo uuid para una sala fija/recurrente cada semana\n// -- la sala se marcaba Activo=TRUE la primera vez, y si `Cerrar Reunion Activa` no corria\n// (meeting.ended no siempre llega, ver docs/procesos/zoom-asistencia.md), el flag quedaba\n// `true` en memoria para siempre. La proxima semana llegaban joined reales para ese mismo\n// uuid pero el nodo nunca volvia a escribir Activo=TRUE -- el panel seguia viendo la sala\n// \"cerrada\" con gente conectada de verdad. Fix: la clave ahora es `${uuid}:${fecha}` -- una\n// sala recurrente se re-marca activa cada vez que Zoom la reabre en un dia nuevo, sin\n// intervencion manual. Dentro del MISMO dia sigue sin re-escribir (mismo ahorro de cuota\n// de Sheets que antes). `Cerrar Reunion Activa` debe borrar la MISMA clave -- si se cambia\n// el formato aqui, cambiarlo tambien alla.\nconst data = $getWorkflowStaticData('global');\nif (!data.reunionesAbiertas) data.reunionesAbiertas = {};\n\nconst body = $('Webhook Trigger').first().json.body;\nconst obj = body.payload.object;\nconst uuid = obj.uuid;\n\nfunction fechaBogotaMin(d) {\n  return new Date(d.getTime() - 5 * 3600000).toISOString().slice(0, 16).replace('T', ' ');\n}\nfunction fechaBogotaDia(d) {\n  return new Date(d.getTime() - 5 * 3600000).toISOString().slice(0, 10);\n}\n\nconst clave = `${uuid}:${fechaBogotaDia(new Date())}`;\nif (data.reunionesAbiertas[clave]) {\n  return []; // ya se abrio HOY -- no tocar Sheets de nuevo\n}\ndata.reunionesAbiertas[clave] = true;\n\nconst HOST_LABELS = {\n  '5Ehn8O03Q6y4lRRGpV8c9w': 'comunicaciones',\n  'UUQqk6BdSYuNzHL0YFOqfg': 'jovenescreativos',\n};\n\nreturn [{\n  json: {\n    UUID: uuid,\n    Topic: (obj.topic || '').trim(),\n    Host: HOST_LABELS[obj.host_id] || 'desconocido',\n    Apertura: fechaBogotaMin(new Date()),\n    Activo: true,\n  },\n}];\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1440,
+          640
+        ],
+        "id": "pv-0001-0001-0001-000000000001",
+        "name": "Detectar Apertura Reunion"
+      },
+      {
+        "parameters": {
+          "authentication": "serviceAccount",
+          "operation": "appendOrUpdate",
+          "documentId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "1VyXOYsnpD9ksKcJFHiiRR6fr4UUCea4WmGG96NV0WP0"
+          },
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "REUNIONES-ACTIVAS"
+          },
+          "columns": {
+            "mappingMode": "autoMapInputData",
+            "value": null,
+            "matchingColumns": [
+              "UUID"
+            ],
+            "schema": []
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          1648,
+          640
+        ],
+        "id": "pv-0001-0001-0001-000000000002",
+        "name": "Abrir en REUNIONES-ACTIVAS",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 5000,
+        "credentials": {
+          "googleApi": {
+            "id": "tlUqDZU4DbSd9bzU",
+            "name": "Q10 Automatizacion Service Account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// Nodo: Cerrar Reunion Activa -- insertado EN LINEA entre \"Ruteo Evento Zoom\" (salida\n// \"ended\") y \"Esperar 90s\" -- no en fan-out paralelo (el fan-out no disparaba este nodo en\n// ninguna prueba del 2026-08-03; mismo patron que \"Calcular Espera Anclada\").\n// Workflow \"Zoom - Asistencia\" (ID jkNaE51PKQ4TQzNq).\n// Copia de referencia del jsCode del nodo. Todo cambio va en AMBOS lados:\n// editar aquí → PUT /api/v1/workflows/jkNaE51PKQ4TQzNq → re-exportar a n8n-workflows/.\n//\n// FIX 2026-08-12 (mismo cambio de clave que \"Detectar Apertura Reunion\", ver ese archivo):\n// borra la clave `${uuid}:${fecha}` (formato nuevo) en vez de solo `uuid` (formato viejo) --\n// deben usar SIEMPRE la misma clave, o el flag que abre y el que cierra dejan de hablar el\n// mismo idioma. Tambien borra el formato viejo por si quedo algo en memoria de antes del fix.\nconst uuid = $('Webhook Trigger').first().json.body.payload.object.uuid;\n\nfunction fechaBogotaDia(d) {\n  return new Date(d.getTime() - 5 * 3600000).toISOString().slice(0, 10);\n}\n\nconst data = $getWorkflowStaticData('global');\nif (data.reunionesAbiertas) {\n  delete data.reunionesAbiertas[uuid];                                    // formato viejo\n  delete data.reunionesAbiertas[`${uuid}:${fechaBogotaDia(new Date())}`]; // formato nuevo\n}\n\nreturn [{ json: { UUID: uuid, Activo: false } }];\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1024,
+          800
+        ],
+        "id": "pv-0001-0001-0001-000000000003",
+        "name": "Cerrar Reunion Activa"
+      },
+      {
+        "parameters": {
+          "authentication": "serviceAccount",
+          "operation": "appendOrUpdate",
+          "documentId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "1VyXOYsnpD9ksKcJFHiiRR6fr4UUCea4WmGG96NV0WP0"
+          },
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "REUNIONES-ACTIVAS"
+          },
+          "columns": {
+            "mappingMode": "autoMapInputData",
+            "value": null,
+            "matchingColumns": [
+              "UUID"
+            ],
+            "schema": []
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          1232,
+          800
+        ],
+        "id": "pv-0001-0001-0001-000000000004",
+        "name": "Cerrar en REUNIONES-ACTIVAS",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 5000,
+        "credentials": {
+          "googleApi": {
+            "id": "tlUqDZU4DbSd9bzU",
+            "name": "Q10 Automatizacion Service Account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "cronExpression",
+                "expression": "0 21 * * *"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          0,
+          900
+        ],
+        "id": "sched-limpiar-live-log-2100",
+        "name": "Diario 21:00 -- Limpiar LIVE-LOG"
+      },
+      {
+        "parameters": {
+          "command": "cd \"C:\\Users\\EstudiantesJC\\downloads\\admin-usable\" && python scripts\\zoom-asistencia\\limpiar_live_log.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          220,
+          900
+        ],
+        "id": "exec-limpiar-live-log",
+        "name": "Limpiar LIVE-LOG"
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "cronExpression",
+                "expression": "0 * * * *"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          0,
+          1020
+        ],
+        "id": "sched-cerrar-reuniones-inactivas",
+        "name": "Cada hora -- Cerrar reuniones inactivas"
+      },
+      {
+        "parameters": {
+          "command": "cd \"C:\\Users\\EstudiantesJC\\downloads\\admin-usable\" && python scripts\\zoom-asistencia\\cerrar_reuniones_inactivas.py"
+        },
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [
+          220,
+          1020
+        ],
+        "id": "exec-cerrar-reuniones-inactivas",
+        "name": "Cerrar reuniones inactivas"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://kbxptoowtnteflhrfwid.supabase.co/rest/v1/zoom_live_log",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpCustomAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Prefer",
+                "value": "return=representation"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "raw",
+          "rawContentType": "application/json",
+          "body": "={{ JSON.stringify({ uuid: $json.UUID, evento: $json.Evento, nombre: $json.Nombre, correo: $json.Correo, hora_ms: $json.HoraMs, hora_bogota: $json['Hora Bogota'], curso: $json.Curso }) }}",
+          "options": {
+            "timeout": 15000,
+            "response": {
+              "response": {
+                "responseFormat": "text"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1232,
+          780
+        ],
+        "id": "za-node-supabase-live-log-0001",
+        "name": "Registrar zoom_live_log Supabase",
+        "credentials": {
+          "httpCustomAuth": {
+            "id": "BFfZVyAav1xgYn62",
+            "name": "Supabase Service Role - panel-datos-rofe (headers)"
+          }
+        },
+        "retryOnFail": false,
+        "onError": "continueRegularOutput",
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://kbxptoowtnteflhrfwid.supabase.co/rest/v1/zoom_reuniones_activas?on_conflict=uuid",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpCustomAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Prefer",
+                "value": "resolution=merge-duplicates,return=representation"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "raw",
+          "rawContentType": "application/json",
+          "body": "={{ JSON.stringify({ uuid: $json.UUID, topic: $json.Topic, host: $json.Host, apertura: $json.Apertura + ':00-05:00', activo: $json.Activo }) }}",
+          "options": {
+            "timeout": 15000,
+            "response": {
+              "response": {
+                "responseFormat": "text"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1648,
+          780
+        ],
+        "id": "za-node-supabase-abrir-0001",
+        "name": "Abrir zoom_reuniones_activas Supabase",
+        "credentials": {
+          "httpCustomAuth": {
+            "id": "BFfZVyAav1xgYn62",
+            "name": "Supabase Service Role - panel-datos-rofe (headers)"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 2000,
+        "onError": "continueRegularOutput",
+        "alwaysOutputData": true
+      }
+    ],
+    "connections": {
+      "Webhook Trigger": {
+        "main": [
+          [
+            {
+              "node": "Es validacion CRC?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Es validacion CRC?": {
+        "main": [
+          [
+            {
+              "node": "Hash CRC",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Hash Firma Zoom",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hash CRC": {
+        "main": [
+          [
+            {
+              "node": "Responder CRC",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hash Firma Zoom": {
+        "main": [
+          [
+            {
+              "node": "Firma valida?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Firma valida?": {
+        "main": [
+          [
+            {
+              "node": "Responder OK",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Ruteo Evento Zoom",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Responder Firma Invalida",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Esperar 90s": {
+        "main": [
+          [
+            {
+              "node": "Obtener Token Zoom",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Obtener Token Zoom": {
+        "main": [
+          [
+            {
+              "node": "Info Reunion",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Info Reunion": {
+        "main": [
+          [
+            {
+              "node": "Participantes",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Participantes": {
+        "main": [
+          [
+            {
+              "node": "Calcular Momentos Dorados",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Calcular Momentos Dorados": {
+        "main": [
+          [
+            {
+              "node": "Escribir Asistencia ZOOM-ASISTANCE",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Esperar 10 min": {
+        "main": [
+          [
+            {
+              "node": "Leer LIVE-LOG",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Presentes @10min": {
+        "main": [
+          [
+            {
+              "node": "Escribir ASISTENCIA-10MIN",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ruteo Evento Zoom": {
+        "main": [
+          [
+            {
+              "node": "Cerrar Reunion Activa",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Leer CUPOS Clases",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Normalizar Evento Live",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Reenviar a Grabaciones",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Normalizar Evento Live": {
+        "main": [
+          [
+            {
+              "node": "Registrar LIVE-LOG",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Registrar zoom_live_log Supabase",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Leer LIVE-LOG": {
+        "main": [
+          [
+            {
+              "node": "Presentes @10min",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Calcular Espera Anclada": {
+        "main": [
+          [
+            {
+              "node": "Esperar 10 min",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Leer CUPOS Clases": {
+        "main": [
+          [
+            {
+              "node": "Leer CUPOS Keywords",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Leer CUPOS Keywords": {
+        "main": [
+          [
+            {
+              "node": "Calcular Espera Anclada",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Registrar LIVE-LOG": {
+        "main": [
+          [
+            {
+              "node": "Detectar Apertura Reunion",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Detectar Apertura Reunion": {
+        "main": [
+          [
+            {
+              "node": "Abrir en REUNIONES-ACTIVAS",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Abrir zoom_reuniones_activas Supabase",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Cerrar Reunion Activa": {
+        "main": [
+          [
+            {
+              "node": "Cerrar en REUNIONES-ACTIVAS",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Cerrar en REUNIONES-ACTIVAS": {
+        "main": [
+          [
+            {
+              "node": "Esperar 90s",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Diario 21:00 -- Limpiar LIVE-LOG": {
+        "main": [
+          [
+            {
+              "node": "Limpiar LIVE-LOG",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Cada hora -- Cerrar reuniones inactivas": {
+        "main": [
+          [
+            {
+              "node": "Cerrar reuniones inactivas",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Samuel Rojas",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-08-18T19:53:57.179Z",
+        "id": 3506,
+        "workflowId": "jkNaE51PKQ4TQzNq",
+        "versionId": "1e8ad513-adf0-4420-8763-5045ef1f749e",
+        "event": "activated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-08-18T19:55:36.271Z",
+        "id": 3508,
+        "workflowId": "jkNaE51PKQ4TQzNq",
+        "versionId": "1e8ad513-adf0-4420-8763-5045ef1f749e",
+        "event": "activated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-08-18T19:53:57.143Z",
+        "id": 3505,
+        "workflowId": "jkNaE51PKQ4TQzNq",
+        "versionId": "1e8ad513-adf0-4420-8763-5045ef1f749e",
+        "event": "deactivated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      },
+      {
+        "createdAt": "2026-08-18T19:53:57.378Z",
+        "id": 3507,
+        "workflowId": "jkNaE51PKQ4TQzNq",
+        "versionId": "1e8ad513-adf0-4420-8763-5045ef1f749e",
+        "event": "deactivated",
+        "userId": "c9975104-b757-4a51-ad4b-0461d1d32514"
+      }
+    ]
   }
 }
