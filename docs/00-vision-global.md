@@ -146,6 +146,7 @@ BD Seguimiento Monitorias (Grupo = ciudad)    ──┼──► exportar_sin_co
 | Grabaciones Zoom → YouTube | [[zoom-youtube]] — subida manual hoy; documentado y viable, reusa la app Zoom S2S de [[zoom-asistencia]] (2026-07-03) |
 | Panel de clase en vivo (Fase 2 de [[panel-clase-vivo]]) | Fase 1 (stats desde `ASISTENCIA-VALIDADA`) ya completada, ver tabla de arriba. Falta Fase 2: panel en vivo de quién falta por entrar a clase, cruzando roster de Supabase con `LIVE-LOG`, dificultad media — 3 piezas nuevas coordinadas (roster `MATRICULADOS-VIVO`, `REUNIONES-ACTIVAS`, vista `PANEL-EN-VIVO`) |
 | Agentes personales por integrante del equipo | Cada persona tendría su propio `CLAUDE.md` de solo-lectura para pedir informes/presentaciones en lenguaje natural. Semilla: [CLAUDE-asistente-informes.md](../CLAUDE-asistente-informes.md), que se alimenta de forma continua a medida que avanza el trabajo de auditoría/limpieza de la BD (2026-08-04) |
+| Puntaje "Calidad de estudiante" v2 | [[plan-calidad-estudiante-v2-2026-08-18]] — fórmula nueva (asistencia 50% con umbral >70min, avance Q10 25%, presencial+recurrencia Emoflow 25%, multiplicadores estrella-del-mes ×1.05 y proyecto final). **SIN LUZ VERDE**, bloqueado por cumplimiento de P2; se ejecutará junto con la implementación del correo `soporte@tocaunavida.org` (2026-08-18) |
 
 ---
 
