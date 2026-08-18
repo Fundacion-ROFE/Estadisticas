@@ -265,13 +265,23 @@ def main() -> int:
          f"conteo independiente (participants×enrollments, en_seguimiento_jc≠false)={activos_calc_jc_2026} "
          f"vs cohorte_ingresos.activos={activos_coh_jc_2026_v2} (Δ={delta_seg}; Seguimiento lidera por lag)")
 
-    # v_retiro_probable_jc debe cuadrar exacto con count(en_seguimiento_jc=false) — no es
-    # tolerancia, son la misma cosa contada dos veces por dos caminos independientes.
+    # v_retiro_probable_jc debe cuadrar con count(en_seguimiento_jc=false) MENOS quien Q10 ya
+    # tiene retirado=True en v_gui_personas (fix 2026-08-18, migración 050). La definición
+    # original NO excluía a los ya confirmados y los dejaba "en duda" para siempre — verificado
+    # en vivo: los 27 casos de esa fecha ya estaban retirados en Q10, 0 en duda real. Ver
+    # docs/procesos/panel-control-jc-mr.md §7.23. en_seguimiento_jc solo existe para la cohorte
+    # JC vigente, así que basta cruzar contra esa.
     retiro_prob = supa.get_todo("/v_retiro_probable_jc?select=*")
     jc_alertas = supa.get_todo("/participants?select=id&en_seguimiento_jc=eq.false")
+    cohorte_actual_jc = max((c["cohorte"] for c in coh if c["programa"] == "jc"), default=None)
+    gui_actual = supa.get_todo(
+        f"/v_gui_personas?select=participant_id,retirado&programa=eq.jc&cohorte=eq.{cohorte_actual_jc}"
+    ) if cohorte_actual_jc else []
+    retirado_por_id = {g["participant_id"]: g["retirado"] for g in gui_actual}
+    esperado_en_duda = sum(1 for p in jc_alertas if not retirado_por_id.get(p["id"], False))
     total_vista = sum(r["retiro_probable_total"] for r in retiro_prob)
-    test("v_retiro_probable_jc cuadra con participants.en_seguimiento_jc=false",
-         total_vista == len(jc_alertas), f"vista={total_vista} vs participants={len(jc_alertas)}")
+    test("v_retiro_probable_jc cuadra con en_seguimiento_jc=false y NO retirado ya confirmado en Q10",
+         total_vista == esperado_en_duda, f"vista={total_vista} vs esperado={esperado_en_duda}")
     for r in retiro_prob:
         suma = r["retiro_probable_aprobado"] + r["retiro_probable_no_aprobado"]
         test(f"v_retiro_probable_jc {r['cohorte']}: aprobado+no_aprobado=total",

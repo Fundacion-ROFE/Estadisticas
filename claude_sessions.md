@@ -7602,3 +7602,18 @@ Usuario apagó y volvió a encender el portátil ("restaurar el correcto flujo d
 Usuario pidió confirmar que `frescura-pipeline-rofe` sigue activa. Verificado con `RemoteTrigger` (no `CronList`, que es solo de la sesión actual): `enabled:true`, corre puntual 5/5 días desde su creación (10 al 14 de agosto, sin huecos).
 **Pero el log real de las últimas 2 corridas mostró un problema serio:** el proxy de egress del entorno sandboxed de la rutina bloquea (403) tanto Supabase REST como `api.telegram.org`. El 13-ago se salvó leyendo por el conector MCP de Supabase (0 vencidos) pero el Telegram falló igual → terminó en push al celular. El 14-ago (justo durante el incidente H8 de 8/8 vencidos) ambos fallaron sin fallback → solo push, nada por Telegram. Si el vencido hubiera sido real, no se habría enterado por el canal esperado.
 Causa: config de red del entorno de la rutina, fuera del alcance para arreglar desde una sesión normal. Decisión del usuario: registrar y dejarlo así — el **GitHub Actions (`alerta-frescura-nube.yml`, ya activo y verificado) pasa a ser la red de seguridad PRINCIPAL**; la rutina Claude queda como respaldo best-effort. Documentado como H9 en la auditoría + memoria actualizada.
+
+## 2026-08-18 — [panel-control-jc-mr] Bug real en `v_retiro_probable_jc`: 27 "en duda" que ya estaban retirados en Q10
+
+**Estado:** Migración 050 aplicada en Supabase (vía MCP, esta sesión); test_integridad_supabase.py corregido (53/53 PASS); panel-datos-rofe commit `9314e5a` pusheado a `comunicaciones/main` + `samuel_oficial/main` (Vercel); tsc + build OK.
+**Proceso relacionado:** [[panel-control-jc-mr]] · [[panel-datos-etl]]
+
+Samuel vio en el panel público la sección "Retiro probable" con 27 personas en duda y pidió investigar, porque "actualmente no hay ningún caso de persona en duda".
+- **Descartado primero:** el componente que renderiza esas tarjetas ya se había quitado del `Resumen` el 2026-08-13 (commit `88b8fea`) — confirmado en ambos remotos de despliegue, cero referencias en el código que corre en Vercel.
+- **Causa real (verificada en vivo):** la vista `v_retiro_probable_jc` (viva, sin UI) nunca excluyó a quien Q10 ya tiene `retirado=true`. De los 27 casos, **27/27 ya estaban confirmados retirados** en `v_gui_personas` (canon desde migración 049) → 0 casos reales en duda. Samuel tenía razón con el número, no con la causa esperada.
+- **Fix:** migración 050 — `LEFT JOIN v_gui_personas` + `WHERE COALESCE(retirado,false)=false` (reusa el canon, no duplica lógica). Verificado: la vista ya no devuelve filas para JC 2026.
+- **Test de regresión desactualizado:** asumía la definición vieja (vista == count en_seguimiento_jc=false sin descontar confirmados); corregido para cruzar contra el canon. 53/53 PASS.
+- **Bonus:** tooltip colgante en `page.tsx` que aún mencionaba "Retiro probable" (sección ya eliminada) — corregido y pusheado.
+- **Lección:** quitar un componente de la UI no corrige la fuente de datos detrás — la vista siguió con el bug 5 días después de "resolverse" el pedido original.
+
+Detalle completo en `docs/procesos/panel-control-jc-mr.md` §7.23.

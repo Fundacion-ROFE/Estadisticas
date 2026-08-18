@@ -921,6 +921,48 @@ solo el codepage de la terminal, no un problema del dato, mismo gotcha del clús
 **Pendiente:** validar la cobertura extraída contra la lista de campos del Power BI del usuario
 (aún no entregada) para confirmar que no falta ninguna dimensión que el equipo ya usa.
 
+## 7.23 Extensión 2026-08-18 — bug real en `v_retiro_probable_jc`: contaba como "en duda" a quien Q10 ya tenía confirmado retirado
+
+Samuel reportó ver, en el panel público, la sección "Retiro probable (pendiente de confirmar en
+Q10)" con 27 personas en duda (17 ya habían aprobado / 10 no) y pidió investigar porque
+"actualmente no hay ningún caso de persona en duda". Tenía razón en el fondo, aunque la premisa
+de "caché vieja" que se investigó primero resultó falsa.
+
+**Primer hallazgo (descartado):** el componente que renderiza esas 3 tarjetas SÍ se había
+quitado del `Resumen` el 2026-08-13 (§ ya documentada, commit `88b8fea`, memo `retiroProbable`
+eliminado de `app/page.tsx`). Verificado contra ambos remotos de despliegue
+(`comunicaciones/main` y `samuel_oficial/main`, mismo commit `78fe95c`) — cero referencias en el
+código que corre en Vercel. Esto hacía pensar en caché del navegador.
+
+**Hallazgo real (verificado en vivo contra Supabase):** la vista `v_retiro_probable_jc` sigue
+viva (`lib/api.ts` la trae en `cargarTodo()` sin usarla en pantalla) y **su definición nunca
+excluyó a quien Q10 ya tiene `retirado=true`** — solo filtraba `en_seguimiento_jc = false`. Cruce
+directo: de los 27 casos de la vista, **27/27 ya estaban `retirado=true` en `v_gui_personas`**
+(el canon correcto desde la migración 049, 2026-08-13) → **0 casos realmente en duda**. Samuel
+tenía razón con el número correcto, no con la causa que se esperaba.
+
+**Fix aplicado (migración 050, vía MCP de Supabase en esta misma sesión):**
+`docs/migrations/050_v_retiro_probable_jc_excluir_confirmados_APLICADA.sql` — se agrega un
+`LEFT JOIN v_gui_personas` (reusa la lógica canon de retirado por cohorte, no se duplica) y se
+filtra `COALESCE(g.retirado, false) = false`. Verificado tras aplicar: la vista ya no devuelve
+filas para JC 2026 (0 en duda).
+
+**Test de regresión desactualizado, corregido:** `test_integridad_supabase.py` tenía una
+aserción que asumía la definición vieja (`vista == count(en_seguimiento_jc=false)`, sin
+descontar confirmados) — con el fix aplicado, ese test pasó a FALLAR por diseño correcto.
+Reescrito para cruzar contra `v_gui_personas.retirado` de la cohorte JC vigente. Suite completa:
+**53/53 PASS** (antes del fix del test: 52/53, 1 FAIL esperado por el cambio).
+
+**Bonus, mismo hallazgo:** un tooltip en `page.tsx` (KPI de activos en Seguimiento) seguía
+diciendo *"...(ver 'Retiro probable')"* — referencia colgante a una sección ya eliminada.
+Corregido y pusheado (commit `9314e5a`, ambos remotos; `tsc --noEmit` + `npm run build` limpios).
+
+**Lección:** "quitar la UI" y "corregir el dato" son cosas distintas — quitar la sección del
+15-08-13 dejó la vista viva con el bug de fondo intacto, listo para reaparecer si alguien vuelve
+a conectarla (o si alguien consulta la vista/API directo, como en este caso). Cuando se quita un
+componente por "info no requerida", vale la pena revisar si la fuente de datos detrás sigue
+siendo correcta, no solo si sigue viva.
+
 ## 7.22 Extensión 2026-08-12 (mismo día) — fix bug MR 2025 (1.016→302) + pestaña "Retiros por año"
 
 Continuación de §7.21, al verificar la premisa "MR: 4 hallazgos que bloquean" documentada en
@@ -1164,6 +1206,60 @@ filas) que sí los tiene. Nuevo script `scripts/panel-datos/backfill_ciudad_segu
   PAN 2, GYL 1. recompute_aggregates corrido al final (HTTP 200).
 
 Reproducible: `python backfill_ciudad_seguimiento_historico.py --dry-run` (preview) / sin flag (aplica).
+
+## 7.25 Extensión 2026-08-15 — 2º caso de cédula mal matcheada (Angel David Gonzalez Manjarres) — A ANALIZAR, no editar la hoja todavía
+
+Samuel reportó: Panel de Control mostraba a este estudiante como fuera de Seguimiento
+("Q10 sin marcar retiro (Seguimiento ya lo tiene fuera)"), pero él lo encontró activo en la
+hoja BD Seguimiento (asistencia real hasta el 13/08/2026, 100% de avance).
+
+**Causa raíz exacta (a diferencia del caso de Angeles Isabella en §7.9, que sigue sin
+resolverse — acá SÍ se llegó al fondo):** en la hoja Seguimiento, la fila 61
+(Angel David Gonzalez Manjarres, nombre/correo correctos) tiene en la columna ID el valor
+`1130270945` — que es la cédula REAL de otra persona totalmente distinta, **Angel Daniel
+Acosta Quintero**, cuya fila propia y legítima es la 60, inmediatamente arriba (mismo grupo
+BAQ). Todo indica un copy-paste del ID de la fila de arriba al llenar la de abajo. Confirmado
+por 3 fuentes independientes coincidiendo en el mismo par de cédulas: `participants.q10_id`
+en Supabase, las 2 filas de la hoja Seguimiento (60 y 61), y un export de H1Test (espejo
+directo de Q10) que Samuel compartió mostrando a ambas personas con sus respectivas cédulas y
+cursos reales (`1044621367` = Angel David = "Bienvenidos a Jóvenes creaTIvos"; `1130270945` =
+Angel Daniel Acosta Quintero = "Habilidades esenciales para ser un emprendedor exitoso"). La
+cédula real de Angel David en Q10 es `1044621367` — sin ambigüedad.
+
+**Verificado que no hay contaminación cruzada:** Angel Daniel Acosta Quintero (`q10_id
+1130270945`) no tiene ningún problema — su fila 60 es genuina y su propio
+`en_seguimiento_jc=true` ya era correcto de por sí, no depende de la fila mal cargada de
+Angel David.
+
+**No es un bug de arquitectura** — es el mismo modo de falla ya conocido y para el que
+`tools/excepciones_seguimiento_jc.json` existe precisamente: `en_seguimiento_jc` se calcula
+comparando CÉDULA de Q10 contra las cédulas de la hoja Seguimiento
+(`sync_sociodemograficos.py`, sin fallback por email), así que un typo/discrepancia de cédula
+en cualquiera de las 2 fuentes rompe el match en silencio y genera un falso positivo de "posible
+retiro". El script YA tenía el mecanismo de excepción — este caso puntual simplemente no
+estaba registrado todavía.
+
+**Fix aplicado (mismo día):** agregado a `excepciones_seguimiento_jc.json` (2º caso del
+archivo, motivo actualizado con la causa raíz confirmada) + corrida real de
+`sync_sociodemograficos.py` (no solo dry-run) para aplicar de inmediato. Verificado en
+Supabase: `en_seguimiento_jc=true` para `q10_id=1044621367`. `en_seguimiento_jc: 750 activos
+en Sheet` (subió de 749 con la excepción nueva).
+
+**Estado: A ANALIZAR — Samuel pidió dejarlo así a propósito (2026-08-15), no como "listo para
+aplicar".** Le preocupa que la hoja Seguimiento (compartida, editada a mano por el equipo) se
+edite mal si se trata la hipótesis del copy-paste como un hecho consumado. La evidencia es
+fuerte (3 fuentes independientes coincidiendo), pero **no se debe tocar la celda ID de la fila
+61 sin que alguien del equipo lo revise con calma primero** — esta nota queda como diagnóstico,
+no como instrucción de "andá y corregilo". La excepción en Supabase (que SÍ ya se aplicó) es
+segura porque no toca la hoja compartida — es 100% reversible del lado de Supabase si hiciera
+falta.
+
+**Nota para revisar cuando haya tiempo:** con 2 casos ya confirmados del mismo patrón en menos
+de un mes, vale la pena evaluar si `en_seguimiento_jc` debería tener un FALLBACK por email
+(coincidencia exacta) cuando la cédula no matchea, antes de marcar "sin aparecer en
+Seguimiento" — reduciría estos falsos positivos sin esperar a que cada caso se reporte a mano.
+No implementado todavía (cambio a la lógica compartida, requiere pensarlo con calma, no se
+metió de urgencia junto con el fix puntual de hoy).
 
 ## 8. Conexiones
 
