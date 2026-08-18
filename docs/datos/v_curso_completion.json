@@ -113,11 +113,11 @@
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
     "cohorte": "2026",
     "matriculados": 717,
-    "completados": 152,
-    "en_progreso": 144,
-    "sin_iniciar": 421,
-    "pct_completados": 21.2,
-    "promedio_avance": 28.3,
+    "completados": 156,
+    "en_progreso": 153,
+    "sin_iniciar": 408,
+    "pct_completados": 21.8,
+    "promedio_avance": 29.1,
     "programa": "jc"
   },
   {
@@ -256,11 +256,11 @@
     "curso": "FINANZAS INTELIGENTES, GESTIÓN PARA EMPRENDEDORAS",
     "cohorte": "2026",
     "matriculados": 179,
-    "completados": 35,
-    "en_progreso": 21,
+    "completados": 36,
+    "en_progreso": 20,
     "sin_iniciar": 123,
-    "pct_completados": 19.6,
-    "promedio_avance": 23.7,
+    "pct_completados": 20.1,
+    "promedio_avance": 23.8,
     "programa": "mr"
   },
   {
