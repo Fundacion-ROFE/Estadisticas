@@ -9,10 +9,10 @@
   },
   {
     "grupo_ciudad": "CTG",
-    "total": 337,
+    "total": 336,
     "edad_promedio": 18.8,
     "mujeres": 163,
-    "hombres": 171,
+    "hombres": 170,
     "otros_genero": null
   },
   {
@@ -25,18 +25,18 @@
   },
   {
     "grupo_ciudad": "BOG",
-    "total": 387,
+    "total": 386,
     "edad_promedio": 18.3,
-    "mujeres": 168,
+    "mujeres": 167,
     "hombres": 216,
     "otros_genero": null
   },
   {
     "grupo_ciudad": "MED",
-    "total": 681,
+    "total": 680,
     "edad_promedio": 17.8,
     "mujeres": 272,
-    "hombres": 398,
+    "hombres": 397,
     "otros_genero": 7
   },
   {

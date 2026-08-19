@@ -14,8 +14,8 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "BOG",
-    "matriculados": 128,
-    "completados": 128,
+    "matriculados": 127,
+    "completados": 127,
     "promedio_avance": 100.0,
     "pct_completados": 100.0
   },
@@ -34,8 +34,8 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "CTG",
-    "matriculados": 97,
-    "completados": 97,
+    "matriculados": 96,
+    "completados": 96,
     "promedio_avance": 100.0,
     "pct_completados": 100.0
   },
@@ -54,8 +54,8 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "MED",
-    "matriculados": 93,
-    "completados": 93,
+    "matriculados": 92,
+    "completados": 92,
     "promedio_avance": 100.0,
     "pct_completados": 100.0
   },
@@ -104,10 +104,10 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "BOG",
-    "matriculados": 128,
+    "matriculados": 127,
     "completados": 121,
-    "promedio_avance": 96.1,
-    "pct_completados": 94.5
+    "promedio_avance": 96.8,
+    "pct_completados": 95.3
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -124,10 +124,10 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "CTG",
-    "matriculados": 97,
+    "matriculados": 96,
     "completados": 92,
-    "promedio_avance": 95.8,
-    "pct_completados": 94.8
+    "promedio_avance": 96.6,
+    "pct_completados": 95.8
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -144,10 +144,10 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "MED",
-    "matriculados": 93,
+    "matriculados": 92,
     "completados": 87,
-    "promedio_avance": 95.3,
-    "pct_completados": 93.5
+    "promedio_avance": 96.3,
+    "pct_completados": 94.6
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - HTML Y CSS - 2026",
@@ -194,10 +194,10 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "BOG",
-    "matriculados": 128,
+    "matriculados": 127,
     "completados": 26,
-    "promedio_avance": 26.3,
-    "pct_completados": 20.3
+    "promedio_avance": 26.5,
+    "pct_completados": 20.5
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
@@ -214,10 +214,10 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "CTG",
-    "matriculados": 97,
+    "matriculados": 96,
     "completados": 18,
-    "promedio_avance": 21.1,
-    "pct_completados": 18.6
+    "promedio_avance": 21.3,
+    "pct_completados": 18.8
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
@@ -234,10 +234,10 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "MED",
-    "matriculados": 93,
+    "matriculados": 92,
     "completados": 27,
-    "promedio_avance": 37.7,
-    "pct_completados": 29.0
+    "promedio_avance": 38.2,
+    "pct_completados": 29.3
   },
   {
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
@@ -284,8 +284,8 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "BOG",
-    "matriculados": 128,
-    "completados": 128,
+    "matriculados": 127,
+    "completados": 127,
     "promedio_avance": 99.8,
     "pct_completados": 100.0
   },
@@ -304,8 +304,8 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "CTG",
-    "matriculados": 97,
-    "completados": 96,
+    "matriculados": 96,
+    "completados": 95,
     "promedio_avance": 98.8,
     "pct_completados": 99.0
   },
@@ -324,8 +324,8 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "MED",
-    "matriculados": 93,
-    "completados": 93,
+    "matriculados": 92,
+    "completados": 92,
     "promedio_avance": 99.8,
     "pct_completados": 100.0
   },
@@ -374,8 +374,8 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "BOG",
-    "matriculados": 128,
-    "completados": 128,
+    "matriculados": 127,
+    "completados": 127,
     "promedio_avance": 99.8,
     "pct_completados": 100.0
   },
@@ -394,8 +394,8 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "CTG",
-    "matriculados": 97,
-    "completados": 95,
+    "matriculados": 96,
+    "completados": 94,
     "promedio_avance": 98.7,
     "pct_completados": 97.9
   },
@@ -414,10 +414,10 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "MED",
-    "matriculados": 93,
+    "matriculados": 92,
     "completados": 92,
-    "promedio_avance": 99.2,
-    "pct_completados": 98.9
+    "promedio_avance": 99.8,
+    "pct_completados": 100.0
   },
   {
     "curso": "FUNDAMENTOS LÓGICA DE PROGRAMACIÓN - 2026",
@@ -464,8 +464,8 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "BOG",
-    "matriculados": 128,
-    "completados": 128,
+    "matriculados": 127,
+    "completados": 127,
     "promedio_avance": 100.0,
     "pct_completados": 100.0
   },
@@ -484,8 +484,8 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "CTG",
-    "matriculados": 97,
-    "completados": 96,
+    "matriculados": 96,
+    "completados": 95,
     "promedio_avance": 98.9,
     "pct_completados": 99.0
   },
@@ -504,9 +504,9 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "MED",
-    "matriculados": 93,
-    "completados": 93,
-    "promedio_avance": 99.9,
+    "matriculados": 92,
+    "completados": 92,
+    "promedio_avance": 100.0,
     "pct_completados": 100.0
   },
   {
@@ -554,8 +554,8 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "BOG",
-    "matriculados": 128,
-    "completados": 128,
+    "matriculados": 127,
+    "completados": 127,
     "promedio_avance": 100.0,
     "pct_completados": 100.0
   },
@@ -574,8 +574,8 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "CTG",
-    "matriculados": 97,
-    "completados": 96,
+    "matriculados": 96,
+    "completados": 95,
     "promedio_avance": 99.2,
     "pct_completados": 99.0
   },
@@ -594,8 +594,8 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "MED",
-    "matriculados": 93,
-    "completados": 93,
+    "matriculados": 92,
+    "completados": 92,
     "promedio_avance": 100.0,
     "pct_completados": 100.0
   },
@@ -644,8 +644,8 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "BOG",
-    "matriculados": 128,
-    "completados": 128,
+    "matriculados": 127,
+    "completados": 127,
     "promedio_avance": 100.0,
     "pct_completados": 100.0
   },
@@ -664,8 +664,8 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "CTG",
-    "matriculados": 97,
-    "completados": 96,
+    "matriculados": 96,
+    "completados": 95,
     "promedio_avance": 99.0,
     "pct_completados": 99.0
   },
@@ -684,9 +684,9 @@
     "cohorte": "2026",
     "programa": "jc",
     "grupo_ciudad": "MED",
-    "matriculados": 93,
-    "completados": 93,
-    "promedio_avance": 99.7,
+    "matriculados": 92,
+    "completados": 92,
+    "promedio_avance": 99.9,
     "pct_completados": 100.0
   },
   {
