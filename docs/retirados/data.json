@@ -1,9 +1,9 @@
 {
-  "ultima_actualizacion": "2026-08-19T01:02:54.905054-05:00",
+  "ultima_actualizacion": "2026-08-19T17:03:40.299860-05:00",
   "anio": "2026",
   "totales": {
-    "total_retirados": 249,
-    "cancelados": 82,
+    "total_retirados": 251,
+    "cancelados": 84,
     "desertores": 0,
     "aplazados": 0,
     "sin_registro_hoja": 167
@@ -15,7 +15,7 @@
     },
     {
       "tipo": "Cancelado",
-      "cantidad": 82
+      "cantidad": 84
     }
   ],
   "por_causa": [
@@ -25,7 +25,7 @@
     },
     {
       "causa": "Voluntario",
-      "cantidad": 82
+      "cantidad": 84
     }
   ],
   "por_programa": [
@@ -35,7 +35,7 @@
     },
     {
       "programa": "Jóvenes creaTIvos",
-      "cantidad": 82
+      "cantidad": 84
     }
   ],
   "por_mes": [
@@ -57,7 +57,7 @@
     },
     {
       "mes": "2026-08",
-      "cantidad": 4
+      "cantidad": 6
     }
   ],
   "por_etapa": [
@@ -89,12 +89,12 @@
     {
       "orden": 5,
       "etapa": "Introducción a la IA Generativa - 2026",
-      "cantidad": 8
+      "cantidad": 9
     },
     {
       "orden": 6,
       "etapa": "Fundamentos Lógica de Programación - 2026",
-      "cantidad": 12
+      "cantidad": 13
     },
     {
       "orden": 7,
