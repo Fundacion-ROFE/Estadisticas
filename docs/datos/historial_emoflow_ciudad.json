@@ -1980,46 +1980,6 @@
     "fuente": "emoflow-api"
   },
   {
-    "fecha": "2026-08-19",
-    "grupo_ciudad": "BAQ",
-    "participantes": 137,
-    "ingresos_promedio": 52.3,
-    "ingresos_mediana": 36,
-    "activos_7d": 102,
-    "inactivos_30d": 17,
-    "fuente": "emoflow-api"
-  },
-  {
-    "fecha": "2026-08-19",
-    "grupo_ciudad": "BOG",
-    "participantes": 142,
-    "ingresos_promedio": 36.9,
-    "ingresos_mediana": 30,
-    "activos_7d": 48,
-    "inactivos_30d": 41,
-    "fuente": "emoflow-api"
-  },
-  {
-    "fecha": "2026-08-19",
-    "grupo_ciudad": "CAL",
-    "participantes": 107,
-    "ingresos_promedio": 41.9,
-    "ingresos_mediana": 35,
-    "activos_7d": 74,
-    "inactivos_30d": 22,
-    "fuente": "emoflow-api"
-  },
-  {
-    "fecha": "2026-08-19",
-    "grupo_ciudad": "CTG",
-    "participantes": 106,
-    "ingresos_promedio": 32.7,
-    "ingresos_mediana": 27,
-    "activos_7d": 38,
-    "inactivos_30d": 33,
-    "fuente": "emoflow-api"
-  },
-  {
     "fecha": "2026-08-17",
     "grupo_ciudad": "BAQ",
     "participantes": 137,
@@ -2200,56 +2160,6 @@
     "fuente": "emoflow-api"
   },
   {
-    "fecha": "2026-08-19",
-    "grupo_ciudad": "GYL",
-    "participantes": 80,
-    "ingresos_promedio": 36.8,
-    "ingresos_mediana": 30,
-    "activos_7d": 29,
-    "inactivos_30d": 22,
-    "fuente": "emoflow-api"
-  },
-  {
-    "fecha": "2026-08-19",
-    "grupo_ciudad": "MED",
-    "participantes": 99,
-    "ingresos_promedio": 31.1,
-    "ingresos_mediana": 21,
-    "activos_7d": 36,
-    "inactivos_30d": 32,
-    "fuente": "emoflow-api"
-  },
-  {
-    "fecha": "2026-08-19",
-    "grupo_ciudad": "PAN",
-    "participantes": 39,
-    "ingresos_promedio": 108.3,
-    "ingresos_mediana": 38,
-    "activos_7d": 25,
-    "inactivos_30d": 3,
-    "fuente": "emoflow-api"
-  },
-  {
-    "fecha": "2026-08-19",
-    "grupo_ciudad": "QTO",
-    "participantes": 39,
-    "ingresos_promedio": 55.6,
-    "ingresos_mediana": 42,
-    "activos_7d": 28,
-    "inactivos_30d": 3,
-    "fuente": "emoflow-api"
-  },
-  {
-    "fecha": "2026-08-19",
-    "grupo_ciudad": "UY",
-    "participantes": 77,
-    "ingresos_promedio": 35.6,
-    "ingresos_mediana": 31,
-    "activos_7d": 40,
-    "inactivos_30d": 22,
-    "fuente": "emoflow-api"
-  },
-  {
     "fecha": "2026-08-16",
     "grupo_ciudad": "BAQ",
     "participantes": 137,
@@ -2337,6 +2247,96 @@
     "ingresos_mediana": 31,
     "activos_7d": 44,
     "inactivos_30d": 20,
+    "fuente": "emoflow-api"
+  },
+  {
+    "fecha": "2026-08-19",
+    "grupo_ciudad": "BAQ",
+    "participantes": 137,
+    "ingresos_promedio": 52.4,
+    "ingresos_mediana": 36,
+    "activos_7d": 102,
+    "inactivos_30d": 17,
+    "fuente": "emoflow-api"
+  },
+  {
+    "fecha": "2026-08-19",
+    "grupo_ciudad": "BOG",
+    "participantes": 142,
+    "ingresos_promedio": 37.0,
+    "ingresos_mediana": 30,
+    "activos_7d": 51,
+    "inactivos_30d": 41,
+    "fuente": "emoflow-api"
+  },
+  {
+    "fecha": "2026-08-19",
+    "grupo_ciudad": "CAL",
+    "participantes": 107,
+    "ingresos_promedio": 42.0,
+    "ingresos_mediana": 36,
+    "activos_7d": 75,
+    "inactivos_30d": 22,
+    "fuente": "emoflow-api"
+  },
+  {
+    "fecha": "2026-08-19",
+    "grupo_ciudad": "CTG",
+    "participantes": 106,
+    "ingresos_promedio": 32.8,
+    "ingresos_mediana": 27,
+    "activos_7d": 40,
+    "inactivos_30d": 33,
+    "fuente": "emoflow-api"
+  },
+  {
+    "fecha": "2026-08-19",
+    "grupo_ciudad": "GYL",
+    "participantes": 80,
+    "ingresos_promedio": 36.8,
+    "ingresos_mediana": 30,
+    "activos_7d": 30,
+    "inactivos_30d": 22,
+    "fuente": "emoflow-api"
+  },
+  {
+    "fecha": "2026-08-19",
+    "grupo_ciudad": "MED",
+    "participantes": 99,
+    "ingresos_promedio": 31.1,
+    "ingresos_mediana": 21,
+    "activos_7d": 36,
+    "inactivos_30d": 32,
+    "fuente": "emoflow-api"
+  },
+  {
+    "fecha": "2026-08-19",
+    "grupo_ciudad": "PAN",
+    "participantes": 39,
+    "ingresos_promedio": 108.4,
+    "ingresos_mediana": 38,
+    "activos_7d": 26,
+    "inactivos_30d": 3,
+    "fuente": "emoflow-api"
+  },
+  {
+    "fecha": "2026-08-19",
+    "grupo_ciudad": "QTO",
+    "participantes": 39,
+    "ingresos_promedio": 56.0,
+    "ingresos_mediana": 44,
+    "activos_7d": 30,
+    "inactivos_30d": 3,
+    "fuente": "emoflow-api"
+  },
+  {
+    "fecha": "2026-08-19",
+    "grupo_ciudad": "UY",
+    "participantes": 77,
+    "ingresos_promedio": 35.8,
+    "ingresos_mediana": 31,
+    "activos_7d": 40,
+    "inactivos_30d": 22,
     "fuente": "emoflow-api"
   },
   {

@@ -113,11 +113,11 @@
     "curso": "DESARROLLO WEB FRONT-END - JAVASCRIPT - 2026",
     "cohorte": "2026",
     "matriculados": 747,
-    "completados": 162,
-    "en_progreso": 189,
-    "sin_iniciar": 396,
-    "pct_completados": 21.7,
-    "promedio_avance": 30.1,
+    "completados": 171,
+    "en_progreso": 201,
+    "sin_iniciar": 375,
+    "pct_completados": 22.9,
+    "promedio_avance": 31.7,
     "programa": "jc"
   },
   {
@@ -260,7 +260,7 @@
     "en_progreso": 18,
     "sin_iniciar": 123,
     "pct_completados": 21.2,
-    "promedio_avance": 24.5,
+    "promedio_avance": 24.8,
     "programa": "mr"
   },
   {
