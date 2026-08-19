@@ -3993,17 +3993,6 @@
     "created_at": "2026-08-18T10:30:45.577046"
   },
   {
-    "id": 1085,
-    "fecha": "2026-08-19",
-    "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
-    "programa": "jc",
-    "matriculados": 747,
-    "promedio_avance": 99.6,
-    "completados": 744,
-    "fuente": "sync-diario",
-    "created_at": "2026-08-19T06:31:08.84242"
-  },
-  {
     "id": 997,
     "fecha": "2026-08-17",
     "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
@@ -4123,6 +4112,17 @@
     "completados": 746,
     "fuente": "sync-diario",
     "created_at": "2026-08-18T10:30:45.577046"
+  },
+  {
+    "id": 1085,
+    "fecha": "2026-08-19",
+    "curso": "EMPRENDIMIENTO: IDEA DE NEGOCIO JC",
+    "programa": "jc",
+    "matriculados": 747,
+    "promedio_avance": 99.6,
+    "completados": 744,
+    "fuente": "sync-diario",
+    "created_at": "2026-08-19T06:31:08.84242"
   },
   {
     "id": 1086,
