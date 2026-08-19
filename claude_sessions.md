@@ -7657,3 +7657,24 @@ Pedido: llevar el panel de clase en vivo (hoy: local + túnel efímero) a Vercel
 - Datos sintéticos de prueba limpiados de Sheets y Supabase al terminar.
 
 **Pendiente:** commit+push de `panel-datos-rofe` a `samuel_oficial` (deploy a Vercel) — confirmación explícita pendiente; validar con una clase real.
+
+### 2026-08-19 — Seguimiento de rebotes JC por ciudad (demo, alcance acotado a la cuenta madre)
+
+**Estado:** Script nuevo `seguimiento_rebotes_ciudad.py` corrido en producción, snapshot semanal escrito en Sheet `RebotesJC` (pestaña `RebotesCiudad`). Explícitamente un demo — bloqueado a escalar hasta tener credenciales de cada monitor.
+**Proceso relacionado:** [[correos-jovenes-creativos]] · [[bd-seguimiento-monitorias]]
+
+Pedido inicial ("automatizar rebotes JC") resultó ya construido (capturar_rebotes.py, cron n8n `correos-rebotes-diario` desde 2026-07-29) — se le dio a Samuel el correo de la Service Account (`q10-automatizacion@n8n-automatizacion-q10.iam.gserviceaccount.com`) y el link del Sheet `RebotesJC`, sin reconstruir nada. Se declinó explícitamente recibir contraseñas de cuentas de correo por chat (incidente documentado 2026-07-15/22 con MR).
+
+Pedido real: seguimiento semana a semana de envíos por ciudad, cruzando contra la pestaña `Seguimiento` de la BD Seguimiento de Monitorias (formato fijo, solo lectura). Se descubrió que **no existe registro de envíos exitosos** — los monitores mandan correo por su cuenta, fuera de `enviar_campana.py` — solo hay rastro de **rebotes** (IMAP de `soporte@tocaunavida.org`). Samuel confirmó: por ahora demo solo con la cuenta madre JC; escalar a más cuentas de monitores queda pendiente de credenciales.
+
+Construido reusando el patrón `Historico` ya existente en `tools/exportar_sin_completar.py` (snapshot por semana ISO, semanas previas congeladas, misma BD Seguimiento vía el mismo Service Account — sin pedir permisos nuevos). Corrida real: 166 rebotes vigentes (programa=jc), 8 ciudades, 69 hard/97 soft. **Hallazgo:** 141/166 (85%) sin match en Seguimiento — diagnóstico por dominio (sin imprimir PII) mostró que NO es tráfico ajeno al buzón compartido: ~130 son Gmail/Hotmail reales con typo de dominio (`gmail.con`, `gamil.com`, `hormail.com`, ~25 variantes) o personas nunca registradas en Seguimiento — coherente con el hueco de cobertura ya documentado (74% de `participants` sin `grupo_ciudad`). El cruce es solo por email (las listas de campaña JC no traen cédula), más débil que el de `exportar_sin_completar.py`.
+
+**Pendiente:** conseguir credenciales de las cuentas de correo de cada monitor para medir envío real (no solo rebote); decidir si vale la pena investigar el hueco de cobertura de Seguimiento como proceso aparte.
+
+### 2026-08-19 (cont.) — Investigación puntual: ¿el SIN UBICACIÓN son retirados/inhabilitados?
+
+**Estado:** Hipótesis descartada con datos. Nuevo script de investigación puntual `tools/investigar_rebotes_sin_ubicacion.py` (gitignoreado, no forma parte del pipeline, mismo patrón que `_diagnostico_inhabilitados_falsos.py`).
+
+Samuel pidió cruzar los 141 rebotes "SIN UBICACIÓN" contra estudiantes históricos retirados/inhabilitados. Cruce contra `v_gui_personas` (retirado canon Q10 + tabla `retiros`) y `postulantes_jc` (universo histórico amplio, 2.556 filas): **solo 1/141 es retirado real** (motivo "Voluntario", cohorte 2026). 10 son matriculados **activos hoy** con typo de correo real en su dato de contacto (acción recomendada: corregir en Seguimiento). 1 solo aparece en `postulantes_jc` (postuló, nunca matriculó). **129/141 (91%) no tienen ningún rastro en ningún sistema de JC** — descarta también la hipótesis anterior (hueco de cobertura de Seguimiento); lectura más probable: el buzón compartido `soporte@tocaunavida.org` sí recibe rebote ajeno a estudiantes de JC, tal como ya advertía el README de `jovenes-creativos-correos` antes de verificarse con datos. README y memoria corregidos con el hallazgo real (no se dejó la hipótesis descartada como si fuera la conclusión final).
+
+**Pendiente:** decidir si vale la pena filtrar mejor el buzón `soporte@tocaunavida.org` en `capturar_rebotes.py` (hoy captura cualquier mailer-daemon, sin distinguir origen) para que `RebotesCiudad` no arrastre ~130 direcciones ajenas a JC cada semana.

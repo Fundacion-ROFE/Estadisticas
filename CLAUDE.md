@@ -113,6 +113,7 @@ vez. Dashboard público en GitHub Pages. Herramientas locales con PII en `tools/
 | n8n workflow | [[q10-consolidacion]] | [[q10-actualizar]] | — |
 | n8n `q10-sync-supabase` | [[panel-datos-etl]] | — | — (sync cada 4h, `30 17,21,1,5 * * *` → Supabase; hueco diurno de diseño 05:30→17:30 = 12h) |
 | `sync_plan_cronograma.py` (skill `/plan-sync`) | [[plan-trabajo-cronograma]] · [[zoom-asistencia]] · [[zoom-youtube]] | — | — (Cronograma del Plan de Trabajo: sesiones pasadas de Samuel → `Completado` + Asistencia/Grabación desde fuentes reales) |
+| `seguimiento_rebotes_ciudad.py` (demo) | [[correos-jovenes-creativos]] · [[bd-seguimiento-monitorias]] | — | — (email_bounces JC × Seguimiento/Grupo → Sheet RebotesJC, pestaña `RebotesCiudad`, snapshot semanal; NO mide envíos, solo rebotes — bloqueado a escalar hasta tener credenciales de cada monitor) |
 
 Ver [[mapa-codigo]] para firma completa de cada script.
 
