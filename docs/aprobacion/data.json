@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-08-18T17:03:48.465821-05:00",
+  "ultima_actualizacion": "2026-08-19T01:02:48.259978-05:00",
   "anio": "2026",
   "nota_metodo": "Cohorte = matriculados del periodo (habilitados + inhabilitados). Aprobado = avance > 80 (desde 2026-07-09; antes >= 100). Un inhabilitado que ya había superado el 80 cuenta como 'aprobó y se retiró' (no pierde su logro); solo los retirados sin superar 80 cuentan como no aprobados. Cada curso trae bandas de progreso de los activos: banda_0_25 / banda_26_80 / banda_81_100 (suman a 'activos').",
   "por_curso": [
@@ -166,19 +166,19 @@
         "Desarrollo-Avanzado-2026"
       ],
       "activos": 750,
-      "aprobados": 160,
+      "aprobados": 162,
       "aprobados_retirados": 0,
       "retirados": 0,
       "cursaron": 750,
-      "banda_0_25": 475,
-      "banda_26_80": 115,
-      "banda_81_100": 160,
-      "aprobados_total": 160,
-      "no_aprobados": 590,
-      "sin_finalizar": 590,
-      "promedio": 28.86,
-      "pct_aprobados": 21.3,
-      "pct_no_aprobados": 78.7,
+      "banda_0_25": 460,
+      "banda_26_80": 128,
+      "banda_81_100": 162,
+      "aprobados_total": 162,
+      "no_aprobados": 588,
+      "sin_finalizar": 588,
+      "promedio": 29.94,
+      "pct_aprobados": 21.6,
+      "pct_no_aprobados": 78.4,
       "finalizado": false
     },
     {
@@ -198,7 +198,7 @@
       "aprobados_total": 38,
       "no_aprobados": 308,
       "sin_finalizar": 141,
-      "promedio": 24.47,
+      "promedio": 24.49,
       "pct_aprobados": 11.0,
       "pct_no_aprobados": 89.0,
       "finalizado": false
@@ -209,10 +209,10 @@
       "programa": "Jóvenes creaTIvos",
       "cursos": 8,
       "cursaron": 6427,
-      "aprobados": 5641,
+      "aprobados": 5643,
       "aprobados_retirados": 285,
       "retirados": 142,
-      "sin_finalizar": 644,
+      "sin_finalizar": 642,
       "matriculas_activas": 6000,
       "pct_aprobados": 87.8,
       "estudiantes_cohorte": 832,
@@ -237,7 +237,7 @@
   "totales": {
     "total_cursos": 9,
     "total_matriculas": 6773,
-    "total_aprobados": 5679,
+    "total_aprobados": 5681,
     "total_aprobados_retirados": 285,
     "total_retirados_2026": 249,
     "estudiantes_cohorte_2026": 1178
