@@ -384,18 +384,6 @@
     "fuente": "emoflow-api"
   },
   {
-    "fecha": "2026-08-20",
-    "participantes": 826,
-    "con_match_supabase": 759,
-    "ingresos_promedio": 43.2,
-    "ingresos_mediana": 31,
-    "ingresos_max": 1262,
-    "activos_7d": 426,
-    "activos_14d": 541,
-    "inactivos_30d": 198,
-    "fuente": "emoflow-api"
-  },
-  {
     "fecha": "2026-08-03",
     "participantes": 826,
     "con_match_supabase": 759,
@@ -405,6 +393,18 @@
     "activos_7d": 476,
     "activos_14d": 566,
     "inactivos_30d": 170,
+    "fuente": "emoflow-api"
+  },
+  {
+    "fecha": "2026-08-20",
+    "participantes": 826,
+    "con_match_supabase": 759,
+    "ingresos_promedio": 43.4,
+    "ingresos_mediana": 32,
+    "ingresos_max": 1263,
+    "activos_7d": 438,
+    "activos_14d": 544,
+    "inactivos_30d": 197,
     "fuente": "emoflow-api"
   },
   {
