@@ -2,7 +2,7 @@
   {
     "grupo_ciudad": "BAQ",
     "participantes": 137,
-    "ingresos_promedio": 52.4,
+    "ingresos_promedio": 52.5,
     "ingresos_mediana": 36,
     "activos_7d": 102,
     "inactivos_30d": 17
@@ -12,7 +12,7 @@
     "participantes": 142,
     "ingresos_promedio": 37.1,
     "ingresos_mediana": 30,
-    "activos_7d": 54,
+    "activos_7d": 55,
     "inactivos_30d": 41
   },
   {
@@ -58,7 +58,7 @@
   {
     "grupo_ciudad": "QTO",
     "participantes": 39,
-    "ingresos_promedio": 56.1,
+    "ingresos_promedio": 56.2,
     "ingresos_mediana": 44,
     "activos_7d": 30,
     "inactivos_30d": 3
