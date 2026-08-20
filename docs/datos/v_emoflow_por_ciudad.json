@@ -10,55 +10,55 @@
   {
     "grupo_ciudad": "BOG",
     "participantes": 142,
-    "ingresos_promedio": 37.0,
+    "ingresos_promedio": 37.1,
     "ingresos_mediana": 30,
-    "activos_7d": 51,
+    "activos_7d": 54,
     "inactivos_30d": 41
   },
   {
     "grupo_ciudad": "CAL",
     "participantes": 107,
-    "ingresos_promedio": 42.0,
+    "ingresos_promedio": 42.2,
     "ingresos_mediana": 36,
-    "activos_7d": 75,
-    "inactivos_30d": 22
+    "activos_7d": 74,
+    "inactivos_30d": 23
   },
   {
     "grupo_ciudad": "CTG",
     "participantes": 106,
-    "ingresos_promedio": 32.8,
+    "ingresos_promedio": 32.9,
     "ingresos_mediana": 27,
-    "activos_7d": 40,
+    "activos_7d": 41,
     "inactivos_30d": 33
   },
   {
     "grupo_ciudad": "GYL",
     "participantes": 80,
-    "ingresos_promedio": 36.8,
+    "ingresos_promedio": 36.9,
     "ingresos_mediana": 30,
-    "activos_7d": 30,
-    "inactivos_30d": 22
+    "activos_7d": 29,
+    "inactivos_30d": 23
   },
   {
     "grupo_ciudad": "MED",
     "participantes": 99,
     "ingresos_promedio": 31.1,
     "ingresos_mediana": 21,
-    "activos_7d": 36,
-    "inactivos_30d": 32
+    "activos_7d": 33,
+    "inactivos_30d": 33
   },
   {
     "grupo_ciudad": "PAN",
     "participantes": 39,
-    "ingresos_promedio": 108.4,
+    "ingresos_promedio": 108.5,
     "ingresos_mediana": 38,
-    "activos_7d": 26,
+    "activos_7d": 23,
     "inactivos_30d": 3
   },
   {
     "grupo_ciudad": "QTO",
     "participantes": 39,
-    "ingresos_promedio": 56.0,
+    "ingresos_promedio": 56.1,
     "ingresos_mediana": 44,
     "activos_7d": 30,
     "inactivos_30d": 3
@@ -68,7 +68,7 @@
     "participantes": 77,
     "ingresos_promedio": 35.8,
     "ingresos_mediana": 31,
-    "activos_7d": 40,
+    "activos_7d": 39,
     "inactivos_30d": 22
   }
 ]
