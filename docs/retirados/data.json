@@ -1,9 +1,9 @@
 {
-  "ultima_actualizacion": "2026-08-21T01:02:49.064647-05:00",
+  "ultima_actualizacion": "2026-08-21T17:03:24.804565-05:00",
   "anio": "2026",
   "totales": {
-    "total_retirados": 251,
-    "cancelados": 84,
+    "total_retirados": 252,
+    "cancelados": 85,
     "desertores": 0,
     "aplazados": 0,
     "sin_registro_hoja": 167
@@ -15,7 +15,7 @@
     },
     {
       "tipo": "Cancelado",
-      "cantidad": 84
+      "cantidad": 85
     }
   ],
   "por_causa": [
@@ -25,7 +25,7 @@
     },
     {
       "causa": "Voluntario",
-      "cantidad": 84
+      "cantidad": 85
     }
   ],
   "por_programa": [
@@ -35,7 +35,7 @@
     },
     {
       "programa": "Jóvenes creaTIvos",
-      "cantidad": 84
+      "cantidad": 85
     }
   ],
   "por_mes": [
@@ -57,7 +57,7 @@
     },
     {
       "mes": "2026-08",
-      "cantidad": 6
+      "cantidad": 7
     }
   ],
   "por_etapa": [
@@ -94,7 +94,7 @@
     {
       "orden": 6,
       "etapa": "Fundamentos Lógica de Programación - 2026",
-      "cantidad": 13
+      "cantidad": 14
     },
     {
       "orden": 7,
