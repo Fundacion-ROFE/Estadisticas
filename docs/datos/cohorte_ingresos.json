@@ -3,9 +3,9 @@
     "cohorte": "2026",
     "programa": "jc",
     "ingresados": 832,
-    "activos": 748,
-    "retirados": 84,
-    "updated_at": "2026-08-21T10:31:18",
+    "activos": 747,
+    "retirados": 85,
+    "updated_at": "2026-08-21T22:30:32",
     "pct_aprobados": 88.3
   },
   {
@@ -14,7 +14,7 @@
     "ingresados": 346,
     "activos": 338,
     "retirados": 8,
-    "updated_at": "2026-08-21T10:31:18",
+    "updated_at": "2026-08-21T22:30:32",
     "pct_aprobados": 31.6
   }
 ]

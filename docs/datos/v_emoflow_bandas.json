@@ -2,18 +2,18 @@
   {
     "banda": "61+",
     "orden": 5,
-    "participantes": 149,
+    "participantes": 150,
     "ingresos_promedio": 115.2,
-    "avance_promedio": 92.5,
-    "pct_aprobacion": 91.1
+    "avance_promedio": 92.9,
+    "pct_aprobacion": 91.5
   },
   {
     "banda": "16-30",
     "orden": 3,
-    "participantes": 228,
+    "participantes": 227,
     "ingresos_promedio": 22.9,
-    "avance_promedio": 90.3,
-    "pct_aprobacion": 88.8
+    "avance_promedio": 90.5,
+    "pct_aprobacion": 89.0
   },
   {
     "banda": "1-5",
@@ -28,15 +28,15 @@
     "orden": 4,
     "participantes": 278,
     "ingresos_promedio": 43.7,
-    "avance_promedio": 92.4,
-    "pct_aprobacion": 90.8
+    "avance_promedio": 92.5,
+    "pct_aprobacion": 90.9
   },
   {
     "banda": "6-15",
     "orden": 2,
     "participantes": 111,
     "ingresos_promedio": 10.5,
-    "avance_promedio": 88.9,
-    "pct_aprobacion": 87.6
+    "avance_promedio": 89.6,
+    "pct_aprobacion": 88.3
   }
 ]
