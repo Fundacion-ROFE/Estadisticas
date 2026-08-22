@@ -49,7 +49,7 @@
     "banda": "16-30",
     "orden": 3,
     "participantes": 25,
-    "ingresos_promedio": 23.9,
+    "ingresos_promedio": 24.0,
     "avance_promedio": 89.0,
     "pct_aprobacion": 86.9
   },
@@ -220,7 +220,7 @@
     "banda": "61+",
     "orden": 5,
     "participantes": 33,
-    "ingresos_promedio": 127.0,
+    "ingresos_promedio": 127.1,
     "avance_promedio": 94.9,
     "pct_aprobacion": 93.6
   },
@@ -328,7 +328,7 @@
     "banda": "31-60",
     "orden": 4,
     "participantes": 15,
-    "ingresos_promedio": 44.8,
+    "ingresos_promedio": 44.9,
     "avance_promedio": 94.0,
     "pct_aprobacion": 90.8
   },
