@@ -1,5 +1,5 @@
 {
-  "ultima_actualizacion": "2026-08-21T17:02:31.628264-05:00",
+  "ultima_actualizacion": "2026-08-22T01:01:59.248433-05:00",
   "segmento": "Logica-Nivel 2-2026",
   "por_curso": [
     {
@@ -58,28 +58,28 @@
     },
     {
       "nombre": "HTML",
-      "estudiantes": 748,
+      "estudiantes": 747,
       "aprobados": 701,
-      "pct_aprobados": 93.7,
-      "promedio": 97.12,
+      "pct_aprobados": 93.8,
+      "promedio": 97.35,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "JS",
-      "estudiantes": 748,
-      "aprobados": 43,
-      "pct_aprobados": 5.7,
-      "promedio": 36.64,
+      "estudiantes": 747,
+      "aprobados": 44,
+      "pct_aprobados": 5.9,
+      "promedio": 38.47,
       "min": 0.0,
       "max": 100.0
     },
     {
       "nombre": "HTML - AUT",
       "estudiantes": 777,
-      "aprobados": 43,
-      "pct_aprobados": 5.5,
-      "promedio": 36.8,
+      "aprobados": 44,
+      "pct_aprobados": 5.7,
+      "promedio": 38.73,
       "min": 0.0,
       "max": 100.0
     },
@@ -104,10 +104,10 @@
   ],
   "totales": {
     "total_cursos": 11,
-    "total_registros": 8361,
+    "total_registros": 8359,
     "estudiantes_unicos_id": 780,
-    "promedio_general": 74.52,
-    "total_aprobados": 5497
+    "promedio_general": 74.88,
+    "total_aprobados": 5499
   },
   "anomalias": [
     {
@@ -116,7 +116,7 @@
     },
     {
       "categoria": "AVANCE 0%",
-      "cantidad": 1549
+      "cantidad": 1502
     },
     {
       "categoria": "AVANCE IRREGULAR",
